@@ -118,7 +118,7 @@ export default function TicketsPage() {
     quota: 100,
     saleStartDate: "",
     saleEndDate: "",
-    allowedRoles: ["thstd"], // Default
+    allowedRoles: ["general"], // Default
     priority: "regular",
     isActive: true,
     sessionIds: [] as number[],
@@ -280,8 +280,8 @@ export default function TicketsPage() {
       toast.error("Please select an event");
       return;
     }
-    if (formData.quota < 1) {
-      toast.error("Quota must be at least 1");
+    if (formData.quota < 0) {
+      toast.error("Quota must be 0 (unlimited) or greater");
       return;
     }
     setIsSubmitting(true);
@@ -331,8 +331,8 @@ export default function TicketsPage() {
 
   const handleEdit = async () => {
     if (!selectedTicket || !formData.eventId) return;
-    if (formData.quota < 1) {
-      toast.error("Quota must be at least 1");
+    if (formData.quota < 0) {
+      toast.error("Quota must be 0 (unlimited) or greater");
       return;
     }
     setIsSubmitting(true);
@@ -474,7 +474,7 @@ export default function TicketsPage() {
       quota: 100,
       saleStartDate: "",
       saleEndDate: "",
-      allowedRoles: ["thstd"],
+      allowedRoles: ["general"],
       priority: "regular",
       isActive: true,
       sessionIds: [],
@@ -701,32 +701,39 @@ export default function TicketsPage() {
                         </p>
                       </td>
                       <td className="px-4 py-4 text-center">
-                        <div className="w-24 mx-auto">
-                          <div className="flex justify-between text-xs mb-1">
-                            <span className="text-gray-600">
-                              {ticket.sold}/{ticket.quota}
-                            </span>
-                            <span
-                              className={
-                                soldPercentage >= 90
-                                  ? "text-red-600"
-                                  : soldPercentage >= 70
-                                    ? "text-yellow-600"
-                                    : "text-green-600"
-                              }
-                            >
-                              {Math.round(soldPercentage)}%
-                            </span>
+                        {ticket.quota === 0 ? (
+                          <div className="w-24 mx-auto text-center">
+                            <span className="text-xs font-medium text-blue-600">{ticket.sold} sold</span>
+                            <span className="block text-[10px] text-gray-400">Unlimited</span>
                           </div>
-                          <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
-                            <div
-                              className={`h-full rounded-full ${soldPercentage >= 90 ? "bg-red-500" : soldPercentage >= 70 ? "bg-yellow-500" : "bg-green-500"}`}
-                              style={{
-                                width: `${Math.min(soldPercentage, 100)}%`,
-                              }}
-                            />
+                        ) : (
+                          <div className="w-24 mx-auto">
+                            <div className="flex justify-between text-xs mb-1">
+                              <span className="text-gray-600">
+                                {ticket.sold}/{ticket.quota}
+                              </span>
+                              <span
+                                className={
+                                  soldPercentage >= 90
+                                    ? "text-red-600"
+                                    : soldPercentage >= 70
+                                      ? "text-yellow-600"
+                                      : "text-green-600"
+                                }
+                              >
+                                {Math.round(soldPercentage)}%
+                              </span>
+                            </div>
+                            <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+                              <div
+                                className={`h-full rounded-full ${soldPercentage >= 90 ? "bg-red-500" : soldPercentage >= 70 ? "bg-yellow-500" : "bg-green-500"}`}
+                                style={{
+                                  width: `${Math.min(soldPercentage, 100)}%`,
+                                }}
+                              />
+                            </div>
                           </div>
-                        </div>
+                        )}
                       </td>
                       <td className="px-4 py-4 text-center">
                         <span
@@ -1013,7 +1020,7 @@ export default function TicketsPage() {
                 <input
                   type="number"
                   className="input-field"
-                  value={formData.quota || ""}
+                  value={formData.quota}
                   onChange={(e) =>
                     setFormData({
                       ...formData,
@@ -1021,7 +1028,11 @@ export default function TicketsPage() {
                     })
                   }
                   placeholder="100"
+                  min={0}
                 />
+                <p className="text-xs text-gray-400 mt-1">
+                  Set to 0 for unlimited quota.
+                </p>
               </div>
 
               <div className="mb-4">

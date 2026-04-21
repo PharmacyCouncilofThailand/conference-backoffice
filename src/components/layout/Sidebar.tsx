@@ -45,10 +45,13 @@ const menuStructure = [
     ],
   },
   {
-    type: "link",
-    href: "/abstracts",
+    type: "submenu",
     label: "Abstracts",
     icon: IconFileText,
+    children: [
+      { href: "/abstracts", label: "All Abstracts" },
+      { href: "/abstract-categories", label: "Categories" },
+    ],
   },
   {
     type: "category",
@@ -194,8 +197,8 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
 
       // Reviewer specific restrictions
       if (role === "reviewer") {
-        // Only show Abstracts
-        if (item.href === "/abstracts") return item;
+        // Only show Abstracts submenu
+        if (item.label === "Abstracts" && item.children) return item;
         return null;
       }
 

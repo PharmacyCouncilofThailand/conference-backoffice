@@ -288,7 +288,7 @@ export default function SpeakersPage() {
 
     // If it's a Google Drive URL, use our proxy
     if (url.includes("drive.google.com")) {
-      return `${API_URL}/upload/proxy?url=${encodeURIComponent(url)}`;
+      return `${API_URL}/api/upload/proxy?url=${encodeURIComponent(url)}`;
     }
 
     return url;

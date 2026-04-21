@@ -259,6 +259,19 @@ export const api = {
       fetchAPI<{ promoCode: Record<string, unknown> }>(`/api/backoffice/promo-codes/${id}/toggle`, { method: 'PATCH', token }),
   },
 
+  abstractCategories: {
+    list: (token: string, query?: string) =>
+      fetchAPI<{ categories: Record<string, unknown>[] }>(`/api/backoffice/abstract-categories${query ? `?${query}` : ''}`, { token }),
+    create: (token: string, data: Record<string, unknown>) =>
+      fetchAPI<{ category: Record<string, unknown> }>('/api/backoffice/abstract-categories', { method: 'POST', body: JSON.stringify(data), token }),
+    update: (token: string, id: number, data: Record<string, unknown>) =>
+      fetchAPI<{ category: Record<string, unknown> }>(`/api/backoffice/abstract-categories/${id}`, { method: 'PATCH', body: JSON.stringify(data), token }),
+    delete: (token: string, id: number) =>
+      fetchAPI<{ success: boolean }>(`/api/backoffice/abstract-categories/${id}`, { method: 'DELETE', token }),
+    toggle: (token: string, id: number) =>
+      fetchAPI<{ category: Record<string, unknown> }>(`/api/backoffice/abstract-categories/${id}/toggle`, { method: 'PATCH', token }),
+  },
+
   members: {
     list: (token: string, query?: string) =>
       fetchAPI<{ members: Record<string, unknown>[]; pagination: Pagination }>(`/api/backoffice/members${query ? `?${query}` : ''}`, { token }),

@@ -64,11 +64,25 @@ interface RejectionHistory {
   rejectedByName: string | null;
 }
 
-// Helper to get proxy URL for Google Drive files
+// Helper to get viewable URL for uploaded files
 function getProxyUrl(url: string | null | undefined): string {
   if (!url) return "";
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-  return `${apiUrl}/upload/proxy?url=${encodeURIComponent(url)}`;
+
+  // Already a proxied /api/files/ URL — use directly
+  if (url.includes("/api/files/")) {
+    // Ensure it has the correct base URL (handle relative or mismatched hosts)
+    const fileId = url.split("/api/files/").pop();
+    return `${apiUrl}/api/files/${fileId}`;
+  }
+
+  // Google Drive URL — proxy through upload/proxy
+  if (url.includes("drive.google.com")) {
+    return `${apiUrl}/api/upload/proxy?url=${encodeURIComponent(url)}`;
+  }
+
+  // Fallback: return as-is
+  return url;
 }
 
 export default function VerificationPage() {
