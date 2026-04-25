@@ -19,6 +19,7 @@ import {
   IconChevronDown,
   IconChevronRight,
   IconTicket,
+  IconMailForward,
 } from "@tabler/icons-react";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -119,6 +120,12 @@ const menuStructure = [
   },
   {
     type: "link",
+    href: "/email-retrosend",
+    label: "Email Retrosend",
+    icon: IconMailForward,
+  },
+  {
+    type: "link",
     href: "/settings",
     label: "Settings",
     icon: IconSettings,
@@ -214,6 +221,7 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
       // Hide System Administration category and its links
       if (item.label === "SYSTEM ADMINISTRATION") return null;
       if (item.href === "/users") return null;
+      if (item.href === "/email-retrosend") return null;
       if (item.href === "/settings") return null;
 
       return item;
