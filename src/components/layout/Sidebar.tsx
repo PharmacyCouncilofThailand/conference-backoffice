@@ -205,7 +205,12 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
       // Reviewer specific restrictions
       if (role === "reviewer") {
         // Only show Abstracts submenu
-        if (item.label === "Abstracts" && item.children) return item;
+        if (item.label === "Abstracts" && item.children) {
+          return {
+            ...item,
+            children: item.children.filter((child) => child.href === "/abstracts"),
+          };
+        }
         return null;
       }
 

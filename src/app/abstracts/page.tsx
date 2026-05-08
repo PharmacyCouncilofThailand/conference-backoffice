@@ -40,15 +40,9 @@ const topicColors: { [key: string]: string } = {
   Other: "bg-gray-100 text-gray-800",
 };
 
-// Categories for filter dropdown
-const abstractCategories = [
-  { id: "clinical_pharmacy", label: "Clinical Pharmacy" },
-  { id: "social_administrative", label: "Social & Administrative Pharmacy" },
-  { id: "community_pharmacy", label: "Community Pharmacy" },
-  { id: "pharmacology_toxicology", label: "Pharmacology & Toxicology" },
-  { id: "pharmacy_education", label: "Pharmacy Education" },
-  { id: "digital_pharmacy", label: "Digital Pharmacy & Innovation" },
-];
+// NOTE: Abstract categories are fetched dynamically per-event from
+// `api.abstractCategories.list(token, "eventId=X")`. The legacy hardcoded
+// list was removed.
 
 // Presentation types for filter dropdown
 const presentationTypes = [
@@ -101,6 +95,8 @@ export default function AbstractsPage() {
   const [eventFilter, setEventFilter] = useState("");
   const [eventOptions, setEventOptions] = useState<{ id: number; name: string }[]>([]);
   const [eventSelected, setEventSelected] = useState(false);
+  // Dynamic abstract categories for the currently selected event
+  const [eventCategoryList, setEventCategoryList] = useState<{ id: number; name: string }[]>([]);
   const [isExporting, setIsExporting] = useState(false);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -110,24 +106,64 @@ export default function AbstractsPage() {
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
   // Fetch events for filter dropdown
+  // - Admin sees all events from API
+  // - Non-admin (reviewer/staff/etc.) sees only their assignedEvents from auth context
   useEffect(() => {
+    if (isAdmin) {
+      const token = getBackofficeToken();
+      api.backofficeEvents.list(token, "limit=100").then((res) => {
+        setEventOptions((res.events as any[]).map((e) => ({ id: e.id as number, name: e.eventName as string })));
+      }).catch(() => {});
+      return;
+    }
+    if (user && user.assignedEvents && user.assignedEvents.length > 0) {
+      setEventOptions(user.assignedEvents.map((e) => ({ id: e.id, name: e.name })));
+    }
+  }, [isAdmin, user]);
+
+  // Auto-select when only one event is available (e.g. reviewer assigned to a single event)
+  // → skip the manual "select event" gate and load data immediately
+  useEffect(() => {
+    if (eventOptions.length === 1 && !eventFilter) {
+      const onlyId = String(eventOptions[0].id);
+      setEventFilter(onlyId);
+      setEventSelected(true);
+    }
+  }, [eventOptions, eventFilter]);
+
+  // Fetch abstract categories for the currently selected event
+  useEffect(() => {
+    if (!eventFilter) {
+      setEventCategoryList([]);
+      return;
+    }
     const token = getBackofficeToken();
-    api.backofficeEvents.list(token, "limit=100").then((res) => {
-      setEventOptions((res.events as any[]).map((e) => ({ id: e.id as number, name: e.eventName as string })));
-    }).catch(() => {});
-  }, []);
+    api.abstractCategories
+      .list(token, `eventId=${eventFilter}`)
+      .then((res) => {
+        setEventCategoryList(
+          ((res.categories as Record<string, unknown>[]) || []).map((c) => ({
+            id: c.id as number,
+            name: c.name as string,
+          })),
+        );
+        // Reset category filter when event changes (avoid stale value)
+        setCategoryFilter("");
+      })
+      .catch(() => setEventCategoryList([]));
+  }, [eventFilter]);
 
   // Filter categories based on user role
-  // Admin sees all, Reviewer sees only assigned categories
+  // - Admin/other roles see all categories defined for the selected event
+  // - Reviewer sees only categories they are assigned to (by name)
   const availableCategories = useMemo(() => {
     if (isAdmin || !user || user.role !== "reviewer") {
-      // Admin and other roles see all categories
-      return abstractCategories;
+      return eventCategoryList;
     }
-    // Reviewer only sees assigned categories
     const assignedCats = user.assignedCategories || [];
-    return abstractCategories.filter((cat) => assignedCats.includes(cat.id));
-  }, [user, isAdmin]);
+    if (assignedCats.length === 0) return eventCategoryList;
+    return eventCategoryList.filter((c) => assignedCats.includes(c.name));
+  }, [user, isAdmin, eventCategoryList]);
 
   // Filter presentation types based on user role
   // Admin sees all, Reviewer sees only assigned presentation types
@@ -281,52 +317,52 @@ export default function AbstractsPage() {
 
       {/* Main Content */}
       <div className="card">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
           <h2 className="text-lg font-semibold text-gray-800">
             All Submissions
           </h2>
-          <button
-            onClick={handleExport}
-            disabled={!eventSelected || isExporting}
-            className="btn-secondary flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            {isExporting ? <IconLoader2 size={18} className="animate-spin" /> : <IconDownload size={18} />}
-            Export Excel
-          </button>
+          <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto lg:min-w-[640px]">
+            <div className="relative flex-1">
+              <IconSearch
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                size={18}
+              />
+              <input
+                type="text"
+                placeholder="Search by title, author, or ID..."
+                value={searchTerm}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setPage(1);
+                }}
+                className="input-field-search w-full"
+              />
+            </div>
+            <button
+              onClick={handleExport}
+              disabled={!eventSelected || isExporting}
+              className="btn-secondary flex items-center justify-center gap-2 whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {isExporting ? <IconLoader2 size={18} className="animate-spin" /> : <IconDownload size={18} />}
+              Export Excel
+            </button>
+          </div>
         </div>
 
         {/* Filters */}
-        <div className="flex flex-col md:flex-row gap-4 mb-6">
-          <div className="relative flex-1 max-w-md">
-            <IconSearch
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-              size={18}
-            />
-            <input
-              type="text"
-              placeholder="Search by title, author, or ID..."
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-                setPage(1);
-              }}
-              className="input-field-search"
-            />
-          </div>
-
-          <select
-            value={statusFilter}
-            onChange={(e) => {
-              setStatusFilter(e.target.value);
-              setPage(1);
-            }}
-            className="input-field w-auto"
-          >
-            <option value="">All Status</option>
-            <option value="pending">Pending</option>
-            <option value="accepted">Accepted</option>
-            <option value="rejected">Rejected</option>
-          </select>
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+          {eventOptions.length > 1 && (
+            <select
+              value={eventFilter}
+              onChange={(e) => { setEventFilter(e.target.value); setEventSelected(!!e.target.value); setPage(1); }}
+              className="input-field w-full"
+            >
+              <option value="">-- เลือก Event --</option>
+              {eventOptions.map((e) => (
+                <option key={e.id} value={e.id}>{e.name}</option>
+              ))}
+            </select>
+          )}
 
           <select
             value={categoryFilter}
@@ -334,24 +370,25 @@ export default function AbstractsPage() {
               setCategoryFilter(e.target.value);
               setPage(1);
             }}
-            className="input-field w-auto"
-            disabled={availableCategories.length === 1}
+            className="input-field w-full"
+            disabled={!eventFilter || availableCategories.length === 0 || availableCategories.length === 1}
           >
-            {availableCategories.length === 1 ? (
-              // Single category - show only that one
-              <option value="">{availableCategories[0].label}</option>
+            {!eventFilter ? (
+              <option value="">Select an event first</option>
+            ) : availableCategories.length === 0 ? (
+              <option value="">No categories available</option>
+            ) : availableCategories.length === 1 ? (
+              <option value="">{availableCategories[0].name}</option>
             ) : (
-              // Multiple categories - show "All Categories" if all assigned or if admin
               <>
                 <option value="">
-                  {isAdmin ||
-                    availableCategories.length === abstractCategories.length
+                  {isAdmin || availableCategories.length === eventCategoryList.length
                     ? "All Categories"
-                    : `All (${availableCategories.map((c) => c.label).join(", ")})`}
+                    : `All (${availableCategories.map((c) => c.name).join(", ")})`}
                 </option>
                 {availableCategories.map((cat) => (
-                  <option key={cat.id} value={cat.id}>
-                    {cat.label}
+                  <option key={cat.id} value={cat.name}>
+                    {cat.name}
                   </option>
                 ))}
               </>
@@ -359,23 +396,12 @@ export default function AbstractsPage() {
           </select>
 
           <select
-              value={eventFilter}
-              onChange={(e) => { setEventFilter(e.target.value); setEventSelected(!!e.target.value); setPage(1); }}
-              className="input-field w-auto"
-            >
-              <option value="">-- เลือก Event --</option>
-              {eventOptions.map((e) => (
-                <option key={e.id} value={e.id}>{e.name}</option>
-              ))}
-            </select>
-
-          <select
             value={presentationTypeFilter}
             onChange={(e) => {
               setPresentationTypeFilter(e.target.value);
               setPage(1);
             }}
-            className="input-field w-auto"
+            className="input-field w-full"
             disabled={availablePresentationTypes.length === 1}
           >
             {availablePresentationTypes.length === 1 ? (
@@ -392,6 +418,20 @@ export default function AbstractsPage() {
                 ))}
               </>
             )}
+          </select>
+
+          <select
+            value={statusFilter}
+            onChange={(e) => {
+              setStatusFilter(e.target.value);
+              setPage(1);
+            }}
+            className="input-field w-full"
+          >
+            <option value="">All Status</option>
+            <option value="pending">Pending</option>
+            <option value="accepted">Accepted</option>
+            <option value="rejected">Rejected</option>
           </select>
         </div>
 

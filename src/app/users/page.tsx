@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { AdminLayout } from "@/components/layout";
 import {
   IconUserPlus,
@@ -54,39 +54,9 @@ const roles = [
   },
 ];
 
-// Abstract categories for reviewer assignment
-const abstractCategories = [
-  {
-    id: "clinical_pharmacy",
-    label: "Clinical Pharmacy",
-    color: "bg-blue-100 text-blue-800",
-  },
-  {
-    id: "social_administrative",
-    label: "Social & Administrative Pharmacy",
-    color: "bg-green-100 text-green-800",
-  },
-  {
-    id: "community_pharmacy",
-    label: "Community Pharmacy",
-    color: "bg-purple-100 text-purple-800",
-  },
-  {
-    id: "pharmacology_toxicology",
-    label: "Pharmacology & Toxicology",
-    color: "bg-red-100 text-red-800",
-  },
-  {
-    id: "pharmacy_education",
-    label: "Pharmacy Education",
-    color: "bg-yellow-100 text-yellow-800",
-  },
-  {
-    id: "digital_pharmacy",
-    label: "Digital Pharmacy & Innovation",
-    color: "bg-indigo-100 text-indigo-800",
-  },
-];
+// NOTE: Abstract categories are now fetched dynamically per-event from
+// `api.abstractCategories.list(token, "eventId=X")` rather than being hardcoded
+// here. The previous enum-style list was removed.
 
 // Presentation types for reviewer assignment
 const presentationTypes = [
@@ -329,6 +299,62 @@ export default function UsersPage() {
         .includes(eventSearchTerm.toLowerCase()) ||
       (e.eventName || "").toLowerCase().includes(eventSearchTerm.toLowerCase()),
   );
+
+  // Reviewer: abstract categories fetched per selected event
+  const [eventCategories, setEventCategories] = useState<
+    Record<number, { id: number; name: string }[]>
+  >({});
+
+  // Deduplicated list of categories across the events selected in the form
+  const availableReviewerCategories = useMemo<
+    { name: string; eventNames: string[] }[]
+  >(() => {
+    const map = new Map<string, { name: string; eventNames: string[] }>();
+    for (const eid of formData.assignedEventIds) {
+      const cats = eventCategories[eid] || [];
+      const evName =
+        (events.find((e) => e.id === eid)?.eventName as string | undefined) ||
+        `Event #${eid}`;
+      for (const c of cats) {
+        const existing = map.get(c.name);
+        if (existing) {
+          if (!existing.eventNames.includes(evName)) existing.eventNames.push(evName);
+        } else {
+          map.set(c.name, { name: c.name, eventNames: [evName] });
+        }
+      }
+    }
+    return Array.from(map.values());
+  }, [formData.assignedEventIds, eventCategories, events]);
+
+  // Fetch abstract categories for newly selected events when role is reviewer
+  useEffect(() => {
+    if (!token) return;
+    if (formData.role !== "reviewer") return;
+    const missing = formData.assignedEventIds.filter(
+      (id) => !(id in eventCategories),
+    );
+    if (missing.length === 0) return;
+    Promise.all(
+      missing.map((eid) =>
+        api.abstractCategories
+          .list(token, `eventId=${eid}`)
+          .then((res) => ({
+            eid,
+            cats: ((res.categories as Record<string, unknown>[]) || []).map(
+              (c) => ({ id: c.id as number, name: c.name as string }),
+            ),
+          }))
+          .catch(() => ({ eid, cats: [] as { id: number; name: string }[] })),
+      ),
+    ).then((results) => {
+      setEventCategories((prev) => {
+        const next = { ...prev };
+        for (const r of results) next[r.eid] = r.cats;
+        return next;
+      });
+    });
+  }, [token, formData.role, formData.assignedEventIds, eventCategories]);
 
   // Refresh users after CRUD operations
   const refreshUsers = () => {
@@ -895,87 +921,11 @@ export default function UsersPage() {
                 </select>
               </div>
 
-              {/* Abstract Category Assignment (only for reviewer) */}
-              {formData.role === "reviewer" && (
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Assign Abstract Categories *
-                  </label>
-                  <p className="text-xs text-gray-500 mb-2">
-                    Select which abstract categories this reviewer can review
-                  </p>
-                  <div className="border border-gray-200 rounded-lg p-3 space-y-2">
-                    {abstractCategories.map((category) => (
-                      <label
-                        key={category.id}
-                        className="flex items-center gap-3 py-1.5 hover:bg-gray-50 cursor-pointer rounded px-2"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={formData.assignedCategories.includes(
-                            category.id,
-                          )}
-                          onChange={() => toggleCategoryAssignment(category.id)}
-                          className="w-4 h-4 text-purple-600 rounded"
-                        />
-                        <span
-                          className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${category.color}`}
-                        >
-                          {category.label}
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                  <p className="text-xs text-gray-400 mt-2">
-                    Selected: {formData.assignedCategories.length} category(ies)
-                  </p>
-                </div>
-              )}
-
-              {/* Presentation Type Assignment (only for reviewer) */}
-              {formData.role === "reviewer" && (
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Assign Presentation Types *
-                  </label>
-                  <p className="text-xs text-gray-500 mb-2">
-                    Select which presentation types this reviewer can review
-                  </p>
-                  <div className="border border-gray-200 rounded-lg p-3 space-y-2">
-                    {presentationTypes.map((type) => (
-                      <label
-                        key={type.id}
-                        className="flex items-center gap-3 py-1.5 hover:bg-gray-50 cursor-pointer rounded px-2"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={formData.assignedPresentationTypes.includes(
-                            type.id,
-                          )}
-                          onChange={() =>
-                            togglePresentationTypeAssignment(type.id)
-                          }
-                          className="w-4 h-4 text-orange-600 rounded"
-                        />
-                        <span
-                          className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${type.color}`}
-                        >
-                          {type.label}
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                  <p className="text-xs text-gray-400 mt-2">
-                    Selected: {formData.assignedPresentationTypes.length}{" "}
-                    type(s)
-                  </p>
-                </div>
-              )}
-              {/* Event Assignment (only for non-admin, non-staff/verifier) */}
+              {/* 1️⃣ Event Assignment (only for non-admin, non-staff/verifier) */}
               {formData.role !== "admin" && formData.role !== "staff" && formData.role !== "verifier" && (
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Assign Events *
+                    1. Assign Events *
                   </label>
                   <div className="mb-2 relative">
                     <IconSearch
@@ -1013,6 +963,91 @@ export default function UsersPage() {
                       </label>
                     ))}
                   </div>
+                </div>
+              )}
+
+              {/* 2️⃣ Presentation Type Assignment (only for reviewer) */}
+              {formData.role === "reviewer" && (
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    2. Assign Presentation Types *
+                  </label>
+                  <p className="text-xs text-gray-500 mb-2">
+                    Select which presentation types this reviewer can review
+                  </p>
+                  <div className="border border-gray-200 rounded-lg p-3 space-y-2">
+                    {presentationTypes.map((type) => (
+                      <label
+                        key={type.id}
+                        className="flex items-center gap-3 py-1.5 hover:bg-gray-50 cursor-pointer rounded px-2"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={formData.assignedPresentationTypes.includes(
+                            type.id,
+                          )}
+                          onChange={() =>
+                            togglePresentationTypeAssignment(type.id)
+                          }
+                          className="w-4 h-4 text-orange-600 rounded"
+                        />
+                        <span
+                          className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${type.color}`}
+                        >
+                          {type.label}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                  <p className="text-xs text-gray-400 mt-2">
+                    Selected: {formData.assignedPresentationTypes.length} type(s)
+                  </p>
+                </div>
+              )}
+
+              {/* 3️⃣ Abstract Category Assignment (only for reviewer, dynamic from selected events) */}
+              {formData.role === "reviewer" && (
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    3. Assign Abstract Categories *
+                  </label>
+                  <p className="text-xs text-gray-500 mb-2">
+                    Categories are sourced from the events selected above
+                  </p>
+                  {formData.assignedEventIds.length === 0 ? (
+                    <div className="border border-dashed border-gray-200 rounded-lg p-4 text-center text-sm text-gray-400 italic">
+                      Please select at least one event first
+                    </div>
+                  ) : availableReviewerCategories.length === 0 ? (
+                    <div className="border border-dashed border-gray-200 rounded-lg p-4 text-center text-sm text-gray-400 italic">
+                      No abstract categories defined for the selected event(s)
+                    </div>
+                  ) : (
+                    <div className="border border-gray-200 rounded-lg p-3 space-y-2 max-h-60 overflow-y-auto">
+                      {availableReviewerCategories.map((cat) => (
+                        <label
+                          key={cat.name}
+                          className="flex items-center gap-3 py-1.5 hover:bg-gray-50 cursor-pointer rounded px-2"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={formData.assignedCategories.includes(cat.name)}
+                            onChange={() => toggleCategoryAssignment(cat.name)}
+                            className="w-4 h-4 text-purple-600 rounded"
+                          />
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
+                            {cat.name}
+                          </span>
+                          <span className="ml-auto text-[10px] text-gray-400 truncate max-w-[160px]">
+                            {cat.eventNames.join(", ")}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                  <p className="text-xs text-gray-400 mt-2">
+                    Selected: {formData.assignedCategories.length} category(ies)
+                  </p>
                 </div>
               )}
 
@@ -1239,88 +1274,11 @@ export default function UsersPage() {
                 </div>
               </div>
 
-              {/* Abstract Category Assignment (only for reviewer) */}
-              {formData.role === "reviewer" && (
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Assigned Abstract Categories
-                  </label>
-                  <p className="text-xs text-gray-500 mb-2">
-                    Select which abstract categories this reviewer can review
-                  </p>
-                  <div className="border border-gray-200 rounded-lg p-3 space-y-2">
-                    {abstractCategories.map((category) => (
-                      <label
-                        key={category.id}
-                        className="flex items-center gap-3 py-1.5 hover:bg-gray-50 cursor-pointer rounded px-2"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={formData.assignedCategories.includes(
-                            category.id,
-                          )}
-                          onChange={() => toggleCategoryAssignment(category.id)}
-                          className="w-4 h-4 text-purple-600 rounded"
-                        />
-                        <span
-                          className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${category.color}`}
-                        >
-                          {category.label}
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                  <p className="text-xs text-gray-400 mt-2">
-                    Selected: {formData.assignedCategories.length} category(ies)
-                  </p>
-                </div>
-              )}
-
-              {/* Presentation Type Assignment (only for reviewer) */}
-              {formData.role === "reviewer" && (
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Assigned Presentation Types
-                  </label>
-                  <p className="text-xs text-gray-500 mb-2">
-                    Select which presentation types this reviewer can review
-                  </p>
-                  <div className="border border-gray-200 rounded-lg p-3 space-y-2">
-                    {presentationTypes.map((type) => (
-                      <label
-                        key={type.id}
-                        className="flex items-center gap-3 py-1.5 hover:bg-gray-50 cursor-pointer rounded px-2"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={formData.assignedPresentationTypes.includes(
-                            type.id,
-                          )}
-                          onChange={() =>
-                            togglePresentationTypeAssignment(type.id)
-                          }
-                          className="w-4 h-4 text-orange-600 rounded"
-                        />
-                        <span
-                          className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${type.color}`}
-                        >
-                          {type.label}
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                  <p className="text-xs text-gray-400 mt-2">
-                    Selected: {formData.assignedPresentationTypes.length}{" "}
-                    type(s)
-                  </p>
-                </div>
-              )}
-
-              {/* Event Assignment (only for non-admin, non-staff/verifier) */}
+              {/* 1️⃣ Event Assignment (only for non-admin, non-staff/verifier) */}
               {formData.role !== "admin" && formData.role !== "staff" && formData.role !== "verifier" && (
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Assigned Events
+                    1. Assigned Events
                   </label>
                   <div className="mb-2 relative">
                     <IconSearch
@@ -1358,6 +1316,91 @@ export default function UsersPage() {
                       </label>
                     ))}
                   </div>
+                </div>
+              )}
+
+              {/* 2️⃣ Presentation Type Assignment (only for reviewer) */}
+              {formData.role === "reviewer" && (
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    2. Assigned Presentation Types
+                  </label>
+                  <p className="text-xs text-gray-500 mb-2">
+                    Select which presentation types this reviewer can review
+                  </p>
+                  <div className="border border-gray-200 rounded-lg p-3 space-y-2">
+                    {presentationTypes.map((type) => (
+                      <label
+                        key={type.id}
+                        className="flex items-center gap-3 py-1.5 hover:bg-gray-50 cursor-pointer rounded px-2"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={formData.assignedPresentationTypes.includes(
+                            type.id,
+                          )}
+                          onChange={() =>
+                            togglePresentationTypeAssignment(type.id)
+                          }
+                          className="w-4 h-4 text-orange-600 rounded"
+                        />
+                        <span
+                          className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${type.color}`}
+                        >
+                          {type.label}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                  <p className="text-xs text-gray-400 mt-2">
+                    Selected: {formData.assignedPresentationTypes.length} type(s)
+                  </p>
+                </div>
+              )}
+
+              {/* 3️⃣ Abstract Category Assignment (only for reviewer, dynamic from selected events) */}
+              {formData.role === "reviewer" && (
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    3. Assigned Abstract Categories
+                  </label>
+                  <p className="text-xs text-gray-500 mb-2">
+                    Categories are sourced from the events selected above
+                  </p>
+                  {formData.assignedEventIds.length === 0 ? (
+                    <div className="border border-dashed border-gray-200 rounded-lg p-4 text-center text-sm text-gray-400 italic">
+                      Please select at least one event first
+                    </div>
+                  ) : availableReviewerCategories.length === 0 ? (
+                    <div className="border border-dashed border-gray-200 rounded-lg p-4 text-center text-sm text-gray-400 italic">
+                      No abstract categories defined for the selected event(s)
+                    </div>
+                  ) : (
+                    <div className="border border-gray-200 rounded-lg p-3 space-y-2 max-h-60 overflow-y-auto">
+                      {availableReviewerCategories.map((cat) => (
+                        <label
+                          key={cat.name}
+                          className="flex items-center gap-3 py-1.5 hover:bg-gray-50 cursor-pointer rounded px-2"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={formData.assignedCategories.includes(cat.name)}
+                            onChange={() => toggleCategoryAssignment(cat.name)}
+                            className="w-4 h-4 text-purple-600 rounded"
+                          />
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
+                            {cat.name}
+                          </span>
+                          <span className="ml-auto text-[10px] text-gray-400 truncate max-w-[160px]">
+                            {cat.eventNames.join(", ")}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                  <p className="text-xs text-gray-400 mt-2">
+                    Selected: {formData.assignedCategories.length} category(ies)
+                  </p>
                 </div>
               )}
 
