@@ -127,6 +127,11 @@ const getBackofficeToken = () =>
   sessionStorage.getItem("backoffice_token") ||
   "";
 
+const studentLevelLabels: Record<string, string> = {
+  postgraduate: "Postgraduate",
+  undergraduate: "Undergraduate",
+};
+
 // Helper function to format time only
 const formatTime = (dateTimeStr: string): string => {
   if (!dateTimeStr) return "-";
@@ -656,17 +661,24 @@ export default function CreateEventPage() {
       return;
     }
 
+    const normalizedTicketForm = {
+      ...ticketForm,
+      allowedStudentLevels: (ticketForm.allowedRoles || []).includes("student")
+        ? ticketForm.allowedStudentLevels || []
+        : [],
+    };
+
     if (editingTicketId) {
       // Update existing ticket
       setTickets((prev) =>
         prev.map((t) =>
-          t.id === editingTicketId ? { ...ticketForm, id: editingTicketId } : t,
+          t.id === editingTicketId ? { ...normalizedTicketForm, id: editingTicketId } : t,
         ),
       );
       setEditingTicketId(null);
     } else {
       // Add new ticket
-      setTickets((prev) => [...prev, { ...ticketForm, id: Date.now() }]);
+      setTickets((prev) => [...prev, { ...normalizedTicketForm, id: Date.now() }]);
     }
 
     setTicketForm({
@@ -708,6 +720,7 @@ export default function CreateEventPage() {
       saleStartDate: ticket.saleStartDate,
       saleEndDate: ticket.saleEndDate,
       allowedRoles: ticket.allowedRoles,
+      allowedStudentLevels: ticket.allowedStudentLevels || [],
       priority: ticket.priority || "regular",
       isActive: ticket.isActive ?? true,
       sessionIds:
@@ -939,7 +952,9 @@ export default function CreateEventPage() {
           badgeText: ticket.badgeText || undefined,
           quota: parseInt(ticket.quota) || 0,
           allowedRoles: JSON.stringify(ticket.allowedRoles),
-          allowedStudentLevels: ticket.allowedStudentLevels && ticket.allowedStudentLevels.length > 0 ? JSON.stringify(ticket.allowedStudentLevels) : undefined,
+          allowedStudentLevels: ticket.allowedRoles.includes("student") && ticket.allowedStudentLevels && ticket.allowedStudentLevels.length > 0
+            ? JSON.stringify(ticket.allowedStudentLevels)
+            : undefined,
           priority: ticket.priority || "regular",
           isActive: ticket.isActive ?? true,
           sessionIds: apiSessionIds,
@@ -1660,6 +1675,24 @@ export default function CreateEventPage() {
                         ) : (
                           <span className="badge ml-1 bg-gray-100 text-gray-700">ALL</span>
                         )}
+                        {ticket.allowedRoles.includes("student") && (
+                          <div className="mt-1 flex flex-wrap gap-1">
+                            {ticket.allowedStudentLevels && ticket.allowedStudentLevels.length > 0 ? (
+                              ticket.allowedStudentLevels.map((level) => (
+                                <span
+                                  key={level}
+                                  className="badge bg-cyan-50 text-cyan-700"
+                                >
+                                  {studentLevelLabels[level] || level}
+                                </span>
+                              ))
+                            ) : (
+                              <span className="badge bg-cyan-50 text-cyan-700">
+                                All student levels
+                              </span>
+                            )}
+                          </div>
+                        )}
                         {ticket.category === "primary" && (
                           <div className="text-xs text-blue-600 mt-1 flex items-center gap-1">
                             <IconCheck size={12} /> Includes Main Session
@@ -2173,10 +2206,17 @@ export default function CreateEventPage() {
                               setTicketForm((prev) => {
                                 const currentRoles = prev.allowedRoles || [];
                                 if (isChecked) {
-                                  return { ...prev, allowedRoles: [...currentRoles, role.value] };
-                                } else {
-                                  return { ...prev, allowedRoles: currentRoles.filter(r => r !== role.value) };
+                                  return currentRoles.includes(role.value)
+                                    ? prev
+                                    : { ...prev, allowedRoles: [...currentRoles, role.value] };
                                 }
+
+                                const nextRoles = currentRoles.filter(r => r !== role.value);
+                                return {
+                                  ...prev,
+                                  allowedRoles: nextRoles,
+                                  allowedStudentLevels: role.value === "student" ? [] : prev.allowedStudentLevels,
+                                };
                               });
                             }}
                           />

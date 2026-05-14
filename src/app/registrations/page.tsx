@@ -7,6 +7,7 @@ import { api } from '@/lib/api';
 import { exportToExcel } from '@/lib/exportExcel';
 import { useDebounce } from '@/hooks/useDebounce';
 import { Pagination } from '@/components/common';
+import toast from 'react-hot-toast';
 import {
     IconUsers,
     IconSearch,
@@ -103,7 +104,7 @@ export default function RegistrationsPage() {
             exportToExcel(rows, `registrations_${eventName.replace(/\s+/g, '_')}`);
         } catch (error) {
             console.error('Export failed:', error);
-            alert('Export failed');
+            toast.error('Export failed');
         } finally {
             setIsExporting(false);
         }

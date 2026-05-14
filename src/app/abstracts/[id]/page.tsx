@@ -5,6 +5,11 @@ import { useParams, useRouter } from "next/navigation";
 import { AdminLayout } from "@/components/layout";
 import { api } from "@/lib/api";
 import {
+  RevisionRequestModal,
+  RevisionTopicLabel,
+} from "@/components/abstracts/RevisionRequestModal";
+import toast from "react-hot-toast";
+import {
   IconArrowLeft,
   IconCheck,
   IconX,
@@ -19,12 +24,22 @@ import {
   IconCalendar,
   IconTag,
   IconPresentation,
+  IconDownload,
+  IconPencil,
 } from "@tabler/icons-react";
 
 const statusColors: { [key: string]: string } = {
   pending: "bg-yellow-100 text-yellow-800 border-yellow-300",
   accepted: "bg-green-100 text-green-800 border-green-300",
   rejected: "bg-red-100 text-red-800 border-red-300",
+  revision: "bg-amber-100 text-amber-800 border-amber-300",
+};
+
+const statusLabels: Record<string, string> = {
+  pending: "Pending",
+  accepted: "Accepted",
+  rejected: "Rejected",
+  revision: "Revision Requested",
 };
 
 const categoryLabels: { [key: string]: string } = {
@@ -48,6 +63,39 @@ interface CoAuthor {
   email: string;
   institution: string | null;
   country: string | null;
+}
+
+interface AbstractFile {
+  id: number;
+  abstractId?: number;
+  fileName: string;
+  fileUrl: string;
+  fileType?: string | null;
+  fileSize?: number | null;
+  sortOrder?: number | null;
+  createdAt?: string;
+}
+
+interface RevisionRequestFile {
+  id: number;
+  revisionRequestId: number;
+  fileName: string;
+  fileUrl: string;
+  fileType?: string | null;
+  fileSize?: number | null;
+  createdAt: string;
+}
+
+interface RevisionRequest {
+  id: number;
+  abstractId: number;
+  requestedBy?: number | null;
+  topic: string;
+  comment: string;
+  status: string;
+  createdAt: string;
+  resubmittedAt?: string | null;
+  files?: RevisionRequestFile[];
 }
 
 interface AbstractDetail {
@@ -78,7 +126,34 @@ interface AbstractDetail {
     code: string;
   };
   coAuthors: CoAuthor[];
+  files?: AbstractFile[];
+  latestRevisionRequest?: RevisionRequest | null;
+  revisionRequests?: RevisionRequest[];
 }
+
+const formatFileSize = (size?: number | null) => {
+  if (!size) return "";
+  return `${(size / 1024 / 1024).toFixed(2)} MB`;
+};
+
+const getAttachedFiles = (abstract: Pick<AbstractDetail, "files" | "fullPaperUrl">) => {
+  const files = Array.isArray(abstract.files)
+    ? abstract.files.filter((file) => file.fileUrl)
+    : [];
+
+  if (files.length > 0) return files;
+
+  return abstract.fullPaperUrl
+    ? [
+        {
+          id: 0,
+          fileName: "Full Paper",
+          fileUrl: abstract.fullPaperUrl,
+          sortOrder: 0,
+        },
+      ]
+    : [];
+};
 
 export default function AbstractDetailPage() {
   const params = useParams();
@@ -88,6 +163,7 @@ export default function AbstractDetailPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showApproveModal, setShowApproveModal] = useState(false);
   const [showRejectModal, setShowRejectModal] = useState(false);
+  const [showRevisionModal, setShowRevisionModal] = useState(false);
   const [reviewComment, setReviewComment] = useState("");
 
   const abstractId = params.id as string;
@@ -121,14 +197,34 @@ export default function AbstractDetailPage() {
 
       setShowApproveModal(false);
       setShowRejectModal(false);
+      setShowRevisionModal(false);
       setReviewComment("");
 
-      alert(
+      toast.success(
         `Abstract ${status === "accepted" ? "approved" : status} successfully!`,
       );
     } catch (error) {
       console.error(error);
-      alert(`Failed to ${status} abstract`);
+      toast.error(`Failed to ${status} abstract`);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleRequestRevision = async (payload: { topic: string; comment: string; file: File | null }) => {
+    if (!abstract) return;
+    setIsSubmitting(true);
+    try {
+      const token = getBackofficeToken();
+      await api.abstracts.requestRevision(token, abstract.id, payload);
+
+      await fetchAbstract();
+
+      setShowRevisionModal(false);
+      toast.success("Revise request sent successfully!");
+    } catch (error) {
+      console.error(error);
+      toast.error(error instanceof Error ? error.message : "Failed to request revise");
     } finally {
       setIsSubmitting(false);
     }
@@ -159,6 +255,9 @@ export default function AbstractDetailPage() {
     );
   }
 
+  const attachedFiles = getAttachedFiles(abstract);
+  const revisionRequests = abstract.revisionRequests || [];
+
   return (
     <AdminLayout title={`Abstract ${abstract.trackingId || "#" + abstract.id}`}>
       {/* Header */}
@@ -185,8 +284,9 @@ export default function AbstractDetailPage() {
               <span
                 className={`px-3 py-1 rounded-full text-sm font-medium border ${statusColors[abstract.status]}`}
               >
-                {abstract.status.charAt(0).toUpperCase() +
-                  abstract.status.slice(1)}
+                {statusLabels[abstract.status] ||
+                  abstract.status.charAt(0).toUpperCase() +
+                    abstract.status.slice(1)}
               </span>
             </div>
             <h1 className="text-2xl font-bold text-gray-800 mb-4">
@@ -259,21 +359,92 @@ export default function AbstractDetailPage() {
             </div>
           </div>
 
-          {/* Uploaded File */}
-          {abstract.fullPaperUrl && (
+          {/* Uploaded Files */}
+          {attachedFiles.length > 0 && (
             <div className="card">
-              <h2 className="text-lg font-semibold text-gray-800 mb-4">
-                Uploaded File
+              <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                <IconFileText size={20} className="text-blue-600" />
+                Uploaded Files ({attachedFiles.length})
               </h2>
-              <a
-                href={abstract.fullPaperUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn-primary inline-flex items-center gap-2"
-              >
-                <IconFileText size={20} />
-                View/Download Full Paper
-              </a>
+              <div className="space-y-3">
+                {attachedFiles.map((file, index) => (
+                  <div
+                    key={`${file.id}-${file.fileUrl}`}
+                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-lg border border-gray-200 bg-gray-50 p-4"
+                  >
+                    <div className="min-w-0">
+                      <p className="font-medium text-gray-800 truncate">
+                        {index + 1}. {file.fileName}
+                      </p>
+                      {file.fileSize ? (
+                        <p className="text-xs text-gray-500 mt-1">
+                          {formatFileSize(file.fileSize)}
+                        </p>
+                      ) : null}
+                    </div>
+                    <a
+                      href={file.fileUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn-primary inline-flex items-center justify-center gap-2 shrink-0"
+                    >
+                      <IconDownload size={18} />
+                      View/Download
+                    </a>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {revisionRequests.length > 0 && (
+            <div className="card">
+              <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                <IconPencil size={20} className="text-amber-600" />
+                Revision Requests ({revisionRequests.length})
+              </h2>
+              <div className="space-y-4">
+                {revisionRequests.map((request) => (
+                  <div
+                    key={request.id}
+                    className="rounded-xl border border-amber-100 bg-amber-50/40 p-4"
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 mb-3">
+                      <div>
+                        <p className="text-sm font-semibold text-gray-800">
+                          <RevisionTopicLabel topic={request.topic} />
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          Requested {new Date(request.createdAt).toLocaleString()}
+                        </p>
+                      </div>
+                      <span className="self-start rounded-full bg-white px-2.5 py-1 text-xs font-semibold capitalize text-amber-700 border border-amber-200">
+                        {request.status.replace(/_/g, " ")}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+                      {request.comment}
+                    </p>
+                    {request.files && request.files.length > 0 && (
+                      <div className="mt-3 space-y-2">
+                        {request.files.map((file) => (
+                          <a
+                            key={file.id}
+                            href={file.fileUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex max-w-full items-center gap-2 rounded-lg bg-white px-3 py-2 text-sm font-medium text-blue-600 hover:text-blue-700 border border-blue-100"
+                          >
+                            <IconFileText size={16} className="shrink-0" />
+                            <span className="truncate">{file.fileName}</span>
+                            <IconDownload size={14} className="shrink-0" />
+                          </a>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>
@@ -399,19 +570,30 @@ export default function AbstractDetailPage() {
 
           {/* Actions */}
           {abstract.status === "pending" && (
-            <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-3">
               <button
                 onClick={() => setShowApproveModal(true)}
-                className="bg-green-600 text-white px-4 py-3 rounded-lg hover:bg-green-700 flex items-center justify-center gap-2 font-semibold shadow-sm transition-colors"
+                className="w-full bg-green-600 text-white px-4 py-3 rounded-lg hover:bg-green-700 flex items-center justify-center gap-2 font-semibold shadow-sm transition-colors"
               >
                 <IconCheck size={20} /> Approve
               </button>
               <button
+                onClick={() => setShowRevisionModal(true)}
+                className="w-full bg-amber-600 text-white px-4 py-3 rounded-lg hover:bg-amber-700 flex items-center justify-center gap-2 font-semibold shadow-sm transition-colors"
+              >
+                <IconPencil size={20} /> Request Revise
+              </button>
+              <button
                 onClick={() => setShowRejectModal(true)}
-                className="bg-red-600 text-white px-4 py-3 rounded-lg hover:bg-red-700 flex items-center justify-center gap-2 font-semibold shadow-sm transition-colors"
+                className="w-full bg-red-600 text-white px-4 py-3 rounded-lg hover:bg-red-700 flex items-center justify-center gap-2 font-semibold shadow-sm transition-colors"
               >
                 <IconX size={20} /> Reject
               </button>
+            </div>
+          )}
+          {abstract.status === "revision" && (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+              Waiting for the author to resubmit the revised abstract.
             </div>
           )}
         </div>
@@ -511,6 +693,18 @@ export default function AbstractDetailPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {showRevisionModal && (
+        <RevisionRequestModal
+          abstractTitle={abstract.title}
+          isSubmitting={isSubmitting}
+          onClose={() => {
+            if (isSubmitting) return;
+            setShowRevisionModal(false);
+          }}
+          onSubmit={handleRequestRevision}
+        />
       )}
     </AdminLayout>
   );

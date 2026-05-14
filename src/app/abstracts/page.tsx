@@ -8,6 +8,8 @@ import { exportToExcel } from "@/lib/exportExcel";
 import { useAuth } from "@/contexts/AuthContext";
 import { useDebounce } from "@/hooks/useDebounce";
 import { Pagination } from "@/components/common";
+import { RevisionRequestModal } from "@/components/abstracts/RevisionRequestModal";
+import toast from "react-hot-toast";
 import {
   IconFileText,
   IconClock,
@@ -17,13 +19,22 @@ import {
   IconEye,
   IconDownload,
   IconLoader2,
+  IconPencil,
 } from "@tabler/icons-react";
 
 const statusColors: { [key: string]: string } = {
   pending: "badge-warning",
   accepted: "badge-success",
   rejected: "badge-error",
+  revision: "badge-info",
   under_review: "badge-info",
+};
+
+const statusLabels: Record<string, string> = {
+  pending: "Pending",
+  accepted: "Accepted",
+  rejected: "Rejected",
+  revision: "Revision Requested",
 };
 
 // Map backend categories to colors if needed, or use generic
@@ -55,6 +66,17 @@ const getBackofficeToken = () =>
   sessionStorage.getItem("backoffice_token") ||
   "";
 
+interface AbstractFile {
+  id: number;
+  abstractId?: number;
+  fileName: string;
+  fileUrl: string;
+  fileType?: string | null;
+  fileSize?: number | null;
+  sortOrder?: number | null;
+  createdAt?: string;
+}
+
 interface Abstract {
   id: number;
   trackingId: string | null;
@@ -68,6 +90,7 @@ interface Abstract {
   conclusion: string;
   status: string;
   fullPaperUrl: string | null;
+  files?: AbstractFile[];
   createdAt: string;
   author: {
     firstName: string;
@@ -82,6 +105,25 @@ interface Abstract {
     code: string;
   };
 }
+
+const getAttachedFiles = (abs: Pick<Abstract, "files" | "fullPaperUrl">) => {
+  const files = Array.isArray(abs.files)
+    ? abs.files.filter((file) => file.fileUrl)
+    : [];
+
+  if (files.length > 0) return files;
+
+  return abs.fullPaperUrl
+    ? [
+        {
+          id: 0,
+          fileName: "Full Paper",
+          fileUrl: abs.fullPaperUrl,
+          sortOrder: 0,
+        },
+      ]
+    : [];
+};
 
 export default function AbstractsPage() {
   const router = useRouter();
@@ -196,31 +238,38 @@ export default function AbstractsPage() {
       const res = await api.abstracts.list(token, new URLSearchParams(params).toString());
       const eventName = eventOptions.find(e => String(e.id) === eventFilter)?.name || 'event';
 
-      const rows = (res.abstracts as any[]).map((a) => ({
-        'Tracking ID': a.trackingId || '',
-        'Title': a.title,
-        'Category': a.category,
-        'Presentation Type': a.presentationType || '',
-        'Status': a.status,
-        'Author First Name': a.author?.firstName || '',
-        'Author Last Name': a.author?.lastName || '',
-        'Author Email': a.author?.email || '',
-        'Author Phone': a.author?.phone || '',
-        'Author Institution': a.author?.institution || '',
-        'Author Country': a.author?.country || '',
-        'Keywords': a.keywords || '',
-        'Background': a.background || '',
-        'Methods': a.methods || '',
-        'Results': a.results || '',
-        'Conclusion': a.conclusion || '',
-        'Full Paper URL': a.fullPaperUrl || '',
-        'Submitted At': new Date(a.createdAt).toLocaleString('th-TH'),
-      }));
+      const rows = (res.abstracts as unknown as Abstract[]).map((a) => {
+        const attachedFiles = getAttachedFiles(a);
+
+        return {
+          'Tracking ID': a.trackingId || '',
+          'Title': a.title,
+          'Category': a.category,
+          'Presentation Type': a.presentationType || '',
+          'Status': a.status,
+          'Author First Name': a.author?.firstName || '',
+          'Author Last Name': a.author?.lastName || '',
+          'Author Email': a.author?.email || '',
+          'Author Phone': a.author?.phone || '',
+          'Author Institution': a.author?.institution || '',
+          'Author Country': a.author?.country || '',
+          'Keywords': a.keywords || '',
+          'Background': a.background || '',
+          'Methods': a.methods || '',
+          'Results': a.results || '',
+          'Conclusion': a.conclusion || '',
+          'Abstract File Count': attachedFiles.length,
+          'Abstract Files': attachedFiles
+            .map((file, index) => `${index + 1}. ${file.fileName}: ${file.fileUrl}`)
+            .join('\n'),
+          'Submitted At': new Date(a.createdAt).toLocaleString('th-TH'),
+        };
+      });
 
       exportToExcel(rows, `abstracts_${eventName.replace(/\s+/g, '_')}`);
     } catch (error) {
       console.error('Export failed:', error);
-      alert('Export failed');
+      toast.error('Export failed');
     } finally {
       setIsExporting(false);
     }
@@ -231,6 +280,7 @@ export default function AbstractsPage() {
   );
   const [showApproveModal, setShowApproveModal] = useState(false);
   const [showRejectModal, setShowRejectModal] = useState(false);
+  const [showRevisionModal, setShowRevisionModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [reviewComment, setReviewComment] = useState("");
 
@@ -285,12 +335,32 @@ export default function AbstractsPage() {
       setSelectedAbstract(null);
       setReviewComment("");
 
-      alert(
+      toast.success(
         `Abstract ${status === "accepted" ? "approved" : status} successfully!`,
       );
     } catch (error) {
       console.error(error);
-      alert(`Failed to ${status} abstract`);
+      toast.error(`Failed to ${status} abstract`);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleRequestRevision = async (payload: { topic: string; comment: string; file: File | null }) => {
+    if (!selectedAbstract) return;
+    setIsSubmitting(true);
+    try {
+      const token = getBackofficeToken();
+      await api.abstracts.requestRevision(token, selectedAbstract.id, payload);
+
+      await fetchAbstracts();
+
+      setShowRevisionModal(false);
+      setSelectedAbstract(null);
+      toast.success("Revise request sent successfully!");
+    } catch (error) {
+      console.error(error);
+      toast.error(error instanceof Error ? error.message : "Failed to request revise");
     } finally {
       setIsSubmitting(false);
     }
@@ -432,6 +502,7 @@ export default function AbstractsPage() {
             <option value="pending">Pending</option>
             <option value="accepted">Accepted</option>
             <option value="rejected">Rejected</option>
+            <option value="revision">Revision Requested</option>
           </select>
         </div>
 
@@ -468,6 +539,9 @@ export default function AbstractsPage() {
                   </th>
                   <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
                     Status
+                  </th>
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Files
                   </th>
                   <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
                     Submitted
@@ -519,8 +593,15 @@ export default function AbstractsPage() {
                       <span
                         className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${statusColors[abs.status] || "bg-gray-100 text-gray-700"}`}
                       >
-                        {abs.status.charAt(0).toUpperCase() +
-                          abs.status.slice(1)}
+                        {statusLabels[abs.status] ||
+                          abs.status.charAt(0).toUpperCase() +
+                            abs.status.slice(1)}
+                      </span>
+                    </td>
+                    <td className="px-4 py-4 text-center">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-100 text-xs font-medium text-slate-700">
+                        <IconFileText size={14} />
+                        {getAttachedFiles(abs).length}
                       </span>
                     </td>
                     <td className="px-4 py-4 text-center">
@@ -540,6 +621,19 @@ export default function AbstractsPage() {
                           onClick={() => router.push(`/abstracts/${abs.id}`)}
                         >
                           <IconEye size={18} />
+                        </button>
+                        <button
+                          className={`p-2 rounded-lg transition-colors ${abs.status === "pending" ? "hover:bg-amber-50 text-gray-500 hover:text-amber-600" : "text-gray-200 cursor-not-allowed"}`}
+                          title="Request Revise"
+                          onClick={() => {
+                            if (abs.status === "pending") {
+                              setSelectedAbstract(abs);
+                              setShowRevisionModal(true);
+                            }
+                          }}
+                          disabled={abs.status !== "pending"}
+                        >
+                          <IconPencil size={18} />
                         </button>
                         <button
                           className={`p-2 rounded-lg transition-colors ${abs.status === "pending" ? "hover:bg-green-50 text-gray-500 hover:text-green-600" : "text-gray-200 cursor-not-allowed"}`}
@@ -684,6 +778,19 @@ export default function AbstractsPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {showRevisionModal && selectedAbstract && (
+        <RevisionRequestModal
+          abstractTitle={selectedAbstract.title}
+          isSubmitting={isSubmitting}
+          onClose={() => {
+            if (isSubmitting) return;
+            setShowRevisionModal(false);
+            setSelectedAbstract(null);
+          }}
+          onSubmit={handleRequestRevision}
+        />
       )}
     </AdminLayout>
   );

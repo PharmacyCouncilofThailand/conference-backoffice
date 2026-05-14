@@ -5,6 +5,7 @@ import { AdminLayout } from "@/components/layout";
 import { api } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { Pagination } from "@/components/common";
+import toast from "react-hot-toast";
 import {
   IconSearch,
   IconRefresh,
@@ -174,7 +175,7 @@ export default function MembersPage() {
       fetchStats();
     } catch (error) {
       console.error("Failed to delete member:", error);
-      alert(error instanceof Error ? error.message : "Failed to delete member");
+      toast.error(error instanceof Error ? error.message : "Failed to delete member");
     } finally {
       setDeletingId(null);
     }

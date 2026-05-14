@@ -26,13 +26,78 @@ const categoryColors: { [key: string]: { bg: string; text: string } } = {
   addon: { bg: "bg-purple-100", text: "text-purple-800" },
 };
 
+const roleOptions = [
+  { value: "pharmacist", label: "Pharmacist" },
+  { value: "medical_professional", label: "Medical Professional" },
+  { value: "student", label: "Student" },
+  { value: "general", label: "General" },
+];
+
+const studentLevelOptions = [
+  { value: "postgraduate", label: "Postgraduate" },
+  { value: "undergraduate", label: "Undergraduate" },
+];
+
 const typeColors: { [key: string]: string } = {
+  pharmacist: "bg-green-100 text-green-800",
+  medical_professional: "bg-indigo-100 text-indigo-800",
+  student: "bg-blue-100 text-blue-800",
+  general: "bg-gray-100 text-gray-800",
   thstd: "bg-green-100 text-green-800",
   thpro: "bg-blue-100 text-blue-800",
   interstd: "bg-yellow-100 text-yellow-800",
   interpro: "bg-purple-100 text-purple-800",
   guest: "bg-teal-100 text-teal-800",
-  general: "bg-gray-100 text-gray-800", // fallback
+};
+
+const roleLabels: Record<string, string> = {
+  pharmacist: "Pharmacist",
+  medical_professional: "Med. Prof.",
+  student: "Student",
+  general: "General",
+  thstd: "Thai Student",
+  thpro: "Thai Professional",
+  interstd: "International Student",
+  interpro: "International Professional",
+  guest: "Guest",
+};
+
+const studentLevelLabels: Record<string, string> = {
+  postgraduate: "Postgraduate",
+  undergraduate: "Undergraduate",
+};
+
+const parseAllowedList = (raw: unknown): string[] => {
+  if (!raw) return [];
+  if (Array.isArray(raw)) return raw.map(String).filter(Boolean);
+  if (typeof raw !== "string") return [];
+
+  const value = raw.trim();
+  if (!value) return [];
+
+  if (value.startsWith("[")) {
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed) ? parsed.map(String).filter(Boolean) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  return value
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+};
+
+const getAllowedStudentLevelsPayload = (
+  roles: string[],
+  levels: string[],
+  forceClear = false,
+) => {
+  const selectedLevels = roles.includes("student") ? levels : [];
+  if (selectedLevels.length > 0) return JSON.stringify(selectedLevels);
+  return forceClear ? "[]" : undefined;
 };
 
 const getBackofficeToken = () =>
@@ -60,6 +125,7 @@ interface Ticket {
   endDate?: string; // saleEndDate
   type: string; // mapped from allowedRoles? or just logic
   allowedRoles: string[];
+  allowedStudentLevels: string[];
   displayOrder: number;
   isActive: boolean;
   eventCode?: string;
@@ -93,6 +159,7 @@ export default function TicketsPage() {
     "primary" | "addon" | ""
   >("");
   const [roleFilter, setRoleFilter] = useState<string>("");
+  const [studentLevelFilter, setStudentLevelFilter] = useState<string>("");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
@@ -119,6 +186,7 @@ export default function TicketsPage() {
     saleStartDate: "",
     saleEndDate: "",
     allowedRoles: ["general"], // Default
+    allowedStudentLevels: [] as string[],
     priority: "regular",
     isActive: true,
     sessionIds: [] as number[],
@@ -139,7 +207,7 @@ export default function TicketsPage() {
 
   useEffect(() => {
     fetchTickets();
-  }, [page, searchTerm, eventFilter, categoryFilter, roleFilter]);
+  }, [page, searchTerm, eventFilter, categoryFilter, roleFilter, studentLevelFilter]);
 
   const fetchEvents = async () => {
     try {
@@ -212,6 +280,7 @@ export default function TicketsPage() {
       if (searchTerm) params.search = searchTerm;
       if (categoryFilter) params.category = categoryFilter;
       if (roleFilter) params.role = roleFilter;
+      if (studentLevelFilter) params.studentLevel = studentLevelFilter;
 
       const res = await api.tickets.list(
         token,
@@ -219,26 +288,8 @@ export default function TicketsPage() {
       );
 
       const mappedTickets = res.tickets.map((t: any) => {
-        // Parse allowedRoles - could be JSON array, CSV string, or JS array
-        let roles: string[] = [];
-        if (t.allowedRoles) {
-          if (Array.isArray(t.allowedRoles)) {
-            roles = t.allowedRoles;
-          } else if (typeof t.allowedRoles === "string") {
-            if (t.allowedRoles.startsWith("[")) {
-              try {
-                roles = JSON.parse(t.allowedRoles);
-              } catch {
-                roles = [];
-              }
-            } else {
-              roles = t.allowedRoles
-                .split(",")
-                .map((r: string) => r.trim())
-                .filter(Boolean);
-            }
-          }
-        }
+        const roles = parseAllowedList(t.allowedRoles);
+        const studentLevels = parseAllowedList(t.allowedStudentLevels);
         return {
           id: t.id,
           eventId: t.eventId,
@@ -258,6 +309,7 @@ export default function TicketsPage() {
           endDate: t.endDate,
           type: roles.length > 0 ? roles[0] : "general",
           allowedRoles: roles,
+          allowedStudentLevels: studentLevels,
           displayOrder: t.displayOrder ?? 0,
           isActive: t.isActive ?? true,
           eventCode: t.eventCode,
@@ -306,6 +358,10 @@ export default function TicketsPage() {
         badgeText: formData.badgeText || undefined,
         quota: formData.quota,
         allowedRoles: JSON.stringify(formData.allowedRoles),
+        allowedStudentLevels: getAllowedStudentLevelsPayload(
+          formData.allowedRoles,
+          formData.allowedStudentLevels,
+        ),
         priority: formData.priority,
         isActive: formData.isActive,
         sessionIds: finalSessionIds,
@@ -357,6 +413,11 @@ export default function TicketsPage() {
         badgeText: formData.badgeText || undefined,
         quota: formData.quota,
         allowedRoles: JSON.stringify(formData.allowedRoles),
+        allowedStudentLevels: getAllowedStudentLevelsPayload(
+          formData.allowedRoles,
+          formData.allowedStudentLevels,
+          true,
+        ),
         priority: formData.priority,
         isActive: formData.isActive,
         sessionIds: finalSessionIds,
@@ -425,6 +486,7 @@ export default function TicketsPage() {
       saleStartDate: formatDateTimeLocal(ticket.startDate),
       saleEndDate: formatDateTimeLocal(ticket.endDate),
       allowedRoles: ticket.allowedRoles,
+      allowedStudentLevels: ticket.allowedStudentLevels || [],
       priority: ticket.priority || "regular",
       isActive: true,
       sessionIds: ticket.sessionIds || [],
@@ -450,8 +512,9 @@ export default function TicketsPage() {
       saleEndDate: formatDateTimeLocal(ticket.endDate),
       allowedRoles:
         ticket.allowedRoles && ticket.allowedRoles.length > 0
-          ? ticket.allowedRoles.filter(r => ["thstd", "thpro", "interstd", "interpro", "general"].includes(r))
+          ? ticket.allowedRoles
           : ["general"],
+      allowedStudentLevels: ticket.allowedStudentLevels || [],
       priority: ticket.priority || "regular",
       isActive: ticket.isActive ?? true,
       sessionIds: ticket.sessionIds || [],
@@ -475,6 +538,7 @@ export default function TicketsPage() {
       saleStartDate: "",
       saleEndDate: "",
       allowedRoles: ["general"],
+      allowedStudentLevels: [],
       priority: "regular",
       isActive: true,
       sessionIds: [],
@@ -584,16 +648,35 @@ export default function TicketsPage() {
           <select
             value={roleFilter}
             onChange={(e) => {
-              setRoleFilter(e.target.value);
+              const nextRole = e.target.value;
+              setRoleFilter(nextRole);
+              if (nextRole !== "student") setStudentLevelFilter("");
               setPage(1);
             }}
             className="input-field min-w-[180px]"
           >
             <option value="">All Roles</option>
-            <option value="pharmacist">Pharmacist</option>
-            <option value="medical_professional">Medical Professional</option>
-            <option value="student">Student</option>
-            <option value="general">General</option>
+            {roleOptions.map((role) => (
+              <option key={role.value} value={role.value}>
+                {role.label}
+              </option>
+            ))}
+          </select>
+          <select
+            value={studentLevelFilter}
+            onChange={(e) => {
+              setStudentLevelFilter(e.target.value);
+              setPage(1);
+            }}
+            disabled={roleFilter !== "student"}
+            className="input-field min-w-[190px] disabled:bg-gray-100 disabled:text-gray-400"
+          >
+            <option value="">All Student Levels</option>
+            {studentLevelOptions.map((level) => (
+              <option key={level.value} value={level.value}>
+                {level.label}
+              </option>
+            ))}
           </select>
         </div>
 
@@ -673,13 +756,31 @@ export default function TicketsPage() {
                                 key={role}
                                 className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${typeColors[role] || "bg-gray-100 text-gray-600"}`}
                               >
-                                {role === "pharmacist" ? "Pharmacist" : role === "medical_professional" ? "Med. Prof." : role === "student" ? "Student" : "General"}
+                                {roleLabels[role] || role}
                               </span>
                             ))
                           ) : (
                             <span className="inline-flex px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
                               General
                             </span>
+                          )}
+                          {ticket.allowedRoles.includes("student") && (
+                            <div className="flex flex-wrap justify-center gap-1">
+                              {ticket.allowedStudentLevels.length > 0 ? (
+                                ticket.allowedStudentLevels.map((level) => (
+                                  <span
+                                    key={level}
+                                    className="inline-flex px-2 py-0.5 rounded-full text-[11px] font-medium bg-cyan-50 text-cyan-700"
+                                  >
+                                    {studentLevelLabels[level] || level}
+                                  </span>
+                                ))
+                              ) : (
+                                <span className="inline-flex px-2 py-0.5 rounded-full text-[11px] font-medium bg-cyan-50 text-cyan-700">
+                                  All student levels
+                                </span>
+                              )}
+                            </div>
                           )}
                           {ticket.sessionIds &&
                             ticket.sessionIds.length > 0 && (
@@ -977,12 +1078,7 @@ export default function TicketsPage() {
                   Target Audience (Role) *
                 </label>
                 <div className="border rounded-md p-3 max-h-40 overflow-y-auto space-y-2 bg-gray-50">
-                  {[
-                    { value: "pharmacist", label: "Pharmacist" },
-                    { value: "medical_professional", label: "Medical Professional" },
-                    { value: "student", label: "Student" },
-                    { value: "general", label: "General" },
-                  ].map((role) => (
+                  {roleOptions.map((role) => (
                     <label
                       key={role.value}
                       className="flex items-start gap-2 cursor-pointer hover:bg-gray-100 p-1 rounded"
@@ -996,11 +1092,17 @@ export default function TicketsPage() {
                           setFormData((prev) => {
                             const currentRoles = prev.allowedRoles || [];
                             if (isChecked) {
-                              return { ...prev, allowedRoles: [...currentRoles, role.value] };
-                            } else {
-                              // Ensure at least one role is selected, or allow empty if preferred
-                              return { ...prev, allowedRoles: currentRoles.filter(r => r !== role.value) };
+                              return currentRoles.includes(role.value)
+                                ? prev
+                                : { ...prev, allowedRoles: [...currentRoles, role.value] };
                             }
+
+                            const nextRoles = currentRoles.filter(r => r !== role.value);
+                            return {
+                              ...prev,
+                              allowedRoles: nextRoles,
+                              allowedStudentLevels: role.value === "student" ? [] : prev.allowedStudentLevels,
+                            };
                           });
                         }}
                       />
@@ -1012,6 +1114,48 @@ export default function TicketsPage() {
                   <p className="text-xs text-red-500 mt-1">Please select at least one target audience.</p>
                 )}
               </div>
+
+              {formData.allowedRoles.includes("student") && (
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Student Level
+                  </label>
+                  <div className="border rounded-md p-3 space-y-2 bg-gray-50">
+                    {studentLevelOptions.map((level) => (
+                      <label
+                        key={level.value}
+                        className="flex items-start gap-2 cursor-pointer hover:bg-gray-100 p-1 rounded"
+                      >
+                        <input
+                          type="checkbox"
+                          className="mt-1"
+                          checked={formData.allowedStudentLevels.includes(level.value)}
+                          onChange={(e) => {
+                            const isChecked = e.target.checked;
+                            setFormData((prev) => {
+                              const currentLevels = prev.allowedStudentLevels || [];
+                              if (isChecked) {
+                                return currentLevels.includes(level.value)
+                                  ? prev
+                                  : { ...prev, allowedStudentLevels: [...currentLevels, level.value] };
+                              }
+
+                              return {
+                                ...prev,
+                                allowedStudentLevels: currentLevels.filter(l => l !== level.value),
+                              };
+                            });
+                          }}
+                        />
+                        <span className="text-sm font-medium text-gray-700">{level.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Leave empty to allow both postgraduate and undergraduate students.
+                  </p>
+                </div>
+              )}
 
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1">

@@ -129,6 +129,7 @@ export interface Ticket {
     features: string[];
     badgeText: string | null;
     allowedRoles: string | null;
+    allowedStudentLevels: string | null;
     quota: number;
     soldCount: number;
     displayOrder: number;

@@ -216,6 +216,17 @@ export const api = {
       fetchAPI<{ abstract: Record<string, unknown> }>(`/api/backoffice/abstracts/${id}`, { token }),
     updateStatus: (token: string, id: number, status: string, comment?: string) =>
       fetchAPI<{ abstract: Record<string, unknown> }>(`/api/backoffice/abstracts/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status, comment }), token }),
+    requestRevision: (token: string, id: number, data: { topic: string; comment: string; file?: File | null }) => {
+      const formData = new FormData();
+      formData.append('topic', data.topic);
+      formData.append('comment', data.comment);
+      if (data.file) formData.append('revisionFile', data.file);
+
+      return fetchAPI<{ success: boolean; abstract: Record<string, unknown>; revisionRequest: Record<string, unknown> }>(
+        `/api/backoffice/abstracts/${id}/revision`,
+        { method: 'POST', body: formData as unknown as BodyInit, token },
+      );
+    },
   },
 
   checkins: {

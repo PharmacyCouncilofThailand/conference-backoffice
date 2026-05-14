@@ -137,6 +137,34 @@ const getBackofficeToken = () =>
   sessionStorage.getItem("backoffice_token") ||
   "";
 
+const studentLevelLabels: Record<string, string> = {
+  postgraduate: "Postgraduate",
+  undergraduate: "Undergraduate",
+};
+
+const parseAllowedList = (raw: unknown): string[] => {
+  if (!raw) return [];
+  if (Array.isArray(raw)) return raw.map(String).filter(Boolean);
+  if (typeof raw !== "string") return [];
+
+  const value = raw.trim();
+  if (!value) return [];
+
+  if (value.startsWith("[")) {
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed) ? parsed.map(String).filter(Boolean) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  return value
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+};
+
 // Helper function to format datetime
 const formatDateTime = (dateTimeStr: string): string => {
   if (!dateTimeStr) return "-";
@@ -239,6 +267,7 @@ export default function EditEventPage() {
     saleStartDate: "",
     saleEndDate: "",
     allowedRoles: [],
+    allowedStudentLevels: [],
     priority: "regular",
     isActive: true,
     sessionIds: [],
@@ -323,19 +352,8 @@ export default function EditEventPage() {
         if (response.tickets) {
           setTickets(
             response.tickets.map((t: any) => {
-              // Parse allowedRoles - could be JSON array, CSV string, or JS array
-              let roles: string[] = [];
-              if (t.allowedRoles) {
-                if (Array.isArray(t.allowedRoles)) {
-                  roles = t.allowedRoles;
-                } else if (typeof t.allowedRoles === "string") {
-                  if (t.allowedRoles.startsWith("[")) {
-                    try { roles = JSON.parse(t.allowedRoles); } catch { roles = []; }
-                  } else {
-                    roles = t.allowedRoles.split(",").map((r: string) => r.trim()).filter(Boolean);
-                  }
-                }
-              }
+              const roles = parseAllowedList(t.allowedRoles);
+              const studentLevels = parseAllowedList(t.allowedStudentLevels);
               return {
                 id: t.id,
                 name: t.name,
@@ -355,6 +373,7 @@ export default function EditEventPage() {
                   ? toDateTimeLocal(t.saleEndDate)
                   : "",
                 allowedRoles: roles,
+                allowedStudentLevels: studentLevels,
                 priority: t.priority || "regular",
                 isActive: t.isActive ?? true,
                 sessionIds: t.sessionIds || (t.sessionId ? [t.sessionId] : []),
@@ -525,6 +544,9 @@ export default function EditEventPage() {
     if (!ticketForm.name || !ticketForm.price) return;
     try {
       const token = getBackofficeToken();
+      const normalizedStudentLevels = (ticketForm.allowedRoles || []).includes("student")
+        ? ticketForm.allowedStudentLevels || []
+        : [];
       // Build payload
       const ticketPayload: Record<string, unknown> = {
         name: ticketForm.name,
@@ -538,7 +560,11 @@ export default function EditEventPage() {
         badgeText: ticketForm.badgeText || undefined,
         quota: parseInt(ticketForm.quota) || 0,
         allowedRoles: JSON.stringify(ticketForm.allowedRoles),
-        allowedStudentLevels: ticketForm.allowedStudentLevels && ticketForm.allowedStudentLevels.length > 0 ? JSON.stringify(ticketForm.allowedStudentLevels) : undefined,
+        allowedStudentLevels: normalizedStudentLevels.length > 0
+          ? JSON.stringify(normalizedStudentLevels)
+          : editingTicketId
+            ? "[]"
+            : undefined,
         priority: ticketForm.priority || "regular",
         isActive: ticketForm.isActive ?? true,
         // Handle session linking:
@@ -593,6 +619,7 @@ export default function EditEventPage() {
                 badgeText: ticketForm.badgeText,
                 quota: ticketForm.quota,
                 allowedRoles: ticketForm.allowedRoles,
+                allowedStudentLevels: normalizedStudentLevels,
                 saleStartDate: ticketForm.saleStartDate,
                 saleEndDate: ticketForm.saleEndDate,
                 sessionIds:
@@ -613,18 +640,8 @@ export default function EditEventPage() {
           ticketPayload,
         );
         const ticket = response.ticket as Record<string, unknown>;
-        // Parse allowedRoles back from JSON string
-        let roles: string[] = [];
-        if (ticket.allowedRoles) {
-          try {
-            roles =
-              typeof ticket.allowedRoles === "string"
-                ? JSON.parse(ticket.allowedRoles)
-                : (ticket.allowedRoles as string[]);
-          } catch {
-            roles = [];
-          }
-        }
+        const roles = parseAllowedList(ticket.allowedRoles);
+        const studentLevels = parseAllowedList(ticket.allowedStudentLevels);
         setTickets((prev) => [
           ...prev,
           {
@@ -646,6 +663,7 @@ export default function EditEventPage() {
               ? toDateTimeLocal(ticket.saleEndDate as string)
               : "",
             allowedRoles: roles,
+            allowedStudentLevels: studentLevels,
             priority: (ticket.priority as string) || "regular",
             sessionIds:
               (ticket.sessionIds as number[]) ||
@@ -1775,6 +1793,24 @@ export default function EditEventPage() {
                           ) : (
                             <span className="text-xs text-gray-400">All</span>
                           )}
+                          {ticket.allowedRoles?.includes("student") && (
+                            <div className="mt-1 flex flex-wrap gap-1">
+                              {ticket.allowedStudentLevels && ticket.allowedStudentLevels.length > 0 ? (
+                                ticket.allowedStudentLevels.map((level) => (
+                                  <span
+                                    key={level}
+                                    className="text-xs px-1.5 py-0.5 rounded font-medium bg-cyan-50 text-cyan-700"
+                                  >
+                                    {studentLevelLabels[level] || level}
+                                  </span>
+                                ))
+                              ) : (
+                                <span className="text-xs px-1.5 py-0.5 rounded font-medium bg-cyan-50 text-cyan-700">
+                                  All student levels
+                                </span>
+                              )}
+                            </div>
+                          )}
                         </div>
                       </td>
                       <td>
@@ -2208,10 +2244,17 @@ export default function EditEventPage() {
                             setTicketForm((prev) => {
                               const currentRoles = prev.allowedRoles || [];
                               if (isChecked) {
-                                return { ...prev, allowedRoles: [...currentRoles, role.value] };
-                              } else {
-                                return { ...prev, allowedRoles: currentRoles.filter(r => r !== role.value) };
+                                return currentRoles.includes(role.value)
+                                  ? prev
+                                  : { ...prev, allowedRoles: [...currentRoles, role.value] };
                               }
+
+                              const nextRoles = currentRoles.filter(r => r !== role.value);
+                              return {
+                                ...prev,
+                                allowedRoles: nextRoles,
+                                allowedStudentLevels: role.value === "student" ? [] : prev.allowedStudentLevels,
+                              };
                             });
                           }}
                         />

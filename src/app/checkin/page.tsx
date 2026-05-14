@@ -136,6 +136,13 @@ const getBackofficeToken = () =>
     sessionStorage.getItem('backoffice_token') ||
     '';
 
+const ALREADY_CHECKED_IN_MESSAGE = 'เช็คอินไปแล้ว';
+
+const isAlreadyCheckedInMessage = (message: string) =>
+    message.includes('เช็คอินแล้ว') ||
+    message.includes(ALREADY_CHECKED_IN_MESSAGE) ||
+    message.toLowerCase().includes('already checked');
+
 export default function CheckinPage() {
     const { user, isAdmin } = useAuth();
 
@@ -334,6 +341,10 @@ export default function CheckinPage() {
 
                 if (res.sessions) {
                     // Case 3: multiple sessions → show picker
+                    if (res.sessions.every((session: SessionInfo) => !!session.checkedInAt)) {
+                        if (soundEnabled) playDuplicateSound();
+                        toast.error(ALREADY_CHECKED_IN_MESSAGE);
+                    }
                     setPendingRegistration(res.registration);
                     setPendingSessions(res.sessions);
                     setIsLoading(false);
@@ -357,9 +368,10 @@ export default function CheckinPage() {
             }
         } catch (error: any) {
             const msg = error.message || 'Scan failed';
-            if (msg.includes('เช็คอินแล้ว') || msg.includes('Already checked in') || msg.includes('already checked')) {
+            if (isAlreadyCheckedInMessage(msg)) {
                 if (soundEnabled) playDuplicateSound();
-                setScanResult({ status: 'duplicate', code, message: 'Already checked in' });
+                toast.error(ALREADY_CHECKED_IN_MESSAGE);
+                setScanResult({ status: 'duplicate', code, message: ALREADY_CHECKED_IN_MESSAGE });
             } else if (msg.includes('ไม่มีสิทธิ์') || msg.includes('NO_ACCESS') || msg.includes('No access')) {
                 if (soundEnabled) playErrorSound();
                 setScanResult({ status: 'no_access', code, message: 'No access to this session' });
@@ -397,8 +409,14 @@ export default function CheckinPage() {
                 fetchData();
             }
         } catch (error: any) {
-            if (soundEnabled) playErrorSound();
-            toast.error(error.message || 'Check-in failed');
+            const msg = error.message || 'Check-in failed';
+            if (isAlreadyCheckedInMessage(msg)) {
+                if (soundEnabled) playDuplicateSound();
+                toast.error(ALREADY_CHECKED_IN_MESSAGE);
+            } else {
+                if (soundEnabled) playErrorSound();
+                toast.error(msg);
+            }
         } finally {
             setIsLoading(false);
         }
@@ -428,8 +446,14 @@ export default function CheckinPage() {
                 fetchData();
             }
         } catch (error: any) {
-            if (soundEnabled) playErrorSound();
-            toast.error(error.message || 'Check-in failed');
+            const msg = error.message || 'Check-in failed';
+            if (isAlreadyCheckedInMessage(msg)) {
+                if (soundEnabled) playDuplicateSound();
+                toast.error(ALREADY_CHECKED_IN_MESSAGE);
+            } else {
+                if (soundEnabled) playErrorSound();
+                toast.error(msg);
+            }
         } finally {
             setIsLoading(false);
         }
@@ -463,6 +487,14 @@ export default function CheckinPage() {
         setPendingRegistration(null);
         // Re-focus input
         setTimeout(() => manualInputRef.current?.focus(), 100);
+    };
+
+    const handleScanNext = () => {
+        setScanMode('camera');
+        setScanResult(null);
+        setPendingSessions(null);
+        setPendingRegistration(null);
+        lastScannedRef.current = '';
     };
 
     // Auto-clear result after 3 seconds in fast scan mode
@@ -834,21 +866,31 @@ export default function CheckinPage() {
                                         ))}
                                     </div>
 
-                                    <div className="flex gap-2">
+                                    {pendingSessions.every(s => !!s.checkedInAt) ? (
                                         <button
-                                            onClick={checkInAllSessions}
-                                            disabled={pendingSessions.every(s => !!s.checkedInAt) || isLoading}
-                                            className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white py-3 rounded-lg font-medium transition-colors"
+                                            onClick={handleScanNext}
+                                            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
                                         >
-                                            Check-in All Sessions
+                                            <IconCamera size={18} />
+                                            ถัดไป
                                         </button>
-                                        <button
-                                            onClick={clearResult}
-                                            className="px-4 py-3 bg-gray-100 rounded-lg hover:bg-gray-200 text-gray-600 transition-colors"
-                                        >
-                                            Cancel
-                                        </button>
-                                    </div>
+                                    ) : (
+                                        <div className="flex gap-2">
+                                            <button
+                                                onClick={checkInAllSessions}
+                                                disabled={isLoading}
+                                                className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white py-3 rounded-lg font-medium transition-colors"
+                                            >
+                                                Check-in All Sessions
+                                            </button>
+                                            <button
+                                                onClick={clearResult}
+                                                className="px-4 py-3 bg-gray-100 rounded-lg hover:bg-gray-200 text-gray-600 transition-colors"
+                                            >
+                                                Cancel
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         )}
@@ -917,14 +959,14 @@ export default function CheckinPage() {
                                     )}
 
                                     <button
-                                        onClick={clearResult}
+                                        onClick={handleScanNext}
                                         className={`px-6 py-2 rounded-lg font-medium flex items-center gap-2 mx-auto transition-colors ${
                                             scanResult.status === 'success' ? 'bg-green-600 hover:bg-green-700 text-white'
                                             : scanResult.status === 'duplicate' ? 'bg-yellow-600 hover:bg-yellow-700 text-white'
                                             : 'bg-red-600 hover:bg-red-700 text-white'
                                         }`}
                                     >
-                                        <IconRefresh size={18} /> Scan Next
+                                        <IconRefresh size={18} /> ถัดไป
                                     </button>
                                 </div>
                             </div>
