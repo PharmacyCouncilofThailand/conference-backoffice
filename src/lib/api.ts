@@ -14,6 +14,7 @@ import type {
   PromoCode,
   Payment,
   Pagination,
+  StudentEligibilityRequest,
 } from '@/types/api';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL;
@@ -132,6 +133,15 @@ export const api = {
       fetchAPI<{ success: boolean; user: User }>(`/api/backoffice/verifications/${id}/reject`, { method: "POST", body: JSON.stringify({ reason }), token }),
     getRejectionHistory: (token: string, id: string) =>
       fetchAPI<{ history: { id: number; reason: string; rejectedAt: string; rejectedBy: number | null; rejectedByName: string | null }[] }>(`/api/backoffice/verifications/${id}/rejection-history`, { token }),
+  },
+
+  studentEligibilityRequests: {
+    list: (token: string, query?: string) =>
+      fetchAPI<{ success: boolean; requests: StudentEligibilityRequest[]; pagination: Pagination }>(`/api/backoffice/student-eligibility-requests${query ? `?${query}` : ''}`, { token }),
+    get: (token: string, id: number) =>
+      fetchAPI<{ success: boolean; request: StudentEligibilityRequest }>(`/api/backoffice/student-eligibility-requests/${id}`, { token }),
+    review: (token: string, id: number, data: { status: 'approved'; reviewNote?: string } | { status: 'rejected'; rejectionReason: string; reviewNote?: string }) =>
+      fetchAPI<{ success: boolean; request: StudentEligibilityRequest }>(`/api/backoffice/student-eligibility-requests/${id}`, { method: "PATCH", body: JSON.stringify(data), token }),
   },
 
   backofficeEvents: {

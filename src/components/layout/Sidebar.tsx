@@ -84,6 +84,7 @@ const menuStructure = [
     children: [
       { href: "/registrations", label: "All Registrations" },
       { href: "/verification", label: "Student Verification" },
+      { href: "/student-eligibility", label: "Postgrad Eligibility" },
     ],
   },
   {
@@ -179,7 +180,7 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
           return {
             ...item,
             children: item.children.filter(
-              (child) => child.href === "/verification",
+              (child) => child.href === "/verification" || child.href === "/student-eligibility",
             ),
           };
         }

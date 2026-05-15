@@ -182,6 +182,35 @@ export interface VerificationRequest {
     createdAt: string;
 }
 
+export type StudentEligibilityStatus = 'pending' | 'approved' | 'rejected' | 'cancelled';
+
+export interface StudentEligibilityRequest {
+    id: number;
+    eventId: number;
+    eventCode: string;
+    eventName: string;
+    userId: number;
+    name: string;
+    email: string;
+    role: string;
+    pharmacyLicenseId?: string | null;
+    institution?: string | null;
+    studentLevel: 'postgraduate';
+    status: StudentEligibilityStatus;
+    documentFileName: string;
+    documentUrl: string;
+    documentFileType?: string | null;
+    documentFileSize?: number | null;
+    rejectionReason?: string | null;
+    reviewNote?: string | null;
+    reviewedBy?: number | null;
+    reviewedByName?: string | null;
+    reviewedAt?: string | null;
+    resubmissionCount: number;
+    createdAt: string;
+    updatedAt: string;
+}
+
 // ============================================================================
 // Abstract Types
 // ============================================================================
