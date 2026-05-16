@@ -46,6 +46,7 @@ export interface Event {
     id: number;
     eventCode: string;
     eventName: string;
+    shortName?: string | null;
     description?: string | null;
     eventType: EventType;
     location?: string | null;
@@ -74,6 +75,7 @@ export interface Event {
 export interface EventCreateInput {
     eventCode: string;
     eventName: string;
+    shortName?: string;
     description?: string;
     eventType: EventType;
     location?: string;

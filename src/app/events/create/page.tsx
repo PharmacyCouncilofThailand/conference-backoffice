@@ -87,6 +87,7 @@ interface TicketData {
 interface EventFormData {
   eventCode: string;
   eventName: string;
+  shortName: string;
   description: string;
   eventType: "single_room" | "multi_session";
   location: string;
@@ -312,6 +313,7 @@ export default function CreateEventPage() {
   const [formData, setFormData] = useState<EventFormData>({
     eventCode: "",
     eventName: "",
+    shortName: "",
     description: "",
     eventType: "single_room",
     location: "",
@@ -354,7 +356,13 @@ export default function CreateEventPage() {
     if (saved) {
       try {
         const draft = JSON.parse(saved);
-        if (draft.formData) setFormData(draft.formData);
+        if (draft.formData) {
+          setFormData((prev) => ({
+            ...prev,
+            ...draft.formData,
+            shortName: draft.formData.shortName || "",
+          }));
+        }
         const hasSessions = draft.sessions && draft.sessions.length > 0;
         if (hasSessions) setSessions(draft.sessions);
         if (draft.tickets) setTickets(draft.tickets);
@@ -754,6 +762,7 @@ export default function CreateEventPage() {
       const eventData = {
         eventCode: formData.eventCode,
         eventName: formData.eventName,
+        shortName: formData.shortName || undefined,
         description: formData.description || undefined,
         eventType: formData.eventType,
         location: formData.location || undefined,
@@ -1154,6 +1163,24 @@ export default function CreateEventPage() {
                 {validationErrors.eventName}
               </p>
             )}
+          </div>
+
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Email Short Name
+            </label>
+            <input
+              type="text"
+              className="input-field"
+              placeholder="e.g., PRIS 2026"
+              value={formData.shortName}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, shortName: e.target.value }))
+              }
+            />
+            <p className="mt-1 text-xs text-gray-500">
+              Used in email subject lines. If blank, the full event name will be used.
+            </p>
           </div>
 
           <div className="mb-4">

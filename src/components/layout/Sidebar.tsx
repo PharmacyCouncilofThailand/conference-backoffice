@@ -20,6 +20,7 @@ import {
   IconChevronRight,
   IconTicket,
   IconMailForward,
+  IconMailBolt,
 } from "@tabler/icons-react";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -127,6 +128,12 @@ const menuStructure = [
   },
   {
     type: "link",
+    href: "/email-manual",
+    label: "Manual Email",
+    icon: IconMailBolt,
+  },
+  {
+    type: "link",
     href: "/settings",
     label: "Settings",
     icon: IconSettings,
@@ -228,6 +235,7 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
       if (item.label === "SYSTEM ADMINISTRATION") return null;
       if (item.href === "/users") return null;
       if (item.href === "/email-retrosend") return null;
+      if (item.href === "/email-manual") return null;
       if (item.href === "/settings") return null;
 
       return item;

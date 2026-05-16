@@ -92,6 +92,7 @@ interface VenueImage {
 interface EventFormData {
   eventCode: string;
   eventName: string;
+  shortName: string;
   description: string;
   eventType: "single_room" | "multi_session";
   location: string;
@@ -199,6 +200,7 @@ export default function EditEventPage() {
   const [formData, setFormData] = useState<EventFormData>({
     eventCode: "",
     eventName: "",
+    shortName: "",
     description: "",
     eventType: "single_room",
     location: "",
@@ -312,6 +314,7 @@ export default function EditEventPage() {
         setFormData({
           eventCode: event.eventCode || "",
           eventName: event.eventName || "",
+          shortName: event.shortName || "",
           description: event.description || "",
           eventType: event.eventType || "single_room",
           location: event.location || "",
@@ -958,6 +961,7 @@ export default function EditEventPage() {
       const eventData: Record<string, unknown> = {
         eventCode: formData.eventCode,
         eventName: formData.eventName,
+        shortName: formData.shortName || undefined,
         description: formData.description || undefined,
         eventType: formData.eventType,
         location: formData.location || undefined,
@@ -1276,6 +1280,24 @@ export default function EditEventPage() {
                 setFormData((prev) => ({ ...prev, eventName: e.target.value }))
               }
             />
+          </div>
+
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Email Short Name
+            </label>
+            <input
+              type="text"
+              className="input-field"
+              placeholder="e.g., PRIS 2026"
+              value={formData.shortName}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, shortName: e.target.value }))
+              }
+            />
+            <p className="mt-1 text-xs text-gray-500">
+              Used in email subject lines. If blank, the full event name will be used.
+            </p>
           </div>
 
           <div className="mb-4">
