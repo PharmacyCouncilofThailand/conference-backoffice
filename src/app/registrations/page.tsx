@@ -182,6 +182,7 @@ export default function RegistrationsPage() {
                             <option value="purchase">Purchase</option>
                             <option value="manual">Manual</option>
                             <option value="free">Free</option>
+                            <option value="quick">Quick</option>
                         </select>
 
                         <select
@@ -291,9 +292,17 @@ export default function RegistrationsPage() {
                                                     <span className="inline-flex px-2 py-1 rounded-full text-xs font-medium bg-green-50 text-green-700 border border-green-200">
                                                         Free
                                                     </span>
+                                                ) : reg.source === 'quick' ? (
+                                                    <span className="inline-flex px-2 py-1 rounded-full text-xs font-medium bg-sky-50 text-sky-700 border border-sky-200">
+                                                        Quick
+                                                    </span>
+                                                ) : reg.source === 'purchase' ? (
+                                                    <span className="inline-flex px-2 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200">
+                                                        Purchase
+                                                    </span>
                                                 ) : (
                                                     <span className="inline-flex px-2 py-1 rounded-full text-xs font-medium bg-gray-50 text-gray-500">
-                                                        Purchase
+                                                        {reg.source || '-'}
                                                     </span>
                                                 )}
                                             </td>

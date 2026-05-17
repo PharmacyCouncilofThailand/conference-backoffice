@@ -246,6 +246,8 @@ export const api = {
       fetchAPI<any>(`/api/backoffice/checkins`, { method: 'POST', body: JSON.stringify(data), token }),
     stats: (token: string, query?: string) =>
       fetchAPI<{ total: number; checkedIn: number; remaining: number; percentage: number }>(`/api/backoffice/checkins/stats${query ? `?${query}` : ''}`, { token }),
+    universities: (token: string, eventId: number) =>
+      fetchAPI<{ universities: string[] }>(`/api/backoffice/checkins/universities?eventId=${eventId}`, { token }),
     undo: (token: string, registrationSessionId: number) =>
       fetchAPI<{ success: boolean; undone: any }>(`/api/backoffice/checkins/undo`, { method: 'POST', body: JSON.stringify({ registrationSessionId }), token }),
   },

@@ -11,6 +11,7 @@ import {
   IconFileText,
   IconCreditCard,
   IconScan,
+  IconUserCheck,
   IconReportAnalytics,
   IconSettings,
   IconLogout,
@@ -103,6 +104,12 @@ const menuStructure = [
     href: "/checkin",
     label: "Check-in Scanner",
     icon: IconScan,
+  },
+  {
+    type: "link",
+    href: "/checkins",
+    label: "Checked-in List",
+    icon: IconUserCheck,
   },
   {
     type: "link",
