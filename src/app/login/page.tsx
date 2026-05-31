@@ -81,35 +81,57 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-white">
-            Conference<span className="text-blue-200">Hub</span>
-          </h1>
-          <p className="text-blue-200 mt-2">Backoffice Management System</p>
+    <div className="min-h-screen grid lg:grid-cols-2">
+      {/* Left — Branding panel */}
+      <div className="hidden lg:flex flex-col justify-between p-12 relative overflow-hidden bg-zinc-900">
+        <div className="relative z-10">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center">
+              <span className="text-white font-extrabold text-sm">C</span>
+            </div>
+            <span className="text-white font-bold text-lg tracking-tight">ConferenceHub</span>
+          </div>
         </div>
-
-        {/* Login Card */}
-        <div className="bg-white rounded-2xl shadow-2xl p-8">
-          <h2 className="text-2xl font-semibold text-gray-800 text-center mb-6">
-            Sign In
+        <div className="relative z-10 max-w-md">
+          <h2 className="text-4xl font-extrabold text-white leading-tight tracking-tight">
+            Manage your conference with precision.
           </h2>
+          <p className="mt-4 text-zinc-400 text-base leading-relaxed">
+            Registrations, abstracts, check-ins, and payments — all in one streamlined backoffice.
+          </p>
+        </div>
+        <p className="text-zinc-600 text-xs relative z-10">
+          © {new Date().getFullYear()} ConferenceHub
+        </p>
+        {/* Decorative */}
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] rounded-full opacity-[0.03]" style={{ background: 'radial-gradient(circle, #059669, transparent 70%)' }} />
+        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] rounded-full opacity-[0.04]" style={{ background: 'radial-gradient(circle, #ffffff, transparent 70%)' }} />
+      </div>
+
+      {/* Right — Login form */}
+      <div className="flex items-center justify-center p-6 bg-white">
+        <div className="w-full max-w-sm">
+          {/* Mobile logo */}
+          <div className="flex items-center gap-2 mb-12 lg:hidden">
+            <div className="w-7 h-7 rounded-lg bg-emerald-500 flex items-center justify-center">
+              <span className="text-white font-extrabold text-xs">C</span>
+            </div>
+            <span className="font-bold text-zinc-900 tracking-tight">ConferenceHub</span>
+          </div>
+
+          <h1 className="text-2xl font-extrabold text-zinc-900 tracking-tight">Sign in</h1>
+          <p className="text-zinc-400 text-sm mt-1.5 mb-8">Enter your credentials to continue</p>
 
           {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
+            <div className="mb-6 px-4 py-3 rounded-xl text-sm font-medium bg-red-50 text-red-600 border border-red-100">
               {error}
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label
-                htmlFor="email"
-                className="block text-sm font-medium text-gray-700 mb-1"
-              >
-                Email Address
+              <label htmlFor="email" className="block text-[13px] font-semibold text-zinc-700 mb-1.5">
+                Email
               </label>
               <input
                 id="email"
@@ -117,16 +139,13 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="input-field"
-                placeholder="admin@example.com"
+                placeholder="you@example.com"
                 required
               />
             </div>
 
             <div>
-              <label
-                htmlFor="password"
-                className="block text-sm font-medium text-gray-700 mb-1"
-              >
+              <label htmlFor="password" className="block text-[13px] font-semibold text-zinc-700 mb-1.5">
                 Password
               </label>
               <input
@@ -141,48 +160,33 @@ export default function LoginPage() {
             </div>
 
             <div className="flex items-center justify-between">
-              <label className="flex items-center cursor-pointer">
+              <label className="flex items-center cursor-pointer gap-2">
                 <input
                   type="checkbox"
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
-                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  className="w-3.5 h-3.5 rounded border-zinc-300 accent-emerald-600"
                 />
-                <span className="ml-2 text-sm text-gray-600">Remember me</span>
+                <span className="text-[13px] text-zinc-500">Remember me</span>
               </label>
-              <a
-                href="#"
-                className="text-sm text-blue-600 hover:text-blue-700 font-medium"
-              >
-                Forgot password?
-              </a>
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full btn-primary py-3 text-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full btn-primary !py-3 text-sm"
             >
-              {loading ? "Signing in..." : "Sign In"}
+              {loading ? "Signing in..." : "Sign in"}
             </button>
           </form>
 
-          {/* Demo Credentials - Development Only */}
           {process.env.NODE_ENV === "development" && (
-            <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <p className="text-xs text-yellow-600 text-center mb-2">
-                ⚠️ Development Only:
-              </p>
-              <p className="text-sm text-yellow-700 text-center font-mono">
-                admin@accp.org / admin123
-              </p>
+            <div className="mt-8 px-4 py-3 rounded-xl bg-amber-50 border border-amber-100">
+              <p className="text-[10px] font-semibold text-amber-500 uppercase tracking-wider mb-1">Dev credentials</p>
+              <p className="text-[13px] font-mono text-zinc-600">admin@accp.org / admin123</p>
             </div>
           )}
         </div>
-
-        <p className="text-center text-blue-200 text-sm mt-6">
-          © {new Date().getFullYear()} ConferenceHub. All rights reserved.
-        </p>
       </div>
     </div>
   );

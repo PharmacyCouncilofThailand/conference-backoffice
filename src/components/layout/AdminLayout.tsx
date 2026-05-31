@@ -13,22 +13,17 @@ export function AdminLayout({ children, title }: AdminLayoutProps) {
     const [sidebarOpen, setSidebarOpen] = useState(false);
 
     return (
-        <div className="min-h-screen bg-gray-100">
-            {/* Mobile Overlay */}
+        <div className="min-h-screen" style={{ background: 'var(--bg)' }}>
             {sidebarOpen && (
                 <div
-                    className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+                    className="fixed inset-0 bg-zinc-900/40 backdrop-blur-sm z-40 lg:hidden"
                     onClick={() => setSidebarOpen(false)}
                 />
             )}
-
-            {/* Sidebar */}
             <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-
-            {/* Main Content */}
-            <div className="lg:ml-64 transition-all duration-300">
+            <div className="lg:ml-64">
                 <Header title={title} onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
-                <main className="p-4 md:p-6">
+                <main className="p-5 md:p-8 lg:p-10 max-w-[1600px]">
                     {children}
                 </main>
             </div>

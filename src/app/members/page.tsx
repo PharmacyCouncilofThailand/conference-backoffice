@@ -48,14 +48,14 @@ const roleLabels: Record<string, { label: string; className: string }> = {
     label: "Medical Professional",
     className: "bg-indigo-100 text-indigo-800",
   },
-  student: { label: "Student", className: "bg-blue-100 text-blue-800" },
+  student: { label: "Student", className: "bg-emerald-50 text-teal-900" },
   guest: {
     label: "Guest",
-    className: "bg-teal-100 text-teal-800",
+    className: "bg-emerald-50 text-emerald-700",
   },
   general: {
     label: "General",
-    className: "bg-gray-100 text-gray-800",
+    className: "bg-zinc-100 text-zinc-800",
   },
   admin: {
     label: "Admin",
@@ -90,6 +90,7 @@ export default function MembersPage() {
   const [eventFilter, setEventFilter] = useState("");
   const [eventOptions, setEventOptions] = useState<{ id: number; name: string }[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
+  const [limit, setLimit] = useState(10);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<Member | null>(null);
 
@@ -137,7 +138,7 @@ export default function MembersPage() {
     try {
       const params = new URLSearchParams();
       params.append("page", currentPage.toString());
-      params.append("limit", "10");
+      params.append("limit", limit.toString());
       if (search) params.append("search", search);
       if (roleFilter) params.append("role", roleFilter);
       if (statusFilter) params.append("status", statusFilter);
@@ -151,7 +152,7 @@ export default function MembersPage() {
     } finally {
       setLoading(false);
     }
-  }, [token, currentPage, search, roleFilter, statusFilter, eventFilter]);
+  }, [token, currentPage, limit, search, roleFilter, statusFilter, eventFilter]);
 
   useEffect(() => {
     fetchMembers();
@@ -187,12 +188,12 @@ export default function MembersPage() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <div className="card py-4">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center text-blue-600">
+            <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600">
               <IconUsers size={24} stroke={1.5} />
             </div>
             <div>
-              <p className="text-2xl font-bold text-gray-800">{stats.total}</p>
-              <p className="text-sm text-gray-500">Total Members</p>
+              <p className="text-2xl font-bold text-zinc-800">{stats.total}</p>
+              <p className="text-sm text-zinc-400">Total Members</p>
             </div>
           </div>
         </div>
@@ -205,7 +206,7 @@ export default function MembersPage() {
               <p className="text-2xl font-bold text-green-600">
                 {stats.active}
               </p>
-              <p className="text-sm text-gray-500">Active</p>
+              <p className="text-sm text-zinc-400">Active</p>
             </div>
           </div>
         </div>
@@ -218,7 +219,7 @@ export default function MembersPage() {
               <p className="text-2xl font-bold text-yellow-600">
                 {stats.pending}
               </p>
-              <p className="text-sm text-gray-500">Pending</p>
+              <p className="text-sm text-zinc-400">Pending</p>
             </div>
           </div>
         </div>
@@ -231,7 +232,7 @@ export default function MembersPage() {
               <p className="text-2xl font-bold text-red-600">
                 {stats.rejected}
               </p>
-              <p className="text-sm text-gray-500">Rejected</p>
+              <p className="text-sm text-zinc-400">Rejected</p>
             </div>
           </div>
         </div>
@@ -240,10 +241,10 @@ export default function MembersPage() {
       {/* Main Content */}
       <div className="card">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-          <h2 className="text-lg font-semibold text-gray-800">Member List</h2>
+          <h2 className="text-lg font-semibold text-zinc-800">Member List</h2>
           <div className="relative flex-1 max-w-md">
             <IconSearch
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400"
               size={18}
             />
             <input
@@ -258,6 +259,17 @@ export default function MembersPage() {
 
         {/* Filters */}
         <div className="flex flex-col md:flex-row gap-4 mb-6">
+          <select
+            value={eventFilter}
+            onChange={(e) => { setEventFilter(e.target.value); setCurrentPage(1); }}
+            className="input-field w-auto"
+          >
+            <option value="">-- เลือก Event --</option>
+            {eventOptions.map((e) => (
+              <option key={e.id} value={e.id}>{e.name}</option>
+            ))}
+          </select>
+
           <select
             value={roleFilter}
             onChange={(e) => {
@@ -287,19 +299,6 @@ export default function MembersPage() {
             <option value="rejected">Rejected</option>
           </select>
 
-          {eventOptions.length > 1 && (
-            <select
-              value={eventFilter}
-              onChange={(e) => { setEventFilter(e.target.value); setCurrentPage(1); }}
-              className="input-field w-auto"
-            >
-              <option value="">All Events</option>
-              {eventOptions.map((e) => (
-                <option key={e.id} value={e.id}>{e.name}</option>
-              ))}
-            </select>
-          )}
-
           <button
             type="button"
             onClick={handleReset}
@@ -313,37 +312,37 @@ export default function MembersPage() {
         {/* Loading State */}
         {loading ? (
           <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            <span className="ml-3 text-gray-500">Loading members...</span>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-700"></div>
+            <span className="ml-3 text-zinc-400">Loading members...</span>
           </div>
         ) : (
-          <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+          <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm">
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="bg-gray-50 border-b border-gray-200">
-                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                  <tr className="bg-zinc-50 border-b border-zinc-200">
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">
                       ID
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-500 uppercase tracking-wider">
                       Member
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-500 uppercase tracking-wider">
                       Contact
                     </th>
-                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">
                       Role
                     </th>
-                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">
                       Status
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-500 uppercase tracking-wider">
                       Institution
                     </th>
-                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">
                       Joined
                     </th>
-                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">
                       Actions
                     </th>
                   </tr>
@@ -353,7 +352,7 @@ export default function MembersPage() {
                     <tr>
                       <td
                         colSpan={8}
-                        className="text-center py-8 text-gray-500"
+                        className="text-center py-8 text-zinc-400"
                       >
                         No members found
                       </td>
@@ -362,10 +361,10 @@ export default function MembersPage() {
                     members.map((member) => (
                       <tr
                         key={member.id}
-                        className="hover:bg-gray-50 transition-colors"
+                        className="hover:bg-zinc-50 transition-colors"
                       >
                         <td className="px-4 py-4 text-center">
-                          <span className="font-mono text-sm text-gray-600 bg-gray-100 px-2 py-1 rounded">
+                          <span className="font-mono text-sm text-zinc-500 bg-zinc-100 px-2 py-1 rounded">
                             {member.id}
                           </span>
                         </td>
@@ -376,7 +375,7 @@ export default function MembersPage() {
                               {member.lastName.charAt(0)}
                             </div>
                             <div>
-                              <p className="font-medium text-gray-900">
+                              <p className="font-medium text-zinc-900">
                                 {member.firstName} {member.lastName}
                               </p>
                             </div>
@@ -384,12 +383,12 @@ export default function MembersPage() {
                         </td>
                         <td className="px-4 py-4">
                           <div className="space-y-1">
-                            <div className="flex items-center gap-2 text-sm text-gray-600">
+                            <div className="flex items-center gap-2 text-sm text-zinc-500">
                               <IconMail size={14} />
                               {member.email}
                             </div>
                             {member.phone && (
-                              <div className="flex items-center gap-2 text-sm text-gray-600">
+                              <div className="flex items-center gap-2 text-sm text-zinc-500">
                                 <IconPhone size={14} />
                                 {member.phone}
                               </div>
@@ -421,13 +420,13 @@ export default function MembersPage() {
                         <td className="px-4 py-4">
                           <div className="space-y-1">
                             {member.institution && (
-                              <div className="flex items-center gap-2 text-sm text-gray-600">
+                              <div className="flex items-center gap-2 text-sm text-zinc-500">
                                 <IconBuilding size={14} />
                                 {member.institution}
                               </div>
                             )}
                             {member.country && (
-                              <div className="flex items-center gap-2 text-sm text-gray-500">
+                              <div className="flex items-center gap-2 text-sm text-zinc-400">
                                 <IconWorld size={14} />
                                 {member.country}
                               </div>
@@ -435,7 +434,7 @@ export default function MembersPage() {
                           </div>
                         </td>
                         <td className="px-4 py-4 text-center">
-                          <span className="text-sm text-gray-600">
+                          <span className="text-sm text-zinc-500">
                             {new Date(member.createdAt).toLocaleDateString(
                               "th-TH",
                               {
@@ -451,7 +450,7 @@ export default function MembersPage() {
                             type="button"
                             onClick={() => setDeleteConfirm(member)}
                             disabled={deletingId === member.id}
-                            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                            className="p-2 text-zinc-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
                             title="Delete member"
                           >
                             {deletingId === member.id ? (
@@ -473,7 +472,9 @@ export default function MembersPage() {
               currentPage={currentPage}
               totalPages={pagination?.totalPages || 1}
               totalCount={pagination?.total || 0}
+              pageSize={limit}
               onPageChange={setCurrentPage}
+              onPageSizeChange={setLimit}
               itemName="members"
             />
           </div>
@@ -482,19 +483,19 @@ export default function MembersPage() {
 
       {/* Delete Confirmation Modal */}
       {deleteConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full mx-4 p-6">
+        <div className="modal-overlay">
+          <div className="bg-white rounded-2xl shadow-lg max-w-md w-full mx-4 p-6">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center text-red-600">
                 <IconTrash size={20} />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900">
+              <h3 className="text-lg font-semibold text-zinc-900">
                 Delete Member
               </h3>
             </div>
-            <p className="text-gray-600 mb-2">
+            <p className="text-zinc-500 mb-2">
               Are you sure you want to delete{" "}
-              <span className="font-medium text-gray-900">
+              <span className="font-medium text-zinc-900">
                 {deleteConfirm.firstName} {deleteConfirm.lastName}
               </span>
               ?

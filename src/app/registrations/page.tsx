@@ -54,6 +54,7 @@ export default function RegistrationsPage() {
 
     // Pagination
     const [page, setPage] = useState(1);
+    const [limit, setLimit] = useState(10);
     const [totalPages, setTotalPages] = useState(1);
     const [totalCount, setTotalCount] = useState(0);
 
@@ -114,7 +115,7 @@ export default function RegistrationsPage() {
         setIsLoading(true);
         try {
             const token = getBackofficeToken();
-            const params: any = { page, limit: 10 };
+            const params: any = { page, limit };
             if (statusFilter) params.status = statusFilter;
             if (searchTerm) params.search = searchTerm;
             if (sourceFilter) params.source = sourceFilter;
@@ -137,12 +138,12 @@ export default function RegistrationsPage() {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                 <div className="card py-4">
                     <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center text-blue-600">
+                        <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600">
                             <IconUsers size={24} stroke={1.5} />
                         </div>
                         <div>
-                            <p className="text-2xl font-bold text-gray-800">{isLoading ? '-' : totalCount}</p>
-                            <p className="text-sm text-gray-500">Total Registrations</p>
+                            <p className="text-2xl font-bold text-zinc-800">{isLoading ? '-' : totalCount}</p>
+                            <p className="text-sm text-zinc-400">Total Registrations</p>
                         </div>
                     </div>
                 </div>
@@ -152,8 +153,19 @@ export default function RegistrationsPage() {
             <div className="card mb-6">
                 <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
                     <div className="flex flex-col md:flex-row gap-4 flex-1">
+                        <select
+                            value={eventFilter}
+                            onChange={(e) => { setEventFilter(e.target.value); setEventSelected(!!e.target.value); setPage(1); }}
+                            className="input-field w-auto"
+                        >
+                            <option value="">-- เลือก Event --</option>
+                            {eventOptions.map((e) => (
+                                <option key={e.id} value={e.id}>{e.name}</option>
+                            ))}
+                        </select>
+
                         <div className="relative flex-1 max-w-md">
-                            <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                            <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" size={18} />
                             <input
                                 type="text"
                                 placeholder="Search by name, email, or code..."
@@ -184,17 +196,6 @@ export default function RegistrationsPage() {
                             <option value="free">Free</option>
                             <option value="quick">Quick</option>
                         </select>
-
-                        <select
-                                value={eventFilter}
-                                onChange={(e) => { setEventFilter(e.target.value); setEventSelected(!!e.target.value); setPage(1); }}
-                                className="input-field w-auto"
-                            >
-                                <option value="">-- เลือก Event --</option>
-                                {eventOptions.map((e) => (
-                                    <option key={e.id} value={e.id}>{e.name}</option>
-                                ))}
-                            </select>
                     </div>
 
                     <div className="flex gap-2">
@@ -217,18 +218,18 @@ export default function RegistrationsPage() {
             </div>
 
             {/* Table */}
-            <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+            <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm">
                 {!eventSelected ? (
-                    <div className="text-center py-16 text-gray-400">
+                    <div className="text-center py-16 text-zinc-400">
                         <IconUsers size={40} className="mx-auto mb-3 opacity-30" />
                         <p className="font-medium">กรุณาเลือก Event เพื่อดูข้อมูล</p>
                     </div>
                 ) : isLoading ? (
                     <div className="flex justify-center py-12">
-                        <IconLoader2 size={32} className="animate-spin text-blue-600" />
+                        <IconLoader2 size={32} className="animate-spin text-emerald-600" />
                     </div>
                 ) : registrations.length === 0 ? (
-                    <div className="text-center py-12 text-gray-500">
+                    <div className="text-center py-12 text-zinc-400">
                         No registrations found.
                     </div>
                 ) : (
@@ -236,37 +237,37 @@ export default function RegistrationsPage() {
                         <div className="overflow-x-auto">
                             <table className="w-full">
                                 <thead>
-                                    <tr className="bg-gray-50 border-b border-gray-200">
-                                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Code</th>
-                                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Attendee</th>
-                                        <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Event</th>
-                                        <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Ticket</th>
-                                        <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
-                                        <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Source</th>
-                                        <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider w-[100px]">Actions</th>
+                                    <tr className="bg-zinc-50 border-b border-zinc-200">
+                                        <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-500 uppercase tracking-wider">Code</th>
+                                        <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-500 uppercase tracking-wider">Attendee</th>
+                                        <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">Event</th>
+                                        <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">Ticket</th>
+                                        <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">Status</th>
+                                        <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">Source</th>
+                                        <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider w-[100px]">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100">
                                     {registrations.map((reg) => (
-                                        <tr key={reg.id} className="hover:bg-gray-50 transition-colors">
+                                        <tr key={reg.id} className="hover:bg-zinc-50 transition-colors">
                                             <td className="px-4 py-4">
-                                                <span className="font-mono text-sm text-gray-600 bg-gray-100 px-2 py-1 rounded">
+                                                <span className="font-mono text-sm text-zinc-500 bg-zinc-100 px-2 py-1 rounded">
                                                     {reg.regCode}
                                                 </span>
                                             </td>
                                             <td className="px-4 py-4">
                                                 <div>
-                                                    <p className="font-medium text-gray-900">{reg.firstName} {reg.lastName}</p>
-                                                    <p className="text-sm text-gray-500">{reg.email}</p>
+                                                    <p className="font-medium text-zinc-900">{reg.firstName} {reg.lastName}</p>
+                                                    <p className="text-sm text-zinc-400">{reg.email}</p>
                                                 </div>
                                             </td>
                                             <td className="px-4 py-4 text-center">
-                                                <span className="inline-flex px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+                                                <span className="inline-flex px-2.5 py-1 rounded-full text-xs font-medium bg-zinc-100 text-zinc-600">
                                                     {reg.eventCode}
                                                 </span>
                                             </td>
                                             <td className="px-4 py-4 text-center">
-                                                <span className="inline-flex px-2.5 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700">
+                                                <span className="inline-flex px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700">
                                                     {reg.ticketName}
                                                 </span>
                                             </td>
@@ -301,7 +302,7 @@ export default function RegistrationsPage() {
                                                         Purchase
                                                     </span>
                                                 ) : (
-                                                    <span className="inline-flex px-2 py-1 rounded-full text-xs font-medium bg-gray-50 text-gray-500">
+                                                    <span className="inline-flex px-2 py-1 rounded-full text-xs font-medium bg-zinc-50 text-zinc-400">
                                                         {reg.source || '-'}
                                                     </span>
                                                 )}
@@ -310,7 +311,7 @@ export default function RegistrationsPage() {
                                                 <div className="flex gap-1 justify-center items-center">
                                                     <Link
                                                         href={`/registrations/${reg.id}`}
-                                                        className="p-2 hover:bg-blue-50 rounded-lg text-gray-500 hover:text-blue-600 transition-colors"
+                                                        className="p-2 hover:bg-emerald-50 rounded-lg text-zinc-400 hover:text-emerald-600 transition-colors"
                                                         title="View Details"
                                                     >
                                                         <IconEye size={18} />
@@ -327,7 +328,9 @@ export default function RegistrationsPage() {
                                 currentPage={page}
                                 totalPages={totalPages}
                                 totalCount={totalCount}
+                                pageSize={limit}
                                 onPageChange={setPage}
+                                onPageSizeChange={setLimit}
                                 itemName="registrations"
                             />
                         </div>

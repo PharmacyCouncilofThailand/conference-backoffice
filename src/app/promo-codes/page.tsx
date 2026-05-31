@@ -93,6 +93,7 @@ export default function PromoCodesPage() {
     const [eventFilter, setEventFilter] = useState<number | ''>('');
     const [statusFilter, setStatusFilter] = useState('');
     const [page, setPage] = useState(1);
+    const [limit, setLimit] = useState(10);
     const [totalPages, setTotalPages] = useState(1);
     const [totalCount, setTotalCount] = useState(0);
 
@@ -154,7 +155,7 @@ export default function PromoCodesPage() {
         setIsLoading(true);
         try {
             const token = getBackofficeToken();
-            const params: any = { page, limit: 10 };
+            const params: any = { page, limit };
             if (eventFilter) params.eventId = eventFilter;
             if (statusFilter) params.status = statusFilter;
             if (searchTerm) params.search = searchTerm;
@@ -417,17 +418,17 @@ export default function PromoCodesPage() {
     return (
         <AdminLayout title="Promo Codes">
             {/* Event Filter - Above Content */}
-            <div className="mb-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-xl p-4 flex items-center gap-3">
-                <div className="bg-blue-100 p-2 rounded-lg">
-                    <IconCalendarEvent className="text-blue-600" size={20} />
+            <div className="mb-4 card flex items-center gap-3">
+                <div className="bg-emerald-50 p-2 rounded-lg">
+                    <IconCalendarEvent className="text-emerald-600" size={20} />
                 </div>
-                <span className="text-sm font-medium text-gray-700">Select Event:</span>
+                <span className="text-sm font-medium text-zinc-600">Select Event:</span>
                 <select
                     value={eventFilter}
                     onChange={(e) => { setEventFilter(e.target.value ? Number(e.target.value) : ''); setPage(1); }}
-                    className="input-field pr-8 min-w-[250px] font-semibold bg-white"
+                    className="input-field w-auto font-semibold"
                 >
-                    <option value="">All Events</option>
+                    <option value="">-- เลือก Event --</option>
                     {events.map((event) => (
                         <option key={event.id} value={event.id}>{event.name}</option>
                     ))}
@@ -438,12 +439,12 @@ export default function PromoCodesPage() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                 <div className="card py-4">
                     <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center text-blue-600">
+                        <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600">
                             <IconDiscount size={24} stroke={1.5} />
                         </div>
                         <div>
-                            <p className="text-2xl font-bold text-gray-800">{isLoading ? '-' : stats.total}</p>
-                            <p className="text-sm text-gray-500">Total Codes</p>
+                            <p className="text-2xl font-bold text-zinc-800">{isLoading ? '-' : stats.total}</p>
+                            <p className="text-sm text-zinc-400">Total Codes</p>
                         </div>
                     </div>
                 </div>
@@ -454,7 +455,7 @@ export default function PromoCodesPage() {
                         </div>
                         <div>
                             <p className="text-2xl font-bold text-green-600">{stats.active}</p>
-                            <p className="text-sm text-gray-500">Active</p>
+                            <p className="text-sm text-zinc-400">Active</p>
                         </div>
                     </div>
                 </div>
@@ -465,7 +466,7 @@ export default function PromoCodesPage() {
                         </div>
                         <div>
                             <p className="text-2xl font-bold text-red-600">{stats.expired}</p>
-                            <p className="text-sm text-gray-500">Expired</p>
+                            <p className="text-sm text-zinc-400">Expired</p>
                         </div>
                     </div>
                 </div>
@@ -476,7 +477,7 @@ export default function PromoCodesPage() {
                         </div>
                         <div>
                             <p className="text-2xl font-bold text-purple-600">{stats.totalUsed}</p>
-                            <p className="text-sm text-gray-500">Total Used</p>
+                            <p className="text-sm text-zinc-400">Total Used</p>
                         </div>
                     </div>
                 </div>
@@ -485,7 +486,7 @@ export default function PromoCodesPage() {
             {/* Main Card */}
             <div className="card">
                 <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-lg font-semibold text-gray-800">
+                    <h2 className="text-lg font-semibold text-zinc-800">
                         {eventFilter ? `Promo Codes for ${events.find(e => e.id === eventFilter)?.name || 'Event'}` : 'All Promo Codes'}
                     </h2>
                     <button
@@ -500,7 +501,7 @@ export default function PromoCodesPage() {
                 {/* Filters */}
                 <div className="flex flex-col md:flex-row gap-4 mb-6">
                     <div className="relative flex-1 max-w-md">
-                        <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 z-10 pointer-events-none" size={18} />
+                        <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 z-10 pointer-events-none" size={18} />
                         <input
                             type="text"
                             placeholder="Search by code or description..."
@@ -526,24 +527,24 @@ export default function PromoCodesPage() {
                 {/* Table */}
                 {isLoading ? (
                     <div className="flex items-center justify-center py-12">
-                        <IconLoader2 size={32} className="animate-spin text-blue-600" />
+                        <IconLoader2 size={32} className="animate-spin text-emerald-600" />
                     </div>
                 ) : promoCodes.length === 0 ? (
-                    <div className="text-center py-12 text-gray-500">
+                    <div className="text-center py-12 text-zinc-400">
                         No promo codes found.
                     </div>
                 ) : (
-                    <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+                    <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm">
                         <table className="w-full">
                             <thead>
-                                <tr className="bg-gray-50 border-b border-gray-200">
-                                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Promo Code</th>
-                                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Event</th>
-                                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Discount</th>
-                                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Usage</th>
-                                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
-                                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Period</th>
-                                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
+                                <tr className="bg-zinc-50 border-b border-zinc-200">
+                                    <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-500 uppercase tracking-wider">Promo Code</th>
+                                    <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">Event</th>
+                                    <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">Discount</th>
+                                    <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">Usage</th>
+                                    <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">Status</th>
+                                    <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">Period</th>
+                                    <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100">
@@ -570,20 +571,20 @@ export default function PromoCodesPage() {
                                         discountDetails.push(`Per user ${promo.maxUsesPerUser}`);
                                     }
                                     return (
-                                        <tr key={promo.id} className="hover:bg-gray-50 transition-colors">
+                                        <tr key={promo.id} className="hover:bg-zinc-50 transition-colors">
                                             <td className="px-4 py-4">
-                                                <p className="font-mono font-semibold text-gray-900">{promo.code}</p>
-                                                <p className="text-sm text-gray-500">{promo.description || '-'}</p>
+                                                <p className="font-mono font-semibold text-zinc-900">{promo.code}</p>
+                                                <p className="text-sm text-zinc-400">{promo.description || '-'}</p>
                                             </td>
                                             <td className="px-4 py-4 text-center">
-                                                <span className="inline-flex px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+                                                <span className="inline-flex px-2.5 py-1 rounded-full text-xs font-medium bg-zinc-100 text-zinc-600">
                                                     {promo.eventCode || getEventName(promo.eventId)}
                                                 </span>
                                             </td>
                                             <td className="px-4 py-4 text-center">
                                                 <p className="font-semibold text-green-600">{discountLabel}</p>
                                                 {discountDetails.length > 0 && (
-                                                    <p className="text-xs text-gray-400 mt-1">
+                                                    <p className="text-xs text-zinc-400 mt-1">
                                                         {discountDetails.join(' • ')}
                                                     </p>
                                                 )}
@@ -591,9 +592,9 @@ export default function PromoCodesPage() {
                                             <td className="px-4 py-4 text-center">
                                                 <div className="w-20 mx-auto">
                                                     <div className="flex justify-between text-xs mb-1">
-                                                        <span className="text-gray-600">{promo.usedCount}/{promo.maxUses}</span>
+                                                        <span className="text-zinc-500">{promo.usedCount}/{promo.maxUses}</span>
                                                     </div>
-                                                    <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+                                                    <div className="w-full h-2 bg-zinc-200 rounded-full overflow-hidden">
                                                         <div
                                                             className={`h-full rounded-full ${usagePercentage >= 100 ? 'bg-red-500' : usagePercentage >= 80 ? 'bg-yellow-500' : 'bg-green-500'}`}
                                                             style={{ width: `${Math.min(usagePercentage, 100)}%` }}
@@ -602,32 +603,32 @@ export default function PromoCodesPage() {
                                                 </div>
                                             </td>
                                             <td className="px-4 py-4 text-center">
-                                                <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${statusColors[promo.status] || 'bg-gray-100 text-gray-700'}`}>
+                                                <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${statusColors[promo.status] || 'bg-zinc-100 text-zinc-600'}`}>
                                                     {promo.status.charAt(0).toUpperCase() + promo.status.slice(1)}
                                                 </span>
                                             </td>
                                             <td className="px-4 py-4 text-center">
-                                                <p className="text-sm text-gray-600">{promo.validFrom?.split('T')[0] || '-'}</p>
-                                                <p className="text-xs text-gray-400">to {promo.validUntil?.split('T')[0] || '-'}</p>
+                                                <p className="text-sm text-zinc-500">{promo.validFrom?.split('T')[0] || '-'}</p>
+                                                <p className="text-xs text-zinc-400">to {promo.validUntil?.split('T')[0] || '-'}</p>
                                             </td>
                                             <td className="px-4 py-4 text-center">
                                                 <div className="flex gap-1 justify-center items-center">
                                                     <button
-                                                        className="p-2 hover:bg-blue-50 rounded-lg text-gray-500 hover:text-blue-600 transition-colors"
+                                                        className="p-2 hover:bg-emerald-50 rounded-lg text-zinc-400 hover:text-emerald-600 transition-colors"
                                                         title="Duplicate"
                                                         onClick={() => handleDuplicate(promo)}
                                                     >
                                                         <IconCopy size={18} />
                                                     </button>
                                                     <button
-                                                        className="p-2 hover:bg-yellow-50 rounded-lg text-gray-500 hover:text-yellow-600 transition-colors"
+                                                        className="p-2 hover:bg-yellow-50 rounded-lg text-zinc-400 hover:text-yellow-600 transition-colors"
                                                         title="Edit"
                                                         onClick={() => openEditModal(promo)}
                                                     >
                                                         <IconPencil size={18} />
                                                     </button>
                                                     <button
-                                                        className="p-2 hover:bg-red-50 rounded-lg text-gray-500 hover:text-red-600 transition-colors"
+                                                        className="p-2 hover:bg-red-50 rounded-lg text-zinc-400 hover:text-red-600 transition-colors"
                                                         title="Delete"
                                                         onClick={() => { setSelectedPromo(promo); setShowDeleteModal(true); }}
                                                     >
@@ -648,7 +649,9 @@ export default function PromoCodesPage() {
                     currentPage={page}
                     totalPages={totalPages}
                     totalCount={totalCount}
+                    pageSize={limit}
                     onPageChange={setPage}
+                    onPageSizeChange={setLimit}
                     itemName="promo codes"
                     hideIfSinglePage={true}
                     showPageInfo={true}
@@ -657,16 +660,16 @@ export default function PromoCodesPage() {
 
             {/* Create/Edit Modal */}
             {(showCreateModal || showEditModal) && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                <div className="modal-overlay">
                     <div className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
-                        <div className="p-6 border-b border-gray-100">
+                        <div className="p-6 border-b border-zinc-100">
                             <div className="flex items-center justify-between">
-                                <h3 className="text-lg font-semibold flex items-center gap-2 text-gray-900">
+                                <h3 className="text-lg font-semibold flex items-center gap-2 text-zinc-900">
                                     <IconDiscount size={20} /> {showCreateModal ? 'Create Promo Code' : 'Edit Promo Code'}
                                 </h3>
                                 <button
                                     onClick={() => { setShowCreateModal(false); setShowEditModal(false); }}
-                                    className="text-gray-400 hover:text-gray-600"
+                                    className="text-zinc-400 hover:text-zinc-500"
                                 >
                                     <IconX size={20} />
                                 </button>
@@ -674,12 +677,12 @@ export default function PromoCodesPage() {
                         </div>
                         <div className="p-6">
                             {isFetchingDetails && (
-                                <div className="flex items-center gap-2 text-sm text-gray-500 mb-4">
+                                <div className="flex items-center gap-2 text-sm text-zinc-400 mb-4">
                                     <IconLoader2 size={16} className="animate-spin" /> Loading promo details...
                                 </div>
                             )}
                             <div className="mb-4">
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Event</label>
+                                <label className="block text-sm font-medium text-zinc-600 mb-1">Event</label>
                                 <select
                                     className="input-field"
                                     value={formData.eventId || ''}
@@ -693,7 +696,7 @@ export default function PromoCodesPage() {
                             </div>
 
                             <div className="mb-4">
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Promo Code *</label>
+                                <label className="block text-sm font-medium text-zinc-600 mb-1">Promo Code *</label>
                                 <div className="flex gap-2">
                                     <input
                                         type="text"
@@ -713,7 +716,7 @@ export default function PromoCodesPage() {
                             </div>
 
                             <div className="mb-4">
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                                <label className="block text-sm font-medium text-zinc-600 mb-1">Description</label>
                                 <input
                                     type="text"
                                     className="input-field"
@@ -725,7 +728,7 @@ export default function PromoCodesPage() {
 
                             <div className="grid grid-cols-2 gap-4 mb-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Discount Type *</label>
+                                    <label className="block text-sm font-medium text-zinc-600 mb-1">Discount Type *</label>
                                     <select
                                         className="input-field"
                                         value={formData.discountType}
@@ -736,7 +739,7 @@ export default function PromoCodesPage() {
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    <label className="block text-sm font-medium text-zinc-600 mb-1">
                                         {formData.discountType === 'percentage' ? 'Discount (%) *' : 'Default Fixed Amount *'}
                                     </label>
                                     <input
@@ -751,7 +754,7 @@ export default function PromoCodesPage() {
                             {formData.discountType === 'fixed' && (
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Fixed THB</label>
+                                        <label className="block text-sm font-medium text-zinc-600 mb-1">Fixed THB</label>
                                         <input
                                             type="number"
                                             className="input-field"
@@ -761,7 +764,7 @@ export default function PromoCodesPage() {
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Fixed USD</label>
+                                        <label className="block text-sm font-medium text-zinc-600 mb-1">Fixed USD</label>
                                         <input
                                             type="number"
                                             className="input-field"
@@ -775,7 +778,7 @@ export default function PromoCodesPage() {
 
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Min Purchase</label>
+                                    <label className="block text-sm font-medium text-zinc-600 mb-1">Min Purchase</label>
                                     <input
                                         type="number"
                                         className="input-field"
@@ -784,7 +787,7 @@ export default function PromoCodesPage() {
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Max Discount</label>
+                                    <label className="block text-sm font-medium text-zinc-600 mb-1">Max Discount</label>
                                     <input
                                         type="number"
                                         className="input-field"
@@ -793,7 +796,7 @@ export default function PromoCodesPage() {
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Max Uses / User</label>
+                                    <label className="block text-sm font-medium text-zinc-600 mb-1">Max Uses / User</label>
                                     <input
                                         type="number"
                                         className="input-field"
@@ -804,7 +807,7 @@ export default function PromoCodesPage() {
                             </div>
 
                             <div className="mb-4">
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Max Uses *</label>
+                                <label className="block text-sm font-medium text-zinc-600 mb-1">Max Uses *</label>
                                 <input
                                     type="number"
                                     className="input-field"
@@ -816,7 +819,7 @@ export default function PromoCodesPage() {
 
                             <div className="grid grid-cols-2 gap-4 mb-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Valid From</label>
+                                    <label className="block text-sm font-medium text-zinc-600 mb-1">Valid From</label>
                                     <DatePicker
                                         selected={formData.validFrom ? new Date(formData.validFrom) : null}
                                         onChange={(date: Date | null) => setFormData({ ...formData, validFrom: date ? date.toISOString() : '' })}
@@ -828,7 +831,7 @@ export default function PromoCodesPage() {
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Valid Until</label>
+                                    <label className="block text-sm font-medium text-zinc-600 mb-1">Valid Until</label>
                                     <DatePicker
                                         selected={formData.validUntil ? new Date(formData.validUntil) : null}
                                         onChange={(date: Date | null) => setFormData({ ...formData, validUntil: date ? date.toISOString() : '' })}
@@ -841,11 +844,11 @@ export default function PromoCodesPage() {
                                 </div>
                             </div>
 
-                            <div className="mb-4 border border-gray-200 rounded-lg p-4 bg-gray-50">
+                            <div className="mb-4 border border-zinc-200 rounded-xl p-4 bg-zinc-50">
                                 <div className="flex items-center justify-between mb-2">
                                     <div>
-                                        <p className="text-sm font-semibold text-gray-800">Rule Sets (Ticket Conditions)</p>
-                                        <p className="text-xs text-gray-500">ถ้าไม่ระบุ rule set โค้ดจะใช้ได้กับทุก ticket</p>
+                                        <p className="text-sm font-semibold text-zinc-800">Rule Sets (Ticket Conditions)</p>
+                                        <p className="text-xs text-zinc-400">ถ้าไม่ระบุ rule set โค้ดจะใช้ได้กับทุก ticket</p>
                                     </div>
                                     <button
                                         type="button"
@@ -857,25 +860,25 @@ export default function PromoCodesPage() {
                                 </div>
 
                                 {isLoadingTickets && (
-                                    <div className="flex items-center gap-2 text-sm text-gray-500">
+                                    <div className="flex items-center gap-2 text-sm text-zinc-400">
                                         <IconLoader2 size={16} className="animate-spin" /> Loading tickets...
                                     </div>
                                 )}
 
                                 {!isLoadingTickets && ticketOptions.length === 0 && (
-                                    <p className="text-sm text-gray-400">ไม่พบรายการ ticket สำหรับ event นี้</p>
+                                    <p className="text-sm text-zinc-400">ไม่พบรายการ ticket สำหรับ event นี้</p>
                                 )}
 
                                 {formData.ruleSets.length === 0 && !isLoadingTickets && (
-                                    <p className="text-sm text-gray-500 mt-2">ยังไม่มี rule set</p>
+                                    <p className="text-sm text-zinc-400 mt-2">ยังไม่มี rule set</p>
                                 )}
 
                                 <div className="mt-3 space-y-3">
                                     {formData.ruleSets.map((ruleSet, idx) => (
-                                        <div key={`${ruleSet.matchType}-${idx}`} className="bg-white border border-gray-200 rounded-lg p-3">
+                                        <div key={`${ruleSet.matchType}-${idx}`} className="bg-white border border-zinc-200 rounded-xl p-3">
                                             <div className="flex items-center justify-between mb-3">
                                                 <div className="flex items-center gap-2">
-                                                    <span className="text-xs font-semibold text-gray-500">Match Type</span>
+                                                    <span className="text-xs font-semibold text-zinc-400">Match Type</span>
                                                     <select
                                                         className="input-field py-1 text-sm"
                                                         value={ruleSet.matchType}
@@ -897,7 +900,7 @@ export default function PromoCodesPage() {
 
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                                 {ticketOptions.map((ticket) => (
-                                                    <label key={ticket.id} className="flex items-start gap-2 text-sm text-gray-700">
+                                                    <label key={ticket.id} className="flex items-start gap-2 text-sm text-zinc-600">
                                                         <input
                                                             type="checkbox"
                                                             checked={ruleSet.ticketTypeIds.includes(ticket.id)}
@@ -921,11 +924,11 @@ export default function PromoCodesPage() {
                                         onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
                                         className="rounded"
                                     />
-                                    <span className="text-sm font-medium text-gray-700">Active</span>
+                                    <span className="text-sm font-medium text-zinc-600">Active</span>
                                 </label>
                             </div>
                         </div>
-                        <div className="p-6 border-t border-gray-100 flex gap-3 justify-end">
+                        <div className="p-6 border-t border-zinc-100 flex gap-3 justify-end">
                             <button
                                 onClick={() => { setShowCreateModal(false); setShowEditModal(false); }}
                                 className="btn-secondary"
@@ -948,7 +951,7 @@ export default function PromoCodesPage() {
 
             {/* Delete Modal */}
             {showDeleteModal && selectedPromo && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                <div className="modal-overlay">
                     <div className="bg-white rounded-2xl max-w-md w-full">
                         <div className="p-6 bg-red-600 rounded-t-2xl">
                             <h3 className="text-lg font-semibold text-white flex items-center gap-2">
@@ -959,15 +962,15 @@ export default function PromoCodesPage() {
                             <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
                                 <IconTrash size={32} className="text-red-600" />
                             </div>
-                            <p className="mb-2 text-gray-900 font-medium">Are you sure you want to delete this promo code?</p>
-                            <p className="font-mono font-semibold text-gray-800 text-lg">{selectedPromo.code}</p>
+                            <p className="mb-2 text-zinc-900 font-medium">Are you sure you want to delete this promo code?</p>
+                            <p className="font-mono font-semibold text-zinc-800 text-lg">{selectedPromo.code}</p>
                             {selectedPromo.usedCount > 0 && (
                                 <p className="text-sm text-yellow-600 mt-2 bg-yellow-50 p-2 rounded">
                                     ⚠️ This code has been used {selectedPromo.usedCount} time(s)
                                 </p>
                             )}
                         </div>
-                        <div className="p-6 border-t border-gray-100 flex gap-3 justify-end">
+                        <div className="p-6 border-t border-zinc-100 flex gap-3 justify-end">
                             <button
                                 onClick={() => setShowDeleteModal(false)}
                                 className="btn-secondary"

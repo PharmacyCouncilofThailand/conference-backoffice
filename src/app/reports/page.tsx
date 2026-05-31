@@ -65,7 +65,7 @@ const checkInBySession = [
     { name: 'Closing', registered: 380, checkedIn: 0 },
 ];
 
-const COLORS = ['#3b82f6', '#10b981', '#8b5cf6', '#f59e0b'];
+const COLORS = ['#059669', '#059669', '#d97706', '#34d399'];
 
 export default function ReportsPage() {
     const { currentEvent } = useAuth();
@@ -83,19 +83,19 @@ export default function ReportsPage() {
                 <div className="flex gap-2">
                     <button
                         onClick={() => setReportType('overview')}
-                        className={`px-4 py-2 rounded-lg font-medium transition-colors ${reportType === 'overview' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                        className={`px-4 py-2 rounded-xl font-medium transition-colors ${reportType === 'overview' ? 'bg-emerald-700 text-white' : 'bg-zinc-100 text-zinc-500 hover:bg-zinc-200'}`}
                     >
                         Overview
                     </button>
                     <button
                         onClick={() => setReportType('revenue')}
-                        className={`px-4 py-2 rounded-lg font-medium transition-colors ${reportType === 'revenue' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                        className={`px-4 py-2 rounded-xl font-medium transition-colors ${reportType === 'revenue' ? 'bg-emerald-700 text-white' : 'bg-zinc-100 text-zinc-500 hover:bg-zinc-200'}`}
                     >
                         Revenue
                     </button>
                     <button
                         onClick={() => setReportType('attendance')}
-                        className={`px-4 py-2 rounded-lg font-medium transition-colors ${reportType === 'attendance' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                        className={`px-4 py-2 rounded-xl font-medium transition-colors ${reportType === 'attendance' ? 'bg-emerald-700 text-white' : 'bg-zinc-100 text-zinc-500 hover:bg-zinc-200'}`}
                     >
                         Attendance
                     </button>
@@ -135,8 +135,8 @@ export default function ReportsPage() {
                             <IconUsers size={24} />
                         </div>
                         <div>
-                            <p className="text-2xl font-bold text-gray-800">{totalRegistrations}</p>
-                            <p className="text-gray-500 text-sm">Total Registrations</p>
+                            <p className="text-2xl font-bold text-zinc-800">{totalRegistrations}</p>
+                            <p className="text-zinc-400 text-sm">Total Registrations</p>
                         </div>
                     </div>
                 </div>
@@ -146,8 +146,8 @@ export default function ReportsPage() {
                             <IconCheck size={24} />
                         </div>
                         <div>
-                            <p className="text-2xl font-bold text-gray-800">{totalCheckedIn}</p>
-                            <p className="text-gray-500 text-sm">Checked In</p>
+                            <p className="text-2xl font-bold text-zinc-800">{totalCheckedIn}</p>
+                            <p className="text-zinc-400 text-sm">Checked In</p>
                         </div>
                     </div>
                 </div>
@@ -157,8 +157,8 @@ export default function ReportsPage() {
                             <IconTrendingUp size={24} />
                         </div>
                         <div>
-                            <p className="text-2xl font-bold text-gray-800">{Math.round((totalCheckedIn / totalRegistrations) * 100)}%</p>
-                            <p className="text-gray-500 text-sm">Check-in Rate</p>
+                            <p className="text-2xl font-bold text-zinc-800">{Math.round((totalCheckedIn / totalRegistrations) * 100)}%</p>
+                            <p className="text-zinc-400 text-sm">Check-in Rate</p>
                         </div>
                     </div>
                 </div>
@@ -168,8 +168,8 @@ export default function ReportsPage() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
                 {/* Registration Trend */}
                 <div className="card">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                        <IconUsers size={20} className="text-blue-600" />
+                    <h3 className="text-lg font-semibold text-zinc-800 mb-4 flex items-center gap-2">
+                        <IconUsers size={20} className="text-emerald-600" />
                         Registration Trend
                     </h3>
                     <div className="h-72">
@@ -177,15 +177,15 @@ export default function ReportsPage() {
                             <AreaChart data={registrationTrend}>
                                 <defs>
                                     <linearGradient id="colorReg" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8} />
-                                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                                        <stop offset="5%" stopColor="#059669" stopOpacity={0.3} />
+                                        <stop offset="95%" stopColor="#059669" stopOpacity={0} />
                                     </linearGradient>
                                 </defs>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
                                 <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: '#6b7280', fontSize: 12 }} />
                                 <YAxis axisLine={false} tickLine={false} tick={{ fill: '#6b7280', fontSize: 12 }} />
                                 <Tooltip contentStyle={{ borderRadius: '0.5rem', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }} />
-                                <Area type="monotone" dataKey="count" stroke="#3b82f6" strokeWidth={3} fillOpacity={1} fill="url(#colorReg)" />
+                                <Area type="monotone" dataKey="count" stroke="#059669" strokeWidth={2.5} fillOpacity={1} fill="url(#colorReg)" />
                             </AreaChart>
                         </ResponsiveContainer>
                     </div>
@@ -193,7 +193,7 @@ export default function ReportsPage() {
 
                 {/* Revenue by Ticket Type */}
                 <div className="card">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                    <h3 className="text-lg font-semibold text-zinc-800 mb-4 flex items-center gap-2">
                         <IconTicket size={20} className="text-purple-600" />
                         Revenue by Ticket Type
                     </h3>
@@ -221,11 +221,11 @@ export default function ReportsPage() {
                                 <div key={item.name} className="flex items-center justify-between">
                                     <div className="flex items-center gap-2">
                                         <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[index] }} />
-                                        <span className="text-sm text-gray-600">{item.name}</span>
+                                        <span className="text-sm text-zinc-500">{item.name}</span>
                                     </div>
                                     <div className="text-right">
-                                        <span className="font-semibold text-gray-800">฿{item.value.toLocaleString()}</span>
-                                        <span className="text-xs text-gray-400 ml-2">({item.count} tickets)</span>
+                                        <span className="font-semibold text-zinc-800">฿{item.value.toLocaleString()}</span>
+                                        <span className="text-xs text-zinc-400 ml-2">({item.count} tickets)</span>
                                     </div>
                                 </div>
                             ))}
@@ -238,7 +238,7 @@ export default function ReportsPage() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Daily Revenue */}
                 <div className="card">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                    <h3 className="text-lg font-semibold text-zinc-800 mb-4 flex items-center gap-2">
                         <IconCreditCard size={20} className="text-green-600" />
                         Daily Revenue (This Week)
                     </h3>
@@ -257,8 +257,8 @@ export default function ReportsPage() {
 
                 {/* Check-in by Session */}
                 <div className="card">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                        <IconCalendarEvent size={20} className="text-blue-600" />
+                    <h3 className="text-lg font-semibold text-zinc-800 mb-4 flex items-center gap-2">
+                        <IconCalendarEvent size={20} className="text-emerald-600" />
                         Check-in by Session
                     </h3>
                     <div className="space-y-4">
@@ -267,12 +267,12 @@ export default function ReportsPage() {
                             return (
                                 <div key={session.name}>
                                     <div className="flex items-center justify-between mb-1">
-                                        <span className="text-sm text-gray-600 truncate flex-1">{session.name}</span>
-                                        <span className="text-sm font-medium text-gray-800">{session.checkedIn}/{session.registered}</span>
+                                        <span className="text-sm text-zinc-500 truncate flex-1">{session.name}</span>
+                                        <span className="text-sm font-medium text-zinc-800">{session.checkedIn}/{session.registered}</span>
                                     </div>
-                                    <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+                                    <div className="w-full h-2 bg-zinc-100 rounded-full overflow-hidden">
                                         <div
-                                            className={`h-full rounded-full transition-all ${percent >= 90 ? 'bg-green-500' : percent >= 50 ? 'bg-blue-500' : percent > 0 ? 'bg-yellow-500' : 'bg-gray-300'}`}
+                                            className={`h-full rounded-full transition-all ${percent >= 90 ? 'bg-green-500' : percent >= 50 ? 'bg-emerald-600' : percent > 0 ? 'bg-yellow-500' : 'bg-gray-300'}`}
                                             style={{ width: `${percent}%` }}
                                         />
                                     </div>

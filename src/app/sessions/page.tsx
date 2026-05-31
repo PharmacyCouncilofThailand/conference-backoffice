@@ -425,21 +425,21 @@ export default function SessionsPage() {
 
     // Helper to render a session card (to avoid duplication in layout split)
     const renderSessionCard = (session: Session, index: number, isMain: boolean) => {
-        const colors = isMain ? ['#8B5CF6'] : ['#3B82F6', '#10B981', '#F59E0B', '#EC4899', '#6366F1'];
+        const colors = isMain ? ['#059669'] : ['#059669', '#059669', '#d97706', '#34d399', '#6366F1'];
         const sessionColor = colors[index % colors.length];
         const capacityPercentage = session.maxCapacity > 0 ? Math.min((session.enrolledCount / session.maxCapacity) * 100, 100) : 0;
 
         return (
             <div
                 key={session.id}
-                className={`group relative bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 animate-fade-in border-2 ${isMain ? 'border-purple-200' : 'border-transparent'}`}
+                className={`group relative bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 animate-fade-in border-2 ${isMain ? 'border-emerald-200' : 'border-transparent'}`}
                 style={{ marginBottom: '0', display: 'flex', flexDirection: 'column', height: '100%' }}
             >
                 {/* Header with gradient */}
                 <div
                     style={{
                         background: isMain
-                            ? `linear-gradient(135deg, #7C3AED 0%, #8B5CF6 100%)`
+                            ? `linear-gradient(135deg, #065f46 0%, #059669 100%)`
                             : `linear-gradient(135deg, ${sessionColor} 0%, ${sessionColor}dd 100%)`,
                         color: 'white',
                         padding: '25px'
@@ -708,17 +708,17 @@ export default function SessionsPage() {
     return (
         <AdminLayout title="Global Sessions Manager">
             {/* Event Filter - Above Content */}
-            <div className="mb-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-xl p-4 flex items-center gap-3">
-                <div className="bg-blue-100 p-2 rounded-lg">
-                    <IconCalendarEvent className="text-blue-600" size={20} />
+            <div className="mb-4 card flex items-center gap-3">
+                <div className="bg-emerald-50 p-2 rounded-lg">
+                    <IconCalendarEvent className="text-emerald-600" size={20} />
                 </div>
-                <span className="text-sm font-medium text-gray-700">Select Event:</span>
+                <span className="text-sm font-medium text-zinc-600">Select Event:</span>
                 <select
                     value={eventFilter}
                     onChange={(e) => { setEventFilter(e.target.value ? Number(e.target.value) : ''); setPage(1); }}
-                    className="input-field pr-8 min-w-[250px] font-semibold bg-white"
+                    className="input-field w-auto font-semibold"
                 >
-                    <option value="">All Events</option>
+                    <option value="">-- เลือก Event --</option>
                     {events.map((event) => (
                         <option key={event.id} value={event.id}>{event.name}</option>
                     ))}
@@ -728,19 +728,19 @@ export default function SessionsPage() {
             {/* Header Actions */}
             <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
                 <div className="flex items-center gap-4">
-                    <h2 className="text-lg font-semibold text-gray-800">
+                    <h2 className="text-lg font-semibold text-zinc-800">
                         {eventFilter ? `Sessions for ${events.find(e => e.id === eventFilter)?.name || 'Event'}` : 'All Sessions'}
                     </h2>
-                    <div className="flex items-center gap-2 bg-gray-100 p-1 rounded-lg">
+                    <div className="flex items-center gap-2 bg-zinc-100 p-1 rounded-lg">
                         <button
                             onClick={() => setViewMode('list')}
-                            className={`p-2 rounded-md transition-colors ${viewMode === 'list' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+                            className={`p-2 rounded-md transition-colors ${viewMode === 'list' ? 'bg-white shadow-sm text-emerald-600' : 'text-zinc-400 hover:text-zinc-600'}`}
                         >
                             <IconLayoutList size={20} />
                         </button>
                         <button
                             onClick={() => setViewMode('timeline')}
-                            className={`p-2 rounded-md transition-colors ${viewMode === 'timeline' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+                            className={`p-2 rounded-md transition-colors ${viewMode === 'timeline' ? 'bg-white shadow-sm text-emerald-600' : 'text-zinc-400 hover:text-zinc-600'}`}
                         >
                             <IconTimeline size={20} />
                         </button>
@@ -749,7 +749,7 @@ export default function SessionsPage() {
 
                 <div className="flex gap-4 w-full md:w-auto">
                     <div className="relative flex-1 md:w-64">
-                        <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                        <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" size={18} />
                         <input
                             type="text"
                             placeholder="Search sessions..."
@@ -770,10 +770,10 @@ export default function SessionsPage() {
             {/* Content */}
             {isLoading ? (
                 <div className="flex justify-center py-20">
-                    <IconLoader2 size={40} className="animate-spin text-blue-600" />
+                    <IconLoader2 size={40} className="animate-spin text-emerald-600" />
                 </div>
             ) : sessions.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-20 text-gray-400">
+                <div className="flex flex-col items-center justify-center py-20 text-zinc-400">
                     <IconCalendarEvent size={64} className="mb-4 opacity-50" />
                     <p className="text-lg">No sessions found</p>
                 </div>
@@ -788,8 +788,8 @@ export default function SessionsPage() {
                                     <IconStar size={24} />
                                 </span>
                                 <div>
-                                    <h2 className="text-xl font-bold text-gray-900 leading-tight">Main Sessions</h2>
-                                    <p className="text-sm text-gray-500">Keynotes and Plenary sessions</p>
+                                    <h2 className="text-xl font-bold text-zinc-900 leading-tight">Main Sessions</h2>
+                                    <p className="text-sm text-zinc-400">Keynotes and Plenary sessions</p>
                                 </div>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -802,12 +802,12 @@ export default function SessionsPage() {
                     {sessions.filter(s => !s.isMainSession).length > 0 && (
                         <div>
                             <div className="flex items-center gap-3 mb-6">
-                                <span className="p-2 bg-blue-100 text-blue-600 rounded-lg">
+                                <span className="p-2 bg-emerald-50 text-emerald-600 rounded-lg">
                                     <IconLayoutList size={24} />
                                 </span>
                                 <div>
-                                    <h2 className="text-xl font-bold text-gray-900 leading-tight">Sub Sessions / Breakouts</h2>
-                                    <p className="text-sm text-gray-500">Regular sessions, workshops, and other activities</p>
+                                    <h2 className="text-xl font-bold text-zinc-900 leading-tight">Sub Sessions / Breakouts</h2>
+                                    <p className="text-sm text-zinc-400">Regular sessions, workshops, and other activities</p>
                                 </div>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -820,18 +820,18 @@ export default function SessionsPage() {
                 // Timeline View
                 <div className="space-y-4">
                     {sessions.map((session) => (
-                        <div key={session.id} className="card flex flex-col md:flex-row gap-4 p-4 animate-fade-in hover:bg-gray-50 transition-colors">
-                            <div className="md:w-48 shrink-0 flex flex-row md:flex-col justify-between md:justify-start gap-2 md:border-r md:border-gray-100 md:pr-4">
+                        <div key={session.id} className="card flex flex-col md:flex-row gap-4 p-4 animate-fade-in hover:bg-zinc-50 transition-colors">
+                            <div className="md:w-48 shrink-0 flex flex-row md:flex-col justify-between md:justify-start gap-2 md:border-r md:border-zinc-100 md:pr-4">
                                 <div>
-                                    <p className="font-bold text-gray-800 text-lg">
+                                    <p className="font-bold text-zinc-800 text-lg">
                                         {new Date(session.startTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Bangkok' })}
                                     </p>
-                                    <p className="text-sm text-gray-500">
+                                    <p className="text-sm text-zinc-400">
                                         {new Date(session.startTime).toLocaleDateString('en-US', { timeZone: 'Asia/Bangkok' })}
                                     </p>
                                 </div>
                                 <div className="text-right md:text-left">
-                                    <p className="text-sm text-gray-400">
+                                    <p className="text-sm text-zinc-400">
                                         to {new Date(session.endTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Bangkok' })}
                                     </p>
                                 </div>
@@ -840,7 +840,7 @@ export default function SessionsPage() {
                                 <div className="flex justify-between items-start mb-2">
                                     <div>
                                         <div className="flex items-center gap-2 mb-2">
-                                            <span className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded text-xs font-semibold inline-block">
+                                            <span className="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded text-xs font-semibold inline-block">
                                                 {session.eventCode}
                                             </span>
                                             {session.isMainSession && (
@@ -848,20 +848,20 @@ export default function SessionsPage() {
                                                     <IconStar size={10} /> MAIN
                                                 </span>
                                             )}
-                                            <span className="bg-gray-100 text-gray-600 text-[10px] px-1.5 py-0.5 rounded uppercase font-bold border border-gray-200">
+                                            <span className="bg-zinc-100 text-zinc-500 text-[10px] px-1.5 py-0.5 rounded uppercase font-bold border border-zinc-200">
                                                 {session.sessionType?.replace('_', ' ') || 'OTHER'}
                                             </span>
                                         </div>
-                                        <h3 className="text-lg font-bold text-gray-800">{session.sessionName}</h3>
+                                        <h3 className="text-lg font-bold text-zinc-800">{session.sessionName}</h3>
                                     </div>
                                     <div className="flex gap-2">
-                                        <button onClick={() => openEditModal(session)} className="text-blue-600 hover:text-blue-800 transition-colors p-1 hover:bg-blue-50 rounded"><IconPencil size={18} /></button>
+                                        <button onClick={() => openEditModal(session)} className="text-emerald-600 hover:text-teal-900 transition-colors p-1 hover:bg-emerald-50 rounded"><IconPencil size={18} /></button>
                                         <button onClick={() => { setSelectedSession(session); setShowDeleteModal(true); }} className="text-red-600 hover:text-red-800 transition-colors p-1 hover:bg-red-50 rounded"><IconTrash size={18} /></button>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-4 mt-1">
-                                    <p className="text-gray-600 text-sm flex items-center gap-1"><IconMapPin size={14} className="text-gray-400" /> {session.room || 'TBA'}</p>
-                                    <p className="text-gray-600 text-sm flex items-center gap-1"><IconMicrophone size={14} className="text-gray-400" /> {(session.speakers || []).length} Instructor(s)</p>
+                                    <p className="text-zinc-500 text-sm flex items-center gap-1"><IconMapPin size={14} className="text-zinc-400" /> {session.room || 'TBA'}</p>
+                                    <p className="text-zinc-500 text-sm flex items-center gap-1"><IconMicrophone size={14} className="text-zinc-400" /> {(session.speakers || []).length} Instructor(s)</p>
                                 </div>
                             </div>
                         </div>
@@ -874,15 +874,15 @@ export default function SessionsPage() {
                 totalPages > 1 && (
                     <div className="flex items-center justify-center gap-2 mt-8">
                         <button
-                            className="px-3 py-1 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:text-gray-400"
+                            className="px-3 py-1 border border-zinc-200 rounded-xl text-sm text-zinc-600 hover:bg-zinc-50 disabled:opacity-50 disabled:text-zinc-400"
                             disabled={page <= 1}
                             onClick={() => setPage(p => p - 1)}
                         >
                             Previous
                         </button>
-                        <span className="text-sm text-gray-600">Page {page} of {totalPages}</span>
+                        <span className="text-sm text-zinc-500">Page {page} of {totalPages}</span>
                         <button
-                            className="px-3 py-1 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:text-gray-400"
+                            className="px-3 py-1 border border-zinc-200 rounded-xl text-sm text-zinc-600 hover:bg-zinc-50 disabled:opacity-50 disabled:text-zinc-400"
                             disabled={page >= totalPages}
                             onClick={() => setPage(p => p + 1)}
                         >
@@ -895,11 +895,11 @@ export default function SessionsPage() {
             {/* Create/Edit Modal */}
             {
                 (showCreateModal || showEditModal) && (
-                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="modal-overlay">
                         <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-                            <div className="p-6 border-b border-gray-100 flex justify-between items-center">
-                                <h3 className="text-xl font-bold text-gray-800">{showCreateModal ? 'Create Session' : 'Edit Session'}</h3>
-                                <button onClick={() => { setShowCreateModal(false); setShowEditModal(false); }} className="text-gray-400 hover:text-gray-600">
+                            <div className="p-6 border-b border-zinc-100 flex justify-between items-center">
+                                <h3 className="text-xl font-bold text-zinc-800">{showCreateModal ? 'Create Session' : 'Edit Session'}</h3>
+                                <button onClick={() => { setShowCreateModal(false); setShowEditModal(false); }} className="text-zinc-400 hover:text-zinc-500">
                                     <IconX size={24} />
                                 </button>
                             </div>
@@ -908,24 +908,24 @@ export default function SessionsPage() {
                                 <div className="col-span-2">
                                     {!isSessionsLoading && (formData.isMainSession || !eventSessions.some(s => s.isMainSession && s.id !== selectedSession?.id)) && (
                                         <div className="mb-2">
-                                            <label className="flex items-center gap-2 cursor-pointer p-3 border rounded-lg hover:bg-gray-50 bg-blue-50/50 border-blue-100/50">
+                                            <label className="flex items-center gap-2 cursor-pointer p-3 border rounded-lg hover:bg-zinc-50 bg-emerald-50/50 border-teal-100/50">
                                                 <input
                                                     type="checkbox"
-                                                    className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    className="w-5 h-5 text-emerald-600 rounded focus:ring-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed"
                                                     checked={formData.isMainSession || false}
                                                     onChange={(e) => setFormData({ ...formData, isMainSession: e.target.checked })}
                                                     disabled={formData.isMainSession} // Lock if checked
                                                 />
                                                 <div>
-                                                    <div className="font-medium text-gray-900">
+                                                    <div className="font-medium text-zinc-900">
                                                         Main session
                                                         {formData.isMainSession && (
-                                                            <span className="ml-2 text-xs text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100">
+                                                            <span className="ml-2 text-xs text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-teal-100">
                                                                 Default (Locked)
                                                             </span>
                                                         )}
                                                     </div>
-                                                    <div className="text-xs text-gray-500">Main sessions appear prominently and are auto-linked to Primary tickets.</div>
+                                                    <div className="text-xs text-zinc-400">Main sessions appear prominently and are auto-linked to Primary tickets.</div>
                                                 </div>
                                             </label>
                                         </div>
@@ -933,7 +933,7 @@ export default function SessionsPage() {
                                 </div>
                                 {/* Event Selection */}
                                 <div className="col-span-2 md:col-span-1">
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Event *</label>
+                                    <label className="block text-sm font-medium text-zinc-600 mb-1">Event *</label>
                                     <select
                                         className="input-field"
                                         value={formData.eventId}
@@ -948,7 +948,7 @@ export default function SessionsPage() {
 
                                 {/* Session Code */}
                                 <div className="col-span-2 md:col-span-1">
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Session Code *</label>
+                                    <label className="block text-sm font-medium text-zinc-600 mb-1">Session Code *</label>
                                     <input
                                         type="text"
                                         className="input-field"
@@ -960,7 +960,7 @@ export default function SessionsPage() {
 
                                 {/* Session Name */}
                                 <div className="col-span-2">
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Session Name *</label>
+                                    <label className="block text-sm font-medium text-zinc-600 mb-1">Session Name *</label>
                                     <input
                                         type="text"
                                         className="input-field"
@@ -972,7 +972,7 @@ export default function SessionsPage() {
 
                                 {/* Session Type */}
                                 <div className="col-span-2">
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Session Type *</label>
+                                    <label className="block text-sm font-medium text-zinc-600 mb-1">Session Type *</label>
                                     <select
                                         className="input-field"
                                         value={formData.sessionType}
@@ -985,13 +985,13 @@ export default function SessionsPage() {
                                         <option value="break">Break</option>
                                         <option value="other">Other</option>
                                     </select>
-                                    <p className="text-xs text-gray-400 mt-1">Select the type of session for proper categorization</p>
+                                    <p className="text-xs text-zinc-400 mt-1">Select the type of session for proper categorization</p>
                                 </div>
 
 
                                 {/* Session Date - Start Time */}
                                 <div className="col-span-2 md:col-span-1">
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Start Time *</label>
+                                    <label className="block text-sm font-medium text-zinc-600 mb-1">Start Time *</label>
                                     <DatePicker
                                         selected={formData.startTime ? new Date(formData.startTime) : null}
                                         onChange={(date: Date | null) => setFormData({ ...formData, startTime: date ? date.toISOString() : '' })}
@@ -1005,7 +1005,7 @@ export default function SessionsPage() {
 
                                 {/* Session Date - End Time */}
                                 <div className="col-span-2 md:col-span-1">
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">End Time *</label>
+                                    <label className="block text-sm font-medium text-zinc-600 mb-1">End Time *</label>
                                     <DatePicker
                                         selected={formData.endTime ? new Date(formData.endTime) : null}
                                         onChange={(date: Date | null) => setFormData({ ...formData, endTime: date ? date.toISOString() : '' })}
@@ -1019,7 +1019,7 @@ export default function SessionsPage() {
 
                                 {/* Room */}
                                 <div className="col-span-2 md:col-span-1">
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Room</label>
+                                    <label className="block text-sm font-medium text-zinc-600 mb-1">Room</label>
                                     <input
                                         type="text"
                                         className="input-field"
@@ -1031,7 +1031,7 @@ export default function SessionsPage() {
 
                                 {/* Max Capacity (Enrolled) */}
                                 <div className="col-span-2 md:col-span-1">
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Max Capacity</label>
+                                    <label className="block text-sm font-medium text-zinc-600 mb-1">Max Capacity</label>
                                     <input
                                         type="number"
                                         className="input-field"
@@ -1040,15 +1040,15 @@ export default function SessionsPage() {
                                         value={formData.maxCapacity}
                                         onChange={(e) => setFormData({ ...formData, maxCapacity: Number(e.target.value) })}
                                     />
-                                    <p className="text-xs text-gray-400 mt-1">Set to 0 for unlimited capacity</p>
+                                    <p className="text-xs text-zinc-400 mt-1">Set to 0 for unlimited capacity</p>
                                 </div>
 
                                 {/* Time & Agenda */}
                                 <div className="col-span-2">
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    <label className="block text-sm font-medium text-zinc-600 mb-2">
                                         <IconClock size={16} className="inline mr-1" /> Time & Agenda
                                     </label>
-                                    <p className="text-xs text-gray-500 mb-2">
+                                    <p className="text-xs text-zinc-400 mb-2">
                                         Add agenda items with time slots (e.g. &quot;1:30 – 2:00 PM&quot; and topic).
                                     </p>
                                     {(formData.agenda || []).map((item, idx) => (
@@ -1099,7 +1099,7 @@ export default function SessionsPage() {
                                                 agenda: [...(formData.agenda || []), { time: '', topic: '' }],
                                             });
                                         }}
-                                        className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1 mt-1"
+                                        className="text-sm text-emerald-600 hover:text-teal-900 flex items-center gap-1 mt-1"
                                     >
                                         <IconPlus size={14} /> Add agenda item
                                     </button>
@@ -1107,15 +1107,15 @@ export default function SessionsPage() {
 
                                 {/* Instructor(s) - formerly Speakers */}
                                 <div className="col-span-2">
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    <label className="block text-sm font-medium text-zinc-600 mb-1">
                                         <IconMicrophone size={16} className="inline mr-1" /> Instructor(s)
                                     </label>
-                                    <div className="border border-gray-200 rounded-lg max-h-40 overflow-y-auto">
+                                    <div className="border border-zinc-200 rounded-xl max-h-40 overflow-y-auto">
                                         {speakers.length === 0 ? (
-                                            <p className="p-3 text-sm text-gray-400">No instructors available</p>
+                                            <p className="p-3 text-sm text-zinc-400">No instructors available</p>
                                         ) : (
                                             speakers.map(speaker => (
-                                                <label key={speaker.id} className="flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer border-b last:border-b-0">
+                                                <label key={speaker.id} className="flex items-center gap-3 p-3 hover:bg-zinc-50 cursor-pointer border-b last:border-b-0">
                                                     <input
                                                         type="checkbox"
                                                         checked={formData.selectedSpeakerIds.includes(speaker.id)}
@@ -1125,26 +1125,26 @@ export default function SessionsPage() {
                                                                 : [...formData.selectedSpeakerIds, speaker.id];
                                                             setFormData({ ...formData, selectedSpeakerIds: ids });
                                                         }}
-                                                        className="w-4 h-4 text-blue-600 rounded"
+                                                        className="w-4 h-4 text-emerald-600 rounded"
                                                     />
                                                     <div>
                                                         <p className="font-medium text-sm">{speaker.firstName} {speaker.lastName}</p>
                                                         {speaker.organization && (
-                                                            <p className="text-xs text-gray-500">{speaker.organization}</p>
+                                                            <p className="text-xs text-zinc-400">{speaker.organization}</p>
                                                         )}
                                                     </div>
                                                 </label>
                                             ))
                                         )}
                                     </div>
-                                    <p className="text-xs text-gray-400 mt-1">
+                                    <p className="text-xs text-zinc-400 mt-1">
                                         Selected: {formData.selectedSpeakerIds.length} instructor(s)
                                     </p>
                                 </div>
 
                                 {/* Learning Objectives - formerly Description */}
                                 <div className="col-span-2">
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    <label className="block text-sm font-medium text-zinc-600 mb-1">
                                         <IconTargetArrow size={16} className="inline mr-1" /> Learning Objectives
                                     </label>
                                     <textarea
@@ -1155,7 +1155,7 @@ export default function SessionsPage() {
                                     />
                                 </div>                               
                             </div>
-                            <div className="p-6 border-t border-gray-100 flex justify-end gap-3">
+                            <div className="p-6 border-t border-zinc-100 flex justify-end gap-3">
                                 <button onClick={() => { setShowCreateModal(false); setShowEditModal(false); }} className="btn-secondary" disabled={isSubmitting}>Cancel</button>
                                 <button
                                     onClick={showCreateModal ? handleCreate : handleUpdate}
@@ -1173,7 +1173,7 @@ export default function SessionsPage() {
             {/* Delete Modal */}
             {
                 showDeleteModal && selectedSession && (
-                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="modal-overlay">
                         <div className="bg-white rounded-2xl max-w-md w-full">
                             <div className="p-6 bg-red-600 rounded-t-2xl text-white">
                                 <h3 className="text-lg font-bold flex items-center gap-2">
@@ -1181,11 +1181,11 @@ export default function SessionsPage() {
                                 </h3>
                             </div>
                             <div className="p-6 text-center">
-                                <p className="mb-2 text-gray-900 font-medium">Are you sure you want to delete this session?</p>
-                                <p className="font-bold text-gray-900 text-lg">{selectedSession.sessionName}</p>
-                                <p className="text-gray-700 text-sm mb-4">{selectedSession.sessionCode}</p>
+                                <p className="mb-2 text-zinc-900 font-medium">Are you sure you want to delete this session?</p>
+                                <p className="font-bold text-zinc-900 text-lg">{selectedSession.sessionName}</p>
+                                <p className="text-zinc-600 text-sm mb-4">{selectedSession.sessionCode}</p>
                             </div>
-                            <div className="p-6 border-t border-gray-100 flex justify-end gap-3">
+                            <div className="p-6 border-t border-zinc-100 flex justify-end gap-3">
                                 <button onClick={() => setShowDeleteModal(false)} className="btn-secondary" disabled={isSubmitting}>Cancel</button>
                                 <button onClick={handleDelete} className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700" disabled={isSubmitting}>
                                     {isSubmitting ? 'Deleting...' : 'Delete Session'}
@@ -1199,7 +1199,7 @@ export default function SessionsPage() {
             {/* View Details Modal - Read Only */}
             {
                 showViewModal && selectedSession && (() => {
-                    const colors = ['#8B5CF6', '#3B82F6', '#10B981', '#F59E0B', '#EC4899', '#6366F1'];
+                    const colors = ['#059669', '#047857', '#059669', '#d97706', '#34d399', '#6366F1'];
                     const sessionIndex = sessions.findIndex(s => s.id === selectedSession.id);
                     const sessionColor = colors[sessionIndex % colors.length];
                     const start = new Date(selectedSession.startTime);
@@ -1211,7 +1211,7 @@ export default function SessionsPage() {
                     const duration = hours > 0 ? `${hours}h ${mins > 0 ? mins + 'm' : ''}` : `${mins}m`;
 
                     return (
-                        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                        <div className="modal-overlay">
                             <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
                                 {/* Header with gradient */}
                                 <div
@@ -1264,75 +1264,75 @@ export default function SessionsPage() {
                                 <div className="p-6">
                                     {/* Info Grid */}
                                     <div className="grid grid-cols-2 gap-4 mb-6">
-                                        <div className="bg-gray-50 p-4 rounded-lg">
-                                            <p className="text-xs text-gray-500 uppercase font-semibold mb-1">Session Date</p>
-                                            <p className="font-semibold text-gray-800">
+                                        <div className="bg-zinc-50 p-4 rounded-lg">
+                                            <p className="text-xs text-zinc-400 uppercase font-semibold mb-1">Session Date</p>
+                                            <p className="font-semibold text-zinc-800">
                                                 {start.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'Asia/Bangkok' })}
                                             </p>
-                                            <p className="text-sm text-gray-600">
+                                            <p className="text-sm text-zinc-500">
                                                 {start.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Bangkok' })} - {end.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Bangkok' })}
                                             </p>
                                         </div>
-                                        <div className="bg-gray-50 p-4 rounded-lg">
-                                            <p className="text-xs text-gray-500 uppercase font-semibold mb-1">Duration</p>
-                                            <p className="font-semibold text-gray-800">{duration}</p>
+                                        <div className="bg-zinc-50 p-4 rounded-lg">
+                                            <p className="text-xs text-zinc-400 uppercase font-semibold mb-1">Duration</p>
+                                            <p className="font-semibold text-zinc-800">{duration}</p>
                                         </div>
-                                        <div className="bg-gray-50 p-4 rounded-lg">
-                                            <p className="text-xs text-gray-500 uppercase font-semibold mb-1">Room</p>
-                                            <p className="font-semibold text-gray-800">{selectedSession.room || 'TBA'}</p>
+                                        <div className="bg-zinc-50 p-4 rounded-lg">
+                                            <p className="text-xs text-zinc-400 uppercase font-semibold mb-1">Room</p>
+                                            <p className="font-semibold text-zinc-800">{selectedSession.room || 'TBA'}</p>
                                         </div>
-                                        <div className="bg-gray-50 p-4 rounded-lg">
-                                            <p className="text-xs text-gray-500 uppercase font-semibold mb-1">Session Price</p>
+                                        <div className="bg-zinc-50 p-4 rounded-lg">
+                                            <p className="text-xs text-zinc-400 uppercase font-semibold mb-1">Session Price</p>
                                             <p className="font-bold text-lg" style={{ color: sessionColor }}>Included</p>
                                         </div>
                                     </div>
 
                                     {/* Instructors */}
                                     <div className="mb-6">
-                                        <p className="text-xs text-gray-500 uppercase font-semibold mb-3 flex items-center gap-2">
+                                        <p className="text-xs text-zinc-400 uppercase font-semibold mb-3 flex items-center gap-2">
                                             <IconMicrophone size={14} /> Instructor(s)
                                         </p>
-                                        <div className="bg-gray-50 p-4 rounded-lg">
+                                        <div className="bg-zinc-50 p-4 rounded-lg">
                                             {(selectedSession.speakers || []).length > 0 ? (
                                                 <div className="space-y-2">
                                                     {selectedSession.speakers.map((speaker, i) => (
-                                                        <p key={i} className="font-semibold text-gray-800">{speaker}</p>
+                                                        <p key={i} className="font-semibold text-zinc-800">{speaker}</p>
                                                     ))}
                                                 </div>
                                             ) : (
-                                                <p className="text-gray-400 italic">No instructors assigned</p>
+                                                <p className="text-zinc-400 italic">No instructors assigned</p>
                                             )}
                                         </div>
                                     </div>
 
                                     {/* Learning Objectives */}
                                     <div className="mb-6">
-                                        <p className="text-xs text-gray-500 uppercase font-semibold mb-3 flex items-center gap-2">
+                                        <p className="text-xs text-zinc-400 uppercase font-semibold mb-3 flex items-center gap-2">
                                             <IconTargetArrow size={14} /> Learning Objectives
                                         </p>
-                                        <div className="bg-gray-50 p-4 rounded-lg">
+                                        <div className="bg-zinc-50 p-4 rounded-lg">
                                             {selectedSession.description ? (
-                                                <p className="text-gray-700 leading-relaxed" style={{ whiteSpace: 'pre-line' }}>{selectedSession.description}</p>
+                                                <p className="text-zinc-600 leading-relaxed" style={{ whiteSpace: 'pre-line' }}>{selectedSession.description}</p>
                                             ) : (
-                                                <p className="text-gray-400 italic">No objectives specified</p>
+                                                <p className="text-zinc-400 italic">No objectives specified</p>
                                             )}
                                         </div>
                                     </div>
 
                                     {/* Enrollment Info */}
                                     <div className="mb-6">
-                                        <p className="text-xs text-gray-500 uppercase font-semibold mb-3 flex items-center gap-2">
+                                        <p className="text-xs text-zinc-400 uppercase font-semibold mb-3 flex items-center gap-2">
                                             <IconUsers size={14} /> Enrollment ({enrollments.length}/{selectedSession.maxCapacity || '∞'})
                                         </p>
-                                        <div className="bg-gray-50 p-4 rounded-lg">
+                                        <div className="bg-zinc-50 p-4 rounded-lg">
                                             {/* Progress bar */}
                                             {selectedSession.maxCapacity > 0 && (
                                                 <div className="mb-4">
                                                     <div className="flex justify-between text-sm mb-1">
-                                                        <span className="font-semibold text-gray-700">{enrollments.length} enrolled</span>
-                                                        <span className="text-gray-500">{selectedSession.maxCapacity} max</span>
+                                                        <span className="font-semibold text-zinc-600">{enrollments.length} enrolled</span>
+                                                        <span className="text-zinc-400">{selectedSession.maxCapacity} max</span>
                                                     </div>
-                                                    <div className="bg-gray-200 h-2 rounded-full overflow-hidden">
+                                                    <div className="bg-zinc-200 h-2 rounded-full overflow-hidden">
                                                         <div
                                                             className="h-full rounded-full transition-all"
                                                             style={{
@@ -1347,15 +1347,15 @@ export default function SessionsPage() {
                                             {/* Enrolled Users List */}
                                             {enrollmentsLoading ? (
                                                 <div className="text-center py-4">
-                                                    <div className="inline-block animate-spin rounded-full h-6 w-6 border-2 border-gray-300 border-t-blue-600"></div>
-                                                    <p className="text-gray-500 text-sm mt-2">Loading enrolled users...</p>
+                                                    <div className="inline-block animate-spin rounded-full h-6 w-6 border-2 border-zinc-200 border-t-blue-600"></div>
+                                                    <p className="text-zinc-400 text-sm mt-2">Loading enrolled users...</p>
                                                 </div>
                                             ) : enrollments.length > 0 ? (
                                                 <div className="space-y-2 max-h-60 overflow-y-auto">
                                                     {enrollments.map((enrollment, idx) => (
                                                         <div
                                                             key={enrollment.id}
-                                                            className="flex items-center justify-between bg-white p-3 rounded-lg border border-gray-100 hover:border-gray-200 transition-colors"
+                                                            className="flex items-center justify-between bg-white p-3 rounded-lg border border-zinc-100 hover:border-zinc-200 transition-colors"
                                                         >
                                                             <div className="flex items-center gap-3">
                                                                 <div
@@ -1365,33 +1365,33 @@ export default function SessionsPage() {
                                                                     {idx + 1}
                                                                 </div>
                                                                 <div>
-                                                                    <p className="font-semibold text-gray-800">
+                                                                    <p className="font-semibold text-zinc-800">
                                                                         {enrollment.firstName} {enrollment.lastName}
                                                                     </p>
-                                                                    <p className="text-xs text-gray-500">{enrollment.email}</p>
+                                                                    <p className="text-xs text-zinc-400">{enrollment.email}</p>
                                                                 </div>
                                                             </div>
                                                             <div className="text-right">
                                                                 <span className={`inline-block px-2 py-1 text-xs rounded-full font-medium ${enrollment.status === 'confirmed'
                                                                     ? 'bg-green-100 text-green-700'
-                                                                    : 'bg-gray-100 text-gray-600'
+                                                                    : 'bg-zinc-100 text-zinc-500'
                                                                     }`}>
                                                                     {enrollment.status}
                                                                 </span>
-                                                                <p className="text-xs text-gray-400 mt-1">{enrollment.regCode}</p>
+                                                                <p className="text-xs text-zinc-400 mt-1">{enrollment.regCode}</p>
                                                             </div>
                                                         </div>
                                                     ))}
                                                 </div>
                                             ) : (
-                                                <p className="text-gray-400 italic text-center py-4">No one enrolled yet</p>
+                                                <p className="text-zinc-400 italic text-center py-4">No one enrolled yet</p>
                                             )}
                                         </div>
                                     </div>
                                 </div>
 
                                 {/* Footer */}
-                                <div className="p-6 border-t border-gray-100 flex justify-end gap-3">
+                                <div className="p-6 border-t border-zinc-100 flex justify-end gap-3">
                                     <button
                                         onClick={() => setShowViewModal(false)}
                                         className="btn-secondary"

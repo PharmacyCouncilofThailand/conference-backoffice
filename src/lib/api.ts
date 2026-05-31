@@ -237,6 +237,16 @@ export const api = {
         { method: 'POST', body: formData as unknown as BodyInit, token },
       );
     },
+    resendConfirmation: (token: string, id: number) =>
+      fetchAPI<{ success: boolean; deadline: string; deadlineDays: number }>(
+        `/api/backoffice/abstracts/${id}/resend-confirmation`,
+        { method: 'POST', token },
+      ),
+    manualConfirm: (token: string, id: number) =>
+      fetchAPI<{ success: boolean; abstractId: number; confirmedAt: string; alreadyConfirmed?: boolean }>(
+        `/api/backoffice/abstracts/${id}/manual-confirm`,
+        { method: 'POST', token },
+      ),
   },
 
   checkins: {

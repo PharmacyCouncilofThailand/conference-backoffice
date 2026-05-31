@@ -64,6 +64,7 @@ export default function StudentEligibilityPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
 
@@ -94,7 +95,7 @@ export default function StudentEligibilityPage() {
     try {
       const params = new URLSearchParams();
       params.append("page", page.toString());
-      params.append("limit", "10");
+      params.append("limit", limit.toString());
       if (searchTerm) params.append("search", searchTerm);
       if (statusFilter) params.append("status", statusFilter);
       if (eventFilter) params.append("eventId", eventFilter);
@@ -164,19 +165,19 @@ export default function StudentEligibilityPage() {
     <AdminLayout title="Postgraduate Student Eligibility">
       <div className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
+          <div className="bg-white rounded-xl border border-zinc-200 p-5 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Total Requests</p>
-                <p className="text-3xl font-bold text-gray-900 mt-1">{totalCount}</p>
+                <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">Total Requests</p>
+                <p className="text-3xl font-bold text-zinc-900 mt-1">{totalCount}</p>
               </div>
-              <IconFileCertificate className="text-blue-600" size={32} />
+              <IconFileCertificate className="text-emerald-600" size={32} />
             </div>
           </div>
-          <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
+          <div className="bg-white rounded-xl border border-zinc-200 p-5 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Pending Review</p>
+                <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">Pending Review</p>
                 <p className="text-3xl font-bold text-amber-600 mt-1">
                   {requests.filter((item) => item.status === "pending").length}
                 </p>
@@ -184,38 +185,53 @@ export default function StudentEligibilityPage() {
               <IconClock className="text-amber-500" size={32} />
             </div>
           </div>
-          <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
+          <div className="bg-white rounded-xl border border-zinc-200 p-5 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Fixed Level</p>
-                <p className="text-2xl font-bold text-gray-900 mt-1">Postgraduate</p>
+                <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">Fixed Level</p>
+                <p className="text-2xl font-bold text-zinc-900 mt-1">Postgraduate</p>
               </div>
               <IconFileText className="text-emerald-600" size={32} />
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-          <div className="p-5 border-b border-gray-100">
+        <div className="bg-white rounded-xl border border-zinc-200 shadow-sm overflow-hidden">
+          <div className="p-5 border-b border-zinc-100">
             <div className="flex flex-col lg:flex-row gap-3 lg:items-center lg:justify-between">
               <div>
-                <h2 className="text-lg font-bold text-gray-900">Pharmacist Postgraduate Requests</h2>
-                <p className="text-sm text-gray-500 mt-1">
+                <h2 className="text-lg font-bold text-zinc-900">Pharmacist Postgraduate Requests</h2>
+                <p className="text-sm text-zinc-400 mt-1">
                   Approval applies only to the selected event and unlocks postgraduate student-rate tickets.
                 </p>
               </div>
               <button
                 onClick={fetchRequests}
-                className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-zinc-200 text-sm font-semibold text-zinc-600 hover:bg-zinc-50"
               >
                 <IconRefresh size={16} />
                 Refresh
               </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-[1fr_180px_240px] gap-3 mt-5">
+            <div className="grid grid-cols-1 md:grid-cols-[240px_1fr_180px] gap-3 mt-5">
+              <select
+                value={eventFilter}
+                onChange={(event) => {
+                  setPage(1);
+                  setEventFilter(event.target.value);
+                }}
+                className="input-field"
+              >
+                <option value="">-- เลือก Event --</option>
+                {events.map((event) => (
+                  <option key={event.id} value={event.id}>
+                    {event.eventCode || event.eventName || `Event ${event.id}`}
+                  </option>
+                ))}
+              </select>
               <div className="relative">
-                <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" size={18} />
                 <input
                   value={searchTerm}
                   onChange={(event) => {
@@ -223,7 +239,7 @@ export default function StudentEligibilityPage() {
                     setSearchTerm(event.target.value);
                   }}
                   placeholder="Search name, email, license, or event..."
-                  className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400"
+                  className="input-field-search"
                 />
               </div>
               <select
@@ -232,81 +248,66 @@ export default function StudentEligibilityPage() {
                   setPage(1);
                   setStatusFilter(event.target.value);
                 }}
-                className="px-3 py-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400"
+                className="input-field"
               >
                 <option value="">All Status</option>
                 <option value="pending">Pending</option>
                 <option value="approved">Approved</option>
                 <option value="rejected">Rejected</option>
               </select>
-              <select
-                value={eventFilter}
-                onChange={(event) => {
-                  setPage(1);
-                  setEventFilter(event.target.value);
-                }}
-                className="px-3 py-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400"
-              >
-                <option value="">All Events</option>
-                {events.map((event) => (
-                  <option key={event.id} value={event.id}>
-                    {event.eventCode || event.eventName || `Event ${event.id}`}
-                  </option>
-                ))}
-              </select>
             </div>
           </div>
 
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
+              <thead className="bg-zinc-50 border-b border-zinc-200">
                 <tr>
-                  <th className="px-5 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Applicant</th>
-                  <th className="px-5 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Event</th>
-                  <th className="px-5 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Document</th>
-                  <th className="px-5 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Status</th>
-                  <th className="px-5 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Actions</th>
+                  <th className="px-5 py-3 text-left text-xs font-semibold text-zinc-500 uppercase">Applicant</th>
+                  <th className="px-5 py-3 text-left text-xs font-semibold text-zinc-500 uppercase">Event</th>
+                  <th className="px-5 py-3 text-left text-xs font-semibold text-zinc-500 uppercase">Document</th>
+                  <th className="px-5 py-3 text-left text-xs font-semibold text-zinc-500 uppercase">Status</th>
+                  <th className="px-5 py-3 text-right text-xs font-semibold text-zinc-500 uppercase">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {isLoading ? (
                   <tr>
-                    <td colSpan={5} className="px-5 py-12 text-center text-gray-500">
+                    <td colSpan={5} className="px-5 py-12 text-center text-zinc-400">
                       Loading requests...
                     </td>
                   </tr>
                 ) : requests.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-5 py-12 text-center text-gray-500">
+                    <td colSpan={5} className="px-5 py-12 text-center text-zinc-400">
                       No postgraduate eligibility requests found.
                     </td>
                   </tr>
                 ) : (
                   requests.map((request) => (
-                    <tr key={request.id} className="hover:bg-gray-50">
+                    <tr key={request.id} className="hover:bg-zinc-50">
                       <td className="px-5 py-4">
-                        <p className="font-semibold text-gray-900">{request.name}</p>
-                        <p className="text-sm text-gray-500">{request.email}</p>
-                        <p className="text-xs text-gray-400 mt-1">
+                        <p className="font-semibold text-zinc-900">{request.name}</p>
+                        <p className="text-sm text-zinc-400">{request.email}</p>
+                        <p className="text-xs text-zinc-400 mt-1">
                           License: {request.pharmacyLicenseId || "-"}
                         </p>
                       </td>
                       <td className="px-5 py-4">
-                        <p className="font-semibold text-gray-900">{request.eventCode}</p>
-                        <p className="text-sm text-gray-500">{request.eventName}</p>
-                        <p className="text-xs text-blue-600 font-semibold mt-1">Postgraduate only</p>
+                        <p className="font-semibold text-zinc-900">{request.eventCode}</p>
+                        <p className="text-sm text-zinc-400">{request.eventName}</p>
+                        <p className="text-xs text-emerald-600 font-semibold mt-1">Postgraduate only</p>
                       </td>
                       <td className="px-5 py-4">
-                        <p className="text-sm font-medium text-gray-900 max-w-[220px] truncate">
+                        <p className="text-sm font-medium text-zinc-900 max-w-[220px] truncate">
                           {request.documentFileName}
                         </p>
-                        <p className="text-xs text-gray-400">{formatFileSize(request.documentFileSize)}</p>
+                        <p className="text-xs text-zinc-400">{formatFileSize(request.documentFileSize)}</p>
                       </td>
                       <td className="px-5 py-4">
                         <span className={`inline-flex px-2.5 py-1 rounded-full border text-xs font-semibold capitalize ${statusStyles[request.status]}`}>
                           {request.status}
                         </span>
-                        <p className="text-xs text-gray-400 mt-2">
+                        <p className="text-xs text-zinc-400 mt-2">
                           {new Date(request.createdAt).toLocaleString()}
                         </p>
                       </td>
@@ -314,7 +315,7 @@ export default function StudentEligibilityPage() {
                         <div className="flex justify-end gap-2">
                           <button
                             onClick={() => setSelectedRequest(request)}
-                            className="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100"
+                            className="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-zinc-200 text-zinc-500 hover:bg-zinc-100"
                             title="View"
                           >
                             <IconEye size={18} />
@@ -353,12 +354,14 @@ export default function StudentEligibilityPage() {
           </div>
 
           {totalPages > 1 && (
-            <div className="p-4 border-t border-gray-100">
+            <div className="p-4 border-t border-zinc-100">
               <Pagination
                 currentPage={page}
                 totalPages={totalPages}
                 totalCount={totalCount}
+                pageSize={limit}
                 onPageChange={setPage}
+                onPageSizeChange={setLimit}
                 itemName="requests"
               />
             </div>
@@ -368,32 +371,32 @@ export default function StudentEligibilityPage() {
 
       {selectedRequest && !reviewMode && (
         <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-3xl overflow-hidden">
-            <div className="p-6 border-b border-gray-100 flex items-start justify-between">
+          <div className="bg-white rounded-2xl shadow-lg w-full max-w-3xl overflow-hidden">
+            <div className="p-6 border-b border-zinc-100 flex items-start justify-between">
               <div>
-                <h3 className="text-xl font-bold text-gray-900">Eligibility Request</h3>
-                <p className="text-sm text-gray-500 mt-1">{selectedRequest.eventName}</p>
+                <h3 className="text-xl font-bold text-zinc-900">Eligibility Request</h3>
+                <p className="text-sm text-zinc-400 mt-1">{selectedRequest.eventName}</p>
               </div>
-              <button onClick={resetReviewState} className="p-2 rounded-lg hover:bg-gray-100">
+              <button onClick={resetReviewState} className="p-2 rounded-lg hover:bg-zinc-100">
                 <IconX size={20} />
               </button>
             </div>
             <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-5">
               <div>
-                <p className="text-xs font-semibold text-gray-500 uppercase">Applicant</p>
-                <p className="font-bold text-gray-900 mt-1">{selectedRequest.name}</p>
-                <p className="text-sm text-gray-600">{selectedRequest.email}</p>
+                <p className="text-xs font-semibold text-zinc-400 uppercase">Applicant</p>
+                <p className="font-bold text-zinc-900 mt-1">{selectedRequest.name}</p>
+                <p className="text-sm text-zinc-500">{selectedRequest.email}</p>
               </div>
               <div>
-                <p className="text-xs font-semibold text-gray-500 uppercase">Pharmacy License</p>
-                <p className="font-bold text-gray-900 mt-1">{selectedRequest.pharmacyLicenseId || "-"}</p>
+                <p className="text-xs font-semibold text-zinc-400 uppercase">Pharmacy License</p>
+                <p className="font-bold text-zinc-900 mt-1">{selectedRequest.pharmacyLicenseId || "-"}</p>
               </div>
               <div>
-                <p className="text-xs font-semibold text-gray-500 uppercase">Requested Level</p>
-                <p className="font-bold text-gray-900 mt-1">Postgraduate</p>
+                <p className="text-xs font-semibold text-zinc-400 uppercase">Requested Level</p>
+                <p className="font-bold text-zinc-900 mt-1">Postgraduate</p>
               </div>
               <div>
-                <p className="text-xs font-semibold text-gray-500 uppercase">Status</p>
+                <p className="text-xs font-semibold text-zinc-400 uppercase">Status</p>
                 <span className={`mt-1 inline-flex px-2.5 py-1 rounded-full border text-xs font-semibold capitalize ${statusStyles[selectedRequest.status]}`}>
                   {selectedRequest.status}
                 </span>
@@ -404,12 +407,12 @@ export default function StudentEligibilityPage() {
                   <p className="text-sm text-rose-900 mt-1">{selectedRequest.rejectionReason}</p>
                 </div>
               )}
-              <div className="md:col-span-2 rounded-xl border border-gray-200 p-4">
-                <p className="text-xs font-semibold text-gray-500 uppercase">Document</p>
+              <div className="md:col-span-2 rounded-xl border border-zinc-200 p-4">
+                <p className="text-xs font-semibold text-zinc-400 uppercase">Document</p>
                 <div className="mt-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <div>
-                    <p className="font-semibold text-gray-900">{selectedRequest.documentFileName}</p>
-                    <p className="text-sm text-gray-500">{formatFileSize(selectedRequest.documentFileSize)}</p>
+                    <p className="font-semibold text-zinc-900">{selectedRequest.documentFileName}</p>
+                    <p className="text-sm text-zinc-400">{formatFileSize(selectedRequest.documentFileSize)}</p>
                   </div>
                   <a
                     href={selectedDocumentUrl || selectedRequest.documentUrl}
@@ -424,7 +427,7 @@ export default function StudentEligibilityPage() {
               </div>
             </div>
             {selectedRequest.status === "pending" && (
-              <div className="p-6 border-t border-gray-100 flex flex-col sm:flex-row justify-end gap-3">
+              <div className="p-6 border-t border-zinc-100 flex flex-col sm:flex-row justify-end gap-3">
                 <button
                   onClick={() => setReviewMode("reject")}
                   className="px-5 py-3 rounded-lg bg-rose-600 text-white font-semibold hover:bg-rose-700"
@@ -445,7 +448,7 @@ export default function StudentEligibilityPage() {
 
       {selectedRequest && reviewMode && (
         <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden">
+          <div className="bg-white rounded-2xl shadow-lg w-full max-w-lg overflow-hidden">
             <div className={`p-6 text-white ${reviewMode === "approve" ? "bg-emerald-600" : "bg-rose-600"}`}>
               <h3 className="text-xl font-bold">
                 {reviewMode === "approve" ? "Approve Eligibility" : "Reject Eligibility"}
@@ -455,36 +458,36 @@ export default function StudentEligibilityPage() {
             <div className="p-6 space-y-4">
               {reviewMode === "reject" && (
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label className="block text-sm font-semibold text-zinc-600 mb-2">
                     Rejection Reason <span className="text-rose-500">*</span>
                   </label>
                   <textarea
                     value={rejectionReason}
                     onChange={(event) => setRejectionReason(event.target.value)}
                     rows={4}
-                    className="w-full rounded-lg border border-gray-200 p-3 text-sm focus:outline-none focus:ring-2 focus:ring-rose-100 focus:border-rose-400"
+                    className="w-full rounded-lg border border-zinc-200 p-3 text-sm focus:outline-none focus:ring-2 focus:ring-rose-100 focus:border-rose-400"
                     placeholder="Explain why this document cannot be approved..."
                   />
                 </div>
               )}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Email Comment <span className="text-gray-400 font-normal">(optional)</span>
+                <label className="block text-sm font-semibold text-zinc-600 mb-2">
+                  Email Comment <span className="text-zinc-400 font-normal">(optional)</span>
                 </label>
                 <textarea
                   value={reviewNote}
                   onChange={(event) => setReviewNote(event.target.value)}
                   rows={3}
-                  className="w-full rounded-lg border border-gray-200 p-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400"
+                  className="w-full rounded-lg border border-zinc-200 p-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400"
                   placeholder="Optional comment to include in the approval/rejection email..."
                 />
               </div>
             </div>
-            <div className="p-6 border-t border-gray-100 flex justify-end gap-3">
+            <div className="p-6 border-t border-zinc-100 flex justify-end gap-3">
               <button
                 onClick={resetReviewState}
                 disabled={isSubmitting}
-                className="px-5 py-3 rounded-lg bg-gray-100 text-gray-700 font-semibold hover:bg-gray-200 disabled:opacity-60"
+                className="px-5 py-3 rounded-lg bg-zinc-100 text-zinc-600 font-semibold hover:bg-zinc-200 disabled:opacity-60"
               >
                 Cancel
               </button>

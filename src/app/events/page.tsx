@@ -34,7 +34,7 @@ const typeLabels: { [key: string]: { label: string; className: string } } = {
     label: "Multi Session",
     className: "bg-purple-100 text-purple-800",
   },
-  single_room: { label: "Single Room", className: "bg-gray-100 text-gray-800" },
+  single_room: { label: "Single Room", className: "bg-zinc-100 text-zinc-800" },
 };
 
 const getBackofficeToken = () =>
@@ -85,6 +85,7 @@ export default function EventsPage() {
 
   // Pagination
   const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
 
@@ -98,7 +99,7 @@ export default function EventsPage() {
       setError("");
       try {
         const token = getBackofficeToken();
-        const params: any = { page, limit: 10 };
+        const params: any = { page, limit };
         if (statusFilter) params.status = statusFilter;
         if (typeFilter) params.eventType = typeFilter;
         if (debouncedSearchTerm) params.search = debouncedSearchTerm;
@@ -151,12 +152,12 @@ export default function EventsPage() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <div className="card py-4">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center text-blue-600">
+            <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600">
               <IconCalendarEvent size={24} stroke={1.5} />
             </div>
             <div>
-              <p className="text-2xl font-bold text-gray-800">{stats.total}</p>
-              <p className="text-sm text-gray-500">Total Events</p>
+              <p className="text-2xl font-bold text-zinc-800">{stats.total}</p>
+              <p className="text-sm text-zinc-400">Total Events</p>
             </div>
           </div>
         </div>
@@ -169,7 +170,7 @@ export default function EventsPage() {
               <p className="text-2xl font-bold text-green-600">
                 {stats.published}
               </p>
-              <p className="text-sm text-gray-500">Published (this page)</p>
+              <p className="text-sm text-zinc-400">Published (this page)</p>
             </div>
           </div>
         </div>
@@ -182,7 +183,7 @@ export default function EventsPage() {
               <p className="text-2xl font-bold text-yellow-600">
                 {stats.draft}
               </p>
-              <p className="text-sm text-gray-500">Draft (this page)</p>
+              <p className="text-sm text-zinc-400">Draft (this page)</p>
             </div>
           </div>
         </div>
@@ -193,7 +194,7 @@ export default function EventsPage() {
             </div>
             <div>
               <p className="text-2xl font-bold text-purple-600">-</p>
-              <p className="text-sm text-gray-500">Total Registrations</p>
+              <p className="text-sm text-zinc-400">Total Registrations</p>
             </div>
           </div>
         </div>
@@ -202,7 +203,7 @@ export default function EventsPage() {
       {/* Main Content */}
       <div className="card">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-semibold text-gray-800">All Events</h2>
+          <h2 className="text-lg font-semibold text-zinc-800">All Events</h2>
           <Link
             href="/events/create"
             className="btn-primary flex items-center gap-2"
@@ -215,7 +216,7 @@ export default function EventsPage() {
         <div className="flex flex-col md:flex-row gap-4 mb-6">
           <div className="relative flex-1 max-w-md">
             <IconSearch
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400"
               size={18}
             />
             <input
@@ -269,44 +270,44 @@ export default function EventsPage() {
         {/* Loading State */}
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
-            <IconLoader2 size={32} className="animate-spin text-blue-600" />
-            <span className="ml-2 text-gray-500">Loading events...</span>
+            <IconLoader2 size={32} className="animate-spin text-emerald-600" />
+            <span className="ml-2 text-zinc-400">Loading events...</span>
           </div>
         ) : events.length === 0 ? (
-          <div className="text-center py-12 text-gray-500">
+          <div className="text-center py-12 text-zinc-400">
             No events found.{" "}
             <Link
               href="/events/create"
-              className="text-blue-600 hover:underline"
+              className="text-emerald-600 hover:underline"
             >
               Create one
             </Link>
           </div>
         ) : (
           /* Table */
-          <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+          <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm">
             <table className="w-full">
               <thead>
-                <tr className="bg-gray-50 border-b border-gray-200">
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider w-16">
+                <tr className="bg-zinc-50 border-b border-zinc-200">
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider w-16">
                     ID
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-500 uppercase tracking-wider">
                     Event
                   </th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">
                     Date
                   </th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">
                     Type
                   </th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">
                     Capacity
                   </th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">
                     Status
                   </th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider w-[120px]">
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider w-[120px]">
                     Actions
                   </th>
                 </tr>
@@ -315,27 +316,27 @@ export default function EventsPage() {
                 {events.map((event) => (
                   <tr
                     key={event.id}
-                    className="hover:bg-gray-50 transition-colors"
+                    className="hover:bg-zinc-50 transition-colors"
                   >
                     <td className="px-4 py-4 text-center">
-                      <span className="font-mono text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                      <span className="font-mono text-sm text-zinc-400 bg-zinc-100 px-2 py-1 rounded">
                         {event.id}
                       </span>
                     </td>
                     <td className="px-4 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center text-blue-600">
+                        <div className="w-10 h-10 bg-emerald-50 rounded-lg flex items-center justify-center text-emerald-600">
                           <IconCalendarEvent size={20} stroke={1.5} />
                         </div>
                         <div>
-                          <p className="font-medium text-gray-900">
+                          <p className="font-medium text-zinc-900">
                             {event.eventName}
                           </p>
-                          <p className="text-sm text-gray-500">
+                          <p className="text-sm text-zinc-400">
                             {event.eventCode}
                           </p>
                           {event.location && (
-                            <p className="text-xs text-gray-400">
+                            <p className="text-xs text-zinc-400">
                               {event.location}
                             </p>
                           )}
@@ -343,25 +344,25 @@ export default function EventsPage() {
                       </div>
                     </td>
                     <td className="px-4 py-4 text-center">
-                      <span className="text-sm text-gray-600">
+                      <span className="text-sm text-zinc-500">
                         {formatDate(event.startDate)}
                       </span>
                     </td>
                     <td className="px-4 py-4 text-center">
                       <span
-                        className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${typeLabels[event.eventType]?.className || "bg-gray-100 text-gray-700"}`}
+                        className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${typeLabels[event.eventType]?.className || "bg-zinc-100 text-zinc-600"}`}
                       >
                         {typeLabels[event.eventType]?.label || event.eventType}
                       </span>
                     </td>
                     <td className="px-4 py-4 text-center">
-                      <span className="text-sm text-gray-600">
+                      <span className="text-sm text-zinc-500">
                         {event.maxCapacity || "-"}
                       </span>
                     </td>
                     <td className="px-4 py-4 text-center">
                       <span
-                        className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${statusColors[event.status] || "bg-gray-100 text-gray-700"}`}
+                        className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${statusColors[event.status] || "bg-zinc-100 text-zinc-600"}`}
                       >
                         {event.status.charAt(0).toUpperCase() +
                           event.status.slice(1)}
@@ -370,7 +371,7 @@ export default function EventsPage() {
                     <td className="px-4 py-4 text-center">
                       <div className="flex gap-1 justify-center items-center">
                         <button
-                          className="p-2 hover:bg-blue-50 rounded-lg text-gray-500 hover:text-blue-600 transition-colors"
+                          className="p-2 hover:bg-emerald-50 rounded-lg text-zinc-400 hover:text-emerald-600 transition-colors"
                           title="View Details"
                           onClick={() => {
                             setSelectedEvent(event);
@@ -381,13 +382,13 @@ export default function EventsPage() {
                         </button>
                         <Link
                           href={`/events/${event.id}/edit`}
-                          className="p-2 hover:bg-yellow-50 rounded-lg text-gray-500 hover:text-yellow-600 transition-colors"
+                          className="p-2 hover:bg-yellow-50 rounded-lg text-zinc-400 hover:text-yellow-600 transition-colors"
                           title="Edit"
                         >
                           <IconPencil size={18} />
                         </Link>
                         <button
-                          className="p-2 hover:bg-red-50 rounded-lg text-gray-500 hover:text-red-600 transition-colors"
+                          className="p-2 hover:bg-red-50 rounded-lg text-zinc-400 hover:text-red-600 transition-colors"
                           title="Delete"
                           onClick={() => {
                             setSelectedEvent(event);
@@ -408,7 +409,9 @@ export default function EventsPage() {
               currentPage={page}
               totalPages={totalPages}
               totalCount={totalCount}
+              pageSize={limit}
               onPageChange={setPage}
+              onPageSizeChange={setLimit}
               itemName="events"
             />
           </div>
@@ -417,16 +420,16 @@ export default function EventsPage() {
 
       {/* View Modal */}
       {showViewModal && selectedEvent && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="modal-overlay">
           <div className="bg-white rounded-2xl max-w-2xl w-full">
-            <div className="p-6 border-b border-gray-100">
+            <div className="p-6 border-b border-zinc-100">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-gray-900">
+                <h3 className="text-lg font-semibold text-zinc-900">
                   Event Details
                 </h3>
                 <button
                   onClick={() => setShowViewModal(false)}
-                  className="text-gray-400 hover:text-gray-600"
+                  className="text-zinc-400 hover:text-zinc-500"
                 >
                   <IconX size={20} />
                 </button>
@@ -434,48 +437,48 @@ export default function EventsPage() {
             </div>
             <div className="p-6">
               <div className="flex gap-6">
-                <div className="w-32 h-32 bg-gray-100 rounded-xl flex items-center justify-center">
+                <div className="w-32 h-32 bg-zinc-100 rounded-xl flex items-center justify-center">
                   <IconCalendarEvent
                     size={48}
-                    className="text-gray-400"
+                    className="text-zinc-400"
                     stroke={1.5}
                   />
                 </div>
                 <div className="flex-1">
-                  <h4 className="text-xl font-semibold text-gray-800">
+                  <h4 className="text-xl font-semibold text-zinc-800">
                     {selectedEvent.eventName}
                   </h4>
-                  <p className="text-gray-500 mb-4">
+                  <p className="text-zinc-400 mb-4">
                     {selectedEvent.eventCode}
                   </p>
 
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
-                      <p className="text-gray-500">Type</p>
-                      <p className="font-medium text-gray-900">
+                      <p className="text-zinc-400">Type</p>
+                      <p className="font-medium text-zinc-900">
                         {typeLabels[selectedEvent.eventType]?.label}
                       </p>
                     </div>
                     <div>
-                      <p className="text-gray-500">Date</p>
-                      <p className="font-medium text-gray-900">
+                      <p className="text-zinc-400">Date</p>
+                      <p className="font-medium text-zinc-900">
                         {formatDate(selectedEvent.startDate)}
                       </p>
                     </div>
                     <div>
-                      <p className="text-gray-500">Location</p>
-                      <p className="font-medium text-gray-900">
+                      <p className="text-zinc-400">Location</p>
+                      <p className="font-medium text-zinc-900">
                         {selectedEvent.location || "TBD"}
                       </p>
                     </div>
                     <div>
-                      <p className="text-gray-500">Capacity</p>
-                      <p className="font-medium text-gray-900">
+                      <p className="text-zinc-400">Capacity</p>
+                      <p className="font-medium text-zinc-900">
                         {selectedEvent.maxCapacity || "-"}
                       </p>
                     </div>
                     <div>
-                      <p className="text-gray-500">Status</p>
+                      <p className="text-zinc-400">Status</p>
                       <span
                         className={`badge ${statusColors[selectedEvent.status]}`}
                       >
@@ -486,7 +489,7 @@ export default function EventsPage() {
                 </div>
               </div>
             </div>
-            <div className="p-6 border-t border-gray-100 flex gap-3 justify-end">
+            <div className="p-6 border-t border-zinc-100 flex gap-3 justify-end">
               <button
                 onClick={() => setShowViewModal(false)}
                 className="btn-secondary"
@@ -506,7 +509,7 @@ export default function EventsPage() {
 
       {/* Delete Modal */}
       {showDeleteModal && selectedEvent && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="modal-overlay">
           <div className="bg-white rounded-2xl max-w-md w-full">
             <div className="p-6 bg-red-600 rounded-t-2xl">
               <h3 className="text-lg font-semibold text-white flex items-center gap-2">
@@ -517,18 +520,18 @@ export default function EventsPage() {
               <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <IconAlertTriangle size={32} className="text-red-600" />
               </div>
-              <p className="mb-2 text-gray-700">
+              <p className="mb-2 text-zinc-600">
                 Are you sure you want to delete this event?
               </p>
-              <p className="font-semibold text-gray-800">
+              <p className="font-semibold text-zinc-800">
                 {selectedEvent.eventName}
               </p>
-              <p className="text-sm text-gray-500 mt-4">
+              <p className="text-sm text-zinc-400 mt-4">
                 This action cannot be undone. All registrations and related data
                 will be permanently deleted.
               </p>
             </div>
-            <div className="p-6 border-t border-gray-100 flex gap-3 justify-end">
+            <div className="p-6 border-t border-zinc-100 flex gap-3 justify-end">
               <button
                 onClick={() => setShowDeleteModal(false)}
                 className="btn-secondary"

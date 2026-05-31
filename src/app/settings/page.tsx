@@ -39,8 +39,8 @@ export default function SettingsPage() {
 
     // Appearance Settings
     const [appearanceSettings, setAppearanceSettings] = useState({
-        primaryColor: '#3b82f6',
-        accentColor: '#8b5cf6',
+        primaryColor: '#059669',
+        accentColor: '#d97706',
         logoUrl: '',
         faviconUrl: '',
     });
@@ -79,8 +79,8 @@ export default function SettingsPage() {
                                     key={tab.id}
                                     onClick={() => setActiveTab(tab.id)}
                                     className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors ${activeTab === tab.id
-                                            ? 'bg-blue-50 text-blue-600'
-                                            : 'text-gray-600 hover:bg-gray-50'
+                                            ? 'bg-emerald-50 text-emerald-600'
+                                            : 'text-zinc-500 hover:bg-zinc-50'
                                         }`}
                                 >
                                     <Icon size={20} />
@@ -96,14 +96,14 @@ export default function SettingsPage() {
                     {/* General Settings */}
                     {activeTab === 'general' && (
                         <div className="card">
-                            <h2 className="text-lg font-semibold text-gray-800 mb-6 flex items-center gap-2">
-                                <IconBuildingSkyscraper size={20} className="text-blue-600" />
+                            <h2 className="text-lg font-semibold text-zinc-800 mb-6 flex items-center gap-2">
+                                <IconBuildingSkyscraper size={20} className="text-emerald-600" />
                                 General Settings
                             </h2>
                             <div className="space-y-6">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Organization Name</label>
+                                        <label className="block text-sm font-medium text-zinc-600 mb-1">Organization Name</label>
                                         <input
                                             type="text"
                                             className="input-field"
@@ -112,7 +112,7 @@ export default function SettingsPage() {
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Event Name</label>
+                                        <label className="block text-sm font-medium text-zinc-600 mb-1">Event Name</label>
                                         <input
                                             type="text"
                                             className="input-field"
@@ -123,7 +123,7 @@ export default function SettingsPage() {
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Contact Email</label>
+                                        <label className="block text-sm font-medium text-zinc-600 mb-1">Contact Email</label>
                                         <input
                                             type="email"
                                             className="input-field"
@@ -132,7 +132,7 @@ export default function SettingsPage() {
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Support Phone</label>
+                                        <label className="block text-sm font-medium text-zinc-600 mb-1">Support Phone</label>
                                         <input
                                             type="tel"
                                             className="input-field"
@@ -143,7 +143,7 @@ export default function SettingsPage() {
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Timezone</label>
+                                        <label className="block text-sm font-medium text-zinc-600 mb-1">Timezone</label>
                                         <select
                                             className="input-field"
                                             value={generalSettings.timezone}
@@ -155,7 +155,7 @@ export default function SettingsPage() {
                                         </select>
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Currency</label>
+                                        <label className="block text-sm font-medium text-zinc-600 mb-1">Currency</label>
                                         <select
                                             className="input-field"
                                             value={generalSettings.currency}
@@ -174,19 +174,19 @@ export default function SettingsPage() {
                     {/* Email Settings */}
                     {activeTab === 'email' && (
                         <div className="card">
-                            <h2 className="text-lg font-semibold text-gray-800 mb-6 flex items-center gap-2">
-                                <IconMail size={20} className="text-blue-600" />
+                            <h2 className="text-lg font-semibold text-zinc-800 mb-6 flex items-center gap-2">
+                                <IconMail size={20} className="text-emerald-600" />
                                 Email Configuration
                             </h2>
                             <div className="space-y-6">
-                                <div className="p-4 bg-blue-50 rounded-lg border border-blue-100">
-                                    <p className="text-sm text-blue-700">
+                                <div className="p-4 bg-emerald-50 rounded-lg border border-teal-100">
+                                    <p className="text-sm text-emerald-700">
                                         Configure your SMTP server to send emails for registration confirmations, payment receipts, and notifications.
                                     </p>
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">SMTP Host</label>
+                                        <label className="block text-sm font-medium text-zinc-600 mb-1">SMTP Host</label>
                                         <input
                                             type="text"
                                             className="input-field"
@@ -195,7 +195,7 @@ export default function SettingsPage() {
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">SMTP Port</label>
+                                        <label className="block text-sm font-medium text-zinc-600 mb-1">SMTP Port</label>
                                         <input
                                             type="text"
                                             className="input-field"
@@ -206,7 +206,7 @@ export default function SettingsPage() {
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">SMTP Username</label>
+                                        <label className="block text-sm font-medium text-zinc-600 mb-1">SMTP Username</label>
                                         <input
                                             type="text"
                                             className="input-field"
@@ -215,7 +215,7 @@ export default function SettingsPage() {
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">SMTP Password</label>
+                                        <label className="block text-sm font-medium text-zinc-600 mb-1">SMTP Password</label>
                                         <input
                                             type="password"
                                             className="input-field"
@@ -227,7 +227,7 @@ export default function SettingsPage() {
                                 <hr />
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Sender Name</label>
+                                        <label className="block text-sm font-medium text-zinc-600 mb-1">Sender Name</label>
                                         <input
                                             type="text"
                                             className="input-field"
@@ -236,7 +236,7 @@ export default function SettingsPage() {
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Sender Email</label>
+                                        <label className="block text-sm font-medium text-zinc-600 mb-1">Sender Email</label>
                                         <input
                                             type="email"
                                             className="input-field"
@@ -253,14 +253,14 @@ export default function SettingsPage() {
                     {/* Appearance Settings */}
                     {activeTab === 'appearance' && (
                         <div className="card">
-                            <h2 className="text-lg font-semibold text-gray-800 mb-6 flex items-center gap-2">
-                                <IconPalette size={20} className="text-blue-600" />
+                            <h2 className="text-lg font-semibold text-zinc-800 mb-6 flex items-center gap-2">
+                                <IconPalette size={20} className="text-emerald-600" />
                                 Appearance
                             </h2>
                             <div className="space-y-6">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Primary Color</label>
+                                        <label className="block text-sm font-medium text-zinc-600 mb-1">Primary Color</label>
                                         <div className="flex gap-2">
                                             <input
                                                 type="color"
@@ -277,7 +277,7 @@ export default function SettingsPage() {
                                         </div>
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Accent Color</label>
+                                        <label className="block text-sm font-medium text-zinc-600 mb-1">Accent Color</label>
                                         <div className="flex gap-2">
                                             <input
                                                 type="color"
@@ -295,11 +295,11 @@ export default function SettingsPage() {
                                     </div>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Logo</label>
-                                    <div className="border-2 border-dashed border-gray-200 rounded-lg p-8 text-center hover:border-blue-400 transition-colors cursor-pointer">
-                                        <IconUpload size={32} className="mx-auto text-gray-400 mb-2" />
-                                        <p className="text-sm text-gray-500">Click to upload or drag and drop</p>
-                                        <p className="text-xs text-gray-400 mt-1">PNG, JPG up to 2MB</p>
+                                    <label className="block text-sm font-medium text-zinc-600 mb-2">Logo</label>
+                                    <div className="border-2 border-dashed border-zinc-200 rounded-lg p-8 text-center hover:border-blue-400 transition-colors cursor-pointer">
+                                        <IconUpload size={32} className="mx-auto text-zinc-400 mb-2" />
+                                        <p className="text-sm text-zinc-400">Click to upload or drag and drop</p>
+                                        <p className="text-xs text-zinc-400 mt-1">PNG, JPG up to 2MB</p>
                                     </div>
                                 </div>
                             </div>
@@ -309,8 +309,8 @@ export default function SettingsPage() {
                     {/* Notification Settings */}
                     {activeTab === 'notifications' && (
                         <div className="card">
-                            <h2 className="text-lg font-semibold text-gray-800 mb-6 flex items-center gap-2">
-                                <IconBell size={20} className="text-blue-600" />
+                            <h2 className="text-lg font-semibold text-zinc-800 mb-6 flex items-center gap-2">
+                                <IconBell size={20} className="text-emerald-600" />
                                 Notification Preferences
                             </h2>
                             <div className="space-y-4">
@@ -321,10 +321,10 @@ export default function SettingsPage() {
                                     { key: 'adminDailyDigest', label: 'Admin daily digest', description: 'Admins will receive a daily summary email with registration stats.' },
                                     { key: 'lowStockAlert', label: 'Low ticket stock alert', description: 'Get notified when ticket availability falls below 10%.' },
                                 ].map(item => (
-                                    <div key={item.key} className="flex items-start justify-between p-4 bg-gray-50 rounded-lg">
+                                    <div key={item.key} className="flex items-start justify-between p-4 bg-zinc-50 rounded-lg">
                                         <div>
-                                            <p className="font-medium text-gray-800">{item.label}</p>
-                                            <p className="text-sm text-gray-500">{item.description}</p>
+                                            <p className="font-medium text-zinc-800">{item.label}</p>
+                                            <p className="text-sm text-zinc-400">{item.description}</p>
                                         </div>
                                         <label className="relative inline-flex items-center cursor-pointer">
                                             <input
@@ -333,7 +333,7 @@ export default function SettingsPage() {
                                                 checked={(notifications as Record<string, boolean>)[item.key]}
                                                 onChange={(e) => setNotifications({ ...notifications, [item.key]: e.target.checked })}
                                             />
-                                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-100 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                            <div className="w-11 h-6 bg-zinc-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-100 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-zinc-200 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-700"></div>
                                         </label>
                                     </div>
                                 ))}
@@ -344,8 +344,8 @@ export default function SettingsPage() {
                     {/* Security Settings */}
                     {activeTab === 'security' && (
                         <div className="card">
-                            <h2 className="text-lg font-semibold text-gray-800 mb-6 flex items-center gap-2">
-                                <IconShield size={20} className="text-blue-600" />
+                            <h2 className="text-lg font-semibold text-zinc-800 mb-6 flex items-center gap-2">
+                                <IconShield size={20} className="text-emerald-600" />
                                 Security Settings
                             </h2>
                             <div className="space-y-6">
@@ -355,16 +355,16 @@ export default function SettingsPage() {
                                     </p>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Session Timeout (minutes)</label>
+                                    <label className="block text-sm font-medium text-zinc-600 mb-1">Session Timeout (minutes)</label>
                                     <input type="number" className="input-field w-32" defaultValue={30} />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Max Login Attempts</label>
+                                    <label className="block text-sm font-medium text-zinc-600 mb-1">Max Login Attempts</label>
                                     <input type="number" className="input-field w-32" defaultValue={5} />
                                 </div>
                                 <div className="flex items-center gap-3">
-                                    <input type="checkbox" id="2fa" className="w-4 h-4 text-blue-600 rounded" />
-                                    <label htmlFor="2fa" className="text-sm text-gray-700">Require 2FA for admin accounts</label>
+                                    <input type="checkbox" id="2fa" className="w-4 h-4 text-emerald-600 rounded" />
+                                    <label htmlFor="2fa" className="text-sm text-zinc-600">Require 2FA for admin accounts</label>
                                 </div>
                             </div>
                         </div>

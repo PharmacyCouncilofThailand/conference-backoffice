@@ -20,6 +20,8 @@ import {
   IconDownload,
   IconLoader2,
   IconPencil,
+  IconMail,
+  IconCircleCheck,
 } from "@tabler/icons-react";
 
 const statusColors: { [key: string]: string } = {
@@ -37,18 +39,30 @@ const statusLabels: Record<string, string> = {
   revision: "Revision Requested",
 };
 
+// Derive a richer status label that distinguishes accepted-and-confirmed from
+// accepted-but-still-awaiting-confirmation (the new approval-confirmation flow).
+function deriveStatusBadge(abs: { status: string; confirmedAt?: string | null }) {
+  if (abs.status === "accepted") {
+    if (abs.confirmedAt) {
+      return { label: "Confirmed", className: "bg-emerald-100 text-emerald-800" };
+    }
+    return { label: "Accepted (awaiting confirmation)", className: "bg-blue-100 text-blue-800" };
+  }
+  return null;
+}
+
 // Map backend categories to colors if needed, or use generic
 const topicColors: { [key: string]: string } = {
-  clinical_pharmacy: "bg-blue-100 text-blue-800",
+  clinical_pharmacy: "bg-emerald-50 text-teal-900",
   social_administrative: "bg-green-100 text-green-800",
   community_pharmacy: "bg-purple-100 text-purple-800",
   pharmacology_toxicology: "bg-red-100 text-red-800",
   pharmacy_education: "bg-yellow-100 text-yellow-800",
   digital_pharmacy: "bg-indigo-100 text-indigo-800",
-  Research: "bg-blue-100 text-blue-800",
+  Research: "bg-emerald-50 text-teal-900",
   "Case Report": "bg-purple-100 text-purple-800",
   Review: "bg-green-100 text-green-800",
-  Other: "bg-gray-100 text-gray-800",
+  Other: "bg-zinc-100 text-zinc-800",
 };
 
 // NOTE: Abstract categories are fetched dynamically per-event from
@@ -90,6 +104,10 @@ interface Abstract {
   conclusion: string;
   status: string;
   fullPaperUrl: string | null;
+  approvedAt?: string | null;
+  rejectedAt?: string | null;
+  confirmedAt?: string | null;
+  reviewComment?: string | null;
   files?: AbstractFile[];
   createdAt: string;
   author: {
@@ -141,6 +159,7 @@ export default function AbstractsPage() {
   const [eventCategoryList, setEventCategoryList] = useState<{ id: number; name: string }[]>([]);
   const [isExporting, setIsExporting] = useState(false);
   const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
 
@@ -293,7 +312,7 @@ export default function AbstractsPage() {
     setIsLoading(true);
     try {
       const token = getBackofficeToken();
-      const params: any = { page, limit: 10 };
+      const params: any = { page, limit };
       if (statusFilter) params.status = statusFilter;
       if (categoryFilter) params.category = categoryFilter;
       if (presentationTypeFilter) params.presentationType = presentationTypeFilter;
@@ -346,6 +365,45 @@ export default function AbstractsPage() {
     }
   };
 
+  const handleResendConfirmation = async (abs: Abstract) => {
+    if (isSubmitting) return;
+    if (!confirm(`Resend approval-confirmation email to ${abs.author?.email ?? "the author"}?\nA new secure link will be issued and any previous link will be invalidated.`)) return;
+    setIsSubmitting(true);
+    try {
+      const token = getBackofficeToken();
+      const res = await api.abstracts.resendConfirmation(token, abs.id);
+      const deadline = res.deadline ? new Date(res.deadline).toLocaleDateString("th-TH") : `${res.deadlineDays} days`;
+      toast.success(`Confirmation email sent. Deadline: ${deadline}`);
+      await fetchAbstracts();
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to resend confirmation email");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleManualConfirm = async (abs: Abstract) => {
+    if (isSubmitting) return;
+    if (!confirm(`Manually mark this abstract as confirmed (admin override)?\n\n"${abs.title.substring(0, 80)}"`)) return;
+    setIsSubmitting(true);
+    try {
+      const token = getBackofficeToken();
+      const res = await api.abstracts.manualConfirm(token, abs.id);
+      if (res.alreadyConfirmed) {
+        toast.success("Already confirmed.");
+      } else {
+        toast.success("Marked as confirmed.");
+      }
+      await fetchAbstracts();
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to mark as confirmed");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleRequestRevision = async (payload: { topic: string; comment: string; file: File | null }) => {
     if (!selectedAbstract) return;
     setIsSubmitting(true);
@@ -372,14 +430,14 @@ export default function AbstractsPage() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <div className="card py-4">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center text-blue-600">
+            <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600">
               <IconFileText size={24} stroke={1.5} />
             </div>
             <div>
-              <p className="text-2xl font-bold text-gray-800">
+              <p className="text-2xl font-bold text-zinc-800">
                 {isLoading ? "-" : totalCount}
               </p>
-              <p className="text-sm text-gray-500">Total Submissions</p>
+              <p className="text-sm text-zinc-400">Total Submissions</p>
             </div>
           </div>
         </div>
@@ -388,13 +446,13 @@ export default function AbstractsPage() {
       {/* Main Content */}
       <div className="card">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
-          <h2 className="text-lg font-semibold text-gray-800">
+          <h2 className="text-lg font-semibold text-zinc-800">
             All Submissions
           </h2>
           <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto lg:min-w-[640px]">
             <div className="relative flex-1">
               <IconSearch
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400"
                 size={18}
               />
               <input
@@ -421,18 +479,16 @@ export default function AbstractsPage() {
 
         {/* Filters */}
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
-          {eventOptions.length > 1 && (
-            <select
-              value={eventFilter}
-              onChange={(e) => { setEventFilter(e.target.value); setEventSelected(!!e.target.value); setPage(1); }}
-              className="input-field w-full"
-            >
-              <option value="">-- เลือก Event --</option>
-              {eventOptions.map((e) => (
-                <option key={e.id} value={e.id}>{e.name}</option>
-              ))}
-            </select>
-          )}
+          <select
+            value={eventFilter}
+            onChange={(e) => { setEventFilter(e.target.value); setEventSelected(!!e.target.value); setPage(1); }}
+            className="input-field w-full"
+          >
+            <option value="">-- เลือก Event --</option>
+            {eventOptions.map((e) => (
+              <option key={e.id} value={e.id}>{e.name}</option>
+            ))}
+          </select>
 
           <select
             value={categoryFilter}
@@ -508,45 +564,45 @@ export default function AbstractsPage() {
 
         {/* Table */}
         {!eventSelected ? (
-          <div className="text-center py-16 text-gray-400">
+          <div className="text-center py-16 text-zinc-400">
             <IconFileText size={40} className="mx-auto mb-3 opacity-30" />
             <p className="font-medium">กรุณาเลือก Event เพื่อดูข้อมูล</p>
           </div>
         ) : isLoading ? (
           <div className="flex justify-center py-12">
-            <IconLoader2 size={32} className="animate-spin text-blue-600" />
+            <IconLoader2 size={32} className="animate-spin text-emerald-600" />
           </div>
         ) : abstracts.length === 0 ? (
-          <div className="text-center py-12 text-gray-500">
+          <div className="text-center py-12 text-zinc-400">
             No abstracts found.
           </div>
         ) : (
-          <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+          <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm">
             <table className="w-full">
               <thead>
-                <tr className="bg-gray-50 border-b border-gray-200">
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                <tr className="bg-zinc-50 border-b border-zinc-200">
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">
                     Tracking ID
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider min-w-[300px]">
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-500 uppercase tracking-wider min-w-[300px]">
                     Title & Author
                   </th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">
                     Presentation
                   </th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">
                     Category
                   </th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">
                     Status
                   </th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">
                     Files
                   </th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">
                     Submitted
                   </th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider w-[120px]">
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider w-[120px]">
                     Actions
                   </th>
                 </tr>
@@ -555,22 +611,22 @@ export default function AbstractsPage() {
                 {abstracts.map((abs) => (
                   <tr
                     key={abs.id}
-                    className="hover:bg-gray-50 transition-colors"
+                    className="hover:bg-zinc-50 transition-colors"
                   >
                     <td className="px-4 py-4 text-center">
-                      <span className="font-mono text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                      <span className="font-mono text-sm text-zinc-400 bg-zinc-100 px-2 py-1 rounded">
                         {abs.trackingId || abs.id}
                       </span>
                     </td>
                     <td className="px-4 py-4">
-                      <h5 className="font-medium text-gray-900 mb-1 line-clamp-2">
+                      <h5 className="font-medium text-zinc-900 mb-1 line-clamp-2">
                         {abs.title}
                       </h5>
-                      <p className="text-sm text-gray-500">
+                      <p className="text-sm text-zinc-400">
                         {abs.author?.firstName} {abs.author?.lastName}
                       </p>
                       {abs.author?.institution && (
-                        <p className="text-xs text-gray-400">
+                        <p className="text-xs text-zinc-400">
                           {abs.author.institution}
                         </p>
                       )}
@@ -584,19 +640,40 @@ export default function AbstractsPage() {
                     </td>
                     <td className="px-4 py-4 text-center">
                       <span
-                        className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${topicColors[abs.category] || "bg-gray-100 text-gray-700"}`}
+                        className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${topicColors[abs.category] || "bg-zinc-100 text-zinc-600"}`}
                       >
                         {abs.category.replace(/_/g, " ")}
                       </span>
                     </td>
                     <td className="px-4 py-4 text-center">
-                      <span
-                        className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${statusColors[abs.status] || "bg-gray-100 text-gray-700"}`}
-                      >
-                        {statusLabels[abs.status] ||
-                          abs.status.charAt(0).toUpperCase() +
-                            abs.status.slice(1)}
-                      </span>
+                      {(() => {
+                        const derived = deriveStatusBadge(abs);
+                        if (derived) {
+                          return (
+                            <span
+                              className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${derived.className}`}
+                              title={
+                                abs.confirmedAt
+                                  ? `Confirmed at ${new Date(abs.confirmedAt).toLocaleString("th-TH")}`
+                                  : abs.approvedAt
+                                    ? `Approved at ${new Date(abs.approvedAt).toLocaleString("th-TH")}`
+                                    : undefined
+                              }
+                            >
+                              {derived.label}
+                            </span>
+                          );
+                        }
+                        return (
+                          <span
+                            className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${statusColors[abs.status] || "bg-zinc-100 text-zinc-600"}`}
+                          >
+                            {statusLabels[abs.status] ||
+                              abs.status.charAt(0).toUpperCase() +
+                                abs.status.slice(1)}
+                          </span>
+                        );
+                      })()}
                     </td>
                     <td className="px-4 py-4 text-center">
                       <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-100 text-xs font-medium text-slate-700">
@@ -605,7 +682,7 @@ export default function AbstractsPage() {
                       </span>
                     </td>
                     <td className="px-4 py-4 text-center">
-                      <span className="text-sm text-gray-600">
+                      <span className="text-sm text-zinc-500">
                         {new Date(abs.createdAt).toLocaleDateString("th-TH", {
                           day: "2-digit",
                           month: "short",
@@ -616,14 +693,14 @@ export default function AbstractsPage() {
                     <td className="px-4 py-4 text-center">
                       <div className="flex gap-1 justify-center items-center">
                         <button
-                          className="p-2 hover:bg-blue-50 rounded-lg text-gray-500 hover:text-blue-600 transition-colors"
+                          className="p-2 hover:bg-emerald-50 rounded-lg text-zinc-400 hover:text-emerald-600 transition-colors"
                           title="View Details"
                           onClick={() => router.push(`/abstracts/${abs.id}`)}
                         >
                           <IconEye size={18} />
                         </button>
                         <button
-                          className={`p-2 rounded-lg transition-colors ${abs.status === "pending" ? "hover:bg-amber-50 text-gray-500 hover:text-amber-600" : "text-gray-200 cursor-not-allowed"}`}
+                          className={`p-2 rounded-lg transition-colors ${abs.status === "pending" ? "hover:bg-amber-50 text-zinc-400 hover:text-amber-600" : "text-gray-200 cursor-not-allowed"}`}
                           title="Request Revise"
                           onClick={() => {
                             if (abs.status === "pending") {
@@ -636,7 +713,7 @@ export default function AbstractsPage() {
                           <IconPencil size={18} />
                         </button>
                         <button
-                          className={`p-2 rounded-lg transition-colors ${abs.status === "pending" ? "hover:bg-green-50 text-gray-500 hover:text-green-600" : "text-gray-200 cursor-not-allowed"}`}
+                          className={`p-2 rounded-lg transition-colors ${abs.status === "pending" ? "hover:bg-green-50 text-zinc-400 hover:text-green-600" : "text-gray-200 cursor-not-allowed"}`}
                           title="Approve"
                           onClick={() => {
                             if (abs.status === "pending") {
@@ -649,7 +726,7 @@ export default function AbstractsPage() {
                           <IconCheck size={18} />
                         </button>
                         <button
-                          className={`p-2 rounded-lg transition-colors ${abs.status === "pending" ? "hover:bg-red-50 text-gray-500 hover:text-red-600" : "text-gray-200 cursor-not-allowed"}`}
+                          className={`p-2 rounded-lg transition-colors ${abs.status === "pending" ? "hover:bg-red-50 text-zinc-400 hover:text-red-600" : "text-gray-200 cursor-not-allowed"}`}
                           title="Reject"
                           onClick={() => {
                             if (abs.status === "pending") {
@@ -661,6 +738,26 @@ export default function AbstractsPage() {
                         >
                           <IconX size={18} />
                         </button>
+                        {abs.status === "accepted" && !abs.confirmedAt && (
+                          <>
+                            <button
+                              className="p-2 rounded-lg transition-colors hover:bg-blue-50 text-zinc-400 hover:text-blue-600"
+                              title="Resend confirmation email"
+                              onClick={() => handleResendConfirmation(abs)}
+                              disabled={isSubmitting}
+                            >
+                              <IconMail size={18} />
+                            </button>
+                            <button
+                              className="p-2 rounded-lg transition-colors hover:bg-emerald-50 text-zinc-400 hover:text-emerald-600"
+                              title="Manually confirm (admin override)"
+                              onClick={() => handleManualConfirm(abs)}
+                              disabled={isSubmitting}
+                            >
+                              <IconCircleCheck size={18} />
+                            </button>
+                          </>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -673,7 +770,9 @@ export default function AbstractsPage() {
               currentPage={page}
               totalPages={totalPages}
               totalCount={totalCount}
+              pageSize={limit}
               onPageChange={setPage}
+              onPageSizeChange={setLimit}
               itemName="abstracts"
             />
           </div>
@@ -682,7 +781,7 @@ export default function AbstractsPage() {
 
       {/* Approve Modal */}
       {showApproveModal && selectedAbstract && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="modal-overlay">
           <div className="bg-white rounded-2xl max-w-md w-full">
             <div className="p-6 bg-green-600 rounded-t-2xl">
               <h3 className="text-lg font-semibold text-white flex items-center gap-2">
@@ -690,13 +789,13 @@ export default function AbstractsPage() {
               </h3>
             </div>
             <div className="p-6 text-center">
-              <p className="mb-2 text-gray-600">Approve this abstract?</p>
-              <p className="font-semibold text-gray-800">
+              <p className="mb-2 text-zinc-500">Approve this abstract?</p>
+              <p className="font-semibold text-zinc-800">
                 {selectedAbstract.title.substring(0, 50)}...
               </p>
 
               <div className="mt-4 text-left">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-zinc-600 mb-1">
                   Comments (optional)
                 </label>
                 <textarea
@@ -707,7 +806,7 @@ export default function AbstractsPage() {
                 ></textarea>
               </div>
             </div>
-            <div className="p-6 border-t border-gray-100 flex gap-3 justify-end">
+            <div className="p-6 border-t border-zinc-100 flex gap-3 justify-end">
               <button
                 onClick={() => setShowApproveModal(false)}
                 className="btn-secondary"
@@ -732,7 +831,7 @@ export default function AbstractsPage() {
 
       {/* Reject Modal */}
       {showRejectModal && selectedAbstract && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="modal-overlay">
           <div className="bg-white rounded-2xl max-w-md w-full">
             <div className="p-6 bg-red-600 rounded-t-2xl">
               <h3 className="text-lg font-semibold text-white flex items-center gap-2">
@@ -740,13 +839,13 @@ export default function AbstractsPage() {
               </h3>
             </div>
             <div className="p-6 text-center">
-              <p className="mb-2 text-gray-600">Reject this abstract?</p>
-              <p className="font-semibold text-gray-800">
+              <p className="mb-2 text-zinc-500">Reject this abstract?</p>
+              <p className="font-semibold text-zinc-800">
                 {selectedAbstract.title.substring(0, 50)}...
               </p>
 
               <div className="mt-4 text-left">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-zinc-600 mb-1">
                   Reason / Comments
                 </label>
                 <textarea
@@ -757,7 +856,7 @@ export default function AbstractsPage() {
                 ></textarea>
               </div>
             </div>
-            <div className="p-6 border-t border-gray-100 flex gap-3 justify-end">
+            <div className="p-6 border-t border-zinc-100 flex gap-3 justify-end">
               <button
                 onClick={() => setShowRejectModal(false)}
                 className="btn-secondary"

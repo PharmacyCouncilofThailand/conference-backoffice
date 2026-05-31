@@ -353,7 +353,7 @@ function EmailPreviewModal({
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-100 shrink-0">
           <div className="flex items-center gap-2 min-w-0">
-            <IconMail size={17} className="text-blue-500 shrink-0" />
+            <IconMail size={17} className="text-emerald-600 shrink-0" />
             <span className="font-semibold text-slate-800 text-sm truncate">
               ดูตัวอย่าง Email จริง
             </span>
@@ -430,7 +430,7 @@ function StatusBadge({ status }: { status: RetrosendResult["status"] }) {
     sent: { icon: <IconCheck size={12} />, label: "ส่งแล้ว", cls: "bg-green-100 text-green-700" },
     failed: { icon: <IconX size={12} />, label: "ล้มเหลว", cls: "bg-red-100 text-red-700" },
     skipped: { icon: <IconAlertTriangle size={12} />, label: "ข้าม", cls: "bg-yellow-100 text-yellow-700" },
-    pending: { icon: <IconClock size={12} />, label: "จะส่ง", cls: "bg-blue-100 text-blue-700" },
+    pending: { icon: <IconClock size={12} />, label: "จะส่ง", cls: "bg-emerald-50 text-emerald-700" },
   };
   const { icon, label, cls } = map[status];
   return (
@@ -704,8 +704,8 @@ export default function EmailRetrosendPage() {
       <div className="p-6 space-y-5">
         {/* ── Header ── */}
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-blue-100 rounded-lg">
-            <IconMailForward size={22} className="text-blue-600" />
+          <div className="p-2 bg-emerald-50 rounded-lg">
+            <IconMailForward size={22} className="text-emerald-600" />
           </div>
           <div>
             <h1 className="text-xl font-bold text-slate-800">Email Retrosend</h1>
@@ -727,7 +727,7 @@ export default function EmailRetrosendPage() {
             onClick={() => fileInputRef.current?.click()}
             className={`border-2 border-dashed rounded-xl p-10 text-center cursor-pointer transition-colors ${
               isDragging
-                ? "border-blue-400 bg-blue-50"
+                ? "border-blue-400 bg-emerald-50"
                 : "border-slate-300 hover:border-blue-400 hover:bg-slate-50"
             }`}
           >
@@ -830,9 +830,9 @@ export default function EmailRetrosendPage() {
                 setIsPreviewed(false);
                 setSelected(new Set());
               }}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
                 selectedType === tab.type
-                  ? "bg-blue-600 text-white shadow-sm"
+                  ? "bg-emerald-700 text-white shadow-sm"
                   : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"
               }`}
             >
@@ -840,7 +840,7 @@ export default function EmailRetrosendPage() {
               {counts[tab.type] > 0 && (
                 <span
                   className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${
-                    selectedType === tab.type ? "bg-blue-500 text-white" : "bg-red-100 text-red-600"
+                    selectedType === tab.type ? "bg-emerald-600 text-white" : "bg-red-100 text-red-600"
                   }`}
                 >
                   {counts[tab.type]}
@@ -870,7 +870,7 @@ export default function EmailRetrosendPage() {
                     type="text"
                     value={orderIds}
                     onChange={(e) => setOrderIds(e.target.value)}
-                    className="border border-slate-300 rounded-lg px-3 py-2 text-sm font-mono w-72 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    className="border border-slate-300 rounded-lg px-3 py-2 text-sm font-mono w-72 focus:ring-2 focus:ring-emerald-600 focus:outline-none"
                     placeholder="207, 208, 213"
                   />
                 </div>
@@ -888,7 +888,7 @@ export default function EmailRetrosendPage() {
                       type="datetime-local"
                       value={fromDate}
                       onChange={(e) => setFromDate(e.target.value)}
-                      className="border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                      className="border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-600 focus:outline-none"
                     />
                   </div>
                   <div>
@@ -899,7 +899,7 @@ export default function EmailRetrosendPage() {
                       type="datetime-local"
                       value={toDate}
                       onChange={(e) => setToDate(e.target.value)}
-                      className="border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                      className="border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-600 focus:outline-none"
                     />
                   </div>
                 </>
@@ -919,7 +919,7 @@ export default function EmailRetrosendPage() {
                     type="text"
                     value={registrationIds}
                     onChange={(e) => setRegistrationIds(e.target.value)}
-                    className="border border-slate-300 rounded-lg px-3 py-2 text-sm font-mono w-72 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    className="border border-slate-300 rounded-lg px-3 py-2 text-sm font-mono w-72 focus:ring-2 focus:ring-emerald-600 focus:outline-none"
                     placeholder="42, 43, 47"
                   />
                 </div>
@@ -939,7 +939,7 @@ export default function EmailRetrosendPage() {
                     type="text"
                     value={abstractIds}
                     onChange={(e) => setAbstractIds(e.target.value)}
-                    className="border border-slate-300 rounded-lg px-3 py-2 text-sm font-mono w-72 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    className="border border-slate-300 rounded-lg px-3 py-2 text-sm font-mono w-72 focus:ring-2 focus:ring-emerald-600 focus:outline-none"
                     placeholder="101, 102, 103"
                   />
                   {parsedLog && !abstractIds && (
@@ -973,7 +973,7 @@ export default function EmailRetrosendPage() {
               {
                 label: isPreviewed ? "จะส่ง" : "ส่งแล้ว",
                 value: isPreviewed ? summary.pending : summary.sent,
-                cls: "text-blue-700",
+                cls: "text-emerald-700",
               },
               { label: "สำเร็จ", value: summary.sent, cls: "text-green-700" },
               { label: "ข้าม", value: summary.skipped, cls: "text-yellow-700" },
@@ -1022,7 +1022,7 @@ export default function EmailRetrosendPage() {
                   <button
                     onClick={handleSendSelected}
                     disabled={loading}
-                    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
+                    className="flex items-center gap-2 bg-emerald-700 hover:bg-teal-800 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
                   >
                     <IconSend size={15} />
                     ส่งที่เลือก ({selected.size})
@@ -1046,7 +1046,7 @@ export default function EmailRetrosendPage() {
                             type="checkbox"
                             checked={allSelected}
                             onChange={toggleAll}
-                            className="accent-blue-600 w-4 h-4"
+                            className="accent-emerald-600 w-4 h-4"
                             title="เลือกทั้งหมด"
                           />
                         </th>
@@ -1070,7 +1070,7 @@ export default function EmailRetrosendPage() {
                           onClick={() => isPreviewed && isSelectable && toggleRow(i)}
                           className={`transition-colors ${
                             isPreviewed && isSelectable ? "cursor-pointer" : ""
-                          } ${isChecked ? "bg-blue-50 hover:bg-blue-50" : "hover:bg-slate-50"}`}
+                          } ${isChecked ? "bg-emerald-50 hover:bg-emerald-50" : "hover:bg-slate-50"}`}
                         >
                           {isPreviewed && (
                             <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
@@ -1079,7 +1079,7 @@ export default function EmailRetrosendPage() {
                                   type="checkbox"
                                   checked={isChecked}
                                   onChange={() => toggleRow(i)}
-                                  className="accent-blue-600 w-4 h-4"
+                                  className="accent-emerald-600 w-4 h-4"
                                 />
                               )}
                             </td>
@@ -1101,7 +1101,7 @@ export default function EmailRetrosendPage() {
                               <button
                                 onClick={() => setPreviewRow(row)}
                                 title="ดูรายละเอียด email"
-                                className="p-1.5 rounded-lg hover:bg-blue-100 text-slate-400 hover:text-blue-600 transition-colors"
+                                className="p-1.5 rounded-lg hover:bg-emerald-50 text-slate-400 hover:text-emerald-600 transition-colors"
                               >
                                 <IconMail size={15} />
                               </button>

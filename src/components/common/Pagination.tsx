@@ -1,64 +1,135 @@
 "use client";
 
+import { useState, useRef, useEffect } from "react";
+import { IconChevronDown, IconCheck } from "@tabler/icons-react";
+
+const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
+
 interface PaginationProps {
   currentPage: number;
   totalPages: number;
   totalCount: number;
-  pageSize?: number; // Default: 10
+  pageSize?: number;
   onPageChange: (page: number) => void;
-  itemName?: string; // Default: "items"
-  showPageInfo?: boolean; // Default: false
-  hideIfSinglePage?: boolean; // Default: false
+  onPageSizeChange?: (size: number) => void;
+  itemName?: string;
+  showPageInfo?: boolean;
+  hideIfSinglePage?: boolean;
   className?: string;
+}
+
+function RowsDropdown({
+  value,
+  onChange,
+}: {
+  value: number;
+  onChange: (size: number) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="flex items-center gap-1.5 text-[13px] font-medium text-zinc-600 bg-zinc-100 rounded-lg px-2.5 py-1 hover:bg-zinc-200 transition-colors"
+      >
+        <span className="text-[12px] text-zinc-400 font-normal">Rows</span>
+        {value}
+        <IconChevronDown
+          size={14}
+          className={`text-zinc-400 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+        />
+      </button>
+
+      {open && (
+        <div className="absolute bottom-full left-0 mb-1 bg-white rounded-xl shadow-lg border border-zinc-100 py-1 min-w-[80px] z-50 animate-in fade-in slide-in-from-bottom-2 duration-150">
+          {PAGE_SIZE_OPTIONS.map((size) => (
+            <button
+              key={size}
+              onClick={() => {
+                onChange(size);
+                setOpen(false);
+              }}
+              className={`w-full flex items-center justify-between px-3 py-1.5 text-[13px] transition-colors ${
+                value === size
+                  ? "text-emerald-600 font-semibold bg-emerald-50"
+                  : "text-zinc-600 hover:bg-zinc-50"
+              }`}
+            >
+              {size}
+              {value === size && <IconCheck size={14} />}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function Pagination({
   currentPage,
   totalPages,
   totalCount,
-  pageSize = 10, // Default 10 items per page
+  pageSize = 10,
   onPageChange,
+  onPageSizeChange,
   itemName = "items",
   showPageInfo = false,
   hideIfSinglePage = false,
   className = "",
 }: PaginationProps) {
-  // คำนวณจำนวน items ที่แสดงในหน้านี้
   const startItem = totalCount === 0 ? 0 : (currentPage - 1) * pageSize + 1;
   const endItem = Math.min(currentPage * pageSize, totalCount);
 
-  // ซ่อนถ้ามีแค่ 1 หน้าและตั้งค่า hideIfSinglePage
-  if (hideIfSinglePage && totalPages <= 1) {
+  if (hideIfSinglePage && totalPages <= 1 && !onPageSizeChange) {
     return null;
   }
 
   return (
-    <div
-      className={`flex items-center justify-between px-4 py-3 border-t border-gray-100 bg-gray-50/50 ${className}`}
-    >
-      {/* Showing Text */}
-      <p className="text-sm text-gray-500">
-        {showPageInfo ? (
-          <>Page {currentPage} of {totalPages} ({totalCount} total)</>
-        ) : (
-          <>
-            Showing <span className="font-medium">{startItem}-{endItem}</span> of{" "}
-            <span className="font-medium">{totalCount}</span> {itemName}
-          </>
-        )}
-      </p>
+    <div className={`flex items-center justify-between px-6 py-4 ${className}`}>
+      {/* Left: info + rows per page */}
+      <div className="flex items-center gap-4">
+        <p className="text-[13px] text-zinc-400">
+          {showPageInfo ? (
+            <>Page {currentPage} of {totalPages}</>
+          ) : (
+            <>
+              <span className="font-medium text-zinc-600">{startItem}–{endItem}</span> of{" "}
+              <span className="font-medium text-zinc-600">{totalCount}</span> {itemName}
+            </>
+          )}
+        </p>
 
-      {/* Pagination Buttons */}
-      <div className="flex gap-2">
+        {onPageSizeChange && (
+          <RowsDropdown
+            value={pageSize}
+            onChange={(size) => {
+              onPageSizeChange(size);
+              onPageChange(1);
+            }}
+          />
+        )}
+      </div>
+
+      {/* Right: page buttons */}
+      <div className="flex items-center gap-0.5">
         <button
-          className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-900 bg-white hover:bg-gray-50 hover:border-gray-400 disabled:text-gray-400 disabled:cursor-not-allowed transition-all"
+          className="px-3 py-1.5 rounded-full text-[13px] font-medium text-zinc-500 hover:bg-zinc-100 disabled:text-zinc-300 disabled:hover:bg-transparent disabled:cursor-not-allowed transition-colors"
           disabled={currentPage <= 1}
           onClick={() => onPageChange(currentPage - 1)}
         >
-          Previous
+          Prev
         </button>
 
-        {/* Page Numbers (แสดง max 5 หน้า) */}
         {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
           let pageNum: number;
           if (totalPages <= 5) {
@@ -75,10 +146,10 @@ export default function Pagination({
             <button
               key={pageNum}
               onClick={() => onPageChange(pageNum)}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+              className={`w-8 h-8 rounded-full text-[13px] font-semibold transition-all ${
                 currentPage === pageNum
-                  ? "bg-blue-600 text-white"
-                  : "border border-gray-300 text-gray-900 bg-white hover:bg-gray-50 hover:border-gray-400"
+                  ? "bg-zinc-900 text-white"
+                  : "text-zinc-500 hover:bg-zinc-100"
               }`}
             >
               {pageNum}
@@ -87,7 +158,7 @@ export default function Pagination({
         })}
 
         <button
-          className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-900 bg-white hover:bg-gray-50 hover:border-gray-400 disabled:text-gray-400 disabled:cursor-not-allowed transition-all"
+          className="px-3 py-1.5 rounded-full text-[13px] font-medium text-zinc-500 hover:bg-zinc-100 disabled:text-zinc-300 disabled:hover:bg-transparent disabled:cursor-not-allowed transition-colors"
           disabled={currentPage >= totalPages}
           onClick={() => onPageChange(currentPage + 1)}
         >

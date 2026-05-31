@@ -56,8 +56,8 @@ export function AuthGuard({ children }: AuthGuardProps) {
   // Show loading state
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg)' }}>
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-zinc-200 border-t-emerald-600"></div>
       </div>
     );
   }

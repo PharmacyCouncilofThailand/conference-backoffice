@@ -30,11 +30,11 @@ const roleLabels: { [key: string]: { label: string; className: string } } = {
   },
   student: {
     label: "Student",
-    className: "bg-blue-100 text-blue-800",
+    className: "bg-emerald-50 text-teal-900",
   },
   general: {
     label: "General",
-    className: "bg-gray-100 text-gray-800",
+    className: "bg-zinc-100 text-zinc-800",
   },
 };
 
@@ -106,6 +106,7 @@ export default function VerificationPage() {
 
   // Pagination (Server-side)
   const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
 
@@ -116,7 +117,7 @@ export default function VerificationPage() {
     try {
       const params = new URLSearchParams();
       params.append("page", page.toString());
-      params.append("limit", "10");
+      params.append("limit", limit.toString());
       if (searchTerm) params.append("search", searchTerm);
       if (statusFilter) params.append("status", statusFilter);
 
@@ -272,12 +273,12 @@ export default function VerificationPage() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <div className="card py-4">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center text-blue-600">
+            <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600">
               <IconId size={24} stroke={1.5} />
             </div>
             <div>
-              <p className="text-2xl font-bold text-gray-800">{stats.total}</p>
-              <p className="text-sm text-gray-500">Total Requests</p>
+              <p className="text-2xl font-bold text-zinc-800">{stats.total}</p>
+              <p className="text-sm text-zinc-400">Total Requests</p>
             </div>
           </div>
         </div>
@@ -290,7 +291,7 @@ export default function VerificationPage() {
               <p className="text-2xl font-bold text-yellow-600">
                 {stats.pending}
               </p>
-              <p className="text-sm text-gray-500">Pending Review</p>
+              <p className="text-sm text-zinc-400">Pending Review</p>
             </div>
           </div>
         </div>
@@ -303,7 +304,7 @@ export default function VerificationPage() {
               <p className="text-2xl font-bold text-green-600">
                 {stats.approved}
               </p>
-              <p className="text-sm text-gray-500">Approved</p>
+              <p className="text-sm text-zinc-400">Approved</p>
             </div>
           </div>
         </div>
@@ -316,7 +317,7 @@ export default function VerificationPage() {
               <p className="text-2xl font-bold text-red-600">
                 {stats.rejected}
               </p>
-              <p className="text-sm text-gray-500">Rejected</p>
+              <p className="text-sm text-zinc-400">Rejected</p>
             </div>
           </div>
         </div>
@@ -325,7 +326,7 @@ export default function VerificationPage() {
       {/* Main Content */}
       <div className="card">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-semibold text-gray-800">
+          <h2 className="text-lg font-semibold text-zinc-800">
             Verification Requests
           </h2>
           <button
@@ -344,7 +345,7 @@ export default function VerificationPage() {
         <div className="flex flex-col md:flex-row gap-4 mb-6">
           <div className="relative flex-1 max-w-md">
             <IconSearch
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400"
               size={18}
             />
             <input
@@ -371,34 +372,34 @@ export default function VerificationPage() {
         {/* Loading State */}
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            <span className="ml-3 text-gray-500">Loading verifications...</span>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-700"></div>
+            <span className="ml-3 text-zinc-400">Loading verifications...</span>
           </div>
         ) : (
-          <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+          <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm">
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="bg-gray-50 border-b border-gray-200">
-                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                  <tr className="bg-zinc-50 border-b border-zinc-200">
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">
                       ID
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-500 uppercase tracking-wider">
                       Student Info
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-500 uppercase tracking-wider">
                       University
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-500 uppercase tracking-wider">
                       Document
                     </th>
-                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">
                       Status
                     </th>
-                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">
                       Submitted
                     </th>
-                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">
                       Actions
                     </th>
                   </tr>
@@ -408,7 +409,7 @@ export default function VerificationPage() {
                     <tr>
                       <td
                         colSpan={7}
-                        className="text-center py-8 text-gray-500"
+                        className="text-center py-8 text-zinc-400"
                       >
                         No verification requests found
                       </td>
@@ -417,19 +418,19 @@ export default function VerificationPage() {
                     verifications.map((v) => (
                       <tr
                         key={v.id}
-                        className="hover:bg-gray-50 transition-colors"
+                        className="hover:bg-zinc-50 transition-colors"
                       >
                         <td className="px-4 py-4 text-center">
-                          <span className="font-mono text-sm text-gray-600 bg-gray-100 px-2 py-1 rounded">
+                          <span className="font-mono text-sm text-zinc-500 bg-zinc-100 px-2 py-1 rounded">
                             {v.id}
                           </span>
                         </td>
                         <td className="px-4 py-4">
                           <div>
-                            <p className="font-medium text-gray-900">
+                            <p className="font-medium text-zinc-900">
                               {v.name}
                             </p>
-                            <p className="text-sm text-gray-500">{v.email}</p>
+                            <p className="text-sm text-zinc-400">{v.email}</p>
                             <div className="flex items-center gap-2 mt-1">
                               <span
                                 className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${roleLabels[v.role]?.className}`}
@@ -446,17 +447,17 @@ export default function VerificationPage() {
                           </div>
                         </td>
                         <td className="px-4 py-4">
-                          <p className="text-gray-900 font-medium">
+                          <p className="text-zinc-900 font-medium">
                             {v.university}
                           </p>
-                          <p className="text-sm text-gray-500 font-mono">
+                          <p className="text-sm text-zinc-400 font-mono">
                             ID: {v.studentId}
                           </p>
                         </td>
                         <td className="px-4 py-4">
                           <div className="flex items-center gap-2">
-                            <IconFileText size={16} className="text-gray-400" />
-                            <span className="text-sm text-gray-600">
+                            <IconFileText size={16} className="text-zinc-400" />
+                            <span className="text-sm text-zinc-500">
                               {v.documentType}
                             </span>
                           </div>
@@ -484,7 +485,7 @@ export default function VerificationPage() {
                           </span>
                         </td>
                         <td className="px-4 py-4 text-center">
-                          <span className="text-sm text-gray-600">
+                          <span className="text-sm text-zinc-500">
                             {new Date(v.submittedAt).toLocaleDateString(
                               "th-TH",
                               {
@@ -502,7 +503,7 @@ export default function VerificationPage() {
                         <td className="px-4 py-4 text-center">
                           <div className="flex gap-1 justify-center items-center">
                             <button
-                              className="p-2 hover:bg-blue-50 rounded-lg text-gray-500 hover:text-blue-600 transition-colors"
+                              className="p-2 hover:bg-emerald-50 rounded-lg text-zinc-400 hover:text-emerald-600 transition-colors"
                               title="View Document"
                               onClick={() => {
                                 setSelectedVerification(v);
@@ -515,7 +516,7 @@ export default function VerificationPage() {
                             {v.status === "pending" && (
                               <>
                                 <button
-                                  className="p-2 hover:bg-green-50 rounded-lg text-gray-500 hover:text-green-600 transition-colors"
+                                  className="p-2 hover:bg-green-50 rounded-lg text-zinc-400 hover:text-green-600 transition-colors"
                                   title="Approve"
                                   onClick={() => {
                                     setSelectedVerification(v);
@@ -525,7 +526,7 @@ export default function VerificationPage() {
                                   <IconCheck size={18} />
                                 </button>
                                 <button
-                                  className="p-2 hover:bg-red-50 rounded-lg text-gray-500 hover:text-red-600 transition-colors"
+                                  className="p-2 hover:bg-red-50 rounded-lg text-zinc-400 hover:text-red-600 transition-colors"
                                   title="Reject"
                                   onClick={() => {
                                     setSelectedVerification(v);
@@ -550,7 +551,9 @@ export default function VerificationPage() {
               currentPage={page}
               totalPages={totalPages}
               totalCount={totalCount}
+              pageSize={limit}
               onPageChange={setPage}
+              onPageSizeChange={setLimit}
               itemName="requests"
             />
           </div>
@@ -559,16 +562,16 @@ export default function VerificationPage() {
 
       {/* View Modal */}
       {showViewModal && selectedVerification && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="modal-overlay">
           <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-100">
+            <div className="p-6 border-b border-zinc-100">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold flex items-center gap-2 text-gray-800">
+                <h3 className="text-lg font-semibold flex items-center gap-2 text-zinc-800">
                   <IconId size={20} /> -Verification Details
                 </h3>
                 <button
                   onClick={() => setShowViewModal(false)}
-                  className="text-gray-400 hover:text-gray-600"
+                  className="text-zinc-400 hover:text-zinc-500"
                 >
                   <IconX size={20} />
                 </button>
@@ -576,7 +579,7 @@ export default function VerificationPage() {
             </div>
             <div className="p-6">
               <div className="flex gap-2 mb-4">
-                <span className="font-mono text-sm text-gray-600 bg-gray-100 px-2 py-1 rounded">
+                <span className="font-mono text-sm text-zinc-500 bg-zinc-100 px-2 py-1 rounded">
                   {selectedVerification.id}
                 </span>
                 <span
@@ -608,36 +611,36 @@ export default function VerificationPage() {
 
               <div className="grid grid-cols-2 gap-4 mb-6">
                 <div>
-                  <p className="text-sm text-gray-500">Full Name</p>
-                  <p className="font-semibold text-gray-800">
+                  <p className="text-sm text-zinc-400">Full Name</p>
+                  <p className="font-semibold text-zinc-800">
                     {selectedVerification.name}
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">Email</p>
-                  <p className="text-gray-700">{selectedVerification.email}</p>
+                  <p className="text-sm text-zinc-400">Email</p>
+                  <p className="text-zinc-600">{selectedVerification.email}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">University</p>
-                  <p className="font-semibold text-gray-800">
+                  <p className="text-sm text-zinc-400">University</p>
+                  <p className="font-semibold text-zinc-800">
                     {selectedVerification.university}
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">Student ID</p>
-                  <p className="font-mono text-gray-700">
+                  <p className="text-sm text-zinc-400">Student ID</p>
+                  <p className="font-mono text-zinc-600">
                     {selectedVerification.studentId}
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">Registration Code</p>
-                  <p className="font-mono text-gray-700">
+                  <p className="text-sm text-zinc-400">Registration Code</p>
+                  <p className="font-mono text-zinc-600">
                     {selectedVerification.registrationCode}
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">Submitted</p>
-                  <p className="text-gray-700">
+                  <p className="text-sm text-zinc-400">Submitted</p>
+                  <p className="text-zinc-600">
                     {new Date(selectedVerification.submittedAt).toLocaleString(
                       "th-TH",
                       { timeZone: "Asia/Bangkok" },
@@ -646,14 +649,14 @@ export default function VerificationPage() {
                 </div>
               </div>
 
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h5 className="font-semibold mb-3 flex items-center gap-2 text-gray-800">
+              <div className="bg-zinc-50 p-4 rounded-lg">
+                <h5 className="font-semibold mb-3 flex items-center gap-2 text-zinc-800">
                   <IconPhoto size={18} /> Uploaded Document
                 </h5>
-                <p className="text-sm text-gray-600 mb-2">
+                <p className="text-sm text-zinc-500 mb-2">
                   {selectedVerification.documentType}
                 </p>
-                <div className="border border-gray-200 rounded-lg overflow-hidden bg-white p-8 text-center">
+                <div className="border border-zinc-200 rounded-xl overflow-hidden bg-white p-8 text-center">
                   {selectedVerification.documentUrl ? (
                     <object
                       data={getProxyUrl(selectedVerification.documentUrl)}
@@ -667,7 +670,7 @@ export default function VerificationPage() {
                       />
                     </object>
                   ) : (
-                    <div className="w-full h-64 flex items-center justify-center text-gray-400">
+                    <div className="w-full h-64 flex items-center justify-center text-zinc-400">
                       No document uploaded
                     </div>
                   )}
@@ -677,7 +680,7 @@ export default function VerificationPage() {
                     href={selectedVerification.documentUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="mt-3 inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 text-sm font-medium"
+                    className="mt-3 inline-flex items-center gap-2 text-emerald-600 hover:text-teal-900 text-sm font-medium"
                   >
                     <IconEye size={16} /> Open in New Tab
                   </a>
@@ -700,7 +703,7 @@ export default function VerificationPage() {
               {isLoadingHistory ? (
                 <div className="mt-4 flex items-center justify-center py-4">
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-orange-600"></div>
-                  <span className="ml-2 text-sm text-gray-500">
+                  <span className="ml-2 text-sm text-zinc-400">
                     Loading history...
                   </span>
                 </div>
@@ -720,7 +723,7 @@ export default function VerificationPage() {
                             <span className="text-xs font-medium text-orange-600">
                               #{rejectionHistory.length - index}
                             </span>
-                            <span className="text-xs text-gray-500">
+                            <span className="text-xs text-zinc-400">
                               {new Date(history.rejectedAt).toLocaleString(
                                 "th-TH",
                                 {
@@ -735,11 +738,11 @@ export default function VerificationPage() {
                               )}
                             </span>
                           </div>
-                          <p className="text-sm text-gray-700">
+                          <p className="text-sm text-zinc-600">
                             {history.reason}
                           </p>
                           {history.rejectedByName && (
-                            <p className="text-xs text-gray-500 mt-1">
+                            <p className="text-xs text-zinc-400 mt-1">
                               Rejected by:{" "}
                               <span className="font-medium">
                                 {history.rejectedByName}
@@ -753,7 +756,7 @@ export default function VerificationPage() {
                 )
               )}
             </div>
-            <div className="p-6 border-t border-gray-100 flex gap-3 justify-end">
+            <div className="p-6 border-t border-zinc-100 flex gap-3 justify-end">
               <button
                 onClick={() => setShowViewModal(false)}
                 className="btn-secondary"
@@ -789,7 +792,7 @@ export default function VerificationPage() {
 
       {/* Approve Modal */}
       {showApproveModal && selectedVerification && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="modal-overlay">
           <div className="bg-white rounded-2xl max-w-md w-full">
             <div className="p-6 bg-green-600 rounded-t-2xl">
               <h3 className="text-lg font-semibold text-white flex items-center gap-2">
@@ -800,29 +803,29 @@ export default function VerificationPage() {
               <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <IconCheck size={32} className="text-green-600" />
               </div>
-              <p className="mb-2 text-gray-600">
+              <p className="mb-2 text-zinc-500">
                 Approve student verification for:
               </p>
-              <p className="text-xl font-semibold text-gray-800">
+              <p className="text-xl font-semibold text-zinc-800">
                 {selectedVerification.name}
               </p>
-              <p className="text-gray-500">{selectedVerification.university}</p>
+              <p className="text-zinc-400">{selectedVerification.university}</p>
 
-              <div className="mt-4 bg-blue-50 p-3 rounded-lg text-left text-sm border border-blue-200">
+              <div className="mt-4 bg-emerald-50 p-3 rounded-lg text-left text-sm border border-emerald-200">
                 <p className="font-semibold text-blue-900">
                   What happens next:
                 </p>
-                <ul className="list-disc list-inside text-blue-800 mt-1">
+                <ul className="list-disc list-inside text-teal-900 mt-1">
                   <li>Registration will be updated to student rate</li>
                   <li>User will receive confirmation email</li>
-                  <li className="text-blue-800">
+                  <li className="text-teal-900">
                     Student badge will be added to registration
                   </li>
                 </ul>
               </div>
 
               <div className="mt-4 text-left">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-zinc-600 mb-1">
                   Comment (optional)
                 </label>
                 <textarea
@@ -833,7 +836,7 @@ export default function VerificationPage() {
                 />
               </div>
             </div>
-            <div className="p-6 border-t border-gray-100 flex gap-3 justify-end">
+            <div className="p-6 border-t border-zinc-100 flex gap-3 justify-end">
               <button
                 onClick={() => setShowApproveModal(false)}
                 className="btn-secondary"
@@ -853,7 +856,7 @@ export default function VerificationPage() {
 
       {/* Reject Modal */}
       {showRejectModal && selectedVerification && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="modal-overlay">
           <div className="bg-white rounded-2xl max-w-md w-full">
             <div className="p-6 bg-red-600 rounded-t-2xl">
               <h3 className="text-lg font-semibold text-white flex items-center gap-2">
@@ -864,15 +867,15 @@ export default function VerificationPage() {
               <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <IconX size={32} className="text-red-600" />
               </div>
-              <p className="text-center mb-2 text-gray-600">
+              <p className="text-center mb-2 text-zinc-500">
                 Reject verification for:
               </p>
-              <p className="text-center text-xl font-semibold text-gray-800 mb-4">
+              <p className="text-center text-xl font-semibold text-zinc-800 mb-4">
                 {selectedVerification.name}
               </p>
 
               <div className="text-left">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-zinc-600 mb-1">
                   Rejection Reason <span className="text-red-500">*</span>
                 </label>
                 <select
@@ -897,7 +900,7 @@ export default function VerificationPage() {
                   <option value="Other">Other</option>
                 </select>
 
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-zinc-600 mb-1">
                   Additional Notes
                 </label>
                 <textarea
@@ -906,7 +909,7 @@ export default function VerificationPage() {
                 ></textarea>
               </div>
             </div>
-            <div className="p-6 border-t border-gray-100 flex gap-3 justify-end">
+            <div className="p-6 border-t border-zinc-100 flex gap-3 justify-end">
               <button
                 onClick={() => setShowRejectModal(false)}
                 className="btn-secondary"

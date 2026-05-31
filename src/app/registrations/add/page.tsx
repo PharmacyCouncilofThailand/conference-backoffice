@@ -210,13 +210,13 @@ export default function AddRegistrationPage() {
                 <div className="mb-6">
                     <Link
                         href="/registrations"
-                        className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4"
+                        className="inline-flex items-center gap-2 text-zinc-500 hover:text-zinc-900 mb-4"
                     >
                         <IconArrowLeft size={18} />
                         Back to Registrations
                     </Link>
-                    <h1 className="text-2xl font-bold text-gray-900">Add Registration</h1>
-                    <p className="text-gray-600 mt-1">Manually register a user for an event</p>
+                    <h1 className="text-2xl font-bold text-zinc-900">Add Registration</h1>
+                    <p className="text-zinc-500 mt-1">Manually register a user for an event</p>
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-8">
@@ -228,7 +228,7 @@ export default function AddRegistrationPage() {
                         </h2>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Event *</label>
+                            <label className="block text-sm font-medium text-zinc-600 mb-1">Event *</label>
                             <select
                                 value={form.eventId}
                                 onChange={(e) => {
@@ -247,16 +247,16 @@ export default function AddRegistrationPage() {
                         </div>
 
                         {selectedEvent && (
-                            <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-                                <p className="font-medium text-gray-900">{selectedEvent.eventName}</p>
+                            <div className="mt-4 p-4 bg-zinc-50 rounded-lg">
+                                <p className="font-medium text-zinc-900">{selectedEvent.eventName}</p>
                                 {selectedEvent.location && (
-                                    <p className="text-sm text-gray-600 mt-1 flex items-center gap-1">
+                                    <p className="text-sm text-zinc-500 mt-1 flex items-center gap-1">
                                         <IconMapPin size={14} />
                                         {selectedEvent.location}
                                     </p>
                                 )}
                                 {selectedEvent.startDate && selectedEvent.endDate && (
-                                    <p className="text-xs text-gray-500 mt-2">
+                                    <p className="text-xs text-zinc-400 mt-2">
                                         {new Date(selectedEvent.startDate).toLocaleDateString()} - {new Date(selectedEvent.endDate).toLocaleDateString()}
                                     </p>
                                 )}
@@ -273,9 +273,9 @@ export default function AddRegistrationPage() {
                             </h2>
 
                             <div className="relative" ref={ticketDropdownRef}>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Ticket Type *</label>
+                                <label className="block text-sm font-medium text-zinc-600 mb-1">Ticket Type *</label>
                                 <div className="relative">
-                                    <IconSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                                    <IconSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400" size={18} />
                                     <input
                                         type="text"
                                         placeholder="Search tickets..."
@@ -295,7 +295,7 @@ export default function AddRegistrationPage() {
                                                 setSelectedTicket(null);
                                                 setTicketSearch('');
                                             }}
-                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-500"
                                         >
                                             <IconX size={18} />
                                         </button>
@@ -319,16 +319,16 @@ export default function AddRegistrationPage() {
                                                         setTicketSearch(t.name);
                                                         setIsTicketDropdownOpen(false);
                                                     }}
-                                                    className={`w-full text-left px-4 py-3 border-b last:border-b-0 hover:bg-blue-50 cursor-pointer ${
-                                                        form.ticketTypeId === t.id ? 'bg-blue-50' : ''
+                                                    className={`w-full text-left px-4 py-3 border-b last:border-b-0 hover:bg-emerald-50 cursor-pointer ${
+                                                        form.ticketTypeId === t.id ? 'bg-emerald-50' : ''
                                                     }`}
                                                 >
-                                                    <div className="font-medium text-gray-900">{t.name}</div>
-                                                    <div className="text-sm text-gray-500">
+                                                    <div className="font-medium text-zinc-900">{t.name}</div>
+                                                    <div className="text-sm text-zinc-400">
                                                         {t.soldCount} sold / {t.quota} available
                                                         {t.category && (
                                                             <span className={`ml-2 px-2 py-0.5 text-xs rounded-full ${
-                                                                t.category === 'primary' ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'
+                                                                t.category === 'primary' ? 'bg-emerald-50 text-emerald-700' : 'bg-orange-100 text-orange-700'
                                                             }`}>
                                                                 {t.category}
                                                             </span>
@@ -339,7 +339,7 @@ export default function AddRegistrationPage() {
                                         {ticketsList.filter((t: any) =>
                                             t.name.toLowerCase().includes(ticketSearch.toLowerCase())
                                         ).length === 0 && (
-                                            <div className="px-4 py-3 text-gray-500 text-center">
+                                            <div className="px-4 py-3 text-zinc-400 text-center">
                                                 No tickets found
                                             </div>
                                         )}
@@ -348,12 +348,12 @@ export default function AddRegistrationPage() {
                             </div>
 
                             {selectedTicket && (
-                                <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-                                    <p className="font-medium text-gray-900">{selectedTicket.name}</p>
+                                <div className="mt-4 p-4 bg-zinc-50 rounded-lg">
+                                    <p className="font-medium text-zinc-900">{selectedTicket.name}</p>
                                     {selectedTicket.description && (
-                                        <p className="text-sm text-gray-600">{selectedTicket.description}</p>
+                                        <p className="text-sm text-zinc-500">{selectedTicket.description}</p>
                                     )}
-                                    <p className="text-xs text-gray-500 mt-2">
+                                    <p className="text-xs text-zinc-400 mt-2">
                                         {selectedTicket.soldCount} sold / {selectedTicket.quota} available
                                     </p>
                                 </div>
@@ -369,9 +369,9 @@ export default function AddRegistrationPage() {
                         const sessionTypeConfig: Record<string, { label: string; bg: string; border: string; text: string }> = {
                             workshop: { label: 'Workshop', bg: 'bg-orange-50', border: 'border-orange-200', text: 'text-orange-700' },
                             gala_dinner: { label: 'Gala Dinner', bg: 'bg-pink-50', border: 'border-pink-200', text: 'text-pink-700' },
-                            lecture: { label: 'Lecture', bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-700' },
+                            lecture: { label: 'Lecture', bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-700' },
                             ceremony: { label: 'Ceremony', bg: 'bg-purple-50', border: 'border-purple-200', text: 'text-purple-700' },
-                            break: { label: 'Break', bg: 'bg-gray-50', border: 'border-gray-200', text: 'text-gray-600' },
+                            break: { label: 'Break', bg: 'bg-zinc-50', border: 'border-zinc-200', text: 'text-zinc-500' },
                             other: { label: 'Other', bg: 'bg-slate-50', border: 'border-slate-200', text: 'text-slate-700' },
                         };
 
@@ -401,9 +401,9 @@ export default function AddRegistrationPage() {
                                 <div className="flex-1">
                                     <p className={`font-medium ${colorConfig.text}`}>{session.sessionName}</p>
                                     {session.description && (
-                                        <p className="text-sm text-gray-600 mt-0.5">{session.description}</p>
+                                        <p className="text-sm text-zinc-500 mt-0.5">{session.description}</p>
                                     )}
-                                    <div className="flex items-center gap-4 text-xs text-gray-500 mt-1">
+                                    <div className="flex items-center gap-4 text-xs text-zinc-400 mt-1">
                                         {session.startTime && (
                                             <span>{new Date(session.startTime).toLocaleString()}</span>
                                         )}
@@ -416,7 +416,7 @@ export default function AddRegistrationPage() {
                         return (
                             <div className="card">
                                 <h2 className="text-lg font-semibold mb-2">Sessions</h2>
-                                <p className="text-sm text-gray-600 mb-4">
+                                <p className="text-sm text-zinc-500 mb-4">
                                     Optional: Select specific sessions. If none selected, sessions will be auto-linked based on ticket type.
                                 </p>
 
@@ -439,7 +439,7 @@ export default function AddRegistrationPage() {
                                     {/* Sub Sessions grouped by type */}
                                     {Object.keys(groupedSubSessions).length > 0 && (
                                         <div>
-                                            <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                                            <h3 className="text-sm font-semibold text-zinc-600 mb-3 flex items-center gap-2">
                                                 <span className="w-2 h-2 rounded-full bg-gray-400"></span>
                                                 Sub Sessions
                                             </h3>
@@ -476,11 +476,11 @@ export default function AddRegistrationPage() {
                             </h2>
 
                             <div className="relative">
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Search Users * <span className="text-gray-400 font-normal">(select multiple)</span>
+                                <label className="block text-sm font-medium text-zinc-600 mb-1">
+                                    Search Users * <span className="text-zinc-400 font-normal">(select multiple)</span>
                                 </label>
                                 <div className="relative">
-                                    <IconSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={18} />
+                                    <IconSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" size={18} />
                                     <input
                                         type="text"
                                         placeholder="Search by name or email..."
@@ -506,16 +506,16 @@ export default function AddRegistrationPage() {
                                                     disabled={isDisabled}
                                                     className={`w-full text-left px-4 py-3 border-b last:border-b-0 flex items-center justify-between ${
                                                         isDisabled
-                                                            ? 'bg-gray-50 cursor-not-allowed opacity-60'
-                                                            : 'hover:bg-blue-50 cursor-pointer'
+                                                            ? 'bg-zinc-50 cursor-not-allowed opacity-60'
+                                                            : 'hover:bg-emerald-50 cursor-pointer'
                                                     }`}
                                                 >
                                                     <div className="flex-1">
-                                                        <div className="font-medium text-gray-900">
+                                                        <div className="font-medium text-zinc-900">
                                                             {user.firstName} {user.lastName}
                                                         </div>
-                                                        <div className="text-sm text-gray-500">{user.email}</div>
-                                                        <div className="text-xs text-gray-400 mt-1">
+                                                        <div className="text-sm text-zinc-400">{user.email}</div>
+                                                        <div className="text-xs text-zinc-400 mt-1">
                                                             {user.role} {user.institution ? `• ${user.institution}` : ''}
                                                         </div>
                                                     </div>
@@ -526,7 +526,7 @@ export default function AddRegistrationPage() {
                                                         </span>
                                                     )}
                                                     {isAlreadySelected && !isRegistered && (
-                                                        <span className="ml-2 px-2 py-1 text-xs font-medium bg-blue-100 text-blue-700 rounded-full flex items-center gap-1 shrink-0">
+                                                        <span className="ml-2 px-2 py-1 text-xs font-medium bg-emerald-50 text-emerald-700 rounded-full flex items-center gap-1 shrink-0">
                                                             <IconCheck size={12} />
                                                             Selected
                                                         </span>
@@ -541,7 +541,7 @@ export default function AddRegistrationPage() {
                             {/* Selected Users List */}
                             {selectedUsers.length > 0 && (
                                 <div className="mt-4">
-                                    <p className="text-sm font-medium text-gray-700 mb-2">
+                                    <p className="text-sm font-medium text-zinc-600 mb-2">
                                         Selected Users ({selectedUsers.length})
                                     </p>
                                     <div className="space-y-2 max-h-48 overflow-y-auto">
@@ -551,14 +551,14 @@ export default function AddRegistrationPage() {
                                                 <div
                                                     key={user.id}
                                                     className={`flex items-center justify-between p-3 rounded-lg ${
-                                                        isRegistered ? 'bg-yellow-50 border border-yellow-200' : 'bg-blue-50'
+                                                        isRegistered ? 'bg-yellow-50 border border-yellow-200' : 'bg-emerald-50'
                                                     }`}
                                                 >
                                                     <div className="flex-1">
                                                         <p className={`font-medium ${isRegistered ? 'text-yellow-800' : 'text-blue-900'}`}>
                                                             {user.firstName} {user.lastName}
                                                         </p>
-                                                        <p className={`text-sm ${isRegistered ? 'text-yellow-700' : 'text-blue-700'}`}>
+                                                        <p className={`text-sm ${isRegistered ? 'text-yellow-700' : 'text-emerald-700'}`}>
                                                             {user.email}
                                                         </p>
                                                     </div>
@@ -571,7 +571,7 @@ export default function AddRegistrationPage() {
                                                         type="button"
                                                         onClick={() => handleUserRemove(user.id)}
                                                         className={`p-1 rounded-full hover:bg-opacity-50 ${
-                                                            isRegistered ? 'text-yellow-600 hover:bg-yellow-200' : 'text-blue-600 hover:bg-blue-200'
+                                                            isRegistered ? 'text-yellow-600 hover:bg-yellow-200' : 'text-emerald-600 hover:bg-teal-200'
                                                         }`}
                                                     >
                                                         <IconX size={16} />
@@ -611,8 +611,8 @@ export default function AddRegistrationPage() {
 
                         {selectedUsers.length > 0 && selectedEvent && selectedTicket ? (
                             <div className="space-y-3 text-sm">
-                                <div className="py-2 border-b border-gray-100">
-                                    <span className="text-gray-600">Users:</span>
+                                <div className="py-2 border-b border-zinc-100">
+                                    <span className="text-zinc-500">Users:</span>
                                     <div className="mt-1">
                                         {selectedUsers.filter(u => !registeredUserIds.has(u.id)).length > 0 ? (
                                             <span className="font-medium text-green-700">
@@ -630,29 +630,29 @@ export default function AddRegistrationPage() {
                                         )}
                                     </div>
                                 </div>
-                                <div className="flex justify-between py-2 border-b border-gray-100">
-                                    <span className="text-gray-600">Event:</span>
+                                <div className="flex justify-between py-2 border-b border-zinc-100">
+                                    <span className="text-zinc-500">Event:</span>
                                     <span className="font-medium">{selectedEvent.eventName}</span>
                                 </div>
-                                <div className="flex justify-between py-2 border-b border-gray-100">
-                                    <span className="text-gray-600">Ticket:</span>
+                                <div className="flex justify-between py-2 border-b border-zinc-100">
+                                    <span className="text-zinc-500">Ticket:</span>
                                     <span className="font-medium">{selectedTicket.name}</span>
                                 </div>
                                 {form.sessionIds.length > 0 && (
-                                    <div className="flex justify-between py-2 border-b border-gray-100">
-                                        <span className="text-gray-600">Sessions:</span>
+                                    <div className="flex justify-between py-2 border-b border-zinc-100">
+                                        <span className="text-zinc-500">Sessions:</span>
                                         <span className="font-medium">{form.sessionIds.length} selected</span>
                                     </div>
                                 )}
                                 {form.note && (
                                     <div className="py-2">
-                                        <span className="text-gray-600">Note:</span>
+                                        <span className="text-zinc-500">Note:</span>
                                         <p className="font-medium mt-1">{form.note}</p>
                                     </div>
                                 )}
                             </div>
                         ) : (
-                            <p className="text-sm text-gray-400">Please select at least one user, event, and ticket type to review.</p>
+                            <p className="text-sm text-zinc-400">Please select at least one user, event, and ticket type to review.</p>
                         )}
 
                         <div className="flex gap-3 mt-6">

@@ -568,7 +568,7 @@ export default function CreateEventPage() {
             {readiness.ready ? <IconCheck size={18} /> : <IconAlertTriangle size={18} />}
           </div>
           <div className="flex-1">
-            <h4 className="text-sm font-semibold text-gray-900">
+            <h4 className="text-sm font-semibold text-zinc-900">
               External Event Readiness
             </h4>
             {readiness.ready ? (
@@ -1017,7 +1017,7 @@ export default function CreateEventPage() {
       <div className="card mb-6">
         <div className="relative py-4">
           {/* Progress Line */}
-          <div className="absolute h-1 bg-gray-200 left-[10%] right-[10%] top-[32px] z-0" />
+          <div className="absolute h-1 bg-zinc-200 left-[10%] right-[10%] top-[32px] z-0" />
           <div
             className="absolute h-1 bg-green-500 left-[10%] top-[32px] z-[1] transition-all duration-300"
             style={{
@@ -1048,8 +1048,8 @@ export default function CreateEventPage() {
                       ${isCompleted
                           ? "bg-green-500 text-white"
                           : isCurrent
-                            ? "bg-blue-600 text-white"
-                            : "bg-gray-200 text-gray-500"
+                            ? "bg-emerald-700 text-white"
+                            : "bg-zinc-200 text-zinc-400"
                         }`}
                     >
                       {isCompleted ? (
@@ -1060,10 +1060,10 @@ export default function CreateEventPage() {
                     </div>
                     <p
                       className={`text-sm font-medium ${isCurrent
-                        ? "text-blue-600"
+                        ? "text-emerald-600"
                         : isCompleted
                           ? "text-green-600"
-                          : "text-gray-500"
+                          : "text-zinc-400"
                         }`}
                     >
                       {step.label}
@@ -1078,7 +1078,7 @@ export default function CreateEventPage() {
       {/* Step 1: Event Details */}
       {currentStep === 1 && (
         <div className="card">
-          <div className="bg-blue-600 text-white px-6 py-4 rounded-t-xl -m-6 mb-6 flex items-center gap-2">
+          <div className="bg-emerald-700 text-white px-6 py-4 rounded-t-xl -m-6 mb-6 flex items-center gap-2">
             <IconCalendarEvent size={20} />
             <h3 className="text-lg font-semibold">Step 1: Event Details</h3>
           </div>
@@ -1093,7 +1093,7 @@ export default function CreateEventPage() {
 
           <div className="grid grid-cols-2 gap-4 mb-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-zinc-600 mb-1">
                 Event Code *
               </label>
               <div className="flex gap-2">
@@ -1124,7 +1124,7 @@ export default function CreateEventPage() {
               )}
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-zinc-600 mb-1">
                 Event Type
               </label>
               <select
@@ -1146,7 +1146,7 @@ export default function CreateEventPage() {
           </div>
 
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-zinc-600 mb-1">
               Event Name *
             </label>
             <input
@@ -1166,7 +1166,7 @@ export default function CreateEventPage() {
           </div>
 
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-zinc-600 mb-1">
               Email Short Name
             </label>
             <input
@@ -1178,13 +1178,13 @@ export default function CreateEventPage() {
                 setFormData((prev) => ({ ...prev, shortName: e.target.value }))
               }
             />
-            <p className="mt-1 text-xs text-gray-500">
+            <p className="mt-1 text-xs text-zinc-400">
               Used in email subject lines. If blank, the full event name will be used.
             </p>
           </div>
 
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-zinc-600 mb-1">
               Description
             </label>
             <textarea
@@ -1201,19 +1201,19 @@ export default function CreateEventPage() {
           </div>
 
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-zinc-600 mb-2">
               Attachments / Documents
             </label>
             <div className="space-y-3">
               {(formData.documents || []).length > 0 && (
                 <div className="grid gap-2">
                   {(formData.documents || []).map((doc, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg bg-gray-50">
+                    <div key={idx} className="flex items-center justify-between p-3 border border-zinc-200 rounded-xl bg-zinc-50">
                       <div className="flex items-center gap-3 overflow-hidden">
-                        <div className="w-8 h-8 rounded bg-blue-100 flex items-center justify-center text-blue-600 flex-shrink-0">
+                        <div className="w-8 h-8 rounded bg-emerald-50 flex items-center justify-center text-emerald-600 flex-shrink-0">
                           <IconFileText size={18} />
                         </div>
-                        <a href={doc.url} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-blue-600 hover:underline truncate">
+                        <a href={doc.url} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-emerald-600 hover:underline truncate">
                           {doc.name}
                         </a>
                       </div>
@@ -1223,7 +1223,7 @@ export default function CreateEventPage() {
                           ...prev,
                           documents: prev.documents.filter((_, i) => i !== idx)
                         }))}
-                        className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                        className="p-2 text-zinc-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                       >
                         <IconTrash size={18} />
                       </button>
@@ -1243,19 +1243,19 @@ export default function CreateEventPage() {
                 />
                 <label
                   htmlFor="document-upload"
-                  className={`flex flex-col items-center justify-center w-full h-24 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${isUploading ? "bg-gray-100 border-gray-300 opacity-70" : "border-gray-300 bg-gray-50 hover:bg-gray-100"
+                  className={`flex flex-col items-center justify-center w-full h-24 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${isUploading ? "bg-zinc-100 border-zinc-200 opacity-70" : "border-zinc-200 bg-zinc-50 hover:bg-zinc-100"
                     }`}
                 >
                   <div className="flex flex-col items-center justify-center pb-6 pt-5">
                     {isUploading ? (
-                      <IconLoader2 size={24} className="text-gray-400 mb-2 animate-spin" />
+                      <IconLoader2 size={24} className="text-zinc-400 mb-2 animate-spin" />
                     ) : (
-                      <IconUpload size={24} className="text-gray-400 mb-2" />
+                      <IconUpload size={24} className="text-zinc-400 mb-2" />
                     )}
-                    <p className="mb-2 text-sm text-gray-500">
+                    <p className="mb-2 text-sm text-zinc-400">
                       <span className="font-semibold">Click to upload</span> a document
                     </p>
-                    <p className="text-xs text-gray-500">PDF, DOC, DOCX, XLS or XLSX (Max 50MB)</p>
+                    <p className="text-xs text-zinc-400">PDF, DOC, DOCX, XLS or XLSX (Max 50MB)</p>
                   </div>
                 </label>
               </div>
@@ -1264,7 +1264,7 @@ export default function CreateEventPage() {
 
           <div className="grid grid-cols-2 gap-4 mb-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-zinc-600 mb-1">
                 Start Date & Time *
               </label>
               <DatePicker
@@ -1290,7 +1290,7 @@ export default function CreateEventPage() {
               )}
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-zinc-600 mb-1">
                 End Date & Time *
               </label>
               <DatePicker
@@ -1317,7 +1317,7 @@ export default function CreateEventPage() {
 
           <div className="grid grid-cols-2 gap-4 mb-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-zinc-600 mb-1">
                 Location Name
               </label>
               <input
@@ -1331,7 +1331,7 @@ export default function CreateEventPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-zinc-600 mb-1">
                 Website URL
               </label>
               <input
@@ -1346,14 +1346,14 @@ export default function CreateEventPage() {
                   }))
                 }
               />
-              <p className="mt-1 text-xs text-gray-500">
+              <p className="mt-1 text-xs text-zinc-400">
                 Optional metadata for events that are launched from an external site.
               </p>
             </div>
           </div>
 
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-zinc-600 mb-1">
               Google Maps Embed Code (iframe)
             </label>
             <input
@@ -1369,7 +1369,7 @@ export default function CreateEventPage() {
 
           <div className="grid grid-cols-3 gap-4 mb-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-zinc-600 mb-1">
                 Max Capacity
               </label>
               <input
@@ -1385,10 +1385,10 @@ export default function CreateEventPage() {
                 }
                 placeholder="0"
               />
-              <p className="text-xs text-gray-400 mt-1">0 = Unlimited</p>
+              <p className="text-xs text-zinc-400 mt-1">0 = Unlimited</p>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-zinc-600 mb-1">
                 Conference Code
               </label>
               <input
@@ -1405,7 +1405,7 @@ export default function CreateEventPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-zinc-600 mb-1">
                 CPE Credits
               </label>
               <input
@@ -1424,7 +1424,7 @@ export default function CreateEventPage() {
             </div>
           </div>
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-zinc-600 mb-1">
               Status
             </label>
             <select
@@ -1465,7 +1465,7 @@ export default function CreateEventPage() {
 
           {renderReadinessPanel()}
 
-          <div className="bg-blue-50 text-blue-700 p-4 rounded-lg mb-4 flex items-center gap-2">
+          <div className="bg-emerald-50 text-emerald-700 p-4 rounded-lg mb-4 flex items-center gap-2">
             <IconLayoutGrid size={18} /> Add sessions for your multi-session
             event
           </div>
@@ -1492,14 +1492,14 @@ export default function CreateEventPage() {
                           <span className="bg-purple-100 text-purple-700 text-[10px] px-2 py-0.5 rounded uppercase font-bold border border-purple-200">
                             {session.sessionType?.replace("_", " ") || "OTHER"}
                           </span>
-                          <h5 className="font-semibold text-gray-900">
+                          <h5 className="font-semibold text-zinc-900">
                             {session.sessionName}
                           </h5>
                         </div>
-                        <p className="text-sm text-gray-600 mb-2">
+                        <p className="text-sm text-zinc-500 mb-2">
                           {session.description || "No description"}
                         </p>
-                        <div className="flex gap-4 text-sm text-gray-500">
+                        <div className="flex gap-4 text-sm text-zinc-400">
                           <span className="flex items-center gap-1">
                             <IconCheck size={14} /> {session.room || "No Room"}
                           </span>
@@ -1529,7 +1529,7 @@ export default function CreateEventPage() {
           {/* Sub Sessions Section */}
           <div>
             <div className="flex justify-between items-end mb-4">
-              <h4 className="text-md font-semibold text-gray-700 uppercase tracking-wider">
+              <h4 className="text-md font-semibold text-zinc-600 uppercase tracking-wider">
                 Sub Sessions / Breakouts
               </h4>
               <button
@@ -1580,12 +1580,12 @@ export default function CreateEventPage() {
                               <p className="font-medium">
                                 {session.sessionName}
                               </p>
-                              <span className="bg-gray-100 text-gray-600 text-[10px] px-1.5 py-0.5 rounded uppercase font-bold border border-gray-200">
+                              <span className="bg-zinc-100 text-zinc-500 text-[10px] px-1.5 py-0.5 rounded uppercase font-bold border border-zinc-200">
                                 {session.sessionType?.replace("_", " ") ||
                                   "OTHER"}
                               </span>
                             </div>
-                            <p className="text-sm text-gray-500">
+                            <p className="text-sm text-zinc-400">
                               {session.description}
                             </p>
                           </td>
@@ -1599,9 +1599,9 @@ export default function CreateEventPage() {
                           <td className="flex gap-1">
                             <button
                               onClick={() => handleEditSession(session)}
-                              className="p-1.5 hover:bg-blue-100 rounded"
+                              className="p-1.5 hover:bg-emerald-50 rounded"
                             >
-                              <IconPencil size={18} className="text-blue-600" />
+                              <IconPencil size={18} className="text-emerald-600" />
                             </button>
                             <button
                               onClick={() => handleDeleteSession(session.id!)}
@@ -1616,8 +1616,8 @@ export default function CreateEventPage() {
                 </table>
               </div>
             ) : (
-              <div className="text-center py-8 bg-gray-50 rounded-lg border border-dashed border-gray-300">
-                <p className="text-gray-500">No sub-sessions added yet.</p>
+              <div className="text-center py-8 bg-zinc-50 rounded-lg border border-dashed border-zinc-200">
+                <p className="text-zinc-400">No sub-sessions added yet.</p>
               </div>
             )}
           </div>
@@ -1651,7 +1651,7 @@ export default function CreateEventPage() {
 
           {renderReadinessPanel()}
 
-          <div className="bg-blue-50 text-blue-700 p-4 rounded-lg mb-4 flex items-center gap-2">
+          <div className="bg-emerald-50 text-emerald-700 p-4 rounded-lg mb-4 flex items-center gap-2">
             <IconTicket size={18} /> Add ticket types for your event (e.g.,
             Early Bird, Member, Public)
           </div>
@@ -1686,7 +1686,7 @@ export default function CreateEventPage() {
                       </td>
                       <td>
                         <span
-                          className={`badge ${ticket.category === "primary" ? "bg-blue-100 text-blue-800" : "bg-purple-100 text-purple-800"}`}
+                          className={`badge ${ticket.category === "primary" ? "bg-emerald-50 text-teal-900" : "bg-purple-100 text-purple-800"}`}
                         >
                           {ticket.category === "primary" ? "Primary" : "Add-on"}
                         </span>
@@ -1694,13 +1694,13 @@ export default function CreateEventPage() {
                           ticket.allowedRoles.map((role) => (
                             <span
                               key={role}
-                              className="badge ml-1 bg-gray-100 text-gray-700"
+                              className="badge ml-1 bg-zinc-100 text-zinc-600"
                             >
                               {role === "pharmacist" ? "PHARMACIST" : role === "medical_professional" ? "MED. PROF." : role === "student" ? "STUDENT" : role === "general" ? "GENERAL" : role.toUpperCase()}
                             </span>
                           ))
                         ) : (
-                          <span className="badge ml-1 bg-gray-100 text-gray-700">ALL</span>
+                          <span className="badge ml-1 bg-zinc-100 text-zinc-600">ALL</span>
                         )}
                         {ticket.allowedRoles.includes("student") && (
                           <div className="mt-1 flex flex-wrap gap-1">
@@ -1721,7 +1721,7 @@ export default function CreateEventPage() {
                           </div>
                         )}
                         {ticket.category === "primary" && (
-                          <div className="text-xs text-blue-600 mt-1 flex items-center gap-1">
+                          <div className="text-xs text-emerald-600 mt-1 flex items-center gap-1">
                             <IconCheck size={12} /> Includes Main Session
                           </div>
                         )}
@@ -1752,15 +1752,15 @@ export default function CreateEventPage() {
                       <td>{ticket.quota === "0" || ticket.quota === "" ? <span className="text-green-600 font-medium">Unlimited</span> : ticket.quota}</td>
                       <td>
                         <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${ticket.priority === 'early_bird' ? 'bg-orange-100 text-orange-800' :
-                          ticket.priority === 'regular' ? 'bg-gray-100 text-gray-800' :
-                            'bg-gray-100 text-gray-800'
+                          ticket.priority === 'regular' ? 'bg-zinc-100 text-zinc-800' :
+                            'bg-zinc-100 text-zinc-800'
                           }`}>
                           {ticket.priority === 'early_bird' ? 'Early Bird' :
                             ticket.priority === 'regular' ? 'Regular' :
                               'Regular'}
                         </span>
                       </td>
-                      <td className="text-sm text-gray-600">
+                      <td className="text-sm text-zinc-500">
                         {formatDateTime(ticket.saleStartDate)}
                         <br />
                         to {formatDateTime(ticket.saleEndDate)}
@@ -1769,9 +1769,9 @@ export default function CreateEventPage() {
                         <div className="flex gap-1">
                           <button
                             onClick={() => handleEditTicket(ticket)}
-                            className="p-1.5 hover:bg-blue-100 rounded"
+                            className="p-1.5 hover:bg-emerald-50 rounded"
                           >
-                            <IconPencil size={18} className="text-blue-600" />
+                            <IconPencil size={18} className="text-emerald-600" />
                           </button>
                           <button
                             onClick={() => handleDeleteTicket(ticket.id!)}
@@ -1787,7 +1787,7 @@ export default function CreateEventPage() {
               </table>
             </div>
           ) : (
-            <div className="text-center py-8 text-gray-500">
+            <div className="text-center py-8 text-zinc-400">
               No tickets added yet. Click "Add Ticket Type" to create one.
             </div>
           )}
@@ -1824,28 +1824,28 @@ export default function CreateEventPage() {
 
           {renderReadinessPanel()}
 
-          <div className="bg-blue-50 text-blue-700 p-4 rounded-lg mb-6 flex items-center gap-2">
+          <div className="bg-emerald-50 text-emerald-700 p-4 rounded-lg mb-6 flex items-center gap-2">
             <IconPhoto size={18} /> Upload display images and venue gallery photos. Venue images will be uploaded when you click Finish.
           </div>
 
           <div className="space-y-6">
             {/* Section 1: Thumbnail Image */}
-            <div className="bg-white p-6 rounded-xl border border-gray-200">
+            <div className="bg-white p-6 rounded-xl border border-zinc-200">
               <div className="flex flex-col md:flex-row gap-8">
                 <div className="md:w-1/3">
-                  <h3 className="text-lg font-medium text-gray-900 md:mb-2 flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+                  <h3 className="text-lg font-medium text-zinc-900 md:mb-2 flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
                       <IconPhoto size={18} />
                     </div>
                     Thumbnail Image
                   </h3>
-                  <p className="text-sm text-gray-500 hidden md:block">
+                  <p className="text-sm text-zinc-400 hidden md:block">
                     This image is used on event cards and listings on the homepage.
                     Recommended aspect ratio is 1:1 or 4:3.
                   </p>
                 </div>
                 <div className="md:w-2/3">
-                  <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-xl relative overflow-hidden group bg-gray-50/50 hover:bg-gray-50 transition-colors">
+                  <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-zinc-200 border-dashed rounded-xl relative overflow-hidden group bg-zinc-50/50 hover:bg-zinc-50 transition-colors">
                     {formData.imageUrl ? (
                       <>
                         <img src={formData.imageUrl} alt="Thumbnail preview" className="max-h-48 object-contain" />
@@ -1867,25 +1867,25 @@ export default function CreateEventPage() {
                       </>
                     ) : (
                       <div className="space-y-2 text-center">
-                        <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto shadow-sm border border-gray-100">
-                          <IconPhoto size={32} className="text-blue-400" />
+                        <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto shadow-sm border border-zinc-100">
+                          <IconPhoto size={32} className="text-teal-400" />
                         </div>
-                        <div className="flex text-sm text-gray-600 justify-center mt-4">
-                          <label className="relative cursor-pointer bg-white px-4 py-2 border border-gray-200 rounded-lg font-medium text-blue-600 hover:bg-gray-50 hover:text-blue-500 transition-colors shadow-sm">
+                        <div className="flex text-sm text-zinc-500 justify-center mt-4">
+                          <label className="relative cursor-pointer bg-white px-4 py-2 border border-zinc-200 rounded-xl font-medium text-emerald-600 hover:bg-zinc-50 hover:text-emerald-600 transition-colors shadow-sm">
                             <span>Select an image file</span>
                             <input type="file" className="sr-only" accept="image/*" onChange={(e) => e.target.files?.[0] && handleImageUpload(e.target.files[0], "thumbnail")} />
                           </label>
                         </div>
-                        <p className="text-xs text-gray-500 mt-2">PNG, JPG, WEBP up to 5MB</p>
+                        <p className="text-xs text-zinc-400 mt-2">PNG, JPG, WEBP up to 5MB</p>
                       </div>
                     )}
                     {isUploading && uploadingTarget === "thumbnail" && (
                       <div className="absolute inset-0 bg-white/80 flex items-center justify-center backdrop-blur-sm z-20">
                         <div className="bg-white p-5 rounded-xl shadow-lg flex flex-col items-center w-52">
-                          <div className="w-full bg-gray-200 rounded-full h-2.5 mb-3">
-                            <div className="bg-blue-600 h-2.5 rounded-full transition-all duration-300" style={{ width: `${uploadProgress}%` }} />
+                          <div className="w-full bg-zinc-200 rounded-full h-2.5 mb-3">
+                            <div className="bg-emerald-700 h-2.5 rounded-full transition-all duration-300" style={{ width: `${uploadProgress}%` }} />
                           </div>
-                          <span className="text-sm font-medium text-gray-700">Uploading... {uploadProgress}%</span>
+                          <span className="text-sm font-medium text-zinc-600">Uploading... {uploadProgress}%</span>
                         </div>
                       </div>
                     )}
@@ -1895,22 +1895,22 @@ export default function CreateEventPage() {
             </div>
 
             {/* Section 2: Cover Image */}
-            <div className="bg-white p-6 rounded-xl border border-gray-200">
+            <div className="bg-white p-6 rounded-xl border border-zinc-200">
               <div className="flex flex-col md:flex-row gap-8">
                 <div className="md:w-1/3">
-                  <h3 className="text-lg font-medium text-gray-900 md:mb-2 flex items-center gap-2">
+                  <h3 className="text-lg font-medium text-zinc-900 md:mb-2 flex items-center gap-2">
                     <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
                       <IconPhoto size={18} />
                     </div>
                     Cover Image
                   </h3>
-                  <p className="text-sm text-gray-500 hidden md:block">
+                  <p className="text-sm text-zinc-400 hidden md:block">
                     This image appears as the large banner at the top of the event detail page.
                     Recommended aspect ratio is 16:9 for best display.
                   </p>
                 </div>
                 <div className="md:w-2/3">
-                  <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-xl relative overflow-hidden group bg-gray-50/50 hover:bg-gray-50 transition-colors">
+                  <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-zinc-200 border-dashed rounded-xl relative overflow-hidden group bg-zinc-50/50 hover:bg-zinc-50 transition-colors">
                     {formData.coverImage ? (
                       <>
                         <img src={formData.coverImage} alt="Cover preview" className="max-h-48 object-cover w-full rounded" />
@@ -1932,25 +1932,25 @@ export default function CreateEventPage() {
                       </>
                     ) : (
                       <div className="space-y-2 text-center">
-                        <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto shadow-sm border border-gray-100">
+                        <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto shadow-sm border border-zinc-100">
                           <IconPhoto size={32} className="text-indigo-400" />
                         </div>
-                        <div className="flex text-sm text-gray-600 justify-center mt-4">
-                          <label className="relative cursor-pointer bg-white px-4 py-2 border border-gray-200 rounded-lg font-medium text-indigo-600 hover:bg-gray-50 hover:text-indigo-500 transition-colors shadow-sm">
+                        <div className="flex text-sm text-zinc-500 justify-center mt-4">
+                          <label className="relative cursor-pointer bg-white px-4 py-2 border border-zinc-200 rounded-xl font-medium text-indigo-600 hover:bg-zinc-50 hover:text-indigo-500 transition-colors shadow-sm">
                             <span>Select an image file</span>
                             <input type="file" className="sr-only" accept="image/*" onChange={(e) => e.target.files?.[0] && handleImageUpload(e.target.files[0], "cover")} />
                           </label>
                         </div>
-                        <p className="text-xs text-gray-500 mt-2">PNG, JPG, WEBP up to 10MB</p>
+                        <p className="text-xs text-zinc-400 mt-2">PNG, JPG, WEBP up to 10MB</p>
                       </div>
                     )}
                     {isUploading && uploadingTarget === "cover" && (
                       <div className="absolute inset-0 bg-white/80 flex items-center justify-center backdrop-blur-sm z-20">
                         <div className="bg-white p-5 rounded-xl shadow-lg flex flex-col items-center w-52">
-                          <div className="w-full bg-gray-200 rounded-full h-2.5 mb-3">
+                          <div className="w-full bg-zinc-200 rounded-full h-2.5 mb-3">
                             <div className="bg-indigo-600 h-2.5 rounded-full transition-all duration-300" style={{ width: `${uploadProgress}%` }} />
                           </div>
-                          <span className="text-sm font-medium text-gray-700">Uploading... {uploadProgress}%</span>
+                          <span className="text-sm font-medium text-zinc-600">Uploading... {uploadProgress}%</span>
                         </div>
                       </div>
                     )}
@@ -1958,10 +1958,10 @@ export default function CreateEventPage() {
 
                   {/* Cover Video Upload */}
                   <div className="mt-6">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-zinc-600 mb-2">
                       Cover Video (MP4/WebM) - Optional
                     </label>
-                    <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-xl relative overflow-hidden group bg-gray-50/50 hover:bg-gray-50 transition-colors">
+                    <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-zinc-200 border-dashed rounded-xl relative overflow-hidden group bg-zinc-50/50 hover:bg-zinc-50 transition-colors">
                       {formData.videoUrl ? (
                         <>
                           <video src={formData.videoUrl} controls className="max-h-48 w-full rounded bg-black" />
@@ -1983,33 +1983,33 @@ export default function CreateEventPage() {
                         </>
                       ) : (
                         <div className="space-y-2 text-center">
-                          <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto shadow-sm border border-gray-100">
+                          <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto shadow-sm border border-zinc-100">
                             <svg className="w-8 h-8 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
                             </svg>
                           </div>
-                          <div className="flex text-sm text-gray-600 justify-center mt-4">
-                            <label className={`relative cursor-pointer bg-white px-4 py-2 border border-gray-200 rounded-lg font-medium text-indigo-600 hover:bg-gray-50 hover:text-indigo-500 transition-colors shadow-sm ${isUploading ? 'opacity-50 pointer-events-none' : ''}`}>
+                          <div className="flex text-sm text-zinc-500 justify-center mt-4">
+                            <label className={`relative cursor-pointer bg-white px-4 py-2 border border-zinc-200 rounded-xl font-medium text-indigo-600 hover:bg-zinc-50 hover:text-indigo-500 transition-colors shadow-sm ${isUploading ? 'opacity-50 pointer-events-none' : ''}`}>
                               <span>Select a video file</span>
                               <input type="file" className="sr-only" accept="video/mp4,video/webm" onChange={handleVideoUpload} disabled={isUploading} />
                             </label>
                           </div>
-                          <p className="text-xs text-gray-500 mt-2">MP4 or WEBM up to 50MB</p>
+                          <p className="text-xs text-zinc-400 mt-2">MP4 or WEBM up to 50MB</p>
                         </div>
                       )}
 
                       {isUploading && uploadingTarget === "video" && (
                         <div className="absolute inset-0 bg-white/80 flex items-center justify-center backdrop-blur-sm z-20">
                           <div className="bg-white p-5 rounded-xl shadow-lg flex flex-col items-center w-52">
-                            <div className="w-full bg-gray-200 rounded-full h-2.5 mb-3">
+                            <div className="w-full bg-zinc-200 rounded-full h-2.5 mb-3">
                               <div className="bg-indigo-600 h-2.5 rounded-full transition-all duration-300" style={{ width: `${uploadProgress}%` }} />
                             </div>
-                            <span className="text-sm font-medium text-gray-700">Uploading... {uploadProgress}%</span>
+                            <span className="text-sm font-medium text-zinc-600">Uploading... {uploadProgress}%</span>
                           </div>
                         </div>
                       )}
                     </div>
-                    <p className="text-xs text-gray-500 mt-2">
+                    <p className="text-xs text-zinc-400 mt-2">
                       If provided, this video will be played as the background on the event details page.
                     </p>
                   </div>
@@ -2018,25 +2018,25 @@ export default function CreateEventPage() {
             </div>
 
             {/* Section 3: Venue Gallery */}
-            <div className="bg-white p-6 rounded-xl border border-gray-200">
+            <div className="bg-white p-6 rounded-xl border border-zinc-200">
               <div className="flex flex-col md:flex-row gap-8 mb-6">
                 <div className="md:w-1/3">
-                  <h3 className="text-lg font-medium text-gray-900 md:mb-2 flex items-center gap-2">
+                  <h3 className="text-lg font-medium text-zinc-900 md:mb-2 flex items-center gap-2">
                     <div className="w-8 h-8 rounded-lg bg-green-50 text-green-600 flex items-center justify-center">
                       <IconPhoto size={18} />
                     </div>
                     Venue Gallery
                   </h3>
-                  <p className="text-sm text-gray-500 hidden md:block mb-4">
+                  <p className="text-sm text-zinc-400 hidden md:block mb-4">
                     Add multiple photos to showcase the event venue, parking area, or previous events.
                   </p>
                 </div>
                 <div className="md:w-2/3">
-                  <div className="bg-gray-50 p-5 border border-gray-200 rounded-xl shadow-inner">
-                    <h4 className="font-semibold mb-3 text-gray-800 text-sm uppercase tracking-wider">Add Gallery Image</h4>
+                  <div className="bg-zinc-50 p-5 border border-zinc-200 rounded-xl shadow-inner">
+                    <h4 className="font-semibold mb-3 text-zinc-800 text-sm uppercase tracking-wider">Add Gallery Image</h4>
                     <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-end">
                       <div className="flex-1 w-full">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <label className="block text-sm font-medium text-zinc-600 mb-1">
                           Caption (Optional)
                         </label>
                         <input
@@ -2083,10 +2083,10 @@ export default function CreateEventPage() {
               </div>
 
               {/* Gallery Grid */}
-              <div className="pt-6 border-t border-gray-100">
-                <h4 className="font-medium text-gray-800 mb-4 flex items-center gap-2">
+              <div className="pt-6 border-t border-zinc-100">
+                <h4 className="font-medium text-zinc-800 mb-4 flex items-center gap-2">
                   Images to Upload
-                  <span className="bg-gray-100 text-gray-600 py-0.5 px-2 rounded-full text-xs font-semibold">
+                  <span className="bg-zinc-100 text-zinc-500 py-0.5 px-2 rounded-full text-xs font-semibold">
                     {venueImages.length}
                   </span>
                 </h4>
@@ -2096,9 +2096,9 @@ export default function CreateEventPage() {
                     {venueImages.map((img, idx) => (
                       <div
                         key={img.id || idx}
-                        className="group border border-gray-200 rounded-xl overflow-hidden relative shadow-sm hover:shadow-md transition-all hover:-translate-y-1"
+                        className="group border border-zinc-200 rounded-xl overflow-hidden relative shadow-sm hover:shadow-md transition-all hover:-translate-y-1"
                       >
-                        <div className="aspect-video bg-gray-100 flex items-center justify-center relative">
+                        <div className="aspect-video bg-zinc-100 flex items-center justify-center relative">
                           <img
                             src={img.previewUrl || img.url}
                             alt={img.caption || `Venue ${idx + 1}`}
@@ -2126,12 +2126,12 @@ export default function CreateEventPage() {
                     ))}
                   </div>
                 ) : (
-                  <div className="text-center py-12 border-2 border-dashed border-gray-200 rounded-xl bg-gray-50/50">
-                    <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto shadow-sm border border-gray-100 mb-3">
+                  <div className="text-center py-12 border-2 border-dashed border-zinc-200 rounded-xl bg-zinc-50/50">
+                    <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto shadow-sm border border-zinc-100 mb-3">
                       <IconPhoto size={28} className="text-green-400" />
                     </div>
-                    <h5 className="text-gray-700 font-medium">No gallery images</h5>
-                    <p className="text-sm text-gray-500 mt-1">Add images to display them here.</p>
+                    <h5 className="text-zinc-600 font-medium">No gallery images</h5>
+                    <p className="text-sm text-zinc-400 mt-1">Add images to display them here.</p>
                   </div>
                 )}
               </div>
@@ -2170,9 +2170,9 @@ export default function CreateEventPage() {
       {/* Add Ticket Modal */}
       {
         showTicketModal && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="modal-overlay">
             <div className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
-              <div className="p-6 border-b border-gray-100">
+              <div className="p-6 border-b border-zinc-100">
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-semibold flex items-center gap-2">
                     <IconTicket size={20} />{" "}
@@ -2183,7 +2183,7 @@ export default function CreateEventPage() {
                       setShowTicketModal(false);
                       setEditingTicketId(null);
                     }}
-                    className="text-gray-400 hover:text-gray-600"
+                    className="text-zinc-400 hover:text-zinc-500"
                   >
                     <IconX size={20} />
                   </button>
@@ -2192,7 +2192,7 @@ export default function CreateEventPage() {
               <div className="p-6">
                 <div className="grid grid-cols-2 gap-4 mb-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-zinc-600 mb-1">
                       Category *
                     </label>
                     <select
@@ -2210,10 +2210,10 @@ export default function CreateEventPage() {
                     </select>
                   </div>
                   <div className="col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-zinc-600 mb-2">
                       Target Audience (Role) *
                     </label>
-                    <div className="border rounded-md p-3 max-h-40 overflow-y-auto space-y-2 bg-gray-50">
+                    <div className="border rounded-md p-3 max-h-40 overflow-y-auto space-y-2 bg-zinc-50">
                       {[
                         { value: "pharmacist", label: "Pharmacist" },
                         { value: "medical_professional", label: "Medical Professional" },
@@ -2222,7 +2222,7 @@ export default function CreateEventPage() {
                       ].map((role) => (
                         <label
                           key={role.value}
-                          className="flex items-start gap-2 cursor-pointer hover:bg-gray-100 p-1 rounded"
+                          className="flex items-start gap-2 cursor-pointer hover:bg-zinc-100 p-1 rounded"
                         >
                           <input
                             type="checkbox"
@@ -2247,7 +2247,7 @@ export default function CreateEventPage() {
                               });
                             }}
                           />
-                          <span className="text-sm font-medium text-gray-700">{role.label}</span>
+                          <span className="text-sm font-medium text-zinc-600">{role.label}</span>
                         </label>
                       ))}
                     </div>
@@ -2259,20 +2259,20 @@ export default function CreateEventPage() {
                   {/* Student Level Selection - only show when student role is selected */}
                   {(ticketForm.allowedRoles || []).includes("student") && (
                     <div className="col-span-2">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-sm font-medium text-zinc-600 mb-2">
                         Student Level (optional)
                       </label>
-                      <p className="text-xs text-gray-500 mb-2">
+                      <p className="text-xs text-zinc-400 mb-2">
                         Leave empty to allow all student levels, or select specific levels.
                       </p>
-                      <div className="border rounded-md p-3 space-y-2 bg-gray-50">
+                      <div className="border rounded-md p-3 space-y-2 bg-zinc-50">
                         {[
                           { value: "postgraduate", label: "Postgraduate" },
                           { value: "undergraduate", label: "Undergraduate" },
                         ].map((level) => (
                           <label
                             key={level.value}
-                            className="flex items-start gap-2 cursor-pointer hover:bg-gray-100 p-1 rounded"
+                            className="flex items-start gap-2 cursor-pointer hover:bg-zinc-100 p-1 rounded"
                           >
                             <input
                               type="checkbox"
@@ -2290,7 +2290,7 @@ export default function CreateEventPage() {
                                 });
                               }}
                             />
-                            <span className="text-sm font-medium text-gray-700">{level.label}</span>
+                            <span className="text-sm font-medium text-zinc-600">{level.label}</span>
                           </label>
                         ))}
                       </div>
@@ -2324,7 +2324,7 @@ export default function CreateEventPage() {
                 {/* Session Selector - Only for Add-on tickets (Checkboxes) */}
                 {ticketForm.category === "addon" && sessions.length > 0 && (
                   <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-zinc-600 mb-2">
                       Link to Sessions/Workshops *
                     </label>
                     <div className="border rounded-md p-3 max-h-40 overflow-y-auto space-y-2">
@@ -2333,7 +2333,7 @@ export default function CreateEventPage() {
                         .map((session) => (
                           <label
                             key={session.id}
-                            className="flex items-start gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded"
+                            className="flex items-start gap-2 cursor-pointer hover:bg-zinc-50 p-1 rounded"
                           >
                             <input
                               type="checkbox"
@@ -2366,14 +2366,14 @@ export default function CreateEventPage() {
                               <div className="text-sm font-medium">
                                 {session.sessionCode}
                               </div>
-                              <div className="text-xs text-gray-500">
+                              <div className="text-xs text-zinc-400">
                                 {session.sessionName}
                               </div>
                             </div>
                           </label>
                         ))}
                     </div>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-zinc-400 mt-1">
                       Select one or more sessions for this add-on ticket
                     </p>
                   </div>
@@ -2381,7 +2381,7 @@ export default function CreateEventPage() {
 
                 <div className="grid grid-cols-2 gap-4 mb-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-zinc-600 mb-1">
                       Quota *
                     </label>
                     <input
@@ -2397,10 +2397,10 @@ export default function CreateEventPage() {
                       }
                       placeholder="0"
                     />
-                    <p className="text-xs text-gray-400 mt-1">0 = Unlimited</p>
+                    <p className="text-xs text-zinc-400 mt-1">0 = Unlimited</p>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-zinc-600 mb-1">
                       Ticket Priority
                     </label>
                     <select
@@ -2420,7 +2420,7 @@ export default function CreateEventPage() {
                 </div>
 
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-zinc-600 mb-1">
                     Ticket Name *
                   </label>
                   <input
@@ -2437,7 +2437,7 @@ export default function CreateEventPage() {
 
                 <div className="grid grid-cols-2 gap-4 mb-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-zinc-600 mb-1">
                       Currency *
                     </label>
                     <select
@@ -2455,7 +2455,7 @@ export default function CreateEventPage() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-zinc-600 mb-1">
                       Price *
                     </label>
                     <input
@@ -2476,7 +2476,7 @@ export default function CreateEventPage() {
 
                 <div className="grid grid-cols-2 gap-4 mb-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-zinc-600 mb-1">
                       Original Price
                     </label>
                     <input
@@ -2494,7 +2494,7 @@ export default function CreateEventPage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-zinc-600 mb-1">
                       Group Name
                     </label>
                     <select
@@ -2516,7 +2516,7 @@ export default function CreateEventPage() {
                 </div>
 
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-zinc-600 mb-1">
                     Badge Text
                   </label>
                   <input
@@ -2535,7 +2535,7 @@ export default function CreateEventPage() {
                 </div>
 
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-zinc-600 mb-1">
                     Description
                   </label>
                   <textarea
@@ -2553,7 +2553,7 @@ export default function CreateEventPage() {
                 </div>
 
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-zinc-600 mb-1">
                     Features
                   </label>
                   <div className="flex gap-2 mb-2">
@@ -2595,7 +2595,7 @@ export default function CreateEventPage() {
                       {(ticketForm.features || []).map((f, i) => (
                         <span
                           key={i}
-                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700"
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-zinc-100 text-zinc-600"
                         >
                           {f}
                           <button
@@ -2606,7 +2606,7 @@ export default function CreateEventPage() {
                                 features: (prev.features || []).filter((_, idx) => idx !== i),
                               }))
                             }
-                            className="text-gray-400 hover:text-red-500"
+                            className="text-zinc-400 hover:text-red-500"
                           >
                             &times;
                           </button>
@@ -2618,7 +2618,7 @@ export default function CreateEventPage() {
 
                 <div className="grid grid-cols-2 gap-4 mb-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-zinc-600 mb-1">
                       Sale Start Date & Time
                     </label>
                     <DatePicker
@@ -2641,7 +2641,7 @@ export default function CreateEventPage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-zinc-600 mb-1">
                       Sale End Date & Time
                     </label>
                     <DatePicker
@@ -2665,7 +2665,7 @@ export default function CreateEventPage() {
                   </div>
                 </div>
               </div>
-              <div className="p-6 border-t border-gray-100 flex gap-3 justify-end">
+              <div className="p-6 border-t border-zinc-100 flex gap-3 justify-end">
                 <button
                   onClick={() => {
                     setShowTicketModal(false);
@@ -2687,9 +2687,9 @@ export default function CreateEventPage() {
       {/* Add Session Modal */}
       {
         showSessionModal && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="modal-overlay">
             <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="p-6 border-b border-gray-100">
+              <div className="p-6 border-b border-zinc-100">
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-semibold">
                     {editingSessionId ? "Edit Session" : "Create Session"}
@@ -2699,7 +2699,7 @@ export default function CreateEventPage() {
                       setShowSessionModal(false);
                       setEditingSessionId(null);
                     }}
-                    className="text-gray-400 hover:text-gray-600"
+                    className="text-zinc-400 hover:text-zinc-500"
                   >
                     <IconX size={20} />
                   </button>
@@ -2712,10 +2712,10 @@ export default function CreateEventPage() {
                     (s) => s.isMainSession && s.id !== editingSessionId,
                   )) && (
                     <div className="mb-4">
-                      <label className="flex items-center gap-2 cursor-pointer p-3 border rounded-lg hover:bg-gray-50 bg-blue-50/50 border-blue-100/50">
+                      <label className="flex items-center gap-2 cursor-pointer p-3 border rounded-lg hover:bg-zinc-50 bg-emerald-50/50 border-teal-100/50">
                         <input
                           type="checkbox"
-                          className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="w-5 h-5 text-emerald-600 rounded focus:ring-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed"
                           checked={sessionForm.isMainSession || false}
                           onChange={(e) =>
                             setSessionForm((prev) => ({
@@ -2726,15 +2726,15 @@ export default function CreateEventPage() {
                           disabled={sessionForm.isMainSession} // Lock if checked
                         />
                         <div>
-                          <div className="font-medium text-gray-900">
+                          <div className="font-medium text-zinc-900">
                             Main session
                             {sessionForm.isMainSession && (
-                              <span className="ml-2 text-xs text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100">
+                              <span className="ml-2 text-xs text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-teal-100">
                                 Default (Locked)
                               </span>
                             )}
                           </div>
-                          <div className="text-xs text-gray-500">
+                          <div className="text-xs text-zinc-400">
                             Main sessions appear prominently and are auto-linked to
                             Primary tickets.
                           </div>
@@ -2746,7 +2746,7 @@ export default function CreateEventPage() {
                 {/* Session Code & Session Name */}
                 <div className="grid grid-cols-2 gap-4 mb-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-zinc-600 mb-1">
                       Session Code *
                     </label>
                     <input
@@ -2763,7 +2763,7 @@ export default function CreateEventPage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-zinc-600 mb-1">
                       Session Name *
                     </label>
                     <input
@@ -2783,7 +2783,7 @@ export default function CreateEventPage() {
 
                 {/* Session Type */}
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-zinc-600 mb-1">
                     Session Type *
                   </label>
                   <select
@@ -2808,7 +2808,7 @@ export default function CreateEventPage() {
                 {/* Start Time & End Time */}
                 <div className="grid grid-cols-2 gap-4 mb-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-zinc-600 mb-1">
                       Start Time *
                     </label>
                     <DatePicker
@@ -2831,7 +2831,7 @@ export default function CreateEventPage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-zinc-600 mb-1">
                       End Time *
                     </label>
                     <DatePicker
@@ -2856,7 +2856,7 @@ export default function CreateEventPage() {
                 {/* Room & Max Capacity */}
                 <div className="grid grid-cols-2 gap-4 mb-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-zinc-600 mb-1">
                       Room
                     </label>
                     <input
@@ -2873,7 +2873,7 @@ export default function CreateEventPage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-zinc-600 mb-1">
                       Max Capacity
                     </label>
                     <input
@@ -2889,22 +2889,22 @@ export default function CreateEventPage() {
                         }))
                       }
                     />
-                    <p className="text-xs text-gray-400 mt-1">0 = Unlimited</p>
+                    <p className="text-xs text-zinc-400 mt-1">0 = Unlimited</p>
                   </div>
                 </div>
 
                 {/* Instructor(s) */}
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
+                  <label className="block text-sm font-medium text-zinc-600 mb-1 flex items-center gap-2">
                     <IconMicrophone size={16} /> Instructor(s)
                   </label>
-                  <div className="border border-gray-300 rounded-md bg-white">
+                  <div className="border border-zinc-200 rounded-md bg-white">
                     {speakers.length > 0 ? (
                       <div className="max-h-32 overflow-y-auto p-2">
                         {speakers.map((speaker) => (
                           <label
                             key={speaker.id}
-                            className="flex items-center gap-2 text-sm p-2 hover:bg-gray-50 rounded cursor-pointer"
+                            className="flex items-center gap-2 text-sm p-2 hover:bg-zinc-50 rounded cursor-pointer"
                           >
                             <input
                               type="checkbox"
@@ -2922,13 +2922,13 @@ export default function CreateEventPage() {
                                     ),
                                 }));
                               }}
-                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                              className="rounded border-zinc-200 text-emerald-600 focus:ring-emerald-600"
                             />
                             <span>
                               {speaker.firstName} {speaker.lastName}
                             </span>
                             {speaker.organization && (
-                              <span className="text-xs text-gray-500">
+                              <span className="text-xs text-zinc-400">
                                 ({speaker.organization})
                               </span>
                             )}
@@ -2936,12 +2936,12 @@ export default function CreateEventPage() {
                         ))}
                       </div>
                     ) : (
-                      <div className="p-3 text-sm text-gray-500">
+                      <div className="p-3 text-sm text-zinc-400">
                         No instructors available
                       </div>
                     )}
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-zinc-400 mt-1">
                     Selected: {sessionForm.selectedSpeakerIds?.length || 0}{" "}
                     Instructor(s)
                   </p>
@@ -2949,7 +2949,7 @@ export default function CreateEventPage() {
 
                 {/* Learning Objectives */}
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
+                  <label className="block text-sm font-medium text-zinc-600 mb-1 flex items-center gap-2">
                     <IconTarget size={16} /> Learning Objectives
                   </label>
                   <textarea
@@ -2968,10 +2968,10 @@ export default function CreateEventPage() {
 
                 {/* Time & Agenda */}
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                  <label className="block text-sm font-medium text-zinc-600 mb-2 flex items-center gap-2">
                     <IconClock size={16} /> Time & Agenda
                   </label>
-                  <p className="text-xs text-gray-500 mb-2">
+                  <p className="text-xs text-zinc-400 mb-2">
                     Add agenda items with time slots (e.g. &quot;1:30 – 2:00 PM&quot; and topic).
                   </p>
                   {(sessionForm.agenda || []).map((item, idx) => (
@@ -3018,13 +3018,13 @@ export default function CreateEventPage() {
                         agenda: [...(prev.agenda || []), { time: "", topic: "" }],
                       }));
                     }}
-                    className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1 mt-1"
+                    className="text-sm text-emerald-600 hover:text-teal-900 flex items-center gap-1 mt-1"
                   >
                     <IconPlus size={14} /> Add agenda item
                   </button>
                 </div>
               </div>
-              <div className="p-6 border-t border-gray-100 flex gap-3 justify-end">
+              <div className="p-6 border-t border-zinc-100 flex gap-3 justify-end">
                 <button
                   onClick={() => {
                     setShowSessionModal(false);

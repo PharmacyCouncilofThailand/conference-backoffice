@@ -54,14 +54,13 @@ const ticketTypeData = [
   { name: 'General', value: 50 },
 ];
 
-const COLORS = ['#3b82f6', '#10b981', '#8b5cf6', '#f59e0b'];
+const COLORS = ['#059669', '#18181b', '#d97706', '#71717a'];
 
-// Mock data for dashboard
 const stats = [
-  { label: 'Total Events', value: '12', icon: IconCalendarEvent, change: '+2', color: 'bg-blue-500' },
-  { label: 'Registrations', value: '1,234', icon: IconFileText, change: '+156', color: 'bg-green-500' },
-  { label: 'Revenue', value: '฿890,500', icon: IconCash, change: '+฿45,200', color: 'bg-purple-500' },
-  { label: 'Checked In', value: '856', icon: IconCheck, change: '69.4%', color: 'bg-orange-500' },
+  { label: 'Total Events', value: '12', icon: IconCalendarEvent, change: '+2', bg: '#ecfdf5', fg: '#059669' },
+  { label: 'Registrations', value: '1,234', icon: IconFileText, change: '+156', bg: '#f4f4f5', fg: '#18181b' },
+  { label: 'Revenue', value: '฿890,500', icon: IconCash, change: '+฿45,200', bg: '#fffbeb', fg: '#d97706' },
+  { label: 'Checked In', value: '856', icon: IconCheck, change: '69.4%', bg: '#f0fdf4', fg: '#16a34a' },
 ];
 
 const recentRegistrations = [
@@ -83,114 +82,99 @@ const statusColors: { [key: string]: string } = {
 export default function DashboardPage() {
   return (
     <AdminLayout title="Dashboard">
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      {/* Stats */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {stats.map((stat) => {
           const Icon = stat.icon;
           return (
-            <div key={stat.label} className="card flex items-center gap-4">
-              <div className={`w-14 h-14 ${stat.color} rounded-xl flex items-center justify-center text-white`}>
-                <Icon size={28} stroke={1.5} />
+            <div key={stat.label} className="stat-card">
+              <div className="stat-icon" style={{ background: stat.bg, color: stat.fg }}>
+                <Icon size={22} stroke={1.5} />
               </div>
               <div>
-                <p className="text-2xl font-bold text-gray-800">{stat.value}</p>
-                <p className="text-sm text-gray-500">{stat.label}</p>
-                <p className="text-xs text-green-600 font-medium">{stat.change}</p>
+                <p className="stat-value">{stat.value}</p>
+                <p className="stat-label">{stat.label}</p>
               </div>
             </div>
           );
         })}
       </div>
 
-      {/* Analytics Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        {/* Registration Trend */}
-        <div className="card">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Registration Trend (Last 7 Days)</h3>
-          <div className="h-80 w-full">
-            <ResponsiveContainer width="100%" height={320}>
+      {/* Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 mb-8">
+        <div className="card lg:col-span-3">
+          <div className="flex items-center justify-between mb-5">
+            <h3 className="text-sm font-bold text-zinc-900">Registrations</h3>
+            <span className="text-xs text-zinc-400">Last 7 days</span>
+          </div>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={registrationData}>
                 <defs>
                   <linearGradient id="colorCount" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8} />
-                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                    <stop offset="5%" stopColor="#059669" stopOpacity={0.15} />
+                    <stop offset="95%" stopColor="#059669" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#6b7280' }} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#6b7280' }} />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f4f4f5" />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#a1a1aa', fontSize: 12 }} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#a1a1aa', fontSize: 12 }} />
                 <Tooltip
-                  contentStyle={{ borderRadius: '0.5rem', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
-                  cursor={{ stroke: '#3b82f6', strokeWidth: 1 }}
+                  contentStyle={{ borderRadius: '12px', border: '1px solid #e4e4e7', boxShadow: '0 4px 12px rgba(0,0,0,.08)', fontSize: '13px' }}
+                  cursor={{ stroke: '#059669', strokeWidth: 1, strokeDasharray: '4 4' }}
                 />
-                <Area type="monotone" dataKey="count" stroke="#3b82f6" strokeWidth={3} fillOpacity={1} fill="url(#colorCount)" />
+                <Area type="monotone" dataKey="count" stroke="#059669" strokeWidth={2} fillOpacity={1} fill="url(#colorCount)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        {/* Revenue & Distribution */}
-        <div className="grid grid-rows-2 gap-6">
+        <div className="lg:col-span-2 grid grid-rows-2 gap-4">
           <div className="card">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">Revenue Overview</h3>
-            <div className="h-32 w-full">
-              <ResponsiveContainer width="100%" height={128}>
+            <h3 className="text-sm font-bold text-zinc-900 mb-3">Revenue</h3>
+            <div className="h-20">
+              <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={revenueData}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
                   <XAxis dataKey="name" hide />
                   <Tooltip
-                    cursor={{ fill: '#f3f4f6' }}
-                    contentStyle={{ borderRadius: '0.5rem', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+                    cursor={{ fill: '#fafaf9' }}
+                    contentStyle={{ borderRadius: '12px', border: '1px solid #e4e4e7', boxShadow: '0 4px 12px rgba(0,0,0,.08)', fontSize: '13px' }}
                   />
-                  <Bar dataKey="amount" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="amount" fill="#18181b" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
-            <div className="flex justify-between items-end mt-2">
+            <div className="flex justify-between items-end mt-3">
               <div>
-                <p className="text-2xl font-bold text-gray-800">฿467,000</p>
-                <p className="text-sm text-gray-500">This Week</p>
+                <p className="text-xl font-extrabold text-zinc-900 tracking-tight">฿467k</p>
+                <p className="text-xs text-zinc-400 mt-0.5">This week</p>
               </div>
-              <div className="text-right">
-                <p className="text-green-600 font-medium text-sm">+12.5%</p>
-                <p className="text-xs text-gray-400">vs last week</p>
-              </div>
+              <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">+12.5%</span>
             </div>
           </div>
 
-          <div className="card flex flex-col justify-center">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-lg font-semibold text-gray-800">Ticket Distribution</h3>
-            </div>
-            <div className="flex items-center gap-4 h-full">
-              <div className="w-32 h-32 relative">
-                <ResponsiveContainer width={128} height={128}>
+          <div className="card">
+            <h3 className="text-sm font-bold text-zinc-900 mb-3">Tickets</h3>
+            <div className="flex items-center gap-4">
+              <div className="w-24 h-24 relative">
+                <ResponsiveContainer width={96} height={96}>
                   <PieChart>
-                    <Pie
-                      data={ticketTypeData}
-                      innerRadius={35}
-                      outerRadius={55}
-                      paddingAngle={5}
-                      dataKey="value"
-                    >
+                    <Pie data={ticketTypeData} innerRadius={28} outerRadius={42} paddingAngle={4} dataKey="value">
                       {ticketTypeData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
                     </Pie>
                   </PieChart>
                 </ResponsiveContainer>
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  <span className="text-xs text-gray-400 font-medium">Types</span>
-                </div>
               </div>
-              <div className="flex-1 space-y-2">
+              <div className="flex-1 space-y-1.5">
                 {ticketTypeData.map((entry, index) => (
-                  <div key={entry.name} className="flex items-center justify-between text-sm">
+                  <div key={entry.name} className="flex items-center justify-between text-[13px]">
                     <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[index] }} />
-                      <span className="text-gray-600">{entry.name}</span>
+                      <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: COLORS[index] }} />
+                      <span className="text-zinc-500">{entry.name}</span>
                     </div>
-                    <span className="font-medium text-gray-800">{entry.value}</span>
+                    <span className="font-semibold text-zinc-800">{entry.value}</span>
                   </div>
                 ))}
               </div>
@@ -201,36 +185,35 @@ export default function DashboardPage() {
 
       {/* Recent Registrations */}
       <div className="card">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-semibold text-gray-800">Recent Registrations</h2>
-          <a href="/registrations" className="text-sm text-blue-600 hover:text-blue-700 font-medium">
-            View All →
+        <div className="flex items-center justify-between mb-5">
+          <h2 className="text-sm font-bold text-zinc-900">Recent Registrations</h2>
+          <a href="/registrations" className="text-xs font-semibold text-emerald-600 hover:text-emerald-700 transition-colors">
+            View all →
           </a>
         </div>
-
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto -mx-6">
           <table className="data-table">
             <thead>
               <tr>
-                <th>Name</th>
+                <th className="pl-6">Name</th>
                 <th>Email</th>
                 <th>Event</th>
                 <th>Status</th>
-                <th>Date</th>
+                <th className="pr-6">Date</th>
               </tr>
             </thead>
             <tbody>
               {recentRegistrations.map((reg) => (
                 <tr key={reg.id}>
-                  <td className="font-medium text-gray-800">{reg.name}</td>
-                  <td className="text-gray-600">{reg.email}</td>
-                  <td className="text-gray-600">{reg.event}</td>
+                  <td className="pl-6 font-semibold text-zinc-800">{reg.name}</td>
+                  <td>{reg.email}</td>
+                  <td>{reg.event}</td>
                   <td>
                     <span className={`badge ${statusColors[reg.status] || 'badge-info'}`}>
                       {reg.status.replace('_', ' ')}
                     </span>
                   </td>
-                  <td className="text-gray-500">{reg.date}</td>
+                  <td className="pr-6 text-zinc-400">{reg.date}</td>
                 </tr>
               ))}
             </tbody>
@@ -239,42 +222,27 @@ export default function DashboardPage() {
       </div>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
-        <a href="/events/create" className="card hover:shadow-md transition-shadow cursor-pointer group">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center text-blue-600 group-hover:bg-blue-500 group-hover:text-white transition-colors">
-              <IconCalendarEvent size={24} stroke={1.5} />
-            </div>
-            <div>
-              <h3 className="font-semibold text-gray-800">Create Event</h3>
-              <p className="text-sm text-gray-500">Add a new conference event</p>
-            </div>
-          </div>
-        </a>
-
-        <a href="/checkin" className="card hover:shadow-md transition-shadow cursor-pointer group">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center text-green-600 group-hover:bg-green-500 group-hover:text-white transition-colors">
-              <IconQrcode size={24} stroke={1.5} />
-            </div>
-            <div>
-              <h3 className="font-semibold text-gray-800">Check-in Scanner</h3>
-              <p className="text-sm text-gray-500">Scan QR codes for check-in</p>
-            </div>
-          </div>
-        </a>
-
-        <a href="/reports" className="card hover:shadow-md transition-shadow cursor-pointer group">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center text-purple-600 group-hover:bg-purple-500 group-hover:text-white transition-colors">
-              <IconChartBar size={24} stroke={1.5} />
-            </div>
-            <div>
-              <h3 className="font-semibold text-gray-800">View Reports</h3>
-              <p className="text-sm text-gray-500">Analytics and statistics</p>
-            </div>
-          </div>
-        </a>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+        {[
+          { href: '/events/create', icon: IconCalendarEvent, label: 'Create Event', desc: 'Add a new conference event', bg: '#ecfdf5', fg: '#059669' },
+          { href: '/checkin', icon: IconQrcode, label: 'Check-in', desc: 'Scan QR codes for check-in', bg: '#f4f4f5', fg: '#18181b' },
+          { href: '/reports', icon: IconChartBar, label: 'Reports', desc: 'Analytics and statistics', bg: '#fffbeb', fg: '#d97706' },
+        ].map((action) => {
+          const Icon = action.icon;
+          return (
+            <a key={action.href} href={action.href} className="card group hover:shadow-md transition-all hover:-translate-y-0.5">
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: action.bg, color: action.fg }}>
+                  <Icon size={20} stroke={1.5} />
+                </div>
+                <div>
+                  <h3 className="font-bold text-zinc-900 text-sm">{action.label}</h3>
+                  <p className="text-xs text-zinc-400 mt-0.5">{action.desc}</p>
+                </div>
+              </div>
+            </a>
+          );
+        })}
       </div>
     </AdminLayout>
   );

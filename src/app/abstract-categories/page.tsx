@@ -228,12 +228,12 @@ export default function AbstractCategoriesPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <div className="card py-4">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center text-blue-600">
+            <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600">
               <IconCategory size={24} stroke={1.5} />
             </div>
             <div>
-              <p className="text-2xl font-bold text-gray-800">{stats.total}</p>
-              <p className="text-sm text-gray-500">Total Categories</p>
+              <p className="text-2xl font-bold text-zinc-800">{stats.total}</p>
+              <p className="text-sm text-zinc-400">Total Categories</p>
             </div>
           </div>
         </div>
@@ -244,18 +244,18 @@ export default function AbstractCategoriesPage() {
             </div>
             <div>
               <p className="text-2xl font-bold text-green-600">{stats.active}</p>
-              <p className="text-sm text-gray-500">Active</p>
+              <p className="text-sm text-zinc-400">Active</p>
             </div>
           </div>
         </div>
         <div className="card py-4">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center text-gray-500">
+            <div className="w-12 h-12 bg-zinc-100 rounded-xl flex items-center justify-center text-zinc-400">
               <IconX size={24} stroke={1.5} />
             </div>
             <div>
-              <p className="text-2xl font-bold text-gray-500">{stats.inactive}</p>
-              <p className="text-sm text-gray-500">Inactive</p>
+              <p className="text-2xl font-bold text-zinc-400">{stats.inactive}</p>
+              <p className="text-sm text-zinc-400">Inactive</p>
             </div>
           </div>
         </div>
@@ -264,7 +264,7 @@ export default function AbstractCategoriesPage() {
       {/* Main Content */}
       <div className="card">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-semibold text-gray-800">All Categories</h2>
+          <h2 className="text-lg font-semibold text-zinc-800">All Categories</h2>
           <button
             onClick={openCreateModal}
             className="btn-primary flex items-center gap-2"
@@ -275,9 +275,26 @@ export default function AbstractCategoriesPage() {
 
         {/* Filters */}
         <div className="flex flex-col md:flex-row gap-4 mb-6">
+          <select
+            value={eventFilter}
+            onChange={(e) =>
+              setEventFilter(
+                e.target.value ? parseInt(e.target.value, 10) : "",
+              )
+            }
+            className="input-field w-auto"
+          >
+            <option value="">-- เลือก Event --</option>
+            {events.map((ev) => (
+              <option key={ev.id} value={ev.id}>
+                {ev.eventCode} — {ev.eventName}
+              </option>
+            ))}
+          </select>
+
           <div className="relative flex-1 max-w-md">
             <IconSearch
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400"
               size={18}
             />
             <input
@@ -288,60 +305,43 @@ export default function AbstractCategoriesPage() {
               className="input-field-search"
             />
           </div>
-
-          <select
-            value={eventFilter}
-            onChange={(e) =>
-              setEventFilter(
-                e.target.value ? parseInt(e.target.value, 10) : "",
-              )
-            }
-            className="input-field w-auto"
-          >
-            <option value="">All Events</option>
-            {events.map((ev) => (
-              <option key={ev.id} value={ev.id}>
-                {ev.eventCode} — {ev.eventName}
-              </option>
-            ))}
-          </select>
         </div>
 
         {/* Loading State */}
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
-            <IconLoader2 size={32} className="animate-spin text-blue-600" />
-            <span className="ml-2 text-gray-500">Loading categories...</span>
+            <IconLoader2 size={32} className="animate-spin text-emerald-600" />
+            <span className="ml-2 text-zinc-400">Loading categories...</span>
           </div>
         ) : filteredCategories.length === 0 ? (
-          <div className="text-center py-12 text-gray-500">
+          <div className="text-center py-12 text-zinc-400">
             No categories found.{" "}
             <button
               onClick={openCreateModal}
-              className="text-blue-600 hover:underline"
+              className="text-emerald-600 hover:underline"
             >
               Create one
             </button>
           </div>
         ) : (
           /* Table */
-          <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+          <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm">
             <table className="w-full">
               <thead>
-                <tr className="bg-gray-50 border-b border-gray-200">
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider w-16">
+                <tr className="bg-zinc-50 border-b border-zinc-200">
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider w-16">
                     #
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-500 uppercase tracking-wider">
                     Category
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-500 uppercase tracking-wider">
                     Event
                   </th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">
                     Status
                   </th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider w-[120px]">
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider w-[120px]">
                     Actions
                   </th>
                 </tr>
@@ -350,32 +350,32 @@ export default function AbstractCategoriesPage() {
                 {filteredCategories.map((cat, idx) => (
                   <tr
                     key={cat.id}
-                    className="hover:bg-gray-50 transition-colors"
+                    className="hover:bg-zinc-50 transition-colors"
                   >
                     <td className="px-4 py-4 text-center">
-                      <span className="font-mono text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                      <span className="font-mono text-sm text-zinc-400 bg-zinc-100 px-2 py-1 rounded">
                         {idx + 1}
                       </span>
                     </td>
                     <td className="px-4 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center text-blue-600">
+                        <div className="w-10 h-10 bg-emerald-50 rounded-lg flex items-center justify-center text-emerald-600">
                           <IconCategory size={20} stroke={1.5} />
                         </div>
                         <div>
-                          <p className="font-medium text-gray-900">{cat.name}</p>
+                          <p className="font-medium text-zinc-900">{cat.name}</p>
                         </div>
                       </div>
                     </td>
                     <td className="px-4 py-4">
                       <div className="flex items-center gap-2">
-                        <IconCalendarEvent size={16} className="text-gray-400" stroke={1.5} />
+                        <IconCalendarEvent size={16} className="text-zinc-400" stroke={1.5} />
                         <div>
-                          <p className="text-sm font-medium text-gray-700">
+                          <p className="text-sm font-medium text-zinc-600">
                             {cat.eventCode || `ID: ${cat.eventId}`}
                           </p>
                           {cat.eventName && (
-                            <p className="text-xs text-gray-400">{cat.eventName}</p>
+                            <p className="text-xs text-zinc-400">{cat.eventName}</p>
                           )}
                         </div>
                       </div>
@@ -386,7 +386,7 @@ export default function AbstractCategoriesPage() {
                         className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium cursor-pointer transition-colors ${
                           cat.isActive
                             ? "bg-green-100 text-green-700 hover:bg-green-200"
-                            : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                            : "bg-zinc-100 text-zinc-400 hover:bg-zinc-200"
                         }`}
                       >
                         {cat.isActive ? (
@@ -403,14 +403,14 @@ export default function AbstractCategoriesPage() {
                     <td className="px-4 py-4 text-center">
                       <div className="flex gap-1 justify-center items-center">
                         <button
-                          className="p-2 hover:bg-yellow-50 rounded-lg text-gray-500 hover:text-yellow-600 transition-colors"
+                          className="p-2 hover:bg-yellow-50 rounded-lg text-zinc-400 hover:text-yellow-600 transition-colors"
                           title="Edit"
                           onClick={() => openEditModal(cat)}
                         >
                           <IconPencil size={18} />
                         </button>
                         <button
-                          className="p-2 hover:bg-red-50 rounded-lg text-gray-500 hover:text-red-600 transition-colors"
+                          className="p-2 hover:bg-red-50 rounded-lg text-zinc-400 hover:text-red-600 transition-colors"
                           title="Delete"
                           onClick={() => openDeleteModal(cat)}
                         >
@@ -429,21 +429,21 @@ export default function AbstractCategoriesPage() {
       {/* ─── Create Modal ────────────────────────────────────────────────── */}
       {showCreateModal && (
         <div
-          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          className="modal-overlay"
           onClick={() => setShowCreateModal(false)}
         >
           <div
             className="bg-white rounded-2xl max-w-lg w-full"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="p-6 border-b border-gray-100">
+            <div className="p-6 border-b border-zinc-100">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-gray-900">
+                <h3 className="text-lg font-semibold text-zinc-900">
                   Add Abstract Category
                 </h3>
                 <button
                   onClick={() => setShowCreateModal(false)}
-                  className="text-gray-400 hover:text-gray-600"
+                  className="text-zinc-400 hover:text-zinc-500"
                 >
                   <IconX size={20} />
                 </button>
@@ -452,7 +452,7 @@ export default function AbstractCategoriesPage() {
 
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-zinc-600 mb-1">
                   Event <span className="text-red-500">*</span>
                 </label>
                 <select
@@ -477,7 +477,7 @@ export default function AbstractCategoriesPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-zinc-600 mb-1">
                   Category Name <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -490,7 +490,7 @@ export default function AbstractCategoriesPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-zinc-600 mb-1">
                   Status
                 </label>
                 <select
@@ -509,7 +509,7 @@ export default function AbstractCategoriesPage() {
               </div>
             </div>
 
-            <div className="p-6 border-t border-gray-100 flex gap-3 justify-end">
+            <div className="p-6 border-t border-zinc-100 flex gap-3 justify-end">
               <button
                 onClick={() => setShowCreateModal(false)}
                 className="btn-secondary"
@@ -536,21 +536,21 @@ export default function AbstractCategoriesPage() {
       {/* ─── Edit Modal ──────────────────────────────────────────────────── */}
       {showEditModal && selectedCategory && (
         <div
-          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          className="modal-overlay"
           onClick={() => setShowEditModal(false)}
         >
           <div
             className="bg-white rounded-2xl max-w-lg w-full"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="p-6 border-b border-gray-100">
+            <div className="p-6 border-b border-zinc-100">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-gray-900">
+                <h3 className="text-lg font-semibold text-zinc-900">
                   Edit Category
                 </h3>
                 <button
                   onClick={() => setShowEditModal(false)}
-                  className="text-gray-400 hover:text-gray-600"
+                  className="text-zinc-400 hover:text-zinc-500"
                 >
                   <IconX size={20} />
                 </button>
@@ -559,19 +559,19 @@ export default function AbstractCategoriesPage() {
 
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-zinc-600 mb-1">
                   Event
                 </label>
                 <input
                   type="text"
                   value={`${selectedCategory.eventCode || ""} — ${selectedCategory.eventName || ""}`}
                   disabled
-                  className="input-field w-full bg-gray-50 text-gray-400"
+                  className="input-field w-full bg-zinc-50 text-zinc-400"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-zinc-600 mb-1">
                   Category Name <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -583,7 +583,7 @@ export default function AbstractCategoriesPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-zinc-600 mb-1">
                   Status
                 </label>
                 <select
@@ -602,7 +602,7 @@ export default function AbstractCategoriesPage() {
               </div>
             </div>
 
-            <div className="p-6 border-t border-gray-100 flex gap-3 justify-end">
+            <div className="p-6 border-t border-zinc-100 flex gap-3 justify-end">
               <button
                 onClick={() => setShowEditModal(false)}
                 className="btn-secondary"
@@ -629,7 +629,7 @@ export default function AbstractCategoriesPage() {
       {/* ─── Delete Modal ────────────────────────────────────────────────── */}
       {showDeleteModal && selectedCategory && (
         <div
-          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          className="modal-overlay"
           onClick={() => setShowDeleteModal(false)}
         >
           <div
@@ -645,18 +645,18 @@ export default function AbstractCategoriesPage() {
               <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <IconAlertTriangle size={32} className="text-red-600" />
               </div>
-              <p className="mb-2 text-gray-700">
+              <p className="mb-2 text-zinc-600">
                 Are you sure you want to delete this category?
               </p>
-              <p className="font-semibold text-gray-800">
+              <p className="font-semibold text-zinc-800">
                 {selectedCategory.name}
               </p>
-              <p className="text-sm text-gray-500 mt-4">
+              <p className="text-sm text-zinc-400 mt-4">
                 This action cannot be undone. Abstracts already submitted under
                 this category will not be affected.
               </p>
             </div>
-            <div className="p-6 border-t border-gray-100 flex gap-3 justify-end">
+            <div className="p-6 border-t border-zinc-100 flex gap-3 justify-end">
               <button
                 onClick={() => setShowDeleteModal(false)}
                 className="btn-secondary"

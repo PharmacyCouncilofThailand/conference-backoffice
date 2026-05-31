@@ -22,7 +22,7 @@ import {
 import toast from "react-hot-toast";
 
 const categoryColors: { [key: string]: { bg: string; text: string } } = {
-  primary: { bg: "bg-blue-100", text: "text-blue-800" },
+  primary: { bg: "bg-emerald-50", text: "text-teal-900" },
   addon: { bg: "bg-purple-100", text: "text-purple-800" },
 };
 
@@ -41,13 +41,13 @@ const studentLevelOptions = [
 const typeColors: { [key: string]: string } = {
   pharmacist: "bg-green-100 text-green-800",
   medical_professional: "bg-indigo-100 text-indigo-800",
-  student: "bg-blue-100 text-blue-800",
-  general: "bg-gray-100 text-gray-800",
+  student: "bg-emerald-50 text-teal-900",
+  general: "bg-zinc-100 text-zinc-800",
   thstd: "bg-green-100 text-green-800",
-  thpro: "bg-blue-100 text-blue-800",
+  thpro: "bg-emerald-50 text-teal-900",
   interstd: "bg-yellow-100 text-yellow-800",
   interpro: "bg-purple-100 text-purple-800",
-  guest: "bg-teal-100 text-teal-800",
+  guest: "bg-emerald-50 text-emerald-700",
 };
 
 const roleLabels: Record<string, string> = {
@@ -161,6 +161,7 @@ export default function TicketsPage() {
   const [roleFilter, setRoleFilter] = useState<string>("");
   const [studentLevelFilter, setStudentLevelFilter] = useState<string>("");
   const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
 
@@ -275,7 +276,7 @@ export default function TicketsPage() {
     setIsLoading(true);
     try {
       const token = getBackofficeToken();
-      const params: any = { page, limit: 10 };
+      const params: any = { page, limit };
       if (eventFilter) params.eventId = eventFilter;
       if (searchTerm) params.search = searchTerm;
       if (categoryFilter) params.category = categoryFilter;
@@ -556,20 +557,20 @@ export default function TicketsPage() {
   return (
     <AdminLayout title="Ticket Management">
       {/* Event Filter - Above Content */}
-      <div className="mb-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-xl p-4 flex items-center gap-3">
-        <div className="bg-blue-100 p-2 rounded-lg">
-          <IconCalendarEvent className="text-blue-600" size={20} />
+      <div className="mb-4 card flex items-center gap-3">
+        <div className="bg-emerald-50 p-2 rounded-lg">
+          <IconCalendarEvent className="text-emerald-600" size={20} />
         </div>
-        <span className="text-sm font-medium text-gray-700">Select Event:</span>
+        <span className="text-sm font-medium text-zinc-600">Select Event:</span>
         <select
           value={eventFilter}
           onChange={(e) => {
             setEventFilter(e.target.value ? Number(e.target.value) : "");
             setPage(1);
           }}
-          className="input-field pr-8 min-w-[250px] font-semibold bg-white"
+          className="input-field w-auto font-semibold"
         >
-          <option value="">All Events</option>
+          <option value="">-- เลือก Event --</option>
           {events.map((event) => (
             <option key={event.id} value={event.id}>
               {event.name}
@@ -582,14 +583,14 @@ export default function TicketsPage() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <div className="card py-4">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center text-blue-600">
+            <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600">
               <IconTicket size={24} stroke={1.5} />
             </div>
             <div>
-              <p className="text-2xl font-bold text-gray-800">
+              <p className="text-2xl font-bold text-zinc-800">
                 {isLoading ? "-" : stats.total}
               </p>
-              <p className="text-sm text-gray-500">Total Tickets</p>
+              <p className="text-sm text-zinc-400">Total Tickets</p>
             </div>
           </div>
         </div>
@@ -598,7 +599,7 @@ export default function TicketsPage() {
       {/* Main Card */}
       <div className="card">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-semibold text-gray-800">
+          <h2 className="text-lg font-semibold text-zinc-800">
             {eventFilter
               ? `Tickets for ${events.find((e) => e.id === eventFilter)?.name || "Event"}`
               : "All Tickets"}
@@ -619,7 +620,7 @@ export default function TicketsPage() {
         <div className="mb-6 flex items-center gap-4">
           <div className="relative flex-1 max-w-md">
             <IconSearch
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 z-10 pointer-events-none"
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 z-10 pointer-events-none"
               size={18}
             />
             <input
@@ -669,7 +670,7 @@ export default function TicketsPage() {
               setPage(1);
             }}
             disabled={roleFilter !== "student"}
-            className="input-field min-w-[190px] disabled:bg-gray-100 disabled:text-gray-400"
+            className="input-field min-w-[190px] disabled:bg-zinc-100 disabled:text-zinc-400"
           >
             <option value="">All Student Levels</option>
             {studentLevelOptions.map((level) => (
@@ -683,39 +684,39 @@ export default function TicketsPage() {
         {/* Table */}
         {isLoading ? (
           <div className="flex justify-center py-12">
-            <IconLoader2 size={32} className="animate-spin text-blue-600" />
+            <IconLoader2 size={32} className="animate-spin text-emerald-600" />
           </div>
         ) : tickets.length === 0 ? (
-          <div className="text-center py-12 text-gray-500">
+          <div className="text-center py-12 text-zinc-400">
             No tickets found.
           </div>
         ) : (
-          <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+          <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm">
             <table className="w-full">
               <thead>
-                <tr className="bg-gray-50 border-b border-gray-200">
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                <tr className="bg-zinc-50 border-b border-zinc-200">
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-500 uppercase tracking-wider">
                     Ticket
                   </th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">
                     Event
                   </th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">
                     Category
                   </th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">
                     Price
                   </th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">
                     Quota
                   </th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">
                     Priority
                   </th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">
                     Sales Period
                   </th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider w-[120px]">
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider w-[120px]">
                     Actions
                   </th>
                 </tr>
@@ -727,15 +728,15 @@ export default function TicketsPage() {
                   return (
                     <tr
                       key={ticket.id}
-                      className="hover:bg-gray-50 transition-colors"
+                      className="hover:bg-zinc-50 transition-colors"
                     >
                       <td className="px-4 py-4">
-                        <p className="font-medium text-gray-900">
+                        <p className="font-medium text-zinc-900">
                           {ticket.name}
                         </p>
                       </td>
                       <td className="px-4 py-4 text-center">
-                        <span className="inline-flex px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+                        <span className="inline-flex px-2.5 py-1 rounded-full text-xs font-medium bg-zinc-100 text-zinc-600">
                           {ticket.eventCode ||
                             events.find((e) => e.id === ticket.eventId)?.code ||
                             "Unknown"}
@@ -744,7 +745,7 @@ export default function TicketsPage() {
                       <td className="px-4 py-4 text-center">
                         <div className="flex flex-col items-center gap-1">
                           <span
-                            className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${categoryColors[ticket.category]?.bg || "bg-gray-100"} ${categoryColors[ticket.category]?.text || "text-gray-800"}`}
+                            className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${categoryColors[ticket.category]?.bg || "bg-zinc-100"} ${categoryColors[ticket.category]?.text || "text-zinc-800"}`}
                           >
                             {ticket.category === "primary"
                               ? "Primary"
@@ -754,13 +755,13 @@ export default function TicketsPage() {
                             ticket.allowedRoles.map((role) => (
                               <span
                                 key={role}
-                                className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${typeColors[role] || "bg-gray-100 text-gray-600"}`}
+                                className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${typeColors[role] || "bg-zinc-100 text-zinc-500"}`}
                               >
                                 {roleLabels[role] || role}
                               </span>
                             ))
                           ) : (
-                            <span className="inline-flex px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                            <span className="inline-flex px-2.5 py-1 rounded-full text-xs font-medium bg-zinc-100 text-zinc-500">
                               General
                             </span>
                           )}
@@ -786,7 +787,7 @@ export default function TicketsPage() {
                             ticket.sessionIds.length > 0 && (
                               <span
                                 className={`text-xs mt-1 ${ticket.category === "primary"
-                                  ? "text-blue-600"
+                                  ? "text-emerald-600"
                                   : "text-purple-600"
                                   }`}
                               >
@@ -796,7 +797,7 @@ export default function TicketsPage() {
                         </div>
                       </td>
                       <td className="px-4 py-4 text-center">
-                        <p className="font-semibold text-gray-900">
+                        <p className="font-semibold text-zinc-900">
                           {ticket.currency === "USD" ? "$" : "฿"}
                           {ticket.price.toLocaleString()}
                         </p>
@@ -804,13 +805,13 @@ export default function TicketsPage() {
                       <td className="px-4 py-4 text-center">
                         {ticket.quota === 0 ? (
                           <div className="w-24 mx-auto text-center">
-                            <span className="text-xs font-medium text-blue-600">{ticket.sold} sold</span>
-                            <span className="block text-[10px] text-gray-400">Unlimited</span>
+                            <span className="text-xs font-medium text-emerald-600">{ticket.sold} sold</span>
+                            <span className="block text-[10px] text-zinc-400">Unlimited</span>
                           </div>
                         ) : (
                           <div className="w-24 mx-auto">
                             <div className="flex justify-between text-xs mb-1">
-                              <span className="text-gray-600">
+                              <span className="text-zinc-500">
                                 {ticket.sold}/{ticket.quota}
                               </span>
                               <span
@@ -825,7 +826,7 @@ export default function TicketsPage() {
                                 {Math.round(soldPercentage)}%
                               </span>
                             </div>
-                            <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+                            <div className="w-full h-2 bg-zinc-200 rounded-full overflow-hidden">
                               <div
                                 className={`h-full rounded-full ${soldPercentage >= 90 ? "bg-red-500" : soldPercentage >= 70 ? "bg-yellow-500" : "bg-green-500"}`}
                                 style={{
@@ -841,8 +842,8 @@ export default function TicketsPage() {
                           className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${ticket.priority === "early_bird"
                             ? "bg-orange-100 text-orange-800"
                             : ticket.priority === "regular"
-                              ? "bg-gray-100 text-gray-800"
-                              : "bg-gray-100 text-gray-800"
+                              ? "bg-zinc-100 text-zinc-800"
+                              : "bg-zinc-100 text-zinc-800"
                             }`}
                         >
                           {ticket.priority === "early_bird"
@@ -853,7 +854,7 @@ export default function TicketsPage() {
                         </span>
                       </td>
                       <td className="px-4 py-4 text-center">
-                        <p className="text-sm text-gray-600">
+                        <p className="text-sm text-zinc-500">
                           {ticket.startDate
                             ? new Date(ticket.startDate).toLocaleDateString(
                               "en-US",
@@ -861,7 +862,7 @@ export default function TicketsPage() {
                             )
                             : "N/A"}
                         </p>
-                        <p className="text-xs text-gray-400">
+                        <p className="text-xs text-zinc-400">
                           to{" "}
                           {ticket.endDate
                             ? new Date(ticket.endDate).toLocaleDateString(
@@ -874,21 +875,21 @@ export default function TicketsPage() {
                       <td className="px-4 py-4 text-center">
                         <div className="flex gap-1 justify-center items-center">
                           <button
-                            className="p-2 hover:bg-blue-50 rounded-lg text-gray-500 hover:text-blue-600 transition-colors"
+                            className="p-2 hover:bg-emerald-50 rounded-lg text-zinc-400 hover:text-emerald-600 transition-colors"
                             title="Duplicate"
                             onClick={() => handleDuplicate(ticket)}
                           >
                             <IconCopy size={18} />
                           </button>
                           <button
-                            className="p-2 hover:bg-yellow-50 rounded-lg text-gray-500 hover:text-yellow-600 transition-colors"
+                            className="p-2 hover:bg-yellow-50 rounded-lg text-zinc-400 hover:text-yellow-600 transition-colors"
                             title="Edit"
                             onClick={() => openEditModal(ticket)}
                           >
                             <IconPencil size={18} />
                           </button>
                           <button
-                            className="p-2 hover:bg-red-50 rounded-lg text-gray-500 hover:text-red-600 transition-colors"
+                            className="p-2 hover:bg-red-50 rounded-lg text-zinc-400 hover:text-red-600 transition-colors"
                             title="Delete"
                             onClick={() => {
                               setSelectedTicket(ticket);
@@ -910,7 +911,9 @@ export default function TicketsPage() {
               currentPage={page}
               totalPages={totalPages}
               totalCount={totalCount}
+              pageSize={limit}
               onPageChange={setPage}
+              onPageSizeChange={setLimit}
               itemName="tickets"
             />
           </div>
@@ -919,11 +922,11 @@ export default function TicketsPage() {
 
       {/* Create/Edit Modal */}
       {(showCreateModal || showEditModal) && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="modal-overlay">
           <div className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-100">
+            <div className="p-6 border-b border-zinc-100">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold flex items-center gap-2 text-gray-900">
+                <h3 className="text-lg font-semibold flex items-center gap-2 text-zinc-900">
                   <IconTicket size={20} />{" "}
                   {showCreateModal ? "Create Ticket" : "Edit Ticket"}
                 </h3>
@@ -932,7 +935,7 @@ export default function TicketsPage() {
                     setShowCreateModal(false);
                     setShowEditModal(false);
                   }}
-                  className="text-gray-400 hover:text-gray-600"
+                  className="text-zinc-400 hover:text-zinc-500"
                 >
                   <IconX size={20} />
                 </button>
@@ -941,7 +944,7 @@ export default function TicketsPage() {
             <div className="p-6">
               <div className="grid grid-cols-2 gap-4 mb-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-zinc-600 mb-1">
                     Event *
                   </label>
                   <select
@@ -963,7 +966,7 @@ export default function TicketsPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-zinc-600 mb-1">
                     Category *
                   </label>
                   <select
@@ -993,16 +996,16 @@ export default function TicketsPage() {
 
               {/* Auto-link Notice for Primary Tickets */}
               {formData.category === "primary" && (
-                <div className="mb-4 p-3 bg-blue-50 border border-blue-100 rounded-lg">
+                <div className="mb-4 p-3 bg-emerald-50 border border-teal-100 rounded-lg">
                   <div className="flex items-start gap-2">
-                    <div className="mt-0.5 text-blue-600">
+                    <div className="mt-0.5 text-emerald-600">
                       <IconCheck size={16} />
                     </div>
                     <div>
                       <p className="text-sm font-medium text-blue-900">
                         Main Sessions Auto-selected
                       </p>
-                      <p className="text-xs text-blue-700 mt-0.5">
+                      <p className="text-xs text-emerald-700 mt-0.5">
                         Primary tickets typically include all Main Sessions. You
                         can adjust the selection below.
                       </p>
@@ -1013,15 +1016,15 @@ export default function TicketsPage() {
 
               {/* Session Linking */}
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-zinc-600 mb-2">
                   Link to Sessions/Workshops *
                 </label>
-                <div className="border rounded-md p-3 max-h-40 overflow-y-auto space-y-2 bg-gray-50">
+                <div className="border rounded-md p-3 max-h-40 overflow-y-auto space-y-2 bg-zinc-50">
                   {sessions.length > 0 ? (
                     sessions.map((session) => (
                       <label
                         key={session.id}
-                        className="flex items-start gap-2 cursor-pointer hover:bg-gray-100 p-1 rounded"
+                        className="flex items-start gap-2 cursor-pointer hover:bg-zinc-100 p-1 rounded"
                       >
                         <input
                           type="checkbox"
@@ -1056,32 +1059,32 @@ export default function TicketsPage() {
                               </span>
                             )}
                           </div>
-                          <div className="text-xs text-gray-500">
+                          <div className="text-xs text-zinc-400">
                             {session.sessionName}
                           </div>
                         </div>
                       </label>
                     ))
                   ) : (
-                    <p className="text-sm text-gray-500 italic text-center py-2">
+                    <p className="text-sm text-zinc-400 italic text-center py-2">
                       No sessions available for this event
                     </p>
                   )}
                 </div>
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-zinc-400 mt-1">
                   Select one or more sessions to link with this ticket
                 </p>
               </div>
 
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-zinc-600 mb-2">
                   Target Audience (Role) *
                 </label>
-                <div className="border rounded-md p-3 max-h-40 overflow-y-auto space-y-2 bg-gray-50">
+                <div className="border rounded-md p-3 max-h-40 overflow-y-auto space-y-2 bg-zinc-50">
                   {roleOptions.map((role) => (
                     <label
                       key={role.value}
-                      className="flex items-start gap-2 cursor-pointer hover:bg-gray-100 p-1 rounded"
+                      className="flex items-start gap-2 cursor-pointer hover:bg-zinc-100 p-1 rounded"
                     >
                       <input
                         type="checkbox"
@@ -1106,7 +1109,7 @@ export default function TicketsPage() {
                           });
                         }}
                       />
-                      <span className="text-sm font-medium text-gray-700">{role.label}</span>
+                      <span className="text-sm font-medium text-zinc-600">{role.label}</span>
                     </label>
                   ))}
                 </div>
@@ -1117,14 +1120,14 @@ export default function TicketsPage() {
 
               {formData.allowedRoles.includes("student") && (
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-zinc-600 mb-2">
                     Student Level
                   </label>
-                  <div className="border rounded-md p-3 space-y-2 bg-gray-50">
+                  <div className="border rounded-md p-3 space-y-2 bg-zinc-50">
                     {studentLevelOptions.map((level) => (
                       <label
                         key={level.value}
-                        className="flex items-start gap-2 cursor-pointer hover:bg-gray-100 p-1 rounded"
+                        className="flex items-start gap-2 cursor-pointer hover:bg-zinc-100 p-1 rounded"
                       >
                         <input
                           type="checkbox"
@@ -1147,18 +1150,18 @@ export default function TicketsPage() {
                             });
                           }}
                         />
-                        <span className="text-sm font-medium text-gray-700">{level.label}</span>
+                        <span className="text-sm font-medium text-zinc-600">{level.label}</span>
                       </label>
                     ))}
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-zinc-400 mt-1">
                     Leave empty to allow both postgraduate and undergraduate students.
                   </p>
                 </div>
               )}
 
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-zinc-600 mb-1">
                   Quota *
                 </label>
                 <input
@@ -1174,13 +1177,13 @@ export default function TicketsPage() {
                   placeholder="100"
                   min={0}
                 />
-                <p className="text-xs text-gray-400 mt-1">
+                <p className="text-xs text-zinc-400 mt-1">
                   Set to 0 for unlimited quota.
                 </p>
               </div>
 
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-zinc-600 mb-1">
                   Ticket Priority *
                 </label>
                 <select
@@ -1193,28 +1196,28 @@ export default function TicketsPage() {
                   <option value="early_bird">Early Bird</option>
                   <option value="regular">Regular</option>
                 </select>
-                <p className="text-xs text-gray-400 mt-1">
+                <p className="text-xs text-zinc-400 mt-1">
                   Display order is auto-calculated from priority + sale start
                   date.
                 </p>
               </div>
 
               <div className="mb-4">
-                <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                <label className="flex items-center gap-2 text-sm font-medium text-zinc-600">
                   <input
                     type="checkbox"
                     checked={formData.isActive}
                     onChange={(e) =>
                       setFormData({ ...formData, isActive: e.target.checked })
                     }
-                    className="rounded border-gray-300"
+                    className="rounded border-zinc-200"
                   />
                   Active (visible to public)
                 </label>
               </div>
 
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-zinc-600 mb-1">
                   Ticket Name *
                 </label>
                 <input
@@ -1231,7 +1234,7 @@ export default function TicketsPage() {
 
               <div className="grid grid-cols-2 gap-4 mb-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-zinc-600 mb-1">
                     Currency *
                   </label>
                   <select
@@ -1246,7 +1249,7 @@ export default function TicketsPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-zinc-600 mb-1">
                     Price *
                   </label>
                   <input
@@ -1265,7 +1268,7 @@ export default function TicketsPage() {
 
               <div className="grid grid-cols-2 gap-4 mb-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-zinc-600 mb-1">
                     Original Price
                   </label>
                   <input
@@ -1283,7 +1286,7 @@ export default function TicketsPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-zinc-600 mb-1">
                     Group Name
                   </label>
                   <select
@@ -1302,7 +1305,7 @@ export default function TicketsPage() {
               </div>
 
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-zinc-600 mb-1">
                   Badge Text
                 </label>
                 <input
@@ -1318,7 +1321,7 @@ export default function TicketsPage() {
               </div>
 
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-zinc-600 mb-1">
                   Description
                 </label>
                 <textarea
@@ -1333,7 +1336,7 @@ export default function TicketsPage() {
               </div>
 
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-zinc-600 mb-1">
                   Features
                 </label>
                 <div className="flex gap-2 mb-2">
@@ -1375,7 +1378,7 @@ export default function TicketsPage() {
                     {formData.features.map((f, i) => (
                       <span
                         key={i}
-                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700"
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-zinc-100 text-zinc-600"
                       >
                         {f}
                         <button
@@ -1388,7 +1391,7 @@ export default function TicketsPage() {
                               ),
                             })
                           }
-                          className="text-gray-400 hover:text-red-500"
+                          className="text-zinc-400 hover:text-red-500"
                         >
                           <IconX size={12} />
                         </button>
@@ -1400,7 +1403,7 @@ export default function TicketsPage() {
 
               <div className="grid grid-cols-2 gap-4 mb-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-zinc-600 mb-1">
                     Sale Start Date & Time
                   </label>
                   <DatePicker
@@ -1423,7 +1426,7 @@ export default function TicketsPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-zinc-600 mb-1">
                     Sale End Date & Time
                   </label>
                   <DatePicker
@@ -1447,7 +1450,7 @@ export default function TicketsPage() {
                 </div>
               </div>
             </div>
-            <div className="p-6 border-t border-gray-100 flex gap-3 justify-end">
+            <div className="p-6 border-t border-zinc-100 flex gap-3 justify-end">
               <button
                 onClick={() => {
                   setShowCreateModal(false);
@@ -1475,7 +1478,7 @@ export default function TicketsPage() {
 
       {/* Delete Modal */}
       {showDeleteModal && selectedTicket && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="modal-overlay">
           <div className="bg-white rounded-2xl max-w-md w-full">
             <div className="p-6 bg-red-600 rounded-t-2xl">
               <h3 className="text-lg font-semibold text-white flex items-center gap-2">
@@ -1486,7 +1489,7 @@ export default function TicketsPage() {
               <p className="mb-2">
                 Are you sure you want to delete this ticket?
               </p>
-              <p className="font-semibold text-gray-800">
+              <p className="font-semibold text-zinc-800">
                 {selectedTicket.name}
               </p>
               {selectedTicket.sold > 0 && (
@@ -1495,7 +1498,7 @@ export default function TicketsPage() {
                 </p>
               )}
             </div>
-            <div className="p-6 border-t border-gray-100 flex gap-3 justify-end">
+            <div className="p-6 border-t border-zinc-100 flex gap-3 justify-end">
               <button
                 onClick={() => setShowDeleteModal(false)}
                 className="btn-secondary"

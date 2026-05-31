@@ -31,7 +31,7 @@ const roles = [
   {
     id: "organizer",
     label: "Organizer",
-    color: "bg-blue-100 text-blue-800",
+    color: "bg-emerald-50 text-teal-900",
     description: "View dashboard and manage events",
   },
   {
@@ -115,6 +115,7 @@ export default function UsersPage() {
 
   // Pagination (Server-side)
   const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
 
@@ -125,7 +126,7 @@ export default function UsersPage() {
     try {
       const params = new URLSearchParams();
       params.append("page", page.toString());
-      params.append("limit", "10");
+      params.append("limit", limit.toString());
       if (searchTerm) params.append("search", searchTerm);
       if (roleFilter) params.append("role", roleFilter);
 
@@ -597,13 +598,13 @@ export default function UsersPage() {
         {roles.map((role) => (
           <div
             key={role.id}
-            className={`card py-4 cursor-pointer hover:shadow-md transition-shadow ${roleFilter === role.id ? "ring-2 ring-blue-500" : ""}`}
+            className={`card py-4 cursor-pointer hover:shadow-md transition-shadow ${roleFilter === role.id ? "ring-2 ring-teal-600" : ""}`}
             onClick={() => setRoleFilter(roleFilter === role.id ? "" : role.id)}
           >
-            <p className="text-2xl font-bold text-gray-800">
+            <p className="text-2xl font-bold text-zinc-800">
               {users.filter((u) => u.role === role.id).length}
             </p>
-            <p className="text-sm text-gray-500">{role.label}</p>
+            <p className="text-sm text-zinc-400">{role.label}</p>
           </div>
         ))}
       </div>
@@ -611,7 +612,7 @@ export default function UsersPage() {
       {/* Main Card */}
       <div className="card">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-semibold text-gray-800">All Users</h2>
+          <h2 className="text-lg font-semibold text-zinc-800">All Users</h2>
           <button
             onClick={() => setShowCreateModal(true)}
             className="btn-primary flex items-center gap-2"
@@ -625,7 +626,7 @@ export default function UsersPage() {
         <div className="flex flex-col md:flex-row gap-4 mb-6">
           <div className="relative flex-1 max-w-md">
             <IconSearch
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400"
               size={18}
             />
             <input
@@ -654,28 +655,28 @@ export default function UsersPage() {
         {/* Table */}
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
-            <IconLoader2 size={32} className="animate-spin text-blue-600" />
-            <span className="ml-2 text-gray-500">Loading users...</span>
+            <IconLoader2 size={32} className="animate-spin text-emerald-600" />
+            <span className="ml-2 text-zinc-400">Loading users...</span>
           </div>
         ) : (
-          <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+          <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm">
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="bg-gray-50 border-b border-gray-200">
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                  <tr className="bg-zinc-50 border-b border-zinc-200">
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-500 uppercase tracking-wider">
                       User
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-500 uppercase tracking-wider">
                       Role
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-500 uppercase tracking-wider">
                       Assigned Events
                     </th>
-                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">
                       Status
                     </th>
-                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider w-[100px]">
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider w-[100px]">
                       Actions
                     </th>
                   </tr>
@@ -688,18 +689,18 @@ export default function UsersPage() {
                       return (
                         <tr
                           key={user.id}
-                          className="hover:bg-gray-50 transition-colors"
+                          className="hover:bg-zinc-50 transition-colors"
                         >
                           <td className="px-4 py-4">
                             <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center text-gray-500 font-medium text-sm">
+                              <div className="w-10 h-10 bg-zinc-100 rounded-full flex items-center justify-center text-zinc-400 font-medium text-sm">
                                 {user.name.charAt(0).toUpperCase()}
                               </div>
                               <div>
-                                <p className="font-medium text-gray-900">
+                                <p className="font-medium text-zinc-900">
                                   {user.name}
                                 </p>
-                                <p className="text-sm text-gray-500">
+                                <p className="text-sm text-zinc-400">
                                   {user.email}
                                 </p>
                               </div>
@@ -714,7 +715,7 @@ export default function UsersPage() {
                           </td>
                           <td className="px-4 py-4">
                             {user.role === "admin" ? (
-                              <span className="text-xs text-gray-400 italic">
+                              <span className="text-xs text-zinc-400 italic">
                                 All Events Access
                               </span>
                             ) : eventCodes.length > 0 ? (
@@ -722,14 +723,14 @@ export default function UsersPage() {
                                 {eventCodes.map((code) => (
                                   <span
                                     key={code}
-                                    className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100"
+                                    className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-50 text-emerald-700 border border-teal-100"
                                   >
                                     {code}
                                   </span>
                                 ))}
                               </div>
                             ) : (
-                              <span className="text-xs text-gray-400">
+                              <span className="text-xs text-zinc-400">
                                 No events assigned
                               </span>
                             )}
@@ -756,7 +757,7 @@ export default function UsersPage() {
                             <div className="flex gap-1 justify-center items-center">
                               {user.role !== "admin" && (
                                 <button
-                                  className="p-2 hover:bg-blue-50 rounded-lg text-gray-500 hover:text-blue-600 transition-colors"
+                                  className="p-2 hover:bg-emerald-50 rounded-lg text-zinc-400 hover:text-emerald-600 transition-colors"
                                   title="Assign Events"
                                   onClick={() => openAssignModal(user)}
                                 >
@@ -764,14 +765,14 @@ export default function UsersPage() {
                                 </button>
                               )}
                               <button
-                                className="p-2 hover:bg-yellow-50 rounded-lg text-gray-500 hover:text-yellow-600 transition-colors"
+                                className="p-2 hover:bg-yellow-50 rounded-lg text-zinc-400 hover:text-yellow-600 transition-colors"
                                 title="Edit"
                                 onClick={() => openEditModal(user)}
                               >
                                 <IconPencil size={18} />
                               </button>
                               <button
-                                className="p-2 hover:bg-red-50 rounded-lg text-gray-500 hover:text-red-600 transition-colors"
+                                className="p-2 hover:bg-red-50 rounded-lg text-zinc-400 hover:text-red-600 transition-colors"
                                 title="Delete"
                                 onClick={() => {
                                   setSelectedUser(user);
@@ -789,7 +790,7 @@ export default function UsersPage() {
                     <tr>
                       <td
                         colSpan={5}
-                        className="py-8 text-center text-gray-500"
+                        className="py-8 text-center text-zinc-400"
                       >
                         No users found matching your search.
                       </td>
@@ -804,7 +805,9 @@ export default function UsersPage() {
               currentPage={page}
               totalPages={totalPages}
               totalCount={totalCount}
+              pageSize={limit}
               onPageChange={setPage}
+              onPageSizeChange={setLimit}
               itemName="users"
             />
           </div>
@@ -813,23 +816,23 @@ export default function UsersPage() {
 
       {/* Role Permissions Info */}
       <div className="card mt-6">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4">
+        <h3 className="text-lg font-semibold text-zinc-800 mb-4">
           Role Permissions
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
           {roles.map((role) => (
             <div
               key={role.id}
-              className="border border-gray-200 rounded-lg p-4"
+              className="border border-zinc-200 rounded-xl p-4"
             >
               <span
                 className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${role.color} mb-2`}
               >
                 {role.label}
               </span>
-              <p className="text-sm text-gray-600">{role.description}</p>
+              <p className="text-sm text-zinc-500">{role.description}</p>
               {role.id === "admin" && (
-                <p className="text-xs text-gray-400 mt-2 italic">
+                <p className="text-xs text-zinc-400 mt-2 italic">
                   Access to all events
                 </p>
               )}
@@ -840,16 +843,16 @@ export default function UsersPage() {
 
       {/* Create User Modal */}
       {showCreateModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="modal-overlay">
           <div className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-100">
+            <div className="p-6 border-b border-zinc-100">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold flex items-center gap-2 text-gray-900">
+                <h3 className="text-lg font-semibold flex items-center gap-2 text-zinc-900">
                   <IconUserPlus size={20} /> Add New User
                 </h3>
                 <button
                   onClick={() => setShowCreateModal(false)}
-                  className="text-gray-400 hover:text-gray-600"
+                  className="text-zinc-400 hover:text-zinc-500"
                 >
                   <IconX size={20} />
                 </button>
@@ -857,7 +860,7 @@ export default function UsersPage() {
             </div>
             <div className="p-6">
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-zinc-600 mb-1">
                   Full Name *
                 </label>
                 <input
@@ -871,7 +874,7 @@ export default function UsersPage() {
                 />
               </div>
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-zinc-600 mb-1">
                   Email *
                 </label>
                 <input
@@ -885,7 +888,7 @@ export default function UsersPage() {
                 />
               </div>
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-zinc-600 mb-1">
                   Password *
                 </label>
                 <input
@@ -899,7 +902,7 @@ export default function UsersPage() {
                 />
               </div>
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-zinc-600 mb-1">
                   Role *
                 </label>
                 <select
@@ -924,39 +927,39 @@ export default function UsersPage() {
               {/* 1️⃣ Event Assignment (only for non-admin, non-staff/verifier) */}
               {formData.role !== "admin" && formData.role !== "staff" && formData.role !== "verifier" && (
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-zinc-600 mb-2">
                     1. Assign Events *
                   </label>
                   <div className="mb-2 relative">
                     <IconSearch
                       size={16}
-                      className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400"
                     />
                     <input
                       type="text"
                       placeholder="Search events..."
-                      className="w-full pl-11 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-blue-500"
+                      className="w-full pl-11 pr-3 py-2 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:border-teal-600"
                       value={eventSearchTerm}
                       onChange={(e) => setEventSearchTerm(e.target.value)}
                     />
                   </div>
-                  <div className="border border-gray-200 rounded-lg p-3 max-h-40 overflow-y-auto">
+                  <div className="border border-zinc-200 rounded-xl p-3 max-h-40 overflow-y-auto">
                     {filteredEvents.map((event) => (
                       <label
                         key={event.id}
-                        className="flex items-center gap-3 py-2 hover:bg-gray-50 cursor-pointer"
+                        className="flex items-center gap-3 py-2 hover:bg-zinc-50 cursor-pointer"
                       >
                         <input
                           type="checkbox"
                           checked={formData.assignedEventIds.includes(event.id)}
                           onChange={() => toggleEventAssignment(event.id)}
-                          className="w-4 h-4 text-blue-600 rounded"
+                          className="w-4 h-4 text-emerald-600 rounded"
                         />
                         <div>
                           <p className="font-medium text-sm">
                             {event.eventCode}
                           </p>
-                          <p className="text-xs text-gray-500">
+                          <p className="text-xs text-zinc-400">
                             {event.eventName}
                           </p>
                         </div>
@@ -969,17 +972,17 @@ export default function UsersPage() {
               {/* 2️⃣ Presentation Type Assignment (only for reviewer) */}
               {formData.role === "reviewer" && (
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-zinc-600 mb-2">
                     2. Assign Presentation Types *
                   </label>
-                  <p className="text-xs text-gray-500 mb-2">
+                  <p className="text-xs text-zinc-400 mb-2">
                     Select which presentation types this reviewer can review
                   </p>
-                  <div className="border border-gray-200 rounded-lg p-3 space-y-2">
+                  <div className="border border-zinc-200 rounded-xl p-3 space-y-2">
                     {presentationTypes.map((type) => (
                       <label
                         key={type.id}
-                        className="flex items-center gap-3 py-1.5 hover:bg-gray-50 cursor-pointer rounded px-2"
+                        className="flex items-center gap-3 py-1.5 hover:bg-zinc-50 cursor-pointer rounded px-2"
                       >
                         <input
                           type="checkbox"
@@ -999,7 +1002,7 @@ export default function UsersPage() {
                       </label>
                     ))}
                   </div>
-                  <p className="text-xs text-gray-400 mt-2">
+                  <p className="text-xs text-zinc-400 mt-2">
                     Selected: {formData.assignedPresentationTypes.length} type(s)
                   </p>
                 </div>
@@ -1008,26 +1011,26 @@ export default function UsersPage() {
               {/* 3️⃣ Abstract Category Assignment (only for reviewer, dynamic from selected events) */}
               {formData.role === "reviewer" && (
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-zinc-600 mb-2">
                     3. Assign Abstract Categories *
                   </label>
-                  <p className="text-xs text-gray-500 mb-2">
+                  <p className="text-xs text-zinc-400 mb-2">
                     Categories are sourced from the events selected above
                   </p>
                   {formData.assignedEventIds.length === 0 ? (
-                    <div className="border border-dashed border-gray-200 rounded-lg p-4 text-center text-sm text-gray-400 italic">
+                    <div className="border border-dashed border-zinc-200 rounded-lg p-4 text-center text-sm text-zinc-400 italic">
                       Please select at least one event first
                     </div>
                   ) : availableReviewerCategories.length === 0 ? (
-                    <div className="border border-dashed border-gray-200 rounded-lg p-4 text-center text-sm text-gray-400 italic">
+                    <div className="border border-dashed border-zinc-200 rounded-lg p-4 text-center text-sm text-zinc-400 italic">
                       No abstract categories defined for the selected event(s)
                     </div>
                   ) : (
-                    <div className="border border-gray-200 rounded-lg p-3 space-y-2 max-h-60 overflow-y-auto">
+                    <div className="border border-zinc-200 rounded-xl p-3 space-y-2 max-h-60 overflow-y-auto">
                       {availableReviewerCategories.map((cat) => (
                         <label
                           key={cat.name}
-                          className="flex items-center gap-3 py-1.5 hover:bg-gray-50 cursor-pointer rounded px-2"
+                          className="flex items-center gap-3 py-1.5 hover:bg-zinc-50 cursor-pointer rounded px-2"
                         >
                           <input
                             type="checkbox"
@@ -1038,14 +1041,14 @@ export default function UsersPage() {
                           <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
                             {cat.name}
                           </span>
-                          <span className="ml-auto text-[10px] text-gray-400 truncate max-w-[160px]">
+                          <span className="ml-auto text-[10px] text-zinc-400 truncate max-w-[160px]">
                             {cat.eventNames.join(", ")}
                           </span>
                         </label>
                       ))}
                     </div>
                   )}
-                  <p className="text-xs text-gray-400 mt-2">
+                  <p className="text-xs text-zinc-400 mt-2">
                     Selected: {formData.assignedCategories.length} category(ies)
                   </p>
                 </div>
@@ -1054,39 +1057,39 @@ export default function UsersPage() {
               {/* Event + Session Assignment (for staff/verifier) */}
               {(formData.role === "staff" || formData.role === "verifier") && (
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-zinc-600 mb-2">
                     Assign Events & Sessions *
                   </label>
-                  <p className="text-xs text-gray-500 mb-2">
+                  <p className="text-xs text-zinc-400 mb-2">
                     Select events and specific sessions this {formData.role} will check-in
                   </p>
                   <div className="mb-2 relative">
                     <IconSearch
                       size={16}
-                      className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400"
                     />
                     <input
                       type="text"
                       placeholder="Search events..."
-                      className="w-full pl-11 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-blue-500"
+                      className="w-full pl-11 pr-3 py-2 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:border-teal-600"
                       value={eventSearchTerm}
                       onChange={(e) => setEventSearchTerm(e.target.value)}
                     />
                   </div>
-                  <div className="border border-gray-200 rounded-lg p-3 max-h-60 overflow-y-auto space-y-1">
+                  <div className="border border-zinc-200 rounded-xl p-3 max-h-60 overflow-y-auto space-y-1">
                     {filteredEvents.map((event) => {
                       const assigned = isEventAssigned(event.id);
                       const expanded = expandedEvents.has(event.id);
                       const sessions = eventSessions[event.id] || [];
                       const assignedSessionCount = sessionAssignments.find(a => a.eventId === event.id)?.sessionIds.length || 0;
                       return (
-                        <div key={event.id} className="rounded-lg border border-gray-100">
-                          <div className="flex items-center gap-2 p-2 hover:bg-gray-50">
+                        <div key={event.id} className="rounded-lg border border-zinc-100">
+                          <div className="flex items-center gap-2 p-2 hover:bg-zinc-50">
                             <input
                               type="checkbox"
                               checked={assigned}
                               onChange={() => toggleEventAssignmentWithSessions(event.id)}
-                              className="w-4 h-4 text-blue-600 rounded"
+                              className="w-4 h-4 text-emerald-600 rounded"
                             />
                             <button
                               type="button"
@@ -1095,41 +1098,41 @@ export default function UsersPage() {
                             >
                               <div className="flex-1">
                                 <p className="font-medium text-sm">{event.eventCode}</p>
-                                <p className="text-xs text-gray-500">{event.eventName}</p>
+                                <p className="text-xs text-zinc-400">{event.eventName}</p>
                               </div>
                               {assigned && assignedSessionCount > 0 && (
-                                <span className="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">
+                                <span className="text-xs bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded">
                                   {assignedSessionCount} session{assignedSessionCount > 1 ? 's' : ''}
                                 </span>
                               )}
-                              {expanded ? <IconChevronDown size={16} className="text-gray-400" /> : <IconChevronRight size={16} className="text-gray-400" />}
+                              {expanded ? <IconChevronDown size={16} className="text-zinc-400" /> : <IconChevronRight size={16} className="text-zinc-400" />}
                             </button>
                           </div>
                           {expanded && (
                             <div className="pl-8 pr-3 pb-2 space-y-1">
                               {loadingSessions === event.id ? (
-                                <div className="flex items-center gap-2 py-2 text-gray-400 text-xs">
+                                <div className="flex items-center gap-2 py-2 text-zinc-400 text-xs">
                                   <IconLoader2 size={14} className="animate-spin" /> Loading sessions...
                                 </div>
                               ) : sessions.length === 0 ? (
-                                <p className="text-xs text-gray-400 py-2">No sessions found</p>
+                                <p className="text-xs text-zinc-400 py-2">No sessions found</p>
                               ) : (
                                 sessions.map(session => (
                                   <label
                                     key={session.id}
-                                    className="flex items-center gap-2 py-1.5 px-2 hover:bg-blue-50 cursor-pointer rounded text-sm"
+                                    className="flex items-center gap-2 py-1.5 px-2 hover:bg-emerald-50 cursor-pointer rounded text-sm"
                                   >
                                     <input
                                       type="checkbox"
                                       checked={isSessionAssigned(event.id, session.id)}
                                       onChange={() => toggleSessionAssignment(event.id, session.id)}
-                                      className="w-3.5 h-3.5 text-blue-600 rounded"
+                                      className="w-3.5 h-3.5 text-emerald-600 rounded"
                                     />
-                                    <IconDoor size={14} className="text-gray-400" />
+                                    <IconDoor size={14} className="text-zinc-400" />
                                     <div className="flex-1">
-                                      <span className="text-gray-800">{session.sessionName}</span>
+                                      <span className="text-zinc-800">{session.sessionName}</span>
                                       {session.room && (
-                                        <span className="text-xs text-gray-400 ml-2">({session.room})</span>
+                                        <span className="text-xs text-zinc-400 ml-2">({session.room})</span>
                                       )}
                                     </div>
                                   </label>
@@ -1142,14 +1145,14 @@ export default function UsersPage() {
                     })}
                   </div>
                   {sessionAssignments.length > 0 && (
-                    <p className="text-xs text-gray-400 mt-2">
+                    <p className="text-xs text-zinc-400 mt-2">
                       Assigned: {sessionAssignments.length} event(s), {sessionAssignments.reduce((sum, a) => sum + a.sessionIds.length, 0)} session(s)
                     </p>
                   )}
                 </div>
               )}
             </div>
-            <div className="p-6 border-t border-gray-100 flex gap-3 justify-end">
+            <div className="p-6 border-t border-zinc-100 flex gap-3 justify-end">
               <button
                 onClick={() => setShowCreateModal(false)}
                 className="btn-secondary"
@@ -1169,16 +1172,16 @@ export default function UsersPage() {
 
       {/* Edit User Modal */}
       {showEditModal && selectedUser && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="modal-overlay">
           <div className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-100">
+            <div className="p-6 border-b border-zinc-100">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold flex items-center gap-2 text-gray-900">
+                <h3 className="text-lg font-semibold flex items-center gap-2 text-zinc-900">
                   <IconPencil size={20} /> Edit User
                 </h3>
                 <button
                   onClick={() => setShowEditModal(false)}
-                  className="text-gray-400 hover:text-gray-600"
+                  className="text-zinc-400 hover:text-zinc-500"
                 >
                   <IconX size={20} />
                 </button>
@@ -1186,7 +1189,7 @@ export default function UsersPage() {
             </div>
             <div className="p-6">
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-zinc-600 mb-1">
                   Full Name *
                 </label>
                 <input
@@ -1199,7 +1202,7 @@ export default function UsersPage() {
                 />
               </div>
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-zinc-600 mb-1">
                   Email *
                 </label>
                 <input
@@ -1212,7 +1215,7 @@ export default function UsersPage() {
                 />
               </div>
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-zinc-600 mb-1">
                   New Password (leave blank to keep current)
                 </label>
                 <input
@@ -1226,7 +1229,7 @@ export default function UsersPage() {
                 />
               </div>
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-zinc-600 mb-1">
                   Role *
                 </label>
                 <select
@@ -1245,7 +1248,7 @@ export default function UsersPage() {
               </div>
 
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-zinc-600 mb-2">
                   Account Status
                 </label>
                 <div className="flex items-center gap-3">
@@ -1256,8 +1259,8 @@ export default function UsersPage() {
                     onClick={() =>
                       setFormData({ ...formData, isActive: !formData.isActive })
                     }
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-                      formData.isActive ? "bg-green-500" : "bg-gray-200"
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2 ${
+                      formData.isActive ? "bg-green-500" : "bg-zinc-200"
                     }`}
                   >
                     <span
@@ -1267,7 +1270,7 @@ export default function UsersPage() {
                     />
                   </button>
                   <span
-                    className={`text-sm font-medium ${formData.isActive ? "text-green-600" : "text-gray-500"}`}
+                    className={`text-sm font-medium ${formData.isActive ? "text-green-600" : "text-zinc-400"}`}
                   >
                     {formData.isActive ? "Active" : "Inactive"}
                   </span>
@@ -1277,39 +1280,39 @@ export default function UsersPage() {
               {/* 1️⃣ Event Assignment (only for non-admin, non-staff/verifier) */}
               {formData.role !== "admin" && formData.role !== "staff" && formData.role !== "verifier" && (
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-zinc-600 mb-2">
                     1. Assigned Events
                   </label>
                   <div className="mb-2 relative">
                     <IconSearch
                       size={16}
-                      className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400"
                     />
                     <input
                       type="text"
                       placeholder="Search events..."
-                      className="w-full pl-11 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-blue-500"
+                      className="w-full pl-11 pr-3 py-2 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:border-teal-600"
                       value={eventSearchTerm}
                       onChange={(e) => setEventSearchTerm(e.target.value)}
                     />
                   </div>
-                  <div className="border border-gray-200 rounded-lg p-3 max-h-40 overflow-y-auto">
+                  <div className="border border-zinc-200 rounded-xl p-3 max-h-40 overflow-y-auto">
                     {filteredEvents.map((event) => (
                       <label
                         key={event.id}
-                        className="flex items-center gap-3 py-2 hover:bg-gray-50 cursor-pointer"
+                        className="flex items-center gap-3 py-2 hover:bg-zinc-50 cursor-pointer"
                       >
                         <input
                           type="checkbox"
                           checked={formData.assignedEventIds.includes(event.id)}
                           onChange={() => toggleEventAssignment(event.id)}
-                          className="w-4 h-4 text-blue-600 rounded"
+                          className="w-4 h-4 text-emerald-600 rounded"
                         />
                         <div>
                           <p className="font-medium text-sm">
                             {event.eventCode}
                           </p>
-                          <p className="text-xs text-gray-500">
+                          <p className="text-xs text-zinc-400">
                             {event.eventName}
                           </p>
                         </div>
@@ -1322,17 +1325,17 @@ export default function UsersPage() {
               {/* 2️⃣ Presentation Type Assignment (only for reviewer) */}
               {formData.role === "reviewer" && (
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-zinc-600 mb-2">
                     2. Assigned Presentation Types
                   </label>
-                  <p className="text-xs text-gray-500 mb-2">
+                  <p className="text-xs text-zinc-400 mb-2">
                     Select which presentation types this reviewer can review
                   </p>
-                  <div className="border border-gray-200 rounded-lg p-3 space-y-2">
+                  <div className="border border-zinc-200 rounded-xl p-3 space-y-2">
                     {presentationTypes.map((type) => (
                       <label
                         key={type.id}
-                        className="flex items-center gap-3 py-1.5 hover:bg-gray-50 cursor-pointer rounded px-2"
+                        className="flex items-center gap-3 py-1.5 hover:bg-zinc-50 cursor-pointer rounded px-2"
                       >
                         <input
                           type="checkbox"
@@ -1352,7 +1355,7 @@ export default function UsersPage() {
                       </label>
                     ))}
                   </div>
-                  <p className="text-xs text-gray-400 mt-2">
+                  <p className="text-xs text-zinc-400 mt-2">
                     Selected: {formData.assignedPresentationTypes.length} type(s)
                   </p>
                 </div>
@@ -1361,26 +1364,26 @@ export default function UsersPage() {
               {/* 3️⃣ Abstract Category Assignment (only for reviewer, dynamic from selected events) */}
               {formData.role === "reviewer" && (
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-zinc-600 mb-2">
                     3. Assigned Abstract Categories
                   </label>
-                  <p className="text-xs text-gray-500 mb-2">
+                  <p className="text-xs text-zinc-400 mb-2">
                     Categories are sourced from the events selected above
                   </p>
                   {formData.assignedEventIds.length === 0 ? (
-                    <div className="border border-dashed border-gray-200 rounded-lg p-4 text-center text-sm text-gray-400 italic">
+                    <div className="border border-dashed border-zinc-200 rounded-lg p-4 text-center text-sm text-zinc-400 italic">
                       Please select at least one event first
                     </div>
                   ) : availableReviewerCategories.length === 0 ? (
-                    <div className="border border-dashed border-gray-200 rounded-lg p-4 text-center text-sm text-gray-400 italic">
+                    <div className="border border-dashed border-zinc-200 rounded-lg p-4 text-center text-sm text-zinc-400 italic">
                       No abstract categories defined for the selected event(s)
                     </div>
                   ) : (
-                    <div className="border border-gray-200 rounded-lg p-3 space-y-2 max-h-60 overflow-y-auto">
+                    <div className="border border-zinc-200 rounded-xl p-3 space-y-2 max-h-60 overflow-y-auto">
                       {availableReviewerCategories.map((cat) => (
                         <label
                           key={cat.name}
-                          className="flex items-center gap-3 py-1.5 hover:bg-gray-50 cursor-pointer rounded px-2"
+                          className="flex items-center gap-3 py-1.5 hover:bg-zinc-50 cursor-pointer rounded px-2"
                         >
                           <input
                             type="checkbox"
@@ -1391,14 +1394,14 @@ export default function UsersPage() {
                           <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
                             {cat.name}
                           </span>
-                          <span className="ml-auto text-[10px] text-gray-400 truncate max-w-[160px]">
+                          <span className="ml-auto text-[10px] text-zinc-400 truncate max-w-[160px]">
                             {cat.eventNames.join(", ")}
                           </span>
                         </label>
                       ))}
                     </div>
                   )}
-                  <p className="text-xs text-gray-400 mt-2">
+                  <p className="text-xs text-zinc-400 mt-2">
                     Selected: {formData.assignedCategories.length} category(ies)
                   </p>
                 </div>
@@ -1407,39 +1410,39 @@ export default function UsersPage() {
               {/* Event + Session Assignment (for staff/verifier) */}
               {(formData.role === "staff" || formData.role === "verifier") && (
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-zinc-600 mb-2">
                     Assigned Events & Sessions
                   </label>
-                  <p className="text-xs text-gray-500 mb-2">
+                  <p className="text-xs text-zinc-400 mb-2">
                     Select events and specific sessions this {formData.role} will check-in
                   </p>
                   <div className="mb-2 relative">
                     <IconSearch
                       size={16}
-                      className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400"
                     />
                     <input
                       type="text"
                       placeholder="Search events..."
-                      className="w-full pl-11 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-blue-500"
+                      className="w-full pl-11 pr-3 py-2 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:border-teal-600"
                       value={eventSearchTerm}
                       onChange={(e) => setEventSearchTerm(e.target.value)}
                     />
                   </div>
-                  <div className="border border-gray-200 rounded-lg p-3 max-h-60 overflow-y-auto space-y-1">
+                  <div className="border border-zinc-200 rounded-xl p-3 max-h-60 overflow-y-auto space-y-1">
                     {filteredEvents.map((event) => {
                       const assigned = isEventAssigned(event.id);
                       const expanded = expandedEvents.has(event.id);
                       const sessions = eventSessions[event.id] || [];
                       const assignedSessionCount = sessionAssignments.find(a => a.eventId === event.id)?.sessionIds.length || 0;
                       return (
-                        <div key={event.id} className="rounded-lg border border-gray-100">
-                          <div className="flex items-center gap-2 p-2 hover:bg-gray-50">
+                        <div key={event.id} className="rounded-lg border border-zinc-100">
+                          <div className="flex items-center gap-2 p-2 hover:bg-zinc-50">
                             <input
                               type="checkbox"
                               checked={assigned}
                               onChange={() => toggleEventAssignmentWithSessions(event.id)}
-                              className="w-4 h-4 text-blue-600 rounded"
+                              className="w-4 h-4 text-emerald-600 rounded"
                             />
                             <button
                               type="button"
@@ -1448,41 +1451,41 @@ export default function UsersPage() {
                             >
                               <div className="flex-1">
                                 <p className="font-medium text-sm">{event.eventCode}</p>
-                                <p className="text-xs text-gray-500">{event.eventName}</p>
+                                <p className="text-xs text-zinc-400">{event.eventName}</p>
                               </div>
                               {assigned && assignedSessionCount > 0 && (
-                                <span className="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">
+                                <span className="text-xs bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded">
                                   {assignedSessionCount} session{assignedSessionCount > 1 ? 's' : ''}
                                 </span>
                               )}
-                              {expanded ? <IconChevronDown size={16} className="text-gray-400" /> : <IconChevronRight size={16} className="text-gray-400" />}
+                              {expanded ? <IconChevronDown size={16} className="text-zinc-400" /> : <IconChevronRight size={16} className="text-zinc-400" />}
                             </button>
                           </div>
                           {expanded && (
                             <div className="pl-8 pr-3 pb-2 space-y-1">
                               {loadingSessions === event.id ? (
-                                <div className="flex items-center gap-2 py-2 text-gray-400 text-xs">
+                                <div className="flex items-center gap-2 py-2 text-zinc-400 text-xs">
                                   <IconLoader2 size={14} className="animate-spin" /> Loading sessions...
                                 </div>
                               ) : sessions.length === 0 ? (
-                                <p className="text-xs text-gray-400 py-2">No sessions found</p>
+                                <p className="text-xs text-zinc-400 py-2">No sessions found</p>
                               ) : (
                                 sessions.map(session => (
                                   <label
                                     key={session.id}
-                                    className="flex items-center gap-2 py-1.5 px-2 hover:bg-blue-50 cursor-pointer rounded text-sm"
+                                    className="flex items-center gap-2 py-1.5 px-2 hover:bg-emerald-50 cursor-pointer rounded text-sm"
                                   >
                                     <input
                                       type="checkbox"
                                       checked={isSessionAssigned(event.id, session.id)}
                                       onChange={() => toggleSessionAssignment(event.id, session.id)}
-                                      className="w-3.5 h-3.5 text-blue-600 rounded"
+                                      className="w-3.5 h-3.5 text-emerald-600 rounded"
                                     />
-                                    <IconDoor size={14} className="text-gray-400" />
+                                    <IconDoor size={14} className="text-zinc-400" />
                                     <div className="flex-1">
-                                      <span className="text-gray-800">{session.sessionName}</span>
+                                      <span className="text-zinc-800">{session.sessionName}</span>
                                       {session.room && (
-                                        <span className="text-xs text-gray-400 ml-2">({session.room})</span>
+                                        <span className="text-xs text-zinc-400 ml-2">({session.room})</span>
                                       )}
                                     </div>
                                   </label>
@@ -1495,14 +1498,14 @@ export default function UsersPage() {
                     })}
                   </div>
                   {sessionAssignments.length > 0 && (
-                    <p className="text-xs text-gray-400 mt-2">
+                    <p className="text-xs text-zinc-400 mt-2">
                       Assigned: {sessionAssignments.length} event(s), {sessionAssignments.reduce((sum, a) => sum + a.sessionIds.length, 0)} session(s)
                     </p>
                   )}
                 </div>
               )}
             </div>
-            <div className="p-6 border-t border-gray-100 flex gap-3 justify-end">
+            <div className="p-6 border-t border-zinc-100 flex gap-3 justify-end">
               <button
                 onClick={() => setShowEditModal(false)}
                 className="btn-secondary"
@@ -1522,9 +1525,9 @@ export default function UsersPage() {
 
       {/* Assign Events Modal */}
       {showAssignModal && selectedUser && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="modal-overlay">
           <div className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] flex flex-col">
-            <div className="p-6 bg-blue-600 rounded-t-2xl flex-shrink-0">
+            <div className="p-6 bg-emerald-700 rounded-t-2xl flex-shrink-0">
               <h3 className="text-lg font-semibold text-white flex items-center gap-2">
                 {(selectedUser.role === "staff" || selectedUser.role === "verifier") ? (
                   <><IconDoor size={20} /> Assign Sessions</>
@@ -1538,23 +1541,23 @@ export default function UsersPage() {
               {/* Staff/Verifier: Session-level assignment */}
               {(selectedUser.role === "staff" || selectedUser.role === "verifier") ? (
                 <>
-                  <p className="text-sm text-gray-600 mb-4">
+                  <p className="text-sm text-zinc-500 mb-4">
                     Select events and sessions this {selectedUser.role} can check-in:
                   </p>
                   <div className="mb-3 relative">
                     <IconSearch
                       size={16}
-                      className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400"
                     />
                     <input
                       type="text"
                       placeholder="Search events..."
-                      className="w-full pl-11 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-blue-500"
+                      className="w-full pl-11 pr-3 py-2 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:border-teal-600"
                       value={eventSearchTerm}
                       onChange={(e) => setEventSearchTerm(e.target.value)}
                     />
                   </div>
-                  <div className="border border-gray-200 rounded-lg divide-y divide-gray-100 max-h-80 overflow-y-auto">
+                  <div className="border border-zinc-200 rounded-xl divide-y divide-gray-100 max-h-80 overflow-y-auto">
                     {filteredEvents.map((event) => {
                       const isAssigned = isEventAssigned(event.id);
                       const isExpanded = expandedEvents.has(event.id);
@@ -1562,33 +1565,33 @@ export default function UsersPage() {
                       const assignedSessionCount = sessionAssignments.find(a => a.eventId === event.id)?.sessionIds.length || 0;
 
                       return (
-                        <div key={event.id} className="border-b border-gray-100 last:border-b-0">
+                        <div key={event.id} className="border-b border-zinc-100 last:border-b-0">
                           {/* Event row */}
-                          <div className="flex items-center gap-2 p-3 hover:bg-gray-50">
+                          <div className="flex items-center gap-2 p-3 hover:bg-zinc-50">
                             <button
                               onClick={() => toggleEventExpand(event.id)}
-                              className="p-1 hover:bg-gray-200 rounded transition-colors"
+                              className="p-1 hover:bg-zinc-200 rounded transition-colors"
                             >
                               {loadingSessions === event.id ? (
-                                <IconLoader2 size={16} className="animate-spin text-gray-400" />
+                                <IconLoader2 size={16} className="animate-spin text-zinc-400" />
                               ) : isExpanded ? (
-                                <IconChevronDown size={16} className="text-gray-500" />
+                                <IconChevronDown size={16} className="text-zinc-400" />
                               ) : (
-                                <IconChevronRight size={16} className="text-gray-500" />
+                                <IconChevronRight size={16} className="text-zinc-400" />
                               )}
                             </button>
                             <input
                               type="checkbox"
                               checked={isAssigned}
                               onChange={() => toggleEventAssignmentWithSessions(event.id)}
-                              className="w-4 h-4 text-blue-600 rounded"
+                              className="w-4 h-4 text-emerald-600 rounded"
                             />
                             <div className="flex-1">
                               <p className="font-medium text-sm">{event.eventCode}</p>
-                              <p className="text-xs text-gray-500">{event.eventName}</p>
+                              <p className="text-xs text-zinc-400">{event.eventName}</p>
                             </div>
                             {isAssigned && (
-                              <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
+                              <span className="text-xs bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full">
                                 {assignedSessionCount > 0 ? `${assignedSessionCount} sessions` : "All"}
                               </span>
                             )}
@@ -1596,14 +1599,14 @@ export default function UsersPage() {
 
                           {/* Sessions (expanded) */}
                           {isExpanded && sessions.length > 0 && (
-                            <div className="bg-gray-50 pl-10 pr-3 py-2 space-y-1">
-                              <p className="text-xs text-gray-500 mb-2">
+                            <div className="bg-zinc-50 pl-10 pr-3 py-2 space-y-1">
+                              <p className="text-xs text-zinc-400 mb-2">
                                 Select specific sessions (or leave unchecked for all sessions):
                               </p>
                               {sessions.map((session) => (
                                 <label
                                   key={session.id}
-                                  className="flex items-center gap-3 py-1.5 px-2 hover:bg-gray-100 rounded cursor-pointer"
+                                  className="flex items-center gap-3 py-1.5 px-2 hover:bg-zinc-100 rounded cursor-pointer"
                                 >
                                   <input
                                     type="checkbox"
@@ -1612,8 +1615,8 @@ export default function UsersPage() {
                                     className="w-4 h-4 text-green-600 rounded"
                                   />
                                   <div className="flex-1">
-                                    <p className="text-sm font-medium text-gray-700">{session.sessionName}</p>
-                                    <div className="flex items-center gap-2 text-xs text-gray-400">
+                                    <p className="text-sm font-medium text-zinc-600">{session.sessionName}</p>
+                                    <div className="flex items-center gap-2 text-xs text-zinc-400">
                                       {session.sessionType && <span className="capitalize">{session.sessionType.replace('_', ' ')}</span>}
                                       {session.room && <span>• {session.room}</span>}
                                     </div>
@@ -1623,7 +1626,7 @@ export default function UsersPage() {
                             </div>
                           )}
                           {isExpanded && sessions.length === 0 && loadingSessions !== event.id && (
-                            <div className="bg-gray-50 pl-10 pr-3 py-3 text-xs text-gray-400">
+                            <div className="bg-zinc-50 pl-10 pr-3 py-3 text-xs text-zinc-400">
                               No sessions found for this event
                             </div>
                           )}
@@ -1631,55 +1634,55 @@ export default function UsersPage() {
                       );
                     })}
                   </div>
-                  <p className="text-xs text-gray-400 mt-3">
+                  <p className="text-xs text-zinc-400 mt-3">
                     Assigned: {sessionAssignments.length} event(s), {sessionAssignments.reduce((sum, a) => sum + (a.sessionIds.length || 0), 0)} specific session(s)
                   </p>
                 </>
               ) : (
                 /* Other roles: Event-level assignment only */
                 <>
-                  <p className="text-sm text-gray-600 mb-4">
+                  <p className="text-sm text-zinc-500 mb-4">
                     Select which events this user can access:
                   </p>
                   <div className="mb-3 relative">
                     <IconSearch
                       size={16}
-                      className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400"
                     />
                     <input
                       type="text"
                       placeholder="Search events..."
-                      className="w-full pl-11 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-blue-500"
+                      className="w-full pl-11 pr-3 py-2 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:border-teal-600"
                       value={eventSearchTerm}
                       onChange={(e) => setEventSearchTerm(e.target.value)}
                     />
                   </div>
-                  <div className="border border-gray-200 rounded-lg divide-y divide-gray-100 max-h-60 overflow-y-auto">
+                  <div className="border border-zinc-200 rounded-xl divide-y divide-gray-100 max-h-60 overflow-y-auto">
                     {filteredEvents.map((event) => (
                       <label
                         key={event.id}
-                        className="flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer"
+                        className="flex items-center gap-3 p-3 hover:bg-zinc-50 cursor-pointer"
                       >
                         <input
                           type="checkbox"
                           checked={formData.assignedEventIds.includes(event.id)}
                           onChange={() => toggleEventAssignment(event.id)}
-                          className="w-4 h-4 text-blue-600 rounded"
+                          className="w-4 h-4 text-emerald-600 rounded"
                         />
                         <div className="flex-1">
                           <p className="font-medium">{event.eventCode}</p>
-                          <p className="text-sm text-gray-500">{event.eventName}</p>
+                          <p className="text-sm text-zinc-400">{event.eventName}</p>
                         </div>
                       </label>
                     ))}
                   </div>
-                  <p className="text-xs text-gray-400 mt-3">
+                  <p className="text-xs text-zinc-400 mt-3">
                     Selected: {formData.assignedEventIds.length} event(s)
                   </p>
                 </>
               )}
             </div>
-            <div className="p-6 border-t border-gray-100 flex gap-3 justify-end flex-shrink-0">
+            <div className="p-6 border-t border-zinc-100 flex gap-3 justify-end flex-shrink-0">
               <button
                 onClick={() => { setShowAssignModal(false); setSessionAssignments([]); }}
                 className="btn-secondary"
@@ -1699,7 +1702,7 @@ export default function UsersPage() {
 
       {/* Delete Modal */}
       {showDeleteModal && selectedUser && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="modal-overlay">
           <div className="bg-white rounded-2xl max-w-md w-full">
             <div className="p-6 bg-red-600 rounded-t-2xl">
               <h3 className="text-lg font-semibold text-white flex items-center gap-2">
@@ -1710,13 +1713,13 @@ export default function UsersPage() {
               <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <IconTrash size={32} className="text-red-600" />
               </div>
-              <p className="mb-2 text-gray-900 font-medium">
+              <p className="mb-2 text-zinc-900 font-medium">
                 Are you sure you want to delete this user?
               </p>
-              <p className="font-semibold text-gray-800">{selectedUser.name}</p>
-              <p className="text-sm text-gray-500">{selectedUser.email}</p>
+              <p className="font-semibold text-zinc-800">{selectedUser.name}</p>
+              <p className="text-sm text-zinc-400">{selectedUser.email}</p>
             </div>
-            <div className="p-6 border-t border-gray-100 flex gap-3 justify-end">
+            <div className="p-6 border-t border-zinc-100 flex gap-3 justify-end">
               <button
                 onClick={() => setShowDeleteModal(false)}
                 className="btn-secondary"

@@ -297,11 +297,11 @@ export default function SpeakersPage() {
   return (
     <AdminLayout title="Speakers">
       {/* Event Filter - Above Card */}
-      <div className="mb-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-xl p-4 flex items-center gap-3">
-        <div className="bg-blue-100 p-2 rounded-lg">
-          <IconCalendarEvent className="text-blue-600" size={20} />
+      <div className="mb-4 card flex items-center gap-3 flex-wrap">
+        <div className="bg-emerald-50 p-2 rounded-lg">
+          <IconCalendarEvent className="text-emerald-600" size={20} />
         </div>
-        <span className="text-sm font-medium text-gray-700">Select Event:</span>
+        <span className="text-sm font-medium text-zinc-600">Select Event:</span>
         <select
           value={eventFilter || ""}
           onChange={(e) => {
@@ -309,9 +309,9 @@ export default function SpeakersPage() {
             setEventFilter(val);
             setSessionFilter(null);
           }}
-          className="input-field pr-8 min-w-[200px] font-semibold bg-white"
+          className="input-field w-auto font-semibold"
         >
-          <option value="">All Events</option>
+          <option value="">-- เลือก Event --</option>
           {events.map((event) => (
             <option key={event.id} value={event.id}>
               {event.eventName}
@@ -319,15 +319,15 @@ export default function SpeakersPage() {
           ))}
         </select>
 
-        <span className="text-sm font-medium text-gray-700 ml-4">
-          Select Session:
+        <span className="text-sm font-medium text-zinc-600 ml-4">
+          Session:
         </span>
         <select
           value={sessionFilter || ""}
           onChange={(e) =>
             setSessionFilter(e.target.value ? parseInt(e.target.value) : null)
           }
-          className="input-field pr-8 min-w-[200px] font-semibold bg-white disabled:opacity-50"
+          className="input-field w-auto font-semibold disabled:opacity-50"
           disabled={!eventFilter}
         >
           <option value="">All Sessions</option>
@@ -344,8 +344,8 @@ export default function SpeakersPage() {
       {/* Main Content */}
       <div className="card">
         <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-6">
-          <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-            <IconMicrophone size={20} className="text-blue-600" />
+          <h2 className="text-lg font-semibold text-zinc-800 flex items-center gap-2">
+            <IconMicrophone size={20} className="text-emerald-600" />
             {eventFilter
               ? `Speakers for ${events.find((e) => e.id === eventFilter)?.eventName || "Event"}`
               : "All Speakers"}
@@ -365,7 +365,7 @@ export default function SpeakersPage() {
         <div className="mb-6">
           <div className="relative max-w-md">
             <IconSearch
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 z-10 pointer-events-none"
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 z-10 pointer-events-none"
               size={18}
             />
             <input
@@ -381,10 +381,10 @@ export default function SpeakersPage() {
         {/* Loading State */}
         {isLoading ? (
           <div className="flex justify-center py-12">
-            <IconLoader2 size={32} className="animate-spin text-blue-600" />
+            <IconLoader2 size={32} className="animate-spin text-emerald-600" />
           </div>
         ) : speakers.length === 0 ? (
-          <div className="text-center py-12 text-gray-500">
+          <div className="text-center py-12 text-zinc-400">
             No speakers found. Add one to get started.
           </div>
         ) : (
@@ -393,7 +393,7 @@ export default function SpeakersPage() {
             {filteredSpeakers.map((speaker) => (
               <div
                 key={speaker.id}
-                className="border border-gray-100 rounded-xl p-4 hover:shadow-md transition-shadow"
+                className="border border-zinc-100 rounded-xl p-4 hover:shadow-md transition-shadow"
               >
                 {/* Event badges - at top for visibility */}
                 {speakerAssignmentMap[speaker.id]?.length > 0 && (
@@ -406,7 +406,7 @@ export default function SpeakersPage() {
                       return event ? (
                         <span
                           key={`${asgn.eventId}-${asgn.sessionId}-${idx}`}
-                          className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-700 text-xs rounded-full border border-blue-100"
+                          className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-50 text-emerald-700 text-xs rounded-full border border-teal-100"
                           title={
                             session
                               ? `Session: ${session.sessionName}`
@@ -444,13 +444,13 @@ export default function SpeakersPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between">
                       <div>
-                        <h3 className="font-semibold text-gray-800 truncate">
+                        <h3 className="font-semibold text-zinc-800 truncate">
                           {speaker.firstName} {speaker.lastName}
                         </h3>
-                        <p className="text-sm text-gray-500">
+                        <p className="text-sm text-zinc-400">
                           {speaker.position}
                         </p>
-                        <p className="text-xs text-gray-400">
+                        <p className="text-xs text-zinc-400">
                           {speaker.organization}
                         </p>
                       </div>
@@ -458,15 +458,15 @@ export default function SpeakersPage() {
                   </div>
                 </div>
                 <div className="mt-4">
-                  <p className="text-sm text-gray-600 line-clamp-2">
+                  <p className="text-sm text-zinc-500 line-clamp-2">
                     {speaker.bio}
                   </p>
                 </div>
-                <div className="mt-4 pt-4 border-t border-gray-100 flex justify-end items-center">
+                <div className="mt-4 pt-4 border-t border-zinc-100 flex justify-end items-center">
                   <div className="flex gap-1">
                     <button
                       onClick={() => openEditModal(speaker)}
-                      className="p-1.5 hover:bg-blue-50 rounded text-blue-600"
+                      className="p-1.5 hover:bg-emerald-50 rounded text-emerald-600"
                       title="Edit"
                     >
                       <IconPencil size={18} />
@@ -491,9 +491,9 @@ export default function SpeakersPage() {
 
       {/* Create/Edit Modal */}
       {(showCreateModal || showEditModal) && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="modal-overlay">
           <div className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-100">
+            <div className="p-6 border-b border-zinc-100">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold flex items-center gap-2">
                   <IconMicrophone size={20} />{" "}
@@ -504,7 +504,7 @@ export default function SpeakersPage() {
                     setShowCreateModal(false);
                     setShowEditModal(false);
                   }}
-                  className="text-gray-400 hover:text-gray-600"
+                  className="text-zinc-400 hover:text-zinc-500"
                 >
                   <IconX size={20} />
                 </button>
@@ -513,7 +513,7 @@ export default function SpeakersPage() {
             <div className="p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-zinc-600 mb-1">
                     First Name *
                   </label>
                   <textarea
@@ -526,7 +526,7 @@ export default function SpeakersPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-zinc-600 mb-1">
                     Last Name *
                   </label>
                   <input
@@ -541,7 +541,7 @@ export default function SpeakersPage() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-zinc-600 mb-1">
                     Title/Position
                   </label>
                   <input
@@ -555,7 +555,7 @@ export default function SpeakersPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-zinc-600 mb-1">
                     Organization
                   </label>
                   <input
@@ -570,7 +570,7 @@ export default function SpeakersPage() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-zinc-600 mb-1">
                   Bio
                 </label>
                 <textarea
@@ -585,7 +585,7 @@ export default function SpeakersPage() {
 
               {/* Image Upload */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-zinc-600 mb-1">
                   <IconPhoto size={16} className="inline mr-1" /> Photo
                 </label>
                 <div className="flex items-center gap-4">
@@ -594,7 +594,7 @@ export default function SpeakersPage() {
                       <img
                         src={formData.photoUrl}
                         alt="Speaker"
-                        className="w-20 h-20 rounded-full object-cover border-2 border-gray-200"
+                        className="w-20 h-20 rounded-full object-cover border-2 border-zinc-200"
                       />
                       <button
                         type="button"
@@ -607,7 +607,7 @@ export default function SpeakersPage() {
                       </button>
                     </div>
                   ) : (
-                    <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center text-gray-400">
+                    <div className="w-20 h-20 bg-zinc-100 rounded-full flex items-center justify-center text-zinc-400">
                       <IconPhoto size={24} />
                     </div>
                   )}
@@ -639,7 +639,7 @@ export default function SpeakersPage() {
                         </>
                       )}
                     </button>
-                    <p className="text-xs text-gray-400 mt-1">
+                    <p className="text-xs text-zinc-400 mt-1">
                       Max 5MB, JPG/PNG
                     </p>
                   </div>
@@ -648,13 +648,13 @@ export default function SpeakersPage() {
 
               {/* Session Assignment */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-zinc-600 mb-1">
                   <IconCalendarEvent size={16} className="inline mr-1" /> Assign
                   to Sessions
                 </label>
-                <div className="border border-gray-200 rounded-lg max-h-60 overflow-y-auto divide-y divide-gray-100">
+                <div className="border border-zinc-200 rounded-xl max-h-60 overflow-y-auto divide-y divide-gray-100">
                   {events.length === 0 ? (
-                    <p className="p-3 text-sm text-gray-400">
+                    <p className="p-3 text-sm text-zinc-400">
                       No events available
                     </p>
                   ) : (
@@ -667,7 +667,7 @@ export default function SpeakersPage() {
                       );
 
                       return (
-                        <div key={event.id} className="p-3 bg-gray-50/50">
+                        <div key={event.id} className="p-3 bg-zinc-50/50">
                           <label className="flex items-center gap-3 cursor-pointer group">
                             <input
                               type="checkbox"
@@ -697,24 +697,24 @@ export default function SpeakersPage() {
                                       ],
                                 });
                               }}
-                              className="w-4 h-4 text-blue-600 rounded border-gray-300"
+                              className="w-4 h-4 text-emerald-600 rounded border-zinc-200"
                             />
                             <div className="flex-1">
-                              <p className="font-bold text-sm text-blue-700">
+                              <p className="font-bold text-sm text-emerald-700">
                                 {event.eventCode}
                               </p>
-                              <p className="text-xs text-gray-500">
+                              <p className="text-xs text-zinc-400">
                                 {event.eventName}
                               </p>
                             </div>
-                            <span className="text-[10px] font-bold text-gray-400 border border-gray-200 px-1 rounded bg-white">
+                            <span className="text-[10px] font-bold text-zinc-400 border border-zinc-200 px-1 rounded bg-white">
                               EVENT
                             </span>
                           </label>
 
                           {/* Sessions for this event */}
                           {eventSessions.length > 0 && (
-                            <div className="mt-2 ml-7 space-y-2 border-l-2 border-gray-100 pl-3">
+                            <div className="mt-2 ml-7 space-y-2 border-l-2 border-zinc-100 pl-3">
                               {eventSessions.map((session) => {
                                 const isSessionSelected =
                                   formData.assignments.some(
@@ -751,13 +751,13 @@ export default function SpeakersPage() {
                                               ],
                                         });
                                       }}
-                                      className="w-4 h-4 text-indigo-600 rounded border-gray-300"
+                                      className="w-4 h-4 text-indigo-600 rounded border-zinc-200"
                                     />
                                     <div>
-                                      <p className="text-xs font-semibold text-gray-700">
+                                      <p className="text-xs font-semibold text-zinc-600">
                                         {session.sessionName}
                                       </p>
-                                      <p className="text-[10px] text-gray-400 font-mono">
+                                      <p className="text-[10px] text-zinc-400 font-mono">
                                         {session.sessionCode}
                                       </p>
                                     </div>
@@ -771,12 +771,12 @@ export default function SpeakersPage() {
                     })
                   )}
                 </div>
-                <p className="text-xs text-gray-400 mt-1">
+                <p className="text-xs text-zinc-400 mt-1">
                   Selected: {formData.assignments.length} assignment(s)
                 </p>
               </div>
             </div>
-            <div className="p-6 border-t border-gray-100 flex gap-3 justify-end">
+            <div className="p-6 border-t border-zinc-100 flex gap-3 justify-end">
               <button
                 onClick={() => {
                   setShowCreateModal(false);
@@ -810,7 +810,7 @@ export default function SpeakersPage() {
 
       {/* Delete Modal */}
       {showDeleteModal && selectedSpeaker && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="modal-overlay">
           <div className="bg-white rounded-2xl max-w-md w-full">
             <div className="p-6 bg-red-600 rounded-t-2xl">
               <h3 className="text-lg font-semibold text-white flex items-center gap-2">
@@ -824,14 +824,14 @@ export default function SpeakersPage() {
               <p className="mb-2">
                 Are you sure you want to remove this speaker?
               </p>
-              <p className="font-semibold text-gray-800">
+              <p className="font-semibold text-zinc-800">
                 {selectedSpeaker.firstName} {selectedSpeaker.lastName}
               </p>
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-zinc-400">
                 {selectedSpeaker.organization}
               </p>
             </div>
-            <div className="p-6 border-t border-gray-100 flex gap-3 justify-end">
+            <div className="p-6 border-t border-zinc-100 flex gap-3 justify-end">
               <button
                 onClick={() => setShowDeleteModal(false)}
                 className="btn-secondary"

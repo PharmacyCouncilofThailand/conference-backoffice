@@ -252,68 +252,56 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
   return (
     <aside
       className={`
-            sidebar fixed inset-y-0 left-0 z-50
-            transform transition-transform duration-300 ease-in-out
-            lg:translate-x-0
-            ${isOpen ? "translate-x-0" : "-translate-x-full"}
-        `}
+        sidebar
+        transform transition-transform duration-300 ease-out
+        lg:translate-x-0
+        ${isOpen ? "translate-x-0" : "-translate-x-full"}
+      `}
     >
-      {/* Logo */}
-      <div className="p-4 lg:p-6 border-b border-slate-700 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-3" onClick={onClose}>
-          <Image
-            src="/logo.png"
-            alt="Logo"
-            width={40}
-            height={40}
-            className="w-10 h-auto object-contain"
-          />
-          <span className="text-white font-bold text-lg">ConferenceHub</span>
+      {/* Brand */}
+      <div className="flex items-center justify-between px-5 h-16 shrink-0">
+        <Link href="/" className="flex items-center gap-2.5" onClick={onClose}>
+          <Image src="/logo.png" alt="Logo" width={28} height={28} className="w-7 h-auto" />
+          <span className="text-white font-bold text-sm tracking-tight">ConferenceHub</span>
         </Link>
-        <button
-          onClick={onClose}
-          className="lg:hidden p-2 hover:bg-slate-700 rounded-lg text-white"
-        >
-          <IconX size={20} />
+        <button onClick={onClose} className="lg:hidden p-1.5 hover:bg-white/10 rounded-lg text-zinc-500">
+          <IconX size={18} />
         </button>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 py-4 overflow-y-auto">
-        <ul className="space-y-1">
+      <nav className="flex-1 py-3 overflow-y-auto">
+        <ul className="space-y-0.5">
           {filteredMenu.map((item, index) => {
             if (!item) return null;
 
-            // Category header
             if (item.type === "category") {
               return (
-                <li key={index} className="px-4 py-2 mt-4 first:mt-0">
-                  <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                <li key={index} className="px-5 pt-6 pb-1.5">
+                  <span className="text-[10px] font-semibold uppercase tracking-[0.1em] text-zinc-600">
                     {item.label}
                   </span>
                 </li>
               );
             }
 
-            // Regular link
             if (item.type === "link" && item.href) {
               const Icon = item.icon!;
               const isActive = isActiveLink(item.href);
               return (
-                <li key={index}>
+                <li key={index} className="relative">
                   <Link
                     href={item.href}
                     onClick={onClose}
                     className={`sidebar-link ${isActive ? "active" : ""}`}
                   >
-                    <Icon size={20} stroke={1.5} />
+                    <Icon size={18} stroke={1.5} />
                     <span>{item.label}</span>
                   </Link>
                 </li>
               );
             }
 
-            // Submenu
             if (item.type === "submenu" && item.children) {
               const Icon = item.icon!;
               const isExpanded = expandedMenus.includes(item.label);
@@ -323,25 +311,20 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
                 <li key={index}>
                   <button
                     onClick={() => toggleSubmenu(item.label)}
-                    className={`sidebar-link w-full justify-between ${isActive ? "text-white" : ""}`}
+                    className={`sidebar-link w-full justify-between ${isActive ? "!text-white" : ""}`}
                   >
                     <div className="flex items-center gap-3">
-                      <Icon size={20} stroke={1.5} />
+                      <Icon size={18} stroke={1.5} />
                       <span>{item.label}</span>
                     </div>
-                    {isExpanded ? (
-                      <IconChevronDown size={16} className="text-slate-400" />
-                    ) : (
-                      <IconChevronRight size={16} className="text-slate-400" />
-                    )}
+                    <IconChevronDown
+                      size={14}
+                      className={`text-zinc-600 transition-transform duration-200 ${isExpanded ? "rotate-0" : "-rotate-90"}`}
+                    />
                   </button>
 
-                  {/* Submenu items */}
                   <ul
-                    className={`
-                                        overflow-hidden transition-all duration-200
-                                        ${isExpanded ? "max-h-40 opacity-100" : "max-h-0 opacity-0"}
-                                    `}
+                    className={`overflow-hidden transition-all duration-200 ease-out ${isExpanded ? "max-h-40 opacity-100" : "max-h-0 opacity-0"}`}
                   >
                     {item.children.map((child, childIndex) => {
                       const isChildActive = isActiveLink(child.href);
@@ -351,17 +334,12 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
                             href={child.href}
                             onClick={onClose}
                             className={`
-                                                            flex items-center gap-3 px-4 py-2 pl-12
-                                                            text-sm transition-colors
-                                                            ${isChildActive
-                                ? "text-white bg-slate-700/50"
-                                : "text-slate-400 hover:text-white hover:bg-slate-700/30"
-                              }
-                                                        `}
+                              flex items-center gap-2.5 text-[13px] font-medium
+                              py-1.5 pl-14 pr-4 mx-2.5 rounded-md transition-colors duration-150
+                              ${isChildActive ? "text-white" : "text-zinc-500 hover:text-zinc-300"}
+                            `}
                           >
-                            <span
-                              className={`w-1.5 h-1.5 rounded-full ${isChildActive ? "bg-blue-400" : "bg-slate-500"}`}
-                            />
+                            <span className={`w-1 h-1 rounded-full shrink-0 ${isChildActive ? "bg-emerald-400" : "bg-zinc-700"}`} />
                             {child.label}
                           </Link>
                         </li>
@@ -377,13 +355,13 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
         </ul>
       </nav>
 
-      {/* Logout - Sticky at bottom */}
-      <div className="p-4 border-t border-slate-700 bg-slate-800 mt-auto">
+      {/* Logout */}
+      <div className="p-2.5 border-t border-zinc-800/80 shrink-0">
         <button
           onClick={handleLogout}
-          className="sidebar-link w-full text-red-400 hover:bg-red-900/30"
+          className="sidebar-link w-full !text-zinc-500 hover:!text-red-400 hover:!bg-red-500/10"
         >
-          <IconLogout size={20} stroke={1.5} />
+          <IconLogout size={18} stroke={1.5} />
           <span>Logout</span>
         </button>
       </div>

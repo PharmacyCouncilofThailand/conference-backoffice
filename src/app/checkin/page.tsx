@@ -521,11 +521,11 @@ export default function CheckinPage() {
             <AdminLayout title="Check-in Scanner">
                 <div className="max-w-lg mx-auto py-8">
                     <div className="text-center mb-8">
-                        <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center mx-auto mb-4">
-                            <IconScan size={32} className="text-blue-600" />
+                        <div className="w-16 h-16 rounded-full bg-emerald-50 flex items-center justify-center mx-auto mb-4">
+                            <IconScan size={32} className="text-emerald-600" />
                         </div>
-                        <h2 className="text-2xl font-bold text-gray-800 mb-2">Select Check-in Mode</h2>
-                        <p className="text-gray-500">
+                        <h2 className="text-2xl font-bold text-zinc-800 mb-2">Select Check-in Mode</h2>
+                        <p className="text-zinc-400">
                             {user?.firstName && `สวัสดี ${user.firstName},`} เลือก session ที่ต้องการ check-in
                         </p>
                     </div>
@@ -533,7 +533,7 @@ export default function CheckinPage() {
                     {/* Assigned sessions (for staff/verifier) */}
                     {hasAssignedSessions && (
                         <div className="mb-6">
-                            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">
+                            <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider mb-3">
                                 Your Assigned Sessions
                             </h3>
                             <div className="space-y-3">
@@ -541,19 +541,19 @@ export default function CheckinPage() {
                                     <button
                                         key={session.sessionId}
                                         onClick={() => handleSelectSession(session)}
-                                        className="w-full p-4 rounded-xl border-2 border-gray-200 hover:border-blue-400 hover:bg-blue-50 text-left transition-all group"
+                                        className="w-full p-4 rounded-xl border-2 border-zinc-200 hover:border-blue-400 hover:bg-emerald-50 text-left transition-all group"
                                     >
                                         <div className="flex items-center justify-between">
                                             <div>
-                                                <p className="font-semibold text-gray-800 group-hover:text-blue-700">
+                                                <p className="font-semibold text-zinc-800 group-hover:text-emerald-700">
                                                     {session.sessionName}
                                                 </p>
-                                                <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
+                                                <div className="flex items-center gap-3 mt-1 text-xs text-zinc-400">
                                                     {session.room && <span>Room: {session.room}</span>}
                                                     {session.sessionType && <span className="capitalize">{session.sessionType.replace('_', ' ')}</span>}
                                                 </div>
                                             </div>
-                                            <IconDoor size={24} className="text-gray-300 group-hover:text-blue-500" />
+                                            <IconDoor size={24} className="text-gray-300 group-hover:text-emerald-600" />
                                         </div>
                                     </button>
                                 ))}
@@ -566,15 +566,15 @@ export default function CheckinPage() {
                         <div>
                             {hasAssignedSessions && (
                                 <div className="relative my-6">
-                                    <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-200" /></div>
-                                    <div className="relative flex justify-center"><span className="bg-white px-3 text-sm text-gray-400">or select event</span></div>
+                                    <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-zinc-200" /></div>
+                                    <div className="relative flex justify-center"><span className="bg-white px-3 text-sm text-zinc-400">or select event</span></div>
                                 </div>
                             )}
-                            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">
+                            <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider mb-3">
                                 Select Event
                             </h3>
                             {loadingEvents ? (
-                                <div className="flex items-center justify-center py-8 text-gray-400">
+                                <div className="flex items-center justify-center py-8 text-zinc-400">
                                     <IconLoader2 size={24} className="animate-spin mr-2" /> Loading events...
                                 </div>
                             ) : (
@@ -583,13 +583,13 @@ export default function CheckinPage() {
                                         <button
                                             key={event.id}
                                             onClick={() => setSelectedEvent(event)}
-                                            className="w-full p-4 rounded-xl border-2 border-gray-200 hover:border-blue-400 hover:bg-blue-50 text-left transition-all group"
+                                            className="w-full p-4 rounded-xl border-2 border-zinc-200 hover:border-blue-400 hover:bg-emerald-50 text-left transition-all group"
                                         >
                                             <div className="flex items-center justify-between">
-                                                <p className="font-semibold text-gray-800 group-hover:text-blue-700">
+                                                <p className="font-semibold text-zinc-800 group-hover:text-emerald-700">
                                                     {event.eventName}
                                                 </p>
-                                                <IconCalendarEvent size={24} className="text-gray-300 group-hover:text-blue-500" />
+                                                <IconCalendarEvent size={24} className="text-gray-300 group-hover:text-emerald-600" />
                                             </div>
                                         </button>
                                     ))}
@@ -604,11 +604,11 @@ export default function CheckinPage() {
                             <div className="flex items-center gap-2 mb-4">
                                 <button
                                     onClick={() => { setSelectedEvent(null); setEventSessions([]); }}
-                                    className="p-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 transition-colors"
+                                    className="p-1.5 rounded-lg bg-zinc-100 hover:bg-zinc-200 text-zinc-500 transition-colors"
                                 >
                                     <IconArrowBack size={18} />
                                 </button>
-                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">
+                                <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider">
                                     {selectedEvent.eventName}
                                 </h3>
                             </div>
@@ -619,14 +619,14 @@ export default function CheckinPage() {
                                     setActiveSession(null);
                                     setShowSessionPicker(false);
                                 }}
-                                className="w-full p-4 rounded-xl border-2 border-blue-200 bg-blue-50 hover:border-blue-400 text-left transition-all group mb-3"
+                                className="w-full p-4 rounded-xl border-2 border-emerald-200 bg-emerald-50 hover:border-blue-400 text-left transition-all group mb-3"
                             >
                                 <div className="flex items-center justify-between">
                                     <div>
-                                        <p className="font-semibold text-blue-700">All Sessions</p>
-                                        <p className="text-xs text-blue-500 mt-1">Scan and choose sessions manually</p>
+                                        <p className="font-semibold text-emerald-700">All Sessions</p>
+                                        <p className="text-xs text-emerald-600 mt-1">Scan and choose sessions manually</p>
                                     </div>
-                                    <IconCalendarEvent size={24} className="text-blue-400" />
+                                    <IconCalendarEvent size={24} className="text-teal-400" />
                                 </div>
                             </button>
 
@@ -636,19 +636,19 @@ export default function CheckinPage() {
                                     <button
                                         key={session.sessionId}
                                         onClick={() => handleSelectSession(session)}
-                                        className="w-full p-4 rounded-xl border-2 border-gray-200 hover:border-blue-400 hover:bg-blue-50 text-left transition-all group"
+                                        className="w-full p-4 rounded-xl border-2 border-zinc-200 hover:border-blue-400 hover:bg-emerald-50 text-left transition-all group"
                                     >
                                         <div className="flex items-center justify-between">
                                             <div>
-                                                <p className="font-semibold text-gray-800 group-hover:text-blue-700">
+                                                <p className="font-semibold text-zinc-800 group-hover:text-emerald-700">
                                                     {session.sessionName}
                                                 </p>
-                                                <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
+                                                <div className="flex items-center gap-3 mt-1 text-xs text-zinc-400">
                                                     {session.room && <span>Room: {session.room}</span>}
                                                     {session.sessionType && <span className="capitalize">{session.sessionType.replace('_', ' ')}</span>}
                                                 </div>
                                             </div>
-                                            <IconDoor size={24} className="text-gray-300 group-hover:text-blue-500" />
+                                            <IconDoor size={24} className="text-gray-300 group-hover:text-emerald-600" />
                                         </div>
                                     </button>
                                 ))}
@@ -660,10 +660,10 @@ export default function CheckinPage() {
                     {!isAdmin && !hasAssignedSessions && (
                         <button
                             onClick={handleEnterFreeMode}
-                            className="w-full p-4 rounded-xl border-2 border-dashed border-gray-300 hover:border-blue-400 hover:bg-blue-50 text-center transition-all"
+                            className="w-full p-4 rounded-xl border-2 border-dashed border-zinc-200 hover:border-blue-400 hover:bg-emerald-50 text-center transition-all"
                         >
-                            <p className="font-medium text-gray-600">Free Mode (All Sessions)</p>
-                            <p className="text-xs text-gray-400 mt-1">Scan and choose sessions manually</p>
+                            <p className="font-medium text-zinc-500">Free Mode (All Sessions)</p>
+                            <p className="text-xs text-zinc-400 mt-1">Scan and choose sessions manually</p>
                         </button>
                     )}
                 </div>
@@ -684,7 +684,7 @@ export default function CheckinPage() {
                             {(hasAssignedSessions || isAdmin) && (
                                 <button
                                     onClick={() => { setShowSessionPicker(true); clearResult(); }}
-                                    className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 transition-colors"
+                                    className="p-2 rounded-lg bg-zinc-100 hover:bg-zinc-200 text-zinc-500 transition-colors"
                                     title="Switch Session"
                                 >
                                     <IconArrowsExchange size={20} />
@@ -699,12 +699,12 @@ export default function CheckinPage() {
                                     }
                                     setScanMode('camera');
                                 }}
-                                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg font-medium transition-colors text-sm ${
+                                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl font-medium transition-colors text-sm ${
                                     !cameraSupported
-                                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                        ? 'bg-zinc-100 text-zinc-400 cursor-not-allowed'
                                         : scanMode === 'camera'
-                                        ? 'bg-blue-600 text-white'
-                                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                        ? 'bg-emerald-700 text-white'
+                                        : 'bg-zinc-100 text-zinc-500 hover:bg-zinc-200'
                                 }`}
                                 title={!cameraSupported ? 'Camera requires HTTPS' : 'Camera'}
                             >
@@ -713,9 +713,9 @@ export default function CheckinPage() {
                             </button>
                             <button
                                 onClick={() => setScanMode('manual')}
-                                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg font-medium transition-colors text-sm ${scanMode === 'manual'
-                                    ? 'bg-blue-600 text-white'
-                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl font-medium transition-colors text-sm ${scanMode === 'manual'
+                                    ? 'bg-emerald-700 text-white'
+                                    : 'bg-zinc-100 text-zinc-500 hover:bg-zinc-200'
                                 }`}
                             >
                                 <IconKeyboard size={18} /> Manual
@@ -724,7 +724,7 @@ export default function CheckinPage() {
                             {/* Sound toggle */}
                             <button
                                 onClick={() => setSoundEnabled(!soundEnabled)}
-                                className={`p-2 rounded-lg transition-colors ${soundEnabled ? 'bg-gray-100 text-gray-600' : 'bg-red-100 text-red-600'}`}
+                                className={`p-2 rounded-lg transition-colors ${soundEnabled ? 'bg-zinc-100 text-zinc-500' : 'bg-red-100 text-red-600'}`}
                                 title={soundEnabled ? 'Mute' : 'Unmute'}
                             >
                                 {soundEnabled ? <IconVolume size={20} /> : <IconVolumeOff size={20} />}
@@ -733,17 +733,17 @@ export default function CheckinPage() {
 
                         {/* Active session badge */}
                         {activeSession && (
-                            <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-2 mb-4 flex items-center gap-2">
-                                <IconDoor size={16} className="text-blue-600" />
-                                <span className="text-sm font-medium text-blue-800">{activeSession.sessionName}</span>
-                                {activeSession.room && <span className="text-xs text-blue-500">— {activeSession.room}</span>}
-                                <span className="ml-auto text-xs bg-blue-600 text-white px-2 py-0.5 rounded-full">Fast Scan</span>
+                            <div className="bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-2 mb-4 flex items-center gap-2">
+                                <IconDoor size={16} className="text-emerald-600" />
+                                <span className="text-sm font-medium text-teal-900">{activeSession.sessionName}</span>
+                                {activeSession.room && <span className="text-xs text-emerald-600">— {activeSession.room}</span>}
+                                <span className="ml-auto text-xs bg-emerald-700 text-white px-2 py-0.5 rounded-full">Fast Scan</span>
                             </div>
                         )}
 
                         {/* Loading State */}
                         {isLoading && (
-                            <div className="flex-1 flex flex-col items-center justify-center text-blue-600">
+                            <div className="flex-1 flex flex-col items-center justify-center text-emerald-600">
                                 <IconLoader2 size={48} className="animate-spin mb-4" />
                                 <p className="text-lg font-medium">Processing...</p>
                             </div>
@@ -784,7 +784,7 @@ export default function CheckinPage() {
                                         styles={{ container: { borderRadius: '0.75rem', overflow: 'hidden' } }}
                                     />
                                 </div>
-                                <p className="text-xs text-gray-400 mt-3 text-center">Point camera at QR code</p>
+                                <p className="text-xs text-zinc-400 mt-3 text-center">Point camera at QR code</p>
                             </div>
                         )}
 
@@ -792,7 +792,7 @@ export default function CheckinPage() {
                         {!isLoading && scanMode === 'manual' && !scanResult && !pendingSessions && (
                             <div className="flex-1 flex flex-col items-center justify-center py-8">
                                 <form onSubmit={handleManualSubmit} className="max-w-md w-full mx-auto">
-                                    <label className="block text-sm font-medium text-gray-700 mb-2 text-center">
+                                    <label className="block text-sm font-medium text-zinc-600 mb-2 text-center">
                                         Enter Registration Code
                                     </label>
                                     <div className="flex gap-2 mb-2">
@@ -809,7 +809,7 @@ export default function CheckinPage() {
                                             <IconCheck size={24} />
                                         </button>
                                     </div>
-                                    <p className="text-xs text-gray-400 text-center">Press Enter to submit</p>
+                                    <p className="text-xs text-zinc-400 text-center">Press Enter to submit</p>
                                 </form>
                             </div>
                         )}
@@ -820,20 +820,20 @@ export default function CheckinPage() {
                                 <div className="max-w-md w-full mx-auto">
                                     <div className="bg-white rounded-xl p-5 shadow-sm border mb-4">
                                         <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                                                <IconUser size={20} className="text-blue-600" />
+                                            <div className="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center">
+                                                <IconUser size={20} className="text-emerald-600" />
                                             </div>
                                             <div>
-                                                <p className="font-semibold text-gray-800">
+                                                <p className="font-semibold text-zinc-800">
                                                     {pendingRegistration.firstName} {pendingRegistration.lastName}
                                                 </p>
-                                                <p className="text-xs text-gray-500 font-mono">{pendingRegistration.regCode}</p>
+                                                <p className="text-xs text-zinc-400 font-mono">{pendingRegistration.regCode}</p>
                                             </div>
                                         </div>
                                     </div>
 
                                     <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                                        <IconDoor size={20} className="text-blue-600" />
+                                        <IconDoor size={20} className="text-emerald-600" />
                                         Select Session to Check-in
                                     </h3>
 
@@ -846,20 +846,20 @@ export default function CheckinPage() {
                                                 className={`w-full p-4 rounded-lg border text-left transition-colors ${
                                                     session.checkedInAt
                                                         ? 'bg-green-50 border-green-200 cursor-default'
-                                                        : 'bg-white border-gray-200 hover:border-blue-400 hover:bg-blue-50 cursor-pointer'
+                                                        : 'bg-white border-zinc-200 hover:border-blue-400 hover:bg-emerald-50 cursor-pointer'
                                                 }`}
                                             >
                                                 <div className="flex justify-between items-center">
                                                     <div>
-                                                        <p className="font-medium text-gray-800">{session.sessionName}</p>
-                                                        <p className="text-xs text-gray-500">{session.ticketName}</p>
+                                                        <p className="font-medium text-zinc-800">{session.sessionName}</p>
+                                                        <p className="text-xs text-zinc-400">{session.ticketName}</p>
                                                     </div>
                                                     {session.checkedInAt ? (
                                                         <span className="text-green-600 flex items-center gap-1 text-sm font-medium">
                                                             <IconCheck size={16} /> Done
                                                         </span>
                                                     ) : (
-                                                        <span className="text-blue-600 text-sm">Tap to check-in</span>
+                                                        <span className="text-emerald-600 text-sm">Tap to check-in</span>
                                                     )}
                                                 </div>
                                             </button>
@@ -869,7 +869,7 @@ export default function CheckinPage() {
                                     {pendingSessions.every(s => !!s.checkedInAt) ? (
                                         <button
                                             onClick={handleScanNext}
-                                            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+                                            className="w-full bg-emerald-700 hover:bg-teal-800 text-white py-3 rounded-xl font-medium transition-colors flex items-center justify-center gap-2"
                                         >
                                             <IconCamera size={18} />
                                             ถัดไป
@@ -879,13 +879,13 @@ export default function CheckinPage() {
                                             <button
                                                 onClick={checkInAllSessions}
                                                 disabled={isLoading}
-                                                className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white py-3 rounded-lg font-medium transition-colors"
+                                                className="flex-1 bg-emerald-700 hover:bg-teal-800 disabled:bg-gray-300 text-white py-3 rounded-xl font-medium transition-colors"
                                             >
                                                 Check-in All Sessions
                                             </button>
                                             <button
                                                 onClick={clearResult}
-                                                className="px-4 py-3 bg-gray-100 rounded-lg hover:bg-gray-200 text-gray-600 transition-colors"
+                                                className="px-4 py-3 bg-zinc-100 rounded-lg hover:bg-zinc-200 text-zinc-500 transition-colors"
                                             >
                                                 Cancel
                                             </button>
@@ -942,25 +942,25 @@ export default function CheckinPage() {
                                     {scanResult.name && (
                                         <div className="bg-white rounded-lg p-4 mb-4 text-left shadow-sm">
                                             <div className="flex items-center gap-3 mb-2">
-                                                <IconUser size={18} className="text-gray-400" />
-                                                <span className="font-medium text-gray-800">{scanResult.name}</span>
+                                                <IconUser size={18} className="text-zinc-400" />
+                                                <span className="font-medium text-zinc-800">{scanResult.name}</span>
                                             </div>
                                             {scanResult.ticketType && (
                                                 <div className="flex items-center gap-3 mb-2">
-                                                    <IconTicket size={18} className="text-gray-400" />
-                                                    <span className="text-gray-600">{scanResult.ticketType}</span>
+                                                    <IconTicket size={18} className="text-zinc-400" />
+                                                    <span className="text-zinc-500">{scanResult.ticketType}</span>
                                                 </div>
                                             )}
                                             <div className="flex items-center gap-3">
-                                                <IconScan size={18} className="text-gray-400" />
-                                                <span className="font-mono text-gray-600">{scanResult.code}</span>
+                                                <IconScan size={18} className="text-zinc-400" />
+                                                <span className="font-mono text-zinc-500">{scanResult.code}</span>
                                             </div>
                                         </div>
                                     )}
 
                                     <button
                                         onClick={handleScanNext}
-                                        className={`px-6 py-2 rounded-lg font-medium flex items-center gap-2 mx-auto transition-colors ${
+                                        className={`px-6 py-2 rounded-xl font-medium flex items-center gap-2 mx-auto transition-colors ${
                                             scanResult.status === 'success' ? 'bg-green-600 hover:bg-green-700 text-white'
                                             : scanResult.status === 'duplicate' ? 'bg-yellow-600 hover:bg-yellow-700 text-white'
                                             : 'bg-red-600 hover:bg-red-700 text-white'
@@ -978,32 +978,32 @@ export default function CheckinPage() {
                 <div className="space-y-6">
                     {/* Overall Stats */}
                     <div className="card">
-                        <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                            <IconCalendarEvent size={20} className="text-blue-600" />
+                        <h3 className="text-lg font-semibold text-zinc-800 mb-4 flex items-center gap-2">
+                            <IconCalendarEvent size={20} className="text-emerald-600" />
                             {activeSession ? activeSession.sessionName
                                 : selectedEvent ? selectedEvent.eventName
                                 : 'Check-in Stats'}
                         </h3>
                         <div className="space-y-4">
                             <div className="flex justify-between items-center">
-                                <span className="text-gray-600">Total Registered</span>
-                                <span className="font-bold text-gray-800">{stats.total}</span>
+                                <span className="text-zinc-500">Total Registered</span>
+                                <span className="font-bold text-zinc-800">{stats.total}</span>
                             </div>
                             <div className="flex justify-between items-center">
-                                <span className="text-gray-600">Checked In</span>
+                                <span className="text-zinc-500">Checked In</span>
                                 <span className="font-bold text-green-600">{stats.checkedIn}</span>
                             </div>
                             <div className="flex justify-between items-center">
-                                <span className="text-gray-600">Remaining</span>
+                                <span className="text-zinc-500">Remaining</span>
                                 <span className="font-bold text-yellow-600">{stats.remaining}</span>
                             </div>
                             {stats.total > 0 && (
                                 <div className="pt-2">
                                     <div className="flex justify-between text-sm mb-1">
-                                        <span className="text-gray-500">Progress</span>
-                                        <span className="font-medium text-gray-700">{stats.percentage}%</span>
+                                        <span className="text-zinc-400">Progress</span>
+                                        <span className="font-medium text-zinc-600">{stats.percentage}%</span>
                                     </div>
-                                    <div className="w-full h-3 bg-gray-100 rounded-full overflow-hidden">
+                                    <div className="w-full h-3 bg-zinc-100 rounded-full overflow-hidden">
                                         <div
                                             className="h-full bg-gradient-to-r from-blue-500 to-green-500 rounded-full transition-all duration-1000"
                                             style={{ width: `${stats.percentage}%` }}
@@ -1017,27 +1017,27 @@ export default function CheckinPage() {
                     {/* Per-session breakdown */}
                     {sessionBreakdown.length > 0 && (
                         <div className="card">
-                            <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                                <IconDoor size={20} className="text-blue-600" />
+                            <h3 className="text-lg font-semibold text-zinc-800 mb-4 flex items-center gap-2">
+                                <IconDoor size={20} className="text-emerald-600" />
                                 Session Breakdown
                             </h3>
                             <div className="space-y-4">
                                 {sessionBreakdown.map((s) => (
-                                    <div key={s.sessionId} className="border border-gray-100 rounded-lg p-3">
+                                    <div key={s.sessionId} className="border border-zinc-100 rounded-xl p-3">
                                         <div className="flex justify-between items-start mb-2">
                                             <div>
-                                                <p className="font-medium text-gray-800 text-sm">{s.sessionName}</p>
-                                                {s.room && <p className="text-xs text-gray-400">{s.room}</p>}
+                                                <p className="font-medium text-zinc-800 text-sm">{s.sessionName}</p>
+                                                {s.room && <p className="text-xs text-zinc-400">{s.room}</p>}
                                             </div>
-                                            <span className="text-xs font-medium text-gray-500">
+                                            <span className="text-xs font-medium text-zinc-400">
                                                 {s.checkedIn}/{s.total}
                                             </span>
                                         </div>
-                                        <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+                                        <div className="w-full h-2 bg-zinc-100 rounded-full overflow-hidden">
                                             <div
                                                 className={`h-full rounded-full transition-all duration-700 ${
                                                     s.percentage === 100 ? 'bg-green-500'
-                                                    : s.percentage >= 50 ? 'bg-blue-500'
+                                                    : s.percentage >= 50 ? 'bg-emerald-600'
                                                     : 'bg-amber-500'
                                                 }`}
                                                 style={{ width: `${s.percentage}%` }}
@@ -1045,8 +1045,8 @@ export default function CheckinPage() {
                                         </div>
                                         <div className="flex justify-between text-xs mt-1">
                                             <span className="text-green-600">{s.checkedIn} in</span>
-                                            <span className="text-gray-400">{s.remaining} left</span>
-                                            <span className="font-medium text-gray-600">{s.percentage}%</span>
+                                            <span className="text-zinc-400">{s.remaining} left</span>
+                                            <span className="font-medium text-zinc-500">{s.percentage}%</span>
                                         </div>
                                     </div>
                                 ))}
@@ -1057,14 +1057,14 @@ export default function CheckinPage() {
                     {/* Recent Check-ins */}
                     <div className="card">
                         <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-lg font-semibold text-gray-800">Recent Scans</h3>
-                            <button onClick={fetchData} className="p-1 hover:bg-gray-100 rounded text-gray-500">
+                            <h3 className="text-lg font-semibold text-zinc-800">Recent Scans</h3>
+                            <button onClick={fetchData} className="p-1 hover:bg-zinc-100 rounded text-zinc-400">
                                 <IconRefresh size={16} />
                             </button>
                         </div>
                         <div className="space-y-3">
                             {recentCheckins.length === 0 ? (
-                                <p className="text-center text-gray-500 py-4">No recent scans</p>
+                                <p className="text-center text-zinc-400 py-4">No recent scans</p>
                             ) : (
                                 recentCheckins.map((checkin) => (
                                     <div
@@ -1076,20 +1076,20 @@ export default function CheckinPage() {
                                                 <IconCheck size={16} />
                                             </div>
                                             <div>
-                                                <p className="font-medium text-gray-800 text-sm truncate max-w-[120px]" title={`${checkin.firstName} ${checkin.lastName}`}>
+                                                <p className="font-medium text-zinc-800 text-sm truncate max-w-[120px]" title={`${checkin.firstName} ${checkin.lastName}`}>
                                                     {checkin.firstName} {checkin.lastName}
                                                 </p>
-                                                <p className="text-xs text-gray-500 font-mono">{checkin.regCode}</p>
+                                                <p className="text-xs text-zinc-400 font-mono">{checkin.regCode}</p>
                                                 {checkin.sessionName && (
-                                                    <p className="text-xs text-gray-400">{checkin.sessionName}</p>
+                                                    <p className="text-xs text-zinc-400">{checkin.sessionName}</p>
                                                 )}
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-2">
-                                            <span className="text-xs text-gray-400">{checkin.scannedAt}</span>
+                                            <span className="text-xs text-zinc-400">{checkin.scannedAt}</span>
                                             <button
                                                 onClick={() => handleUndo(checkin.id)}
-                                                className="p-1 rounded hover:bg-red-100 text-gray-400 hover:text-red-600 transition-colors"
+                                                className="p-1 rounded hover:bg-red-100 text-zinc-400 hover:text-red-600 transition-colors"
                                                 title="Undo check-in"
                                             >
                                                 <IconArrowBack size={14} />
