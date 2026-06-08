@@ -93,7 +93,7 @@ export interface EventCreateInput {
     documents?: { name: string; url: string }[];
 }
 
-export interface EventUpdateInput extends Partial<EventCreateInput> { }
+export type EventUpdateInput = Partial<EventCreateInput>;
 
 // ============================================================================
 // Session Types
@@ -139,6 +139,189 @@ export interface Ticket {
     saleEndDate: string | null;
     isActive: boolean;
     sessionIds?: number[];
+}
+
+// ============================================================================
+// Sponsor Types
+// ============================================================================
+
+export type SponsorPackageType = 'booth' | 'symposium' | 'bundle';
+export type SponsorMediaType = 'past_sponsor_logo' | 'previous_year_impression' | 'brochure' | 'other';
+export type SponsorApplicationStatus = 'submitted' | 'under_review' | 'approved' | 'rejected' | 'cancelled';
+export type SponsorPaymentStatus = 'pending_review' | 'verified' | 'rejected';
+
+export interface SponsorEventProfile {
+    id?: number;
+    eventId: number;
+    aboutTitle?: string | null;
+    aboutDescription?: string | null;
+    organizerLogoUrl?: string | null;
+    brochureUrl?: string | null;
+    registrationOpenAt?: string | null;
+    registrationCloseAt?: string | null;
+    isPublished: boolean;
+    createdAt?: string;
+    updatedAt?: string;
+}
+
+export interface SponsorStat {
+    id: number;
+    eventId: number;
+    valueText: string;
+    label: string;
+    description?: string | null;
+    sortOrder: number;
+    isActive: boolean;
+}
+
+export interface SponsorPackageFeature {
+    id?: number;
+    packageId?: number;
+    featureText: string;
+    sortOrder: number;
+}
+
+export interface SponsorPackageComponent {
+    id?: number;
+    bundlePackageId?: number;
+    componentPackageId: number;
+    componentRole?: string | null;
+    package?: {
+        id: number;
+        packageType: SponsorPackageType;
+        code: string;
+        name: string;
+        price: string;
+        currency: string;
+        quota?: number;
+        reservedCount?: number;
+        remainingQuota?: number | null;
+    } | null;
+}
+
+export interface SponsorPackage {
+    id: number;
+    eventId: number;
+    packageType: SponsorPackageType;
+    code: string;
+    optionLabel?: string | null;
+    name: string;
+    description?: string | null;
+    price: string;
+    currency: string;
+    quota: number;
+    badgeText?: string | null;
+    themeKey?: string | null;
+    isRecommended: boolean;
+    sortOrder: number;
+    isActive: boolean;
+    reservedCount?: number;
+    remainingQuota?: number | null;
+    rawRemainingQuota?: number | null;
+    effectiveQuota?: number | null;
+    availabilitySource?: 'package' | 'components';
+    features?: SponsorPackageFeature[];
+    components?: SponsorPackageComponent[];
+}
+
+export interface SponsorBenefit {
+    id: number;
+    eventId: number;
+    title: string;
+    description?: string | null;
+    iconKey?: string | null;
+    sortOrder: number;
+    isActive: boolean;
+}
+
+export interface SponsorMediaAsset {
+    id: number;
+    eventId: number;
+    mediaType: SponsorMediaType;
+    title?: string | null;
+    caption?: string | null;
+    fileUrl: string;
+    fileName?: string | null;
+    mimeType?: string | null;
+    fileSize?: number | null;
+    sortOrder: number;
+    isActive: boolean;
+}
+
+export interface SponsorTimelineItem {
+    id: number;
+    eventId: number;
+    periodLabel: string;
+    title: string;
+    description?: string | null;
+    startDate?: string | null;
+    endDate?: string | null;
+    isHighlight: boolean;
+    sortOrder: number;
+    isActive: boolean;
+}
+
+export interface SponsorApplicationItem {
+    id: number;
+    applicationId: number;
+    packageId?: number | null;
+    packageType: SponsorPackageType;
+    packageNameSnapshot: string;
+    priceSnapshot: string;
+    quantity: number;
+    sortOrder: number;
+}
+
+export interface SponsorApplication {
+    id: number;
+    applicationNo: string;
+    eventId: number;
+    eventName?: string;
+    eventCode?: string;
+    companyName: string;
+    contactFullName: string;
+    businessEmail: string;
+    phone: string;
+    billingName: string;
+    taxId: string;
+    billingAddress: string;
+    paymentSlipUrl?: string | null;
+    paymentSlipFileName?: string | null;
+    logoUrl?: string | null;
+    logoFileName?: string | null;
+    totalAmount: string;
+    currency: string;
+    applicationStatus: SponsorApplicationStatus;
+    paymentStatus: SponsorPaymentStatus;
+    internalNote?: string | null;
+    rejectionReason?: string | null;
+    reviewedBy?: number | null;
+    reviewedAt?: string | null;
+    confirmedAt?: string | null;
+    createdAt: string;
+    updatedAt?: string;
+    reviewerFirstName?: string | null;
+    reviewerLastName?: string | null;
+    items?: SponsorApplicationItem[];
+}
+
+export interface SponsorPage {
+    event: Event;
+    profile: SponsorEventProfile | null;
+    stats: SponsorStat[];
+    packages: {
+        booth: SponsorPackage[];
+        symposium: SponsorPackage[];
+        bundle: SponsorPackage[];
+    };
+    benefits: SponsorBenefit[];
+    media: {
+        pastSponsors: SponsorMediaAsset[];
+        previousYearImpressions: SponsorMediaAsset[];
+        brochures: SponsorMediaAsset[];
+        other: SponsorMediaAsset[];
+    };
+    timeline: SponsorTimelineItem[];
 }
 
 // ============================================================================

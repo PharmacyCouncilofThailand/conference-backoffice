@@ -18,10 +18,10 @@ import {
   IconUsersGroup,
   IconX,
   IconChevronDown,
-  IconChevronRight,
   IconTicket,
   IconMailForward,
   IconMailBolt,
+  IconBriefcase,
 } from "@tabler/icons-react";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -46,6 +46,12 @@ const menuStructure = [
       { href: "/sessions", label: "Sessions" },
       { href: "/speakers", label: "Speakers" },
     ],
+  },
+  {
+    type: "link",
+    href: "/sponsors",
+    label: "Sponsor Hub",
+    icon: IconBriefcase,
   },
   {
     type: "submenu",
@@ -203,6 +209,7 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
 
       // Organizer specific restrictions
       if (role === "organizer") {
+        if (item.href === "/sponsors") return item;
         if (item.href === "/members") return item;
         if (item.label === "ATTENDEE MANAGEMENT") return item;
 
