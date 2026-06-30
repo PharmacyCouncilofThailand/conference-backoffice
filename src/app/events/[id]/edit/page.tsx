@@ -55,6 +55,7 @@ interface SessionData {
   maxCapacity: number;
   selectedSpeakerIds?: number[];
   isMainSession?: boolean;
+  requiresOptIn?: boolean;
   isNew?: boolean;
   agenda?: { time: string; topic: string }[];
 }
@@ -346,6 +347,7 @@ export default function EditEventPage() {
               endTime: toDateTimeLocal(s.endTime),
               maxCapacity: s.maxCapacity ?? 0,
               isMainSession: s.isMainSession,
+              requiresOptIn: s.requiresOptIn ?? false,
               agenda: s.agenda || [],
             })),
           );
@@ -438,6 +440,7 @@ export default function EditEventPage() {
             speakers: JSON.stringify(speakerNames),
             maxCapacity: sessionForm.maxCapacity,
             isMainSession: sessionForm.isMainSession || false,
+            requiresOptIn: sessionForm.requiresOptIn || false,
             agenda: sessionForm.agenda && sessionForm.agenda.length > 0 ? sessionForm.agenda : undefined,
           },
         );
@@ -448,6 +451,7 @@ export default function EditEventPage() {
                 ...sessionForm,
                 id: editingSessionId,
                 isMainSession: sessionForm.isMainSession,
+                requiresOptIn: sessionForm.requiresOptIn,
                 sessionType: sessionForm.sessionType,
               }
               : s,
@@ -470,6 +474,8 @@ export default function EditEventPage() {
             endTime: new Date(sessionForm.endTime).toISOString(),
             speakers: JSON.stringify(speakerNames),
             maxCapacity: sessionForm.maxCapacity,
+            isMainSession: sessionForm.isMainSession || false,
+            requiresOptIn: sessionForm.requiresOptIn || false,
             agenda: sessionForm.agenda && sessionForm.agenda.length > 0 ? sessionForm.agenda : undefined,
           },
         );
@@ -488,6 +494,7 @@ export default function EditEventPage() {
             maxCapacity: (session.maxCapacity as number) ?? 0,
             selectedSpeakerIds: sessionForm.selectedSpeakerIds,
             isMainSession: sessionForm.isMainSession,
+            requiresOptIn: sessionForm.requiresOptIn,
           },
         ]);
         toast.success("Session created successfully");
@@ -524,6 +531,7 @@ export default function EditEventPage() {
       maxCapacity: session.maxCapacity,
       selectedSpeakerIds: session.selectedSpeakerIds || [],
       isMainSession: session.isMainSession || false,
+      requiresOptIn: session.requiresOptIn || false,
       agenda: session.agenda || [],
     });
     setEditingSessionId(session.id!);
@@ -2448,6 +2456,8 @@ export default function EditEventPage() {
                   >
                     <option value="early_bird">Early Bird</option>
                     <option value="regular">Regular</option>
+                    <option value="late">Late / หน้างาน</option>
+                    <option value="onsite">On-site</option>
                   </select>
                 </div>
               </div>
@@ -2777,6 +2787,32 @@ export default function EditEventPage() {
                     </label>
                   </div>
                 )}
+
+              {!sessionForm.isMainSession && (
+                <div className="mb-4">
+                  <label className="flex items-center gap-2 cursor-pointer p-3 border rounded-lg hover:bg-zinc-50 bg-amber-50/50 border-amber-100">
+                    <input
+                      type="checkbox"
+                      className="w-5 h-5 text-amber-600 rounded focus:ring-amber-600"
+                      checked={sessionForm.requiresOptIn || false}
+                      onChange={(e) =>
+                        setSessionForm((prev) => ({
+                          ...prev,
+                          requiresOptIn: e.target.checked,
+                        }))
+                      }
+                    />
+                    <div>
+                      <div className="font-medium text-zinc-900">
+                        Requires checkout opt-in
+                      </div>
+                      <div className="text-xs text-zinc-400">
+                        Users must tick this session during checkout. Use for limited-capacity sessions such as workshops or networking.
+                      </div>
+                    </div>
+                  </label>
+                </div>
+              )}
 
               {/* Session Code & Session Name */}
               <div className="grid grid-cols-2 gap-4 mb-4">
