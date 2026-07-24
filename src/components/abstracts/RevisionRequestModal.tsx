@@ -41,20 +41,21 @@ export function RevisionRequestModal({
   onClose,
   onSubmit,
 }: RevisionRequestModalProps) {
-  const [topic, setTopic] = useState(revisionTopicOptions[0].value);
+  const [topic, setTopic] = useState("");
   const [comment, setComment] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [error, setError] = useState("");
 
   const handleSubmit = async () => {
+    const trimmedTopic = topic.trim();
     const trimmedComment = comment.trim();
-    if (!topic) {
-      setError("Please select a revise topic.");
+    if (!trimmedTopic) {
+      setError("Please enter a revise topic.");
       return;
     }
 
     setError("");
-    await onSubmit({ topic, comment: trimmedComment, file });
+    await onSubmit({ topic: trimmedTopic, comment: trimmedComment, file });
   };
 
   return (
@@ -83,20 +84,16 @@ export function RevisionRequestModal({
         <div className="p-6 space-y-5">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Revise Topic
+              Revise Topic <span className="text-red-500">*</span>
             </label>
-            <select
+            <input
+              type="text"
               value={topic}
               onChange={(event) => setTopic(event.target.value)}
+              placeholder="e.g. Complete Abstract Title, Methodology, Figure 1..."
               className="input-field w-full"
               disabled={isSubmitting}
-            >
-              {revisionTopicOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
+            />
           </div>
 
           <div>

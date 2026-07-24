@@ -249,7 +249,13 @@ export default function AbstractsPage() {
       const token = getBackofficeToken();
       const params: any = { page: 1, limit: 1000 };
       if (statusFilter) params.status = statusFilter;
-      if (categoryFilter) params.category = categoryFilter;
+      if (categoryFilter) {
+        if (/^\d+$/.test(categoryFilter)) {
+          params.categoryId = categoryFilter;
+        } else {
+          params.category = categoryFilter;
+        }
+      }
       if (presentationTypeFilter) params.presentationType = presentationTypeFilter;
       if (eventFilter) params.eventId = eventFilter;
       if (searchTerm) params.search = searchTerm;
@@ -314,7 +320,13 @@ export default function AbstractsPage() {
       const token = getBackofficeToken();
       const params: any = { page, limit };
       if (statusFilter) params.status = statusFilter;
-      if (categoryFilter) params.category = categoryFilter;
+      if (categoryFilter) {
+        if (/^\d+$/.test(categoryFilter)) {
+          params.categoryId = categoryFilter;
+        } else {
+          params.category = categoryFilter;
+        }
+      }
       if (presentationTypeFilter) params.presentationType = presentationTypeFilter;
       if (eventFilter) params.eventId = eventFilter;
       if (searchTerm) params.search = searchTerm;

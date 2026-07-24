@@ -414,7 +414,9 @@ export type AbstractStatus = 'pending' | 'accepted' | 'rejected';
 export interface Abstract {
     id: number;
     title: string;
-    category: AbstractCategory;
+    categoryId?: number;
+    categoryName?: string;
+    category: string;
     presentationType: PresentationType;
     status: AbstractStatus;
     submittedBy: string;
