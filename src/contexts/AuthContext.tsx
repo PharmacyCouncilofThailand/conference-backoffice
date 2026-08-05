@@ -9,6 +9,7 @@ import {
   useEffect,
   ReactNode,
 } from "react";
+import { isTokenExpired } from "@/lib/jwt";
 
 // User roles
 export type UserRole =
@@ -82,15 +83,6 @@ function clearStoredAuth() {
   localStorage.removeItem("backoffice_user");
   sessionStorage.removeItem("backoffice_token");
   sessionStorage.removeItem("backoffice_user");
-}
-
-function isTokenExpired(token: string): boolean {
-  try {
-    const payload = JSON.parse(atob(token.split(".")[1]));
-    return payload.exp * 1000 < Date.now();
-  } catch {
-    return true;
-  }
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
