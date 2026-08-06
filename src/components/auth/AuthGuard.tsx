@@ -25,7 +25,9 @@ export function AuthGuard({ children }: AuthGuardProps) {
         router.replace("/login");
       } else if (user && isPublicPath) {
         // Already logged in but on login page
-        if (user.role === "verifier") {
+        if (user.role === "team_registration_viewer") {
+          router.replace("/team-registrations");
+        } else if (user.role === "verifier") {
           router.replace("/verification");
         } else if (user.role === "reviewer") {
           router.replace("/abstracts");
@@ -38,7 +40,9 @@ export function AuthGuard({ children }: AuthGuardProps) {
         }
       } else if (user && !hasAccess(pathname)) {
         // Logged in but no access to this page
-        if (user.role === "verifier") {
+        if (user.role === "team_registration_viewer") {
+          router.replace("/team-registrations");
+        } else if (user.role === "verifier") {
           router.replace("/verification");
         } else if (user.role === "reviewer") {
           router.replace("/abstracts");

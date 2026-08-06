@@ -102,6 +102,12 @@ const menuStructure = [
     icon: IconUsers,
   },
   {
+    type: "link",
+    href: "/team-registrations",
+    label: "Team Registrations",
+    icon: IconUsersGroup,
+  },
+  {
     type: "category",
     label: "OPERATIONS & REPORTS",
   },
@@ -191,6 +197,11 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
     .map((item) => {
       // Admin sees everything
       if (isAdmin) return item;
+
+      if (role === "team_registration_viewer") {
+        if (item.href === "/team-registrations") return item;
+        return null;
+      }
 
       // Verifier specific restrictions
       if (role === "verifier") {

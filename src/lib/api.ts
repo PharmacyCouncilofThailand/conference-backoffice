@@ -18,7 +18,10 @@ import type {
   SponsorPage,
   SponsorStat,
   SponsorTimelineItem,
-} from '@/types/api';
+  TeamRegistrationConfig,
+  TeamRegistrationDetail,
+  TeamRegistrationListItem,
+} from "@/types/api";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL;
 const AUTH_UNAUTHORIZED_EVENT = "accp-backoffice-auth:unauthorized";
@@ -89,7 +92,7 @@ function dispatchUnauthorizedEvent() {
 
 export async function fetchAPI<T>(
   endpoint: string,
-  options: FetchOptions = {}
+  options: FetchOptions = {},
 ): Promise<T> {
   const { token, ...fetchOptions } = options;
   const resolvedToken =
@@ -98,7 +101,7 @@ export async function fetchAPI<T>(
 
   const headers: Record<string, string> = {};
 
-  if (fetchOptions.body && typeof fetchOptions.body === 'string') {
+  if (fetchOptions.body && typeof fetchOptions.body === "string") {
     headers["Content-Type"] = "application/json";
   }
 
@@ -123,8 +126,10 @@ export async function fetchAPI<T>(
     }
 
     const error = await res.json().catch(() => ({ error: "Request failed" }));
-    const details = error.details ? ` — ${JSON.stringify(error.details)}` : '';
-    throw new Error((error.error || `API Error: ${res.status}`) + details);
+    const details = error.details ? ` — ${JSON.stringify(error.details)}` : "";
+    const message =
+      typeof error.error === "object" ? error.error?.message : error.error;
+    throw new Error((message || `API Error: ${res.status}`) + details);
   }
 
   return res.json();
@@ -134,18 +139,18 @@ export async function fetchAPI<T>(
 export const api = {
   auth: {
     login: (credentials: LoginCredentials) =>
-      fetchAPI<LoginResponse>('/backoffice/login', {
-        method: 'POST',
-        body: JSON.stringify(credentials)
+      fetchAPI<LoginResponse>("/backoffice/login", {
+        method: "POST",
+        body: JSON.stringify(credentials),
       }),
   },
 
   upload: {
     venueImage: (token: string, formData: FormData) =>
-      fetchAPI<{ success: boolean; url: string }>('/api/upload/venue-image', {
-        method: 'POST',
+      fetchAPI<{ success: boolean; url: string }>("/api/upload/venue-image", {
+        method: "POST",
         body: formData as unknown as BodyInit,
-        token
+        token,
       }),
   },
 
@@ -158,165 +163,516 @@ export const api = {
   // Backoffice Resources
   users: {
     list: (token: string, query?: string) =>
-      fetchAPI<{ users: Record<string, unknown>[]; pagination: Pagination }>(`/api/backoffice/users${query ? `?${query}` : ''}`, { token }),
+      fetchAPI<{ users: Record<string, unknown>[]; pagination: Pagination }>(
+        `/api/backoffice/users${query ? `?${query}` : ""}`,
+        { token },
+      ),
     create: (token: string, data: Record<string, unknown>) =>
-      fetchAPI<{ user: Record<string, unknown> }>('/api/backoffice/users', { method: 'POST', body: JSON.stringify(data), token }),
+      fetchAPI<{ user: Record<string, unknown> }>("/api/backoffice/users", {
+        method: "POST",
+        body: JSON.stringify(data),
+        token,
+      }),
     update: (token: string, id: number, data: Record<string, unknown>) =>
-      fetchAPI<{ user: Record<string, unknown> }>(`/api/backoffice/users/${id}`, { method: 'PATCH', body: JSON.stringify(data), token }),
+      fetchAPI<{ user: Record<string, unknown> }>(
+        `/api/backoffice/users/${id}`,
+        { method: "PATCH", body: JSON.stringify(data), token },
+      ),
     delete: (token: string, id: number) =>
-      fetchAPI<{ success: boolean }>(`/api/backoffice/users/${id}`, { method: 'DELETE', token }),
+      fetchAPI<{ success: boolean }>(`/api/backoffice/users/${id}`, {
+        method: "DELETE",
+        token,
+      }),
     assignEvents: (token: string, id: number, eventIds: number[]) =>
-      fetchAPI<{ success: boolean; count: number }>(`/api/backoffice/users/${id}/assignments`, { method: 'POST', body: JSON.stringify({ eventIds }), token }),
-    assignEventsAndSessions: (token: string, id: number, assignments: { eventId: number; sessionIds?: number[] }[]) =>
-      fetchAPI<{ success: boolean }>(`/api/backoffice/users/${id}/assignments`, { method: 'PUT', body: JSON.stringify({ assignments }), token }),
+      fetchAPI<{ success: boolean; count: number }>(
+        `/api/backoffice/users/${id}/assignments`,
+        { method: "POST", body: JSON.stringify({ eventIds }), token },
+      ),
+    assignEventsAndSessions: (
+      token: string,
+      id: number,
+      assignments: { eventId: number; sessionIds?: number[] }[],
+    ) =>
+      fetchAPI<{ success: boolean }>(
+        `/api/backoffice/users/${id}/assignments`,
+        { method: "PUT", body: JSON.stringify({ assignments }), token },
+      ),
   },
 
   verifications: {
     list: (token: string, query?: string) =>
-      fetchAPI<{ verifications: VerificationRequest[]; pagination: Pagination }>(`/api/backoffice/verifications${query ? `?${query}` : ''}`, { token }),
+      fetchAPI<{
+        verifications: VerificationRequest[];
+        pagination: Pagination;
+      }>(`/api/backoffice/verifications${query ? `?${query}` : ""}`, { token }),
     approve: (token: string, id: string, comment?: string) =>
-      fetchAPI<{ success: boolean; user: User }>(`/api/backoffice/verifications/${id}/approve`, { method: "POST", body: JSON.stringify({ comment }), token }),
+      fetchAPI<{ success: boolean; user: User }>(
+        `/api/backoffice/verifications/${id}/approve`,
+        { method: "POST", body: JSON.stringify({ comment }), token },
+      ),
     reject: (token: string, id: string, reason: string) =>
-      fetchAPI<{ success: boolean; user: User }>(`/api/backoffice/verifications/${id}/reject`, { method: "POST", body: JSON.stringify({ reason }), token }),
+      fetchAPI<{ success: boolean; user: User }>(
+        `/api/backoffice/verifications/${id}/reject`,
+        { method: "POST", body: JSON.stringify({ reason }), token },
+      ),
     getRejectionHistory: (token: string, id: string) =>
-      fetchAPI<{ history: { id: number; reason: string; rejectedAt: string; rejectedBy: number | null; rejectedByName: string | null }[] }>(`/api/backoffice/verifications/${id}/rejection-history`, { token }),
+      fetchAPI<{
+        history: {
+          id: number;
+          reason: string;
+          rejectedAt: string;
+          rejectedBy: number | null;
+          rejectedByName: string | null;
+        }[];
+      }>(`/api/backoffice/verifications/${id}/rejection-history`, { token }),
   },
 
   studentEligibilityRequests: {
     list: (token: string, query?: string) =>
-      fetchAPI<{ success: boolean; requests: StudentEligibilityRequest[]; pagination: Pagination }>(`/api/backoffice/student-eligibility-requests${query ? `?${query}` : ''}`, { token }),
+      fetchAPI<{
+        success: boolean;
+        requests: StudentEligibilityRequest[];
+        pagination: Pagination;
+      }>(
+        `/api/backoffice/student-eligibility-requests${query ? `?${query}` : ""}`,
+        { token },
+      ),
     get: (token: string, id: number) =>
-      fetchAPI<{ success: boolean; request: StudentEligibilityRequest }>(`/api/backoffice/student-eligibility-requests/${id}`, { token }),
-    review: (token: string, id: number, data: { status: 'approved'; reviewNote?: string } | { status: 'rejected'; rejectionReason: string; reviewNote?: string }) =>
-      fetchAPI<{ success: boolean; request: StudentEligibilityRequest }>(`/api/backoffice/student-eligibility-requests/${id}`, { method: "PATCH", body: JSON.stringify(data), token }),
+      fetchAPI<{ success: boolean; request: StudentEligibilityRequest }>(
+        `/api/backoffice/student-eligibility-requests/${id}`,
+        { token },
+      ),
+    review: (
+      token: string,
+      id: number,
+      data:
+        | { status: "approved"; reviewNote?: string }
+        | { status: "rejected"; rejectionReason: string; reviewNote?: string },
+    ) =>
+      fetchAPI<{ success: boolean; request: StudentEligibilityRequest }>(
+        `/api/backoffice/student-eligibility-requests/${id}`,
+        { method: "PATCH", body: JSON.stringify(data), token },
+      ),
   },
 
   backofficeEvents: {
     list: (token: string, query?: string) =>
-      fetchAPI<{ events: Record<string, unknown>[]; pagination: Pagination }>(`/api/backoffice/events${query ? `?${query}` : ''}`, { token }),
+      fetchAPI<{ events: Record<string, unknown>[]; pagination: Pagination }>(
+        `/api/backoffice/events${query ? `?${query}` : ""}`,
+        { token },
+      ),
     get: (token: string, id: number) =>
-      fetchAPI<{ event: Event; sessions: Record<string, unknown>[]; tickets: Record<string, unknown>[]; venueImages: { id: number; url: string; imageUrl?: string; caption?: string }[] }>(`/api/backoffice/events/${id}`, { token }),
+      fetchAPI<{
+        event: Event;
+        sessions: Record<string, unknown>[];
+        tickets: Record<string, unknown>[];
+        venueImages: {
+          id: number;
+          url: string;
+          imageUrl?: string;
+          caption?: string;
+        }[];
+      }>(`/api/backoffice/events/${id}`, { token }),
     create: (token: string, data: EventCreateInput) =>
-      fetchAPI<{ event: Event }>('/api/backoffice/events', { method: 'POST', body: JSON.stringify(data), token }),
+      fetchAPI<{ event: Event }>("/api/backoffice/events", {
+        method: "POST",
+        body: JSON.stringify(data),
+        token,
+      }),
     update: (token: string, id: number, data: EventUpdateInput) =>
-      fetchAPI<{ event: Event }>(`/api/backoffice/events/${id}`, { method: 'PATCH', body: JSON.stringify(data), token }),
+      fetchAPI<{ event: Event }>(`/api/backoffice/events/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify(data),
+        token,
+      }),
     delete: (token: string, id: number) =>
-      fetchAPI<void>(`/api/backoffice/events/${id}`, { method: 'DELETE', token }),
+      fetchAPI<void>(`/api/backoffice/events/${id}`, {
+        method: "DELETE",
+        token,
+      }),
 
     // Sessions nested routes (using Record for page compatibility)
     getSessions: (token: string, eventId: number) =>
-      fetchAPI<{ sessions: Record<string, unknown>[] }>(`/api/backoffice/events/${eventId}/sessions`, { token }),
-    createSession: (token: string, eventId: number, data: Record<string, unknown>) =>
-      fetchAPI<{ session: Record<string, unknown> }>(`/api/backoffice/events/${eventId}/sessions`, { method: 'POST', body: JSON.stringify(data), token }),
-    updateSession: (token: string, eventId: number, sessionId: number, data: Record<string, unknown>) =>
-      fetchAPI<{ session: Record<string, unknown> }>(`/api/backoffice/events/${eventId}/sessions/${sessionId}`, { method: 'PATCH', body: JSON.stringify(data), token }),
+      fetchAPI<{ sessions: Record<string, unknown>[] }>(
+        `/api/backoffice/events/${eventId}/sessions`,
+        { token },
+      ),
+    createSession: (
+      token: string,
+      eventId: number,
+      data: Record<string, unknown>,
+    ) =>
+      fetchAPI<{ session: Record<string, unknown> }>(
+        `/api/backoffice/events/${eventId}/sessions`,
+        { method: "POST", body: JSON.stringify(data), token },
+      ),
+    updateSession: (
+      token: string,
+      eventId: number,
+      sessionId: number,
+      data: Record<string, unknown>,
+    ) =>
+      fetchAPI<{ session: Record<string, unknown> }>(
+        `/api/backoffice/events/${eventId}/sessions/${sessionId}`,
+        { method: "PATCH", body: JSON.stringify(data), token },
+      ),
     deleteSession: (token: string, eventId: number, sessionId: number) =>
-      fetchAPI<void>(`/api/backoffice/events/${eventId}/sessions/${sessionId}`, { method: 'DELETE', token }),
-    getSessionEnrollments: (token: string, eventId: number, sessionId: number) =>
-      fetchAPI<{ enrollments: { id: number; regCode: string; email: string; firstName: string; lastName: string; status: string; createdAt: string; ticketName: string | null }[]; count: number }>(`/api/backoffice/events/${eventId}/sessions/${sessionId}/enrollments`, { token }),
+      fetchAPI<void>(
+        `/api/backoffice/events/${eventId}/sessions/${sessionId}`,
+        { method: "DELETE", token },
+      ),
+    getSessionEnrollments: (
+      token: string,
+      eventId: number,
+      sessionId: number,
+    ) =>
+      fetchAPI<{
+        enrollments: {
+          id: number;
+          regCode: string;
+          email: string;
+          firstName: string;
+          lastName: string;
+          status: string;
+          createdAt: string;
+          ticketName: string | null;
+        }[];
+        count: number;
+      }>(
+        `/api/backoffice/events/${eventId}/sessions/${sessionId}/enrollments`,
+        { token },
+      ),
 
     // Tickets nested routes (using Record for page compatibility)
     getTickets: (token: string, eventId: number) =>
-      fetchAPI<{ tickets: Record<string, unknown>[] }>(`/api/backoffice/events/${eventId}/tickets`, { token }),
-    createTicket: (token: string, eventId: number, data: Record<string, unknown>) =>
-      fetchAPI<{ ticket: Record<string, unknown> }>(`/api/backoffice/events/${eventId}/tickets`, { method: 'POST', body: JSON.stringify(data), token }),
-    updateTicket: (token: string, eventId: number, ticketId: number, data: Record<string, unknown>) =>
-      fetchAPI<{ ticket: Record<string, unknown> }>(`/api/backoffice/events/${eventId}/tickets/${ticketId}`, { method: 'PATCH', body: JSON.stringify(data), token }),
+      fetchAPI<{ tickets: Record<string, unknown>[] }>(
+        `/api/backoffice/events/${eventId}/tickets`,
+        { token },
+      ),
+    createTicket: (
+      token: string,
+      eventId: number,
+      data: Record<string, unknown>,
+    ) =>
+      fetchAPI<{ ticket: Record<string, unknown> }>(
+        `/api/backoffice/events/${eventId}/tickets`,
+        { method: "POST", body: JSON.stringify(data), token },
+      ),
+    updateTicket: (
+      token: string,
+      eventId: number,
+      ticketId: number,
+      data: Record<string, unknown>,
+    ) =>
+      fetchAPI<{ ticket: Record<string, unknown> }>(
+        `/api/backoffice/events/${eventId}/tickets/${ticketId}`,
+        { method: "PATCH", body: JSON.stringify(data), token },
+      ),
     deleteTicket: (token: string, eventId: number, ticketId: number) =>
-      fetchAPI<void>(`/api/backoffice/events/${eventId}/tickets/${ticketId}`, { method: 'DELETE', token }),
+      fetchAPI<void>(`/api/backoffice/events/${eventId}/tickets/${ticketId}`, {
+        method: "DELETE",
+        token,
+      }),
 
     // Images nested routes
-    addImage: (token: string, eventId: number, data: { imageUrl: string; caption?: string }) =>
-      fetchAPI<{ image: { id: number; imageUrl: string } }>(`/api/backoffice/events/${eventId}/images`, { method: 'POST', body: JSON.stringify(data), token }),
+    addImage: (
+      token: string,
+      eventId: number,
+      data: { imageUrl: string; caption?: string },
+    ) =>
+      fetchAPI<{ image: { id: number; imageUrl: string } }>(
+        `/api/backoffice/events/${eventId}/images`,
+        { method: "POST", body: JSON.stringify(data), token },
+      ),
     deleteImage: (token: string, eventId: number, imageId: number) =>
-      fetchAPI<void>(`/api/backoffice/events/${eventId}/images/${imageId}`, { method: 'DELETE', token }),
-  },
-
-  speakers: {
-    list: (token: string, query?: string) =>
-      fetchAPI<{ speakers: Record<string, unknown>[]; eventSpeakers?: { speakerId: number; eventId: number; sessionId: number | null }[] }>(`/api/backoffice/speakers${query ? `?${query}` : ''}`, { token }),
-    create: (token: string, data: Record<string, unknown>) =>
-      fetchAPI<{ speaker: Record<string, unknown> }>('/api/backoffice/speakers', { method: 'POST', body: JSON.stringify(data), token }),
-    update: (token: string, id: number, data: Record<string, unknown>) =>
-      fetchAPI<{ speaker: Record<string, unknown> }>(`/api/backoffice/speakers/${id}`, { method: 'PATCH', body: JSON.stringify(data), token }),
-    delete: (token: string, id: number) =>
-      fetchAPI<void>(`/api/backoffice/speakers/${id}`, { method: 'DELETE', token }),
-    assignEvents: (token: string, speakerId: number, assignments: { eventId: number; sessionId: number | null }[]) =>
-      fetchAPI<{ success: boolean }>(`/api/backoffice/speakers/${speakerId}/events`, {
-        method: 'POST',
-        body: JSON.stringify({ assignments }),
+      fetchAPI<void>(`/api/backoffice/events/${eventId}/images/${imageId}`, {
+        method: "DELETE",
         token,
       }),
   },
 
+  teamRegistrations: {
+    list: (token: string, query: URLSearchParams) =>
+      fetchAPI<{
+        success: boolean;
+        data: {
+          items: TeamRegistrationListItem[];
+          paidTeamCount: number;
+          pagination: {
+            total: number;
+            page: number;
+            pageSize: number;
+            pages: number;
+          };
+        };
+      }>(`/api/backoffice/team-registrations?${query.toString()}`, { token }),
+    get: (token: string, registrationId: string) =>
+      fetchAPI<{ success: boolean; data: TeamRegistrationDetail }>(
+        `/api/backoffice/team-registrations/${registrationId}`,
+        { token },
+      ),
+    correct: (
+      token: string,
+      registrationId: string,
+      data: Record<string, unknown>,
+    ) =>
+      fetchAPI<{ success: boolean; data: { id: string } }>(
+        `/api/backoffice/team-registrations/${registrationId}`,
+        { method: "PATCH", body: JSON.stringify(data), token },
+      ),
+    resendConfirmation: (token: string, registrationId: string) =>
+      fetchAPI<{
+        success: boolean;
+        data: { deliveryKey: string; recipients: number };
+      }>(
+        `/api/backoffice/team-registrations/${registrationId}/resend-confirmation`,
+        { method: "POST", token },
+      ),
+    getConfig: (token: string, eventId: number) =>
+      fetchAPI<{
+        success: boolean;
+        data: { config: TeamRegistrationConfig | null };
+      }>(`/api/backoffice/events/${eventId}/team-registration-config`, {
+        token,
+      }),
+    saveConfig: (
+      token: string,
+      eventId: number,
+      config: TeamRegistrationConfig,
+    ) =>
+      fetchAPI<{ success: boolean; data: { config: TeamRegistrationConfig } }>(
+        `/api/backoffice/events/${eventId}/team-registration-config`,
+        { method: "PUT", body: JSON.stringify(config), token },
+      ),
+  },
+
+  speakers: {
+    list: (token: string, query?: string) =>
+      fetchAPI<{
+        speakers: Record<string, unknown>[];
+        eventSpeakers?: {
+          speakerId: number;
+          eventId: number;
+          sessionId: number | null;
+        }[];
+      }>(`/api/backoffice/speakers${query ? `?${query}` : ""}`, { token }),
+    create: (token: string, data: Record<string, unknown>) =>
+      fetchAPI<{ speaker: Record<string, unknown> }>(
+        "/api/backoffice/speakers",
+        { method: "POST", body: JSON.stringify(data), token },
+      ),
+    update: (token: string, id: number, data: Record<string, unknown>) =>
+      fetchAPI<{ speaker: Record<string, unknown> }>(
+        `/api/backoffice/speakers/${id}`,
+        { method: "PATCH", body: JSON.stringify(data), token },
+      ),
+    delete: (token: string, id: number) =>
+      fetchAPI<void>(`/api/backoffice/speakers/${id}`, {
+        method: "DELETE",
+        token,
+      }),
+    assignEvents: (
+      token: string,
+      speakerId: number,
+      assignments: { eventId: number; sessionId: number | null }[],
+    ) =>
+      fetchAPI<{ success: boolean }>(
+        `/api/backoffice/speakers/${speakerId}/events`,
+        {
+          method: "POST",
+          body: JSON.stringify({ assignments }),
+          token,
+        },
+      ),
+  },
+
   registrations: {
     list: (token: string, query?: string) =>
-      fetchAPI<{ registrations: Record<string, unknown>[]; pagination: Pagination }>(`/api/backoffice/registrations${query ? `?${query}` : ''}`, { token }),
+      fetchAPI<{
+        registrations: Record<string, unknown>[];
+        pagination: Pagination;
+      }>(`/api/backoffice/registrations${query ? `?${query}` : ""}`, { token }),
     get: (token: string, id: number) =>
-      fetchAPI<{ registration: Record<string, unknown> }>(`/api/backoffice/registrations/${id}`, { token }),
+      fetchAPI<{ registration: Record<string, unknown> }>(
+        `/api/backoffice/registrations/${id}`,
+        { token },
+      ),
     update: (token: string, id: number, data: Record<string, unknown>) =>
-      fetchAPI<{ registration: Record<string, unknown> }>(`/api/backoffice/registrations/${id}`, { method: 'PATCH', body: JSON.stringify(data), token }),
-    manualAdd: (token: string, data: { userId: number; eventId: number; ticketTypeId: number; sessionIds?: number[]; note?: string }) =>
-      fetchAPI<{ success: boolean; registration: Record<string, unknown> }>('/api/backoffice/registrations/manual', { method: 'POST', body: JSON.stringify(data), token }),
-    batchManualAdd: (token: string, data: { userIds: number[]; eventId: number; ticketTypeId: number; sessionIds?: number[]; note?: string }) =>
-      fetchAPI<{ success: boolean; addedCount: number; successList: Record<string, unknown>[]; skippedList: { userId: number; reason: string }[] }>('/api/backoffice/registrations/manual/batch', { method: 'POST', body: JSON.stringify(data), token }),
-    getRegisteredUsers: (token: string, eventId: number, ticketTypeId?: number) =>
-      fetchAPI<{ registeredUserIds: number[]; ticketCategory?: string }>(`/api/backoffice/registrations/registered-users?eventId=${eventId}${ticketTypeId ? `&ticketTypeId=${ticketTypeId}` : ''}`, { token }),
-    addSessions: (token: string, id: number, data: { sessionIds: number[]; ticketTypeId: number; note?: string }) =>
-      fetchAPI<{ success: boolean; addedCount: number }>(`/api/backoffice/registrations/${id}/sessions`, { method: 'POST', body: JSON.stringify(data), token }),
+      fetchAPI<{ registration: Record<string, unknown> }>(
+        `/api/backoffice/registrations/${id}`,
+        { method: "PATCH", body: JSON.stringify(data), token },
+      ),
+    manualAdd: (
+      token: string,
+      data: {
+        userId: number;
+        eventId: number;
+        ticketTypeId: number;
+        sessionIds?: number[];
+        note?: string;
+      },
+    ) =>
+      fetchAPI<{ success: boolean; registration: Record<string, unknown> }>(
+        "/api/backoffice/registrations/manual",
+        { method: "POST", body: JSON.stringify(data), token },
+      ),
+    batchManualAdd: (
+      token: string,
+      data: {
+        userIds: number[];
+        eventId: number;
+        ticketTypeId: number;
+        sessionIds?: number[];
+        note?: string;
+      },
+    ) =>
+      fetchAPI<{
+        success: boolean;
+        addedCount: number;
+        successList: Record<string, unknown>[];
+        skippedList: { userId: number; reason: string }[];
+      }>("/api/backoffice/registrations/manual/batch", {
+        method: "POST",
+        body: JSON.stringify(data),
+        token,
+      }),
+    getRegisteredUsers: (
+      token: string,
+      eventId: number,
+      ticketTypeId?: number,
+    ) =>
+      fetchAPI<{ registeredUserIds: number[]; ticketCategory?: string }>(
+        `/api/backoffice/registrations/registered-users?eventId=${eventId}${ticketTypeId ? `&ticketTypeId=${ticketTypeId}` : ""}`,
+        { token },
+      ),
+    addSessions: (
+      token: string,
+      id: number,
+      data: { sessionIds: number[]; ticketTypeId: number; note?: string },
+    ) =>
+      fetchAPI<{ success: boolean; addedCount: number }>(
+        `/api/backoffice/registrations/${id}/sessions`,
+        { method: "POST", body: JSON.stringify(data), token },
+      ),
   },
 
   abstracts: {
     list: (token: string, query?: string) =>
-      fetchAPI<{ abstracts: Record<string, unknown>[]; pagination: Pagination }>(`/api/backoffice/abstracts${query ? `?${query}` : ''}`, { token }),
+      fetchAPI<{
+        abstracts: Record<string, unknown>[];
+        pagination: Pagination;
+      }>(`/api/backoffice/abstracts${query ? `?${query}` : ""}`, { token }),
     get: (token: string, id: number) =>
-      fetchAPI<{ abstract: Record<string, unknown> }>(`/api/backoffice/abstracts/${id}`, { token }),
-    updateStatus: (token: string, id: number, status: string, comment?: string) =>
-      fetchAPI<{ abstract: Record<string, unknown> }>(`/api/backoffice/abstracts/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status, comment }), token }),
-    requestRevision: (token: string, id: number, data: { topic: string; comment: string; file?: File | null }) => {
+      fetchAPI<{ abstract: Record<string, unknown> }>(
+        `/api/backoffice/abstracts/${id}`,
+        { token },
+      ),
+    updateStatus: (
+      token: string,
+      id: number,
+      status: string,
+      comment?: string,
+    ) =>
+      fetchAPI<{ abstract: Record<string, unknown> }>(
+        `/api/backoffice/abstracts/${id}/status`,
+        { method: "PATCH", body: JSON.stringify({ status, comment }), token },
+      ),
+    requestRevision: (
+      token: string,
+      id: number,
+      data: { topic: string; comment: string; file?: File | null },
+    ) => {
       const formData = new FormData();
-      formData.append('topic', data.topic);
-      formData.append('comment', data.comment);
-      if (data.file) formData.append('revisionFile', data.file);
+      formData.append("topic", data.topic);
+      formData.append("comment", data.comment);
+      if (data.file) formData.append("revisionFile", data.file);
 
-      return fetchAPI<{ success: boolean; abstract: Record<string, unknown>; revisionRequest: Record<string, unknown> }>(
-        `/api/backoffice/abstracts/${id}/revision`,
-        { method: 'POST', body: formData as unknown as BodyInit, token },
-      );
+      return fetchAPI<{
+        success: boolean;
+        abstract: Record<string, unknown>;
+        revisionRequest: Record<string, unknown>;
+      }>(`/api/backoffice/abstracts/${id}/revision`, {
+        method: "POST",
+        body: formData as unknown as BodyInit,
+        token,
+      });
     },
     resendConfirmation: (token: string, id: number) =>
       fetchAPI<{ success: boolean; deadline: string; deadlineDays: number }>(
         `/api/backoffice/abstracts/${id}/resend-confirmation`,
-        { method: 'POST', token },
+        { method: "POST", token },
       ),
     manualConfirm: (token: string, id: number) =>
-      fetchAPI<{ success: boolean; abstractId: number; confirmedAt: string; alreadyConfirmed?: boolean }>(
-        `/api/backoffice/abstracts/${id}/manual-confirm`,
-        { method: 'POST', token },
-      ),
+      fetchAPI<{
+        success: boolean;
+        abstractId: number;
+        confirmedAt: string;
+        alreadyConfirmed?: boolean;
+      }>(`/api/backoffice/abstracts/${id}/manual-confirm`, {
+        method: "POST",
+        token,
+      }),
   },
 
   checkins: {
     list: (token: string, query?: string) =>
-      fetchAPI<{ checkins: BackofficeCheckinRow[]; pagination: Pagination }>(`/api/backoffice/checkins${query ? `?${query}` : ''}`, { token }),
-    create: (token: string, data: { regCode: string; sessionId?: number; checkInAll?: boolean; assignedSessionId?: number }) =>
-      fetchAPI<BackofficeCheckinResponse>(`/api/backoffice/checkins`, { method: 'POST', body: JSON.stringify(data), token }),
+      fetchAPI<{ checkins: BackofficeCheckinRow[]; pagination: Pagination }>(
+        `/api/backoffice/checkins${query ? `?${query}` : ""}`,
+        { token },
+      ),
+    create: (
+      token: string,
+      data: {
+        regCode: string;
+        sessionId?: number;
+        checkInAll?: boolean;
+        assignedSessionId?: number;
+      },
+    ) =>
+      fetchAPI<BackofficeCheckinResponse>(`/api/backoffice/checkins`, {
+        method: "POST",
+        body: JSON.stringify(data),
+        token,
+      }),
     stats: (token: string, query?: string) =>
-      fetchAPI<{ total: number; checkedIn: number; remaining: number; percentage: number }>(`/api/backoffice/checkins/stats${query ? `?${query}` : ''}`, { token }),
+      fetchAPI<{
+        total: number;
+        checkedIn: number;
+        remaining: number;
+        percentage: number;
+      }>(`/api/backoffice/checkins/stats${query ? `?${query}` : ""}`, {
+        token,
+      }),
     universities: (token: string, eventId: number) =>
-      fetchAPI<{ universities: string[] }>(`/api/backoffice/checkins/universities?eventId=${eventId}`, { token }),
+      fetchAPI<{ universities: string[] }>(
+        `/api/backoffice/checkins/universities?eventId=${eventId}`,
+        { token },
+      ),
     undo: (token: string, registrationSessionId: number) =>
-      fetchAPI<{ success: boolean; undone: Record<string, unknown> }>(`/api/backoffice/checkins/undo`, { method: 'POST', body: JSON.stringify({ registrationSessionId }), token }),
+      fetchAPI<{ success: boolean; undone: Record<string, unknown> }>(
+        `/api/backoffice/checkins/undo`,
+        {
+          method: "POST",
+          body: JSON.stringify({ registrationSessionId }),
+          token,
+        },
+      ),
   },
 
   tickets: {
     list: (token: string, query?: string) =>
-      fetchAPI<{ tickets: Ticket[]; pagination: Pagination }>(`/api/backoffice/tickets${query ? `?${query}` : ''}`, { token }),
+      fetchAPI<{ tickets: Ticket[]; pagination: Pagination }>(
+        `/api/backoffice/tickets${query ? `?${query}` : ""}`,
+        { token },
+      ),
   },
 
   sessions: {
     list: (token: string, query?: string) =>
-      fetchAPI<{ sessions: Session[]; pagination: Pagination }>(`/api/backoffice/sessions${query ? `?${query}` : ''}`, { token }),
+      fetchAPI<{ sessions: Session[]; pagination: Pagination }>(
+        `/api/backoffice/sessions${query ? `?${query}` : ""}`,
+        { token },
+      ),
   },
 
   payments: {
@@ -326,129 +682,302 @@ export const api = {
 
   promoCodes: {
     list: (token: string, query?: string) =>
-      fetchAPI<{ promoCodes: Record<string, unknown>[]; pagination: Pagination }>(`/api/backoffice/promo-codes${query ? `?${query}` : ''}`, { token }),
+      fetchAPI<{
+        promoCodes: Record<string, unknown>[];
+        pagination: Pagination;
+      }>(`/api/backoffice/promo-codes${query ? `?${query}` : ""}`, { token }),
     get: (token: string, id: number) =>
-      fetchAPI<{ promoCode: Record<string, unknown> }>(`/api/backoffice/promo-codes/${id}`, { token }),
+      fetchAPI<{ promoCode: Record<string, unknown> }>(
+        `/api/backoffice/promo-codes/${id}`,
+        { token },
+      ),
     create: (token: string, data: Record<string, unknown>) =>
-      fetchAPI<{ promoCode: Record<string, unknown> }>('/api/backoffice/promo-codes', { method: 'POST', body: JSON.stringify(data), token }),
+      fetchAPI<{ promoCode: Record<string, unknown> }>(
+        "/api/backoffice/promo-codes",
+        { method: "POST", body: JSON.stringify(data), token },
+      ),
     update: (token: string, id: number, data: Record<string, unknown>) =>
-      fetchAPI<{ promoCode: Record<string, unknown> }>(`/api/backoffice/promo-codes/${id}`, { method: 'PUT', body: JSON.stringify(data), token }),
+      fetchAPI<{ promoCode: Record<string, unknown> }>(
+        `/api/backoffice/promo-codes/${id}`,
+        { method: "PUT", body: JSON.stringify(data), token },
+      ),
     delete: (token: string, id: number) =>
-      fetchAPI<{ success: boolean }>(`/api/backoffice/promo-codes/${id}`, { method: 'DELETE', token }),
+      fetchAPI<{ success: boolean }>(`/api/backoffice/promo-codes/${id}`, {
+        method: "DELETE",
+        token,
+      }),
     toggle: (token: string, id: number) =>
-      fetchAPI<{ promoCode: Record<string, unknown> }>(`/api/backoffice/promo-codes/${id}/toggle`, { method: 'PATCH', token }),
+      fetchAPI<{ promoCode: Record<string, unknown> }>(
+        `/api/backoffice/promo-codes/${id}/toggle`,
+        { method: "PATCH", token },
+      ),
   },
 
   abstractCategories: {
     list: (token: string, query?: string) =>
-      fetchAPI<{ categories: Record<string, unknown>[] }>(`/api/backoffice/abstract-categories${query ? `?${query}` : ''}`, { token }),
+      fetchAPI<{ categories: Record<string, unknown>[] }>(
+        `/api/backoffice/abstract-categories${query ? `?${query}` : ""}`,
+        { token },
+      ),
     create: (token: string, data: Record<string, unknown>) =>
-      fetchAPI<{ category: Record<string, unknown> }>('/api/backoffice/abstract-categories', { method: 'POST', body: JSON.stringify(data), token }),
+      fetchAPI<{ category: Record<string, unknown> }>(
+        "/api/backoffice/abstract-categories",
+        { method: "POST", body: JSON.stringify(data), token },
+      ),
     update: (token: string, id: number, data: Record<string, unknown>) =>
-      fetchAPI<{ category: Record<string, unknown> }>(`/api/backoffice/abstract-categories/${id}`, { method: 'PATCH', body: JSON.stringify(data), token }),
+      fetchAPI<{ category: Record<string, unknown> }>(
+        `/api/backoffice/abstract-categories/${id}`,
+        { method: "PATCH", body: JSON.stringify(data), token },
+      ),
     delete: (token: string, id: number) =>
-      fetchAPI<{ success: boolean }>(`/api/backoffice/abstract-categories/${id}`, { method: 'DELETE', token }),
+      fetchAPI<{ success: boolean }>(
+        `/api/backoffice/abstract-categories/${id}`,
+        { method: "DELETE", token },
+      ),
     toggle: (token: string, id: number) =>
-      fetchAPI<{ category: Record<string, unknown> }>(`/api/backoffice/abstract-categories/${id}/toggle`, { method: 'PATCH', token }),
+      fetchAPI<{ category: Record<string, unknown> }>(
+        `/api/backoffice/abstract-categories/${id}/toggle`,
+        { method: "PATCH", token },
+      ),
   },
 
   sponsors: {
     getPage: (token: string, eventId: number) =>
-      fetchAPI<{ sponsor: SponsorPage | null }>(`/api/backoffice/events/${eventId}/sponsor`, { token }),
-    updateProfile: (token: string, eventId: number, data: Record<string, unknown>) =>
-      fetchAPI<{ profile: Record<string, unknown> }>(`/api/backoffice/events/${eventId}/sponsor`, { method: 'PATCH', body: JSON.stringify(data), token }),
+      fetchAPI<{ sponsor: SponsorPage | null }>(
+        `/api/backoffice/events/${eventId}/sponsor`,
+        { token },
+      ),
+    updateProfile: (
+      token: string,
+      eventId: number,
+      data: Record<string, unknown>,
+    ) =>
+      fetchAPI<{ profile: Record<string, unknown> }>(
+        `/api/backoffice/events/${eventId}/sponsor`,
+        { method: "PATCH", body: JSON.stringify(data), token },
+      ),
     uploadOrganizerLogo: (token: string, eventId: number, formData: FormData) =>
-      fetchAPI<{ profile: Record<string, unknown>; organizerLogoUrl: string }>(`/api/backoffice/events/${eventId}/sponsor/organizer-logo/upload`, { method: 'POST', body: formData as unknown as BodyInit, token }),
+      fetchAPI<{ profile: Record<string, unknown>; organizerLogoUrl: string }>(
+        `/api/backoffice/events/${eventId}/sponsor/organizer-logo/upload`,
+        { method: "POST", body: formData as unknown as BodyInit, token },
+      ),
 
-    createStat: (token: string, eventId: number, data: Record<string, unknown>) =>
-      fetchAPI<{ stat: SponsorStat }>(`/api/backoffice/events/${eventId}/sponsor/stats`, { method: 'POST', body: JSON.stringify(data), token }),
+    createStat: (
+      token: string,
+      eventId: number,
+      data: Record<string, unknown>,
+    ) =>
+      fetchAPI<{ stat: SponsorStat }>(
+        `/api/backoffice/events/${eventId}/sponsor/stats`,
+        { method: "POST", body: JSON.stringify(data), token },
+      ),
     updateStat: (token: string, id: number, data: Record<string, unknown>) =>
-      fetchAPI<{ stat: SponsorStat }>(`/api/backoffice/sponsor-stats/${id}`, { method: 'PATCH', body: JSON.stringify(data), token }),
+      fetchAPI<{ stat: SponsorStat }>(`/api/backoffice/sponsor-stats/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify(data),
+        token,
+      }),
     deleteStat: (token: string, id: number) =>
-      fetchAPI<{ success: boolean }>(`/api/backoffice/sponsor-stats/${id}`, { method: 'DELETE', token }),
+      fetchAPI<{ success: boolean }>(`/api/backoffice/sponsor-stats/${id}`, {
+        method: "DELETE",
+        token,
+      }),
 
-    createPackage: (token: string, eventId: number, data: Record<string, unknown>) =>
-      fetchAPI<{ package: SponsorPackage }>(`/api/backoffice/events/${eventId}/sponsor/packages`, { method: 'POST', body: JSON.stringify(data), token }),
+    createPackage: (
+      token: string,
+      eventId: number,
+      data: Record<string, unknown>,
+    ) =>
+      fetchAPI<{ package: SponsorPackage }>(
+        `/api/backoffice/events/${eventId}/sponsor/packages`,
+        { method: "POST", body: JSON.stringify(data), token },
+      ),
     updatePackage: (token: string, id: number, data: Record<string, unknown>) =>
-      fetchAPI<{ package: SponsorPackage }>(`/api/backoffice/sponsor-packages/${id}`, { method: 'PATCH', body: JSON.stringify(data), token }),
+      fetchAPI<{ package: SponsorPackage }>(
+        `/api/backoffice/sponsor-packages/${id}`,
+        { method: "PATCH", body: JSON.stringify(data), token },
+      ),
     deletePackage: (token: string, id: number) =>
-      fetchAPI<{ success: boolean }>(`/api/backoffice/sponsor-packages/${id}`, { method: 'DELETE', token }),
-    updatePackageFeatures: (token: string, id: number, features: { featureText: string; sortOrder: number }[]) =>
-      fetchAPI<{ features: Record<string, unknown>[] }>(`/api/backoffice/sponsor-packages/${id}/features`, { method: 'PUT', body: JSON.stringify({ features }), token }),
-    updatePackageComponents: (token: string, id: number, components: { componentPackageId: number; componentRole?: string }[]) =>
-      fetchAPI<{ components: Record<string, unknown>[] }>(`/api/backoffice/sponsor-packages/${id}/components`, { method: 'PUT', body: JSON.stringify({ components }), token }),
+      fetchAPI<{ success: boolean }>(`/api/backoffice/sponsor-packages/${id}`, {
+        method: "DELETE",
+        token,
+      }),
+    updatePackageFeatures: (
+      token: string,
+      id: number,
+      features: { featureText: string; sortOrder: number }[],
+    ) =>
+      fetchAPI<{ features: Record<string, unknown>[] }>(
+        `/api/backoffice/sponsor-packages/${id}/features`,
+        { method: "PUT", body: JSON.stringify({ features }), token },
+      ),
+    updatePackageComponents: (
+      token: string,
+      id: number,
+      components: { componentPackageId: number; componentRole?: string }[],
+    ) =>
+      fetchAPI<{ components: Record<string, unknown>[] }>(
+        `/api/backoffice/sponsor-packages/${id}/components`,
+        { method: "PUT", body: JSON.stringify({ components }), token },
+      ),
 
-    createBenefit: (token: string, eventId: number, data: Record<string, unknown>) =>
-      fetchAPI<{ benefit: SponsorBenefit }>(`/api/backoffice/events/${eventId}/sponsor/benefits`, { method: 'POST', body: JSON.stringify(data), token }),
+    createBenefit: (
+      token: string,
+      eventId: number,
+      data: Record<string, unknown>,
+    ) =>
+      fetchAPI<{ benefit: SponsorBenefit }>(
+        `/api/backoffice/events/${eventId}/sponsor/benefits`,
+        { method: "POST", body: JSON.stringify(data), token },
+      ),
     updateBenefit: (token: string, id: number, data: Record<string, unknown>) =>
-      fetchAPI<{ benefit: SponsorBenefit }>(`/api/backoffice/sponsor-benefits/${id}`, { method: 'PATCH', body: JSON.stringify(data), token }),
+      fetchAPI<{ benefit: SponsorBenefit }>(
+        `/api/backoffice/sponsor-benefits/${id}`,
+        { method: "PATCH", body: JSON.stringify(data), token },
+      ),
     deleteBenefit: (token: string, id: number) =>
-      fetchAPI<{ success: boolean }>(`/api/backoffice/sponsor-benefits/${id}`, { method: 'DELETE', token }),
+      fetchAPI<{ success: boolean }>(`/api/backoffice/sponsor-benefits/${id}`, {
+        method: "DELETE",
+        token,
+      }),
 
-    createTimelineItem: (token: string, eventId: number, data: Record<string, unknown>) =>
-      fetchAPI<{ timelineItem: SponsorTimelineItem }>(`/api/backoffice/events/${eventId}/sponsor/timeline`, { method: 'POST', body: JSON.stringify(data), token }),
-    updateTimelineItem: (token: string, id: number, data: Record<string, unknown>) =>
-      fetchAPI<{ timelineItem: SponsorTimelineItem }>(`/api/backoffice/sponsor-timeline/${id}`, { method: 'PATCH', body: JSON.stringify(data), token }),
+    createTimelineItem: (
+      token: string,
+      eventId: number,
+      data: Record<string, unknown>,
+    ) =>
+      fetchAPI<{ timelineItem: SponsorTimelineItem }>(
+        `/api/backoffice/events/${eventId}/sponsor/timeline`,
+        { method: "POST", body: JSON.stringify(data), token },
+      ),
+    updateTimelineItem: (
+      token: string,
+      id: number,
+      data: Record<string, unknown>,
+    ) =>
+      fetchAPI<{ timelineItem: SponsorTimelineItem }>(
+        `/api/backoffice/sponsor-timeline/${id}`,
+        { method: "PATCH", body: JSON.stringify(data), token },
+      ),
     deleteTimelineItem: (token: string, id: number) =>
-      fetchAPI<{ success: boolean }>(`/api/backoffice/sponsor-timeline/${id}`, { method: 'DELETE', token }),
+      fetchAPI<{ success: boolean }>(`/api/backoffice/sponsor-timeline/${id}`, {
+        method: "DELETE",
+        token,
+      }),
 
     uploadMedia: (token: string, eventId: number, formData: FormData) =>
-      fetchAPI<{ media: SponsorMediaAsset }>(`/api/backoffice/events/${eventId}/sponsor/media/upload`, { method: 'POST', body: formData as unknown as BodyInit, token }),
-    createMedia: (token: string, eventId: number, data: Record<string, unknown>) =>
-      fetchAPI<{ media: SponsorMediaAsset }>(`/api/backoffice/events/${eventId}/sponsor/media`, { method: 'POST', body: JSON.stringify(data), token }),
+      fetchAPI<{ media: SponsorMediaAsset }>(
+        `/api/backoffice/events/${eventId}/sponsor/media/upload`,
+        { method: "POST", body: formData as unknown as BodyInit, token },
+      ),
+    createMedia: (
+      token: string,
+      eventId: number,
+      data: Record<string, unknown>,
+    ) =>
+      fetchAPI<{ media: SponsorMediaAsset }>(
+        `/api/backoffice/events/${eventId}/sponsor/media`,
+        { method: "POST", body: JSON.stringify(data), token },
+      ),
     updateMedia: (token: string, id: number, data: Record<string, unknown>) =>
-      fetchAPI<{ media: SponsorMediaAsset }>(`/api/backoffice/sponsor-media/${id}`, { method: 'PATCH', body: JSON.stringify(data), token }),
+      fetchAPI<{ media: SponsorMediaAsset }>(
+        `/api/backoffice/sponsor-media/${id}`,
+        { method: "PATCH", body: JSON.stringify(data), token },
+      ),
     deleteMedia: (token: string, id: number) =>
-      fetchAPI<{ success: boolean }>(`/api/backoffice/sponsor-media/${id}`, { method: 'DELETE', token }),
+      fetchAPI<{ success: boolean }>(`/api/backoffice/sponsor-media/${id}`, {
+        method: "DELETE",
+        token,
+      }),
 
     listApplications: (token: string, query?: string) =>
-      fetchAPI<{ applications: SponsorApplication[]; pagination: Pagination }>(`/api/backoffice/sponsor-applications${query ? `?${query}` : ''}`, { token }),
+      fetchAPI<{ applications: SponsorApplication[]; pagination: Pagination }>(
+        `/api/backoffice/sponsor-applications${query ? `?${query}` : ""}`,
+        { token },
+      ),
     getApplication: (token: string, id: number) =>
-      fetchAPI<{ application: SponsorApplication }>(`/api/backoffice/sponsor-applications/${id}`, { token }),
-    updateApplication: (token: string, id: number, data: Record<string, unknown>) =>
-      fetchAPI<{ application: SponsorApplication }>(`/api/backoffice/sponsor-applications/${id}`, { method: 'PATCH', body: JSON.stringify(data), token }),
-    updateApplicationStatus: (token: string, id: number, data: Record<string, unknown>) =>
-      fetchAPI<{ application: SponsorApplication }>(`/api/backoffice/sponsor-applications/${id}/status`, { method: 'PATCH', body: JSON.stringify(data), token }),
-    updatePaymentStatus: (token: string, id: number, data: Record<string, unknown>) =>
-      fetchAPI<{ application: SponsorApplication }>(`/api/backoffice/sponsor-applications/${id}/payment-status`, { method: 'PATCH', body: JSON.stringify(data), token }),
+      fetchAPI<{ application: SponsorApplication }>(
+        `/api/backoffice/sponsor-applications/${id}`,
+        { token },
+      ),
+    updateApplication: (
+      token: string,
+      id: number,
+      data: Record<string, unknown>,
+    ) =>
+      fetchAPI<{ application: SponsorApplication }>(
+        `/api/backoffice/sponsor-applications/${id}`,
+        { method: "PATCH", body: JSON.stringify(data), token },
+      ),
+    updateApplicationStatus: (
+      token: string,
+      id: number,
+      data: Record<string, unknown>,
+    ) =>
+      fetchAPI<{ application: SponsorApplication }>(
+        `/api/backoffice/sponsor-applications/${id}/status`,
+        { method: "PATCH", body: JSON.stringify(data), token },
+      ),
+    updatePaymentStatus: (
+      token: string,
+      id: number,
+      data: Record<string, unknown>,
+    ) =>
+      fetchAPI<{ application: SponsorApplication }>(
+        `/api/backoffice/sponsor-applications/${id}/payment-status`,
+        { method: "PATCH", body: JSON.stringify(data), token },
+      ),
   },
 
   members: {
     list: (token: string, query?: string) =>
-      fetchAPI<{ members: Record<string, unknown>[]; pagination: Pagination }>(`/api/backoffice/members${query ? `?${query}` : ''}`, { token }),
+      fetchAPI<{ members: Record<string, unknown>[]; pagination: Pagination }>(
+        `/api/backoffice/members${query ? `?${query}` : ""}`,
+        { token },
+      ),
     get: (token: string, id: number) =>
-      fetchAPI<{ member: Record<string, unknown> }>(`/api/backoffice/members/${id}`, { token }),
+      fetchAPI<{ member: Record<string, unknown> }>(
+        `/api/backoffice/members/${id}`,
+        { token },
+      ),
     stats: (token: string) =>
-      fetchAPI<{ total: number; byRole: { role: string; count: number }[]; byStatus: { status: string; count: number }[] }>('/api/backoffice/members/stats/summary', { token }),
+      fetchAPI<{
+        total: number;
+        byRole: { role: string; count: number }[];
+        byStatus: { status: string; count: number }[];
+      }>("/api/backoffice/members/stats/summary", { token }),
     delete: (token: string, id: number) =>
-      fetchAPI<{ success: boolean }>(`/api/backoffice/members/${id}`, { method: 'DELETE', token }),
+      fetchAPI<{ success: boolean }>(`/api/backoffice/members/${id}`, {
+        method: "DELETE",
+        token,
+      }),
   },
 
   // File Upload
-  uploadFile: (token: string, file: File, folder: string = 'general') => {
+  uploadFile: (token: string, file: File, folder: string = "general") => {
     const formData = new FormData();
-    formData.append('file', file);
-    formData.append('folder', folder);
+    formData.append("file", file);
+    formData.append("folder", folder);
     const resolvedToken = token || getStoredBackofficeToken();
     const headers: Record<string, string> = {};
 
     if (resolvedToken) {
-      headers['Authorization'] = `Bearer ${resolvedToken}`;
+      headers["Authorization"] = `Bearer ${resolvedToken}`;
     }
 
     const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
     return fetch(`${API_BASE_URL}/upload`, {
-      method: 'POST',
+      method: "POST",
       headers,
-      body: formData
+      body: formData,
     }).then(async (res) => {
       if (!res.ok) {
         if (res.status === 401) {
           dispatchUnauthorizedEvent();
         }
-        throw new Error('Upload failed');
+        throw new Error("Upload failed");
       }
       return res.json() as Promise<{ success: boolean; url: string }>;
     });
-  }
+  },
 };

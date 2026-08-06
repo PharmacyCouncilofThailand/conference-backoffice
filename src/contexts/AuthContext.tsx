@@ -17,7 +17,8 @@ export type UserRole =
   | "organizer"
   | "reviewer"
   | "staff"
-  | "verifier";
+  | "verifier"
+  | "team_registration_viewer";
 
 // Event assignment
 export interface AssignedEvent {
@@ -72,6 +73,7 @@ const rolePageAccess: Record<UserRole, string[]> = {
   reviewer: ["/abstracts"],
   staff: ["/checkin"],
   verifier: ["/verification", "/student-eligibility"],
+  team_registration_viewer: ["/team-registrations"],
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);

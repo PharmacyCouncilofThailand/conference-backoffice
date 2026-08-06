@@ -52,6 +52,12 @@ const roles = [
     color: "bg-orange-100 text-orange-800",
     description: "Verify student identity documents",
   },
+  {
+    id: "team_registration_viewer",
+    label: "Team Registration Viewer",
+    color: "bg-blue-100 text-blue-800",
+    description: "Read-only access to assigned Events' team registrations",
+  },
 ];
 
 // NOTE: Abstract categories are now fetched dynamically per-event from
