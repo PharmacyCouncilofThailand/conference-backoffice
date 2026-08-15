@@ -259,7 +259,7 @@ export default function StudentEligibilityPage() {
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full table-sticky-actions">
               <thead className="bg-zinc-50 border-b border-zinc-200">
                 <tr>
                   <th className="px-5 py-3 text-left text-xs font-semibold text-zinc-500 uppercase">Applicant</th>

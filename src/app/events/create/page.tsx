@@ -1556,7 +1556,7 @@ export default function CreateEventPage() {
 
             {sessions.filter((s) => !s.isMainSession).length > 0 ? (
               <div className="overflow-x-auto">
-                <table className="data-table">
+                <table className="data-table table-sticky-actions">
                   <thead>
                     <tr>
                       <th>Code</th>
@@ -1666,7 +1666,7 @@ export default function CreateEventPage() {
           {/* Tickets Table */}
           {tickets.length > 0 ? (
             <div className="overflow-x-auto">
-              <table className="data-table">
+              <table className="data-table table-sticky-actions">
                 <thead>
                   <tr>
                     <th>Ticket</th>

@@ -235,7 +235,7 @@ export default function RegistrationsPage() {
                 ) : (
                     <>
                         <div className="overflow-x-auto">
-                            <table className="w-full">
+                            <table className="w-full table-sticky-actions">
                                 <thead>
                                     <tr className="bg-zinc-50 border-b border-zinc-200">
                                         <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-500 uppercase tracking-wider">Code</th>

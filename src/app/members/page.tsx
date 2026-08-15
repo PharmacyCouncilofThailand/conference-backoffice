@@ -318,7 +318,7 @@ export default function MembersPage() {
         ) : (
           <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm">
             <div className="overflow-x-auto">
-              <table className="w-full">
+              <table className="w-full table-sticky-actions">
                 <thead>
                   <tr className="bg-zinc-50 border-b border-zinc-200">
                     <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">

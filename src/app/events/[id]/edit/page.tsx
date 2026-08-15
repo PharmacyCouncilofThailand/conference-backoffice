@@ -1612,7 +1612,7 @@ export default function EditEventPage() {
                 </h4>
               </div>
               <div className="overflow-x-auto">
-                <table className="data-table w-full">
+                <table className="data-table w-full table-sticky-actions">
                   <thead className="bg-emerald-50">
                     <tr>
                       <th className="text-blue-900">Code</th>
@@ -1671,7 +1671,7 @@ export default function EditEventPage() {
             </div>
             {sessions.filter((s) => !s.isMainSession).length > 0 ? (
               <div className="overflow-x-auto">
-                <table className="data-table">
+                <table className="data-table table-sticky-actions">
                   <thead>
                     <tr>
                       <th>Code</th>
@@ -1741,7 +1741,7 @@ export default function EditEventPage() {
 
           {tickets.length > 0 ? (
             <div className="overflow-x-auto">
-              <table className="data-table">
+              <table className="data-table table-sticky-actions">
                 <thead>
                   <tr>
                     <th>Ticket Name</th>

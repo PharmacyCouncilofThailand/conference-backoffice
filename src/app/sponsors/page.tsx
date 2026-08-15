@@ -1678,7 +1678,8 @@ function ApplicationsTab({
       </div>
 
       <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white">
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm table-sticky-actions">
           <thead className="bg-zinc-50 text-xs uppercase tracking-wide text-zinc-400">
             <tr>
               <th className="px-4 py-3 text-left">Company</th>
@@ -1731,7 +1732,8 @@ function ApplicationsTab({
               </tr>
             )}
           </tbody>
-        </table>
+          </table>
+        </div>
         <Pagination
           currentPage={pagination.page}
           totalPages={pagination.totalPages}
