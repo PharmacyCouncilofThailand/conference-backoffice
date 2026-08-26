@@ -17,6 +17,8 @@ import {
   IconPhone,
   IconBuilding,
   IconWorld,
+  IconTicket,
+  IconTicketOff,
   IconTrash,
 } from "@tabler/icons-react";
 
@@ -80,7 +82,7 @@ const statusLabels: Record<string, { label: string; className: string }> = {
 };
 
 export default function MembersPage() {
-  const { token } = useAuth();
+  const { token, isAdmin } = useAuth();
   const [members, setMembers] = useState<Member[]>([]);
   const [pagination, setPagination] = useState<Pagination | null>(null);
   const [loading, setLoading] = useState(true);
@@ -100,12 +102,15 @@ export default function MembersPage() {
     active: 0,
     pending: 0,
     rejected: 0,
+    purchased: 0,
+    notPurchased: 0,
   });
 
   const fetchStats = useCallback(async () => {
     if (!token) return;
     try {
-      const data = await api.members.stats(token);
+      const query = eventFilter ? `eventId=${encodeURIComponent(eventFilter)}` : undefined;
+      const data = await api.members.stats(token, query);
       const getCount = (status: string) =>
         data.byStatus.find((s: any) => s.status === status)?.count || 0;
       setStats({
@@ -113,11 +118,13 @@ export default function MembersPage() {
         active: getCount("active"),
         pending: getCount("pending_approval"),
         rejected: getCount("rejected"),
+        purchased: data.purchased,
+        notPurchased: data.notPurchased,
       });
     } catch (error) {
       console.error("Failed to fetch stats:", error);
     }
-  }, [token]);
+  }, [token, eventFilter]);
 
   useEffect(() => {
     fetchStats();
@@ -130,6 +137,12 @@ export default function MembersPage() {
       setEventOptions((res.events as any[]).map((e) => ({ id: e.id as number, name: e.eventName as string })));
     }).catch(() => {});
   }, [token]);
+
+  useEffect(() => {
+    if (isAdmin || eventOptions.length !== 1 || eventFilter) return;
+    setEventFilter(String(eventOptions[0].id));
+    setCurrentPage(1);
+  }, [isAdmin, eventOptions, eventFilter]);
 
   const fetchMembers = useCallback(async () => {
     if (!token) return;
@@ -185,7 +198,7 @@ export default function MembersPage() {
   return (
     <AdminLayout title="Members">
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-6 gap-4 mb-6">
         <div className="card py-4">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600">
@@ -233,6 +246,32 @@ export default function MembersPage() {
                 {stats.rejected}
               </p>
               <p className="text-sm text-zinc-400">Rejected</p>
+            </div>
+          </div>
+        </div>
+        <div className="card py-4">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600">
+              <IconTicket size={24} stroke={1.5} />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-blue-600">
+                {stats.purchased}
+              </p>
+              <p className="text-sm text-zinc-400">Purchased Ticket</p>
+            </div>
+          </div>
+        </div>
+        <div className="card py-4">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-zinc-100 rounded-xl flex items-center justify-center text-zinc-600">
+              <IconTicketOff size={24} stroke={1.5} />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-zinc-700">
+                {stats.notPurchased}
+              </p>
+              <p className="text-sm text-zinc-400">Not Purchased</p>
             </div>
           </div>
         </div>
@@ -446,19 +485,21 @@ export default function MembersPage() {
                           </span>
                         </td>
                         <td className="px-4 py-4 text-center">
-                          <button
-                            type="button"
-                            onClick={() => setDeleteConfirm(member)}
-                            disabled={deletingId === member.id}
-                            className="p-2 text-zinc-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
-                            title="Delete member"
-                          >
-                            {deletingId === member.id ? (
-                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600"></div>
-                            ) : (
-                              <IconTrash size={18} stroke={1.5} />
-                            )}
-                          </button>
+                          {isAdmin && (
+                            <button
+                              type="button"
+                              onClick={() => setDeleteConfirm(member)}
+                              disabled={deletingId === member.id}
+                              className="p-2 text-zinc-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                              title="Delete member"
+                            >
+                              {deletingId === member.id ? (
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600"></div>
+                              ) : (
+                                <IconTrash size={18} stroke={1.5} />
+                              )}
+                            </button>
+                          )}
                         </td>
                       </tr>
                     ))
@@ -482,7 +523,7 @@ export default function MembersPage() {
       </div>
 
       {/* Delete Confirmation Modal */}
-      {deleteConfirm && (
+      {isAdmin && deleteConfirm && (
         <div className="modal-overlay">
           <div className="bg-white rounded-2xl shadow-lg max-w-md w-full mx-4 p-6">
             <div className="flex items-center gap-3 mb-4">

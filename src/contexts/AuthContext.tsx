@@ -69,7 +69,7 @@ interface AuthContextType {
 // Role-based page access
 const rolePageAccess: Record<UserRole, string[]> = {
   admin: ["*"], // All pages
-  organizer: ["/reports", "/members", "/verification"],
+  organizer: ["/reports", "/members", "/verification", "/registrations", "/abstracts"],
   reviewer: ["/abstracts"],
   staff: ["/checkin"],
   verifier: ["/verification", "/student-eligibility"],
@@ -197,6 +197,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const hasAccess = (page: string): boolean => {
     if (!user) return false;
+    if (user.role === "organizer" && page.startsWith("/registrations/add")) {
+      return false;
+    }
     const allowedPages = rolePageAccess[user.role];
     if (allowedPages.includes("*")) return true;
     return allowedPages.some((p) => page.startsWith(p));

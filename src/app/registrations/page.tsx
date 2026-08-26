@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { AdminLayout } from '@/components/layout';
 import { api } from '@/lib/api';
 import { exportToExcel } from '@/lib/exportExcel';
 import { useDebounce } from '@/hooks/useDebounce';
 import { Pagination } from '@/components/common';
+import { useAuth } from '@/contexts/AuthContext';
 import toast from 'react-hot-toast';
 import {
     IconUsers,
@@ -42,6 +43,8 @@ const getBackofficeToken = () =>
     '';
 
 export default function RegistrationsPage() {
+    const { user } = useAuth();
+    const isOrganizer = user?.role === 'organizer';
     const [registrations, setRegistrations] = useState<Registration[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -69,6 +72,13 @@ export default function RegistrationsPage() {
             setEventOptions((res.events as any[]).map((e) => ({ id: e.id as number, name: e.eventName as string })));
         }).catch(() => {});
     }, []);
+
+    useEffect(() => {
+        if (!isOrganizer || eventOptions.length !== 1 || eventFilter) return;
+        setEventFilter(String(eventOptions[0].id));
+        setEventSelected(true);
+        setPage(1);
+    }, [isOrganizer, eventOptions, eventFilter]);
 
     useEffect(() => {
         if (!eventSelected) return;
@@ -207,12 +217,14 @@ export default function RegistrationsPage() {
                             {isExporting ? <IconLoader2 size={18} className="animate-spin" /> : <IconDownload size={18} />}
                             Export Excel
                         </button>
-                        <Link
-                            href="/registrations/add"
-                            className="btn-primary flex items-center gap-2"
-                        >
-                            <IconUserPlus size={18} /> Add Registration
-                        </Link>
+                        {!isOrganizer && (
+                            <Link
+                                href="/registrations/add"
+                                className="btn-primary flex items-center gap-2"
+                            >
+                                <IconUserPlus size={18} /> Add Registration
+                            </Link>
+                        )}
                     </div>
                 </div>
             </div>

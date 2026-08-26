@@ -940,12 +940,14 @@ export const api = {
         `/api/backoffice/members/${id}`,
         { token },
       ),
-    stats: (token: string) =>
+    stats: (token: string, query?: string) =>
       fetchAPI<{
         total: number;
+        purchased: number;
+        notPurchased: number;
         byRole: { role: string; count: number }[];
         byStatus: { status: string; count: number }[];
-      }>("/api/backoffice/members/stats/summary", { token }),
+      }>(`/api/backoffice/members/stats/summary${query ? `?${query}` : ""}`, { token }),
     delete: (token: string, id: number) =>
       fetchAPI<{ success: boolean }>(`/api/backoffice/members/${id}`, {
         method: "DELETE",

@@ -198,6 +198,9 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
       // Admin sees everything
       if (isAdmin) return item;
 
+      // Sponsor Hub is admin-only.
+      if (item.href === "/sponsors") return null;
+
       if (role === "team_registration_viewer") {
         if (item.href === "/team-registrations") return item;
         return null;
@@ -220,7 +223,6 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
 
       // Organizer specific restrictions
       if (role === "organizer") {
-        if (item.href === "/sponsors") return item;
         if (item.href === "/members") return item;
         if (item.label === "ATTENDEE MANAGEMENT") return item;
 
@@ -228,8 +230,14 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
           return {
             ...item,
             children: item.children.filter(
-              (child) => child.href === "/verification",
+              (child) => child.href === "/registrations" || child.href === "/verification",
             ),
+          };
+        }
+        if (item.label === "Abstracts" && item.children) {
+          return {
+            ...item,
+            children: item.children.filter((child) => child.href === "/abstracts"),
           };
         }
         return null;

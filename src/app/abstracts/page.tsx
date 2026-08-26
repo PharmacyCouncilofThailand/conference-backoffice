@@ -712,63 +712,67 @@ export default function AbstractsPage() {
                         >
                           <IconEye size={18} />
                         </button>
-                        <button
-                          className={`p-2 rounded-lg transition-colors ${abs.status === "pending" ? "hover:bg-amber-50 text-zinc-400 hover:text-amber-600" : "text-gray-200 cursor-not-allowed"}`}
-                          title="Request Revise"
-                          onClick={() => {
-                            if (abs.status === "pending") {
-                              setSelectedAbstract(abs);
-                              setShowRevisionModal(true);
-                            }
-                          }}
-                          disabled={abs.status !== "pending"}
-                        >
-                          <IconPencil size={18} />
-                        </button>
-                        <button
-                          className={`p-2 rounded-lg transition-colors ${abs.status === "pending" ? "hover:bg-green-50 text-zinc-400 hover:text-green-600" : "text-gray-200 cursor-not-allowed"}`}
-                          title="Approve"
-                          onClick={() => {
-                            if (abs.status === "pending") {
-                              setSelectedAbstract(abs);
-                              setShowApproveModal(true);
-                            }
-                          }}
-                          disabled={abs.status !== "pending"}
-                        >
-                          <IconCheck size={18} />
-                        </button>
-                        <button
-                          className={`p-2 rounded-lg transition-colors ${abs.status === "pending" ? "hover:bg-red-50 text-zinc-400 hover:text-red-600" : "text-gray-200 cursor-not-allowed"}`}
-                          title="Reject"
-                          onClick={() => {
-                            if (abs.status === "pending") {
-                              setSelectedAbstract(abs);
-                              setShowRejectModal(true);
-                            }
-                          }}
-                          disabled={abs.status !== "pending"}
-                        >
-                          <IconX size={18} />
-                        </button>
-                        {abs.status === "accepted" && !abs.confirmedAt && (
+                        {(
                           <>
                             <button
-                              className="p-2 rounded-lg transition-colors hover:bg-blue-50 text-zinc-400 hover:text-blue-600"
-                              title="Resend confirmation email"
-                              onClick={() => handleResendConfirmation(abs)}
-                              disabled={isSubmitting}
+                              className={`p-2 rounded-lg transition-colors ${abs.status === "pending" ? "hover:bg-amber-50 text-zinc-400 hover:text-amber-600" : "text-gray-200 cursor-not-allowed"}`}
+                              title="Request Revise"
+                              onClick={() => {
+                                if (abs.status === "pending") {
+                                  setSelectedAbstract(abs);
+                                  setShowRevisionModal(true);
+                                }
+                              }}
+                              disabled={abs.status !== "pending"}
                             >
-                              <IconMail size={18} />
+                              <IconPencil size={18} />
                             </button>
                             <button
-                              className="p-2 rounded-lg transition-colors hover:bg-emerald-50 text-zinc-400 hover:text-emerald-600"
-                              title="Manually confirm (admin override)"
-                              onClick={() => handleManualConfirm(abs)}
-                              disabled={isSubmitting}
+                              className={`p-2 rounded-lg transition-colors ${abs.status === "pending" ? "hover:bg-green-50 text-zinc-400 hover:text-green-600" : "text-gray-200 cursor-not-allowed"}`}
+                              title="Approve"
+                              onClick={() => {
+                                if (abs.status === "pending") {
+                                  setSelectedAbstract(abs);
+                                  setShowApproveModal(true);
+                                }
+                              }}
+                              disabled={abs.status !== "pending"}
                             >
-                              <IconCircleCheck size={18} />
+                              <IconCheck size={18} />
                             </button>
+                            <button
+                              className={`p-2 rounded-lg transition-colors ${abs.status === "pending" ? "hover:bg-red-50 text-zinc-400 hover:text-red-600" : "text-gray-200 cursor-not-allowed"}`}
+                              title="Reject"
+                              onClick={() => {
+                                if (abs.status === "pending") {
+                                  setSelectedAbstract(abs);
+                                  setShowRejectModal(true);
+                                }
+                              }}
+                              disabled={abs.status !== "pending"}
+                            >
+                              <IconX size={18} />
+                            </button>
+                            {abs.status === "accepted" && !abs.confirmedAt && (
+                              <>
+                                <button
+                                  className="p-2 rounded-lg transition-colors hover:bg-blue-50 text-zinc-400 hover:text-blue-600"
+                                  title="Resend confirmation email"
+                                  onClick={() => handleResendConfirmation(abs)}
+                                  disabled={isSubmitting}
+                                >
+                                  <IconMail size={18} />
+                                </button>
+                                <button
+                                  className="p-2 rounded-lg transition-colors hover:bg-emerald-50 text-zinc-400 hover:text-emerald-600"
+                                  title="Manually confirm (admin override)"
+                                  onClick={() => handleManualConfirm(abs)}
+                                  disabled={isSubmitting}
+                                >
+                                  <IconCircleCheck size={18} />
+                                </button>
+                              </>
+                            )}
                           </>
                         )}
                       </div>
