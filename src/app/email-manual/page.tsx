@@ -74,7 +74,14 @@ const TEMPLATE_GROUPS = [
       "abstract-rejected",
     ],
   },
-  { category: "Registration", templates: ["manual-registration", "event-reminder"] },
+  {
+    category: "Registration",
+    templates: [
+      "pris-early-bird-reminder",
+      "manual-registration",
+      "event-reminder",
+    ],
+  },
 ];
 
 function getBackofficeToken(): string {
@@ -453,6 +460,17 @@ export default function EmailManualPage() {
               <p className="text-sm font-medium text-slate-700">{selectedTemplate.description}</p>
               <p className="text-xs text-slate-500 mt-1">
                 Recipient type: {selectedTemplate.recipientType}. Results are limited to the selected event.
+              </p>
+            </div>
+          )}
+
+          {selectedTemplateId === "pris-early-bird-reminder" && (
+            <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+              <p>
+                รายชื่อด้านล่างถูกคัดจาก API แล้ว: บัญชีสร้างก่อน cutoff, มี PRIS 2026 abstract ก่อน cutoff และยังไม่มี confirmed primary registration. ระบบจะตรวจสิทธิ์ซ้ำตอน Preview / Validate / Send.
+              </p>
+              <p className="mt-1 font-medium">
+                กำหนดชำระ Early Bird: 15 Sep 2026 23:59 Bangkok. Select All หมายถึงรายการที่ API ส่งกลับมาและกำลังแสดงเท่านั้น ไม่ได้หมายถึงผู้มีสิทธิ์ทั้งหมดในฐานข้อมูล.
               </p>
             </div>
           )}

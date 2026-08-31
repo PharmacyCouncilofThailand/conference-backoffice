@@ -1,10 +1,16 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { AdminLayout } from "@/components/layout";
 import { api } from "@/lib/api";
 import { exportToExcel } from "@/lib/exportExcel";
+import {
+  PRIS_2026_EVENT_CODE,
+  PRIS_2026_ABSTRACT_ROUND_OPTIONS,
+  getPris2026RoundQuery,
+  type Pris2026AbstractRoundFilter,
+} from "@/lib/pris2026AbstractRounds";
 import { useAuth } from "@/contexts/AuthContext";
 import { useDebounce } from "@/hooks/useDebounce";
 import { Pagination } from "@/components/common";
@@ -12,7 +18,6 @@ import { RevisionRequestModal } from "@/components/abstracts/RevisionRequestModa
 import toast from "react-hot-toast";
 import {
   IconFileText,
-  IconClock,
   IconCheck,
   IconX,
   IconSearch,
@@ -153,7 +158,12 @@ export default function AbstractsPage() {
   const [categoryFilter, setCategoryFilter] = useState("");
   const [presentationTypeFilter, setPresentationTypeFilter] = useState("");
   const [eventFilter, setEventFilter] = useState("");
-  const [eventOptions, setEventOptions] = useState<{ id: number; name: string }[]>([]);
+  const [roundFilter, setRoundFilter] = useState<Pris2026AbstractRoundFilter>("");
+  const [eventOptions, setEventOptions] = useState<{
+    id: number;
+    code: string;
+    name: string;
+  }[]>([]);
   const [eventSelected, setEventSelected] = useState(false);
   // Dynamic abstract categories for the currently selected event
   const [eventCategoryList, setEventCategoryList] = useState<{ id: number; name: string }[]>([]);
@@ -173,12 +183,24 @@ export default function AbstractsPage() {
     if (isAdmin) {
       const token = getBackofficeToken();
       api.backofficeEvents.list(token, "limit=100").then((res) => {
-        setEventOptions((res.events as any[]).map((e) => ({ id: e.id as number, name: e.eventName as string })));
+        setEventOptions(
+          res.events.map((e) => ({
+            id: Number(e.id),
+            code: String(e.eventCode || ""),
+            name: String(e.eventName || ""),
+          })),
+        );
       }).catch(() => {});
       return;
     }
     if (user && user.assignedEvents && user.assignedEvents.length > 0) {
-      setEventOptions(user.assignedEvents.map((e) => ({ id: e.id, name: e.name })));
+      setEventOptions(
+        user.assignedEvents.map((e) => ({
+          id: e.id,
+          code: e.code,
+          name: e.name,
+        })),
+      );
     }
   }, [isAdmin, user]);
 
@@ -191,6 +213,19 @@ export default function AbstractsPage() {
       setEventSelected(true);
     }
   }, [eventOptions, eventFilter]);
+
+  const selectedEvent = useMemo(
+    () => eventOptions.find((event) => String(event.id) === eventFilter) ?? null,
+    [eventOptions, eventFilter],
+  );
+  const isPris2026Event = selectedEvent?.code === PRIS_2026_EVENT_CODE;
+
+  useEffect(() => {
+    if (!isPris2026Event && roundFilter) {
+      setRoundFilter("");
+      setPage(1);
+    }
+  }, [isPris2026Event, roundFilter]);
 
   // Fetch abstract categories for the currently selected event
   useEffect(() => {
@@ -247,7 +282,7 @@ export default function AbstractsPage() {
     setIsExporting(true);
     try {
       const token = getBackofficeToken();
-      const params: any = { page: 1, limit: 1000 };
+      const params: Record<string, string> = { page: "1", limit: "1000" };
       if (statusFilter) params.status = statusFilter;
       if (categoryFilter) {
         if (/^\d+$/.test(categoryFilter)) {
@@ -259,6 +294,11 @@ export default function AbstractsPage() {
       if (presentationTypeFilter) params.presentationType = presentationTypeFilter;
       if (eventFilter) params.eventId = eventFilter;
       if (searchTerm) params.search = searchTerm;
+      if (isPris2026Event && roundFilter) {
+        const roundQuery = getPris2026RoundQuery(roundFilter);
+        if (roundQuery.submittedFrom) params.submittedFrom = roundQuery.submittedFrom;
+        if (roundQuery.submittedBefore) params.submittedBefore = roundQuery.submittedBefore;
+      }
 
       const res = await api.abstracts.list(token, new URLSearchParams(params).toString());
       const eventName = eventOptions.find(e => String(e.id) === eventFilter)?.name || 'event';
@@ -291,7 +331,11 @@ export default function AbstractsPage() {
         };
       });
 
-      exportToExcel(rows, `abstracts_${eventName.replace(/\s+/g, '_')}`);
+      const roundSuffix = roundFilter ? `_${roundFilter}` : "";
+      exportToExcel(
+        rows,
+        `abstracts_${eventName.replace(/\s+/g, '_')}${roundSuffix}`,
+      );
     } catch (error) {
       console.error('Export failed:', error);
       toast.error('Export failed');
@@ -312,13 +356,13 @@ export default function AbstractsPage() {
   useEffect(() => {
     if (!eventSelected) return;
     fetchAbstracts();
-  }, [page, debouncedSearchTerm, statusFilter, categoryFilter, presentationTypeFilter, eventFilter, eventSelected]);
+  }, [page, debouncedSearchTerm, statusFilter, categoryFilter, presentationTypeFilter, eventFilter, eventSelected, roundFilter, isPris2026Event]);
 
   const fetchAbstracts = async () => {
     setIsLoading(true);
     try {
       const token = getBackofficeToken();
-      const params: any = { page, limit };
+      const params: Record<string, string> = { page: String(page), limit: String(limit) };
       if (statusFilter) params.status = statusFilter;
       if (categoryFilter) {
         if (/^\d+$/.test(categoryFilter)) {
@@ -330,6 +374,11 @@ export default function AbstractsPage() {
       if (presentationTypeFilter) params.presentationType = presentationTypeFilter;
       if (eventFilter) params.eventId = eventFilter;
       if (searchTerm) params.search = searchTerm;
+      if (isPris2026Event && roundFilter) {
+        const roundQuery = getPris2026RoundQuery(roundFilter);
+        if (roundQuery.submittedFrom) params.submittedFrom = roundQuery.submittedFrom;
+        if (roundQuery.submittedBefore) params.submittedBefore = roundQuery.submittedBefore;
+      }
 
       const res = await api.abstracts.list(
         token,
@@ -501,6 +550,24 @@ export default function AbstractsPage() {
               <option key={e.id} value={e.id}>{e.name}</option>
             ))}
           </select>
+
+          {isPris2026Event && (
+            <select
+              value={roundFilter}
+              onChange={(e) => {
+                setRoundFilter(e.target.value as Pris2026AbstractRoundFilter);
+                setPage(1);
+              }}
+              className="input-field w-full"
+            >
+              <option value="">All Rounds</option>
+              {PRIS_2026_ABSTRACT_ROUND_OPTIONS.map((option) => (
+                <option key={option.id} value={option.id}>
+                  {option.label} — {option.detail}
+                </option>
+              ))}
+            </select>
+          )}
 
           <select
             value={categoryFilter}
