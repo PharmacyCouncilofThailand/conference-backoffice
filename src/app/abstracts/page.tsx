@@ -284,13 +284,7 @@ export default function AbstractsPage() {
       const token = getBackofficeToken();
       const params: Record<string, string> = { page: "1", limit: "1000" };
       if (statusFilter) params.status = statusFilter;
-      if (categoryFilter) {
-        if (/^\d+$/.test(categoryFilter)) {
-          params.categoryId = categoryFilter;
-        } else {
-          params.category = categoryFilter;
-        }
-      }
+      if (categoryFilter) params.categoryId = categoryFilter;
       if (presentationTypeFilter) params.presentationType = presentationTypeFilter;
       if (eventFilter) params.eventId = eventFilter;
       if (searchTerm) params.search = searchTerm;
@@ -364,13 +358,7 @@ export default function AbstractsPage() {
       const token = getBackofficeToken();
       const params: Record<string, string> = { page: String(page), limit: String(limit) };
       if (statusFilter) params.status = statusFilter;
-      if (categoryFilter) {
-        if (/^\d+$/.test(categoryFilter)) {
-          params.categoryId = categoryFilter;
-        } else {
-          params.category = categoryFilter;
-        }
-      }
+      if (categoryFilter) params.categoryId = categoryFilter;
       if (presentationTypeFilter) params.presentationType = presentationTypeFilter;
       if (eventFilter) params.eventId = eventFilter;
       if (searchTerm) params.search = searchTerm;
@@ -592,7 +580,7 @@ export default function AbstractsPage() {
                     : `All (${availableCategories.map((c) => c.name).join(", ")})`}
                 </option>
                 {availableCategories.map((cat) => (
-                  <option key={cat.id} value={cat.name}>
+                  <option key={cat.id} value={String(cat.id)}>
                     {cat.name}
                   </option>
                 ))}
