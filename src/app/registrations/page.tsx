@@ -32,6 +32,7 @@ interface Registration {
     eventName: string;
     eventCode: string;
     source?: string;
+    promoCode?: string | null;
     addedNote?: string | null;
     addedByFirstName?: string | null;
     addedByLastName?: string | null;
@@ -105,6 +106,7 @@ export default function RegistrationsPage() {
                 'Last Name': r.lastName,
                 'Email': r.email,
                 'Ticket': r.ticketName,
+                'Promo Code': r.promoCode || '',
                 'Status': r.status,
                 'Source': r.source,
                 'Note': r.addedNote || '',
@@ -254,6 +256,7 @@ export default function RegistrationsPage() {
                                         <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-500 uppercase tracking-wider">Attendee</th>
                                         <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">Event</th>
                                         <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">Ticket</th>
+                                        <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">Promo Code</th>
                                         <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">Status</th>
                                         <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">Source</th>
                                         <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider w-[100px]">Actions</th>
@@ -282,6 +285,18 @@ export default function RegistrationsPage() {
                                                 <span className="inline-flex px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700">
                                                     {reg.ticketName}
                                                 </span>
+                                            </td>
+                                            <td className="px-4 py-4 text-center">
+                                                {reg.promoCode ? (
+                                                    <span
+                                                        className="inline-flex max-w-[180px] break-all rounded bg-violet-50 px-2 py-1 font-mono text-xs font-medium text-violet-700"
+                                                        title={reg.promoCode}
+                                                    >
+                                                        {reg.promoCode}
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-zinc-400">-</span>
+                                                )}
                                             </td>
                                             <td className="px-4 py-4 text-center">
                                                 <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${reg.status === 'confirmed' ? 'bg-green-50 text-green-700 border-green-200' :

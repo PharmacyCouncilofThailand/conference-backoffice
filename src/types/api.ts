@@ -358,7 +358,8 @@ export interface Registration {
   ticketName?: string;
   eventName?: string;
   eventCode?: string;
-  source?: "purchase" | "manual";
+  source?: "purchase" | "manual" | "free" | "quick";
+  promoCode?: string | null;
   addedNote?: string | null;
   addedByFirstName?: string | null;
   addedByLastName?: string | null;
