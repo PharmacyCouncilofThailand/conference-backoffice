@@ -38,10 +38,37 @@ interface Registration {
     addedByLastName?: string | null;
 }
 
+interface PromoCodeOption {
+    id: number;
+    code: string;
+}
+
 const getBackofficeToken = () =>
     localStorage.getItem('backoffice_token') ||
     sessionStorage.getItem('backoffice_token') ||
     '';
+
+async function fetchEventPromoCodes(token: string, eventId: string): Promise<PromoCodeOption[]> {
+    const toOptions = (rows: Record<string, unknown>[]) =>
+        rows.map((promo) => ({ id: Number(promo.id), code: String(promo.code) }));
+    const firstPage = await api.promoCodes.list(token, new URLSearchParams({
+        page: '1',
+        limit: '100',
+        eventId,
+    }).toString());
+    const options = toOptions(firstPage.promoCodes);
+
+    for (let page = 2; page <= firstPage.pagination.totalPages; page += 1) {
+        const result = await api.promoCodes.list(token, new URLSearchParams({
+            page: String(page),
+            limit: '100',
+            eventId,
+        }).toString());
+        options.push(...toOptions(result.promoCodes));
+    }
+
+    return options;
+}
 
 export default function RegistrationsPage() {
     const { user } = useAuth();
@@ -53,6 +80,9 @@ export default function RegistrationsPage() {
     const [sourceFilter, setSourceFilter] = useState('');
     const [eventFilter, setEventFilter] = useState('');
     const [eventOptions, setEventOptions] = useState<{ id: number; name: string }[]>([]);
+    const [promoCodeOptions, setPromoCodeOptions] = useState<PromoCodeOption[]>([]);
+    const [promoCodeFilter, setPromoCodeFilter] = useState('');
+    const [isLoadingPromoCodes, setIsLoadingPromoCodes] = useState(false);
     const [eventSelected, setEventSelected] = useState(false);
     const [isExporting, setIsExporting] = useState(false);
 
@@ -82,9 +112,37 @@ export default function RegistrationsPage() {
     }, [isOrganizer, eventOptions, eventFilter]);
 
     useEffect(() => {
+        let isCurrent = true;
+        setPromoCodeOptions([]);
+
+        if (!eventFilter) {
+            setIsLoadingPromoCodes(false);
+            return () => { isCurrent = false; };
+        }
+
+        setIsLoadingPromoCodes(true);
+        fetchEventPromoCodes(getBackofficeToken(), eventFilter)
+            .then((options) => {
+                if (isCurrent) setPromoCodeOptions(options);
+            })
+            .catch((error) => {
+                console.error('Failed to fetch promo codes:', error);
+                if (isCurrent) {
+                    setPromoCodeOptions([]);
+                    toast.error('Failed to load promo codes');
+                }
+            })
+            .finally(() => {
+                if (isCurrent) setIsLoadingPromoCodes(false);
+            });
+
+        return () => { isCurrent = false; };
+    }, [eventFilter]);
+
+    useEffect(() => {
         if (!eventSelected) return;
         fetchRegistrations();
-    }, [page, debouncedSearchTerm, statusFilter, sourceFilter, eventFilter, eventSelected]);
+    }, [page, debouncedSearchTerm, statusFilter, sourceFilter, eventFilter, promoCodeFilter, eventSelected]);
 
     const handleExport = async () => {
         if (!eventFilter) return;
@@ -96,6 +154,7 @@ export default function RegistrationsPage() {
             if (searchTerm) params.search = searchTerm;
             if (sourceFilter) params.source = sourceFilter;
             if (eventFilter) params.eventId = eventFilter;
+            if (promoCodeFilter) params.promoCodeId = promoCodeFilter;
 
             const res = await api.registrations.list(token, new URLSearchParams(params).toString());
             const eventName = eventOptions.find(e => String(e.id) === eventFilter)?.name || 'event';
@@ -132,6 +191,7 @@ export default function RegistrationsPage() {
             if (searchTerm) params.search = searchTerm;
             if (sourceFilter) params.source = sourceFilter;
             if (eventFilter) params.eventId = eventFilter;
+            if (promoCodeFilter) params.promoCodeId = promoCodeFilter;
 
             const res = await api.registrations.list(token, new URLSearchParams(params).toString());
             setRegistrations(res.registrations as unknown as Registration[]);
@@ -167,12 +227,35 @@ export default function RegistrationsPage() {
                     <div className="flex flex-col md:flex-row gap-4 flex-1">
                         <select
                             value={eventFilter}
-                            onChange={(e) => { setEventFilter(e.target.value); setEventSelected(!!e.target.value); setPage(1); }}
+                            onChange={(e) => {
+                                setEventFilter(e.target.value);
+                                setPromoCodeFilter('');
+                                setPromoCodeOptions([]);
+                                setIsLoadingPromoCodes(!!e.target.value);
+                                setEventSelected(!!e.target.value);
+                                setPage(1);
+                            }}
                             className="input-field w-auto"
                         >
                             <option value="">-- เลือก Event --</option>
                             {eventOptions.map((e) => (
                                 <option key={e.id} value={e.id}>{e.name}</option>
+                            ))}
+                        </select>
+
+                        <select
+                            value={promoCodeFilter}
+                            onChange={(e) => { setPromoCodeFilter(e.target.value); setPage(1); }}
+                            disabled={!eventFilter || isLoadingPromoCodes || promoCodeOptions.length === 0}
+                            className="input-field w-auto disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                            <option value="">
+                                {!eventFilter ? 'Select event first' :
+                                    isLoadingPromoCodes ? 'Loading Promo Codes...' :
+                                        promoCodeOptions.length === 0 ? 'No Promo Codes' : 'All Promo Codes'}
+                            </option>
+                            {promoCodeOptions.map((promoCode) => (
+                                <option key={promoCode.id} value={promoCode.id}>{promoCode.code}</option>
                             ))}
                         </select>
 
