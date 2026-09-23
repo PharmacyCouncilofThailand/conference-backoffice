@@ -155,6 +155,9 @@ export default function AbstractsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [confirmationStatusFilter, setConfirmationStatusFilter] = useState<
+    "" | "confirmed" | "awaiting"
+  >("");
   const [categoryFilter, setCategoryFilter] = useState("");
   const [presentationTypeFilter, setPresentationTypeFilter] = useState("");
   const [eventFilter, setEventFilter] = useState("");
@@ -284,6 +287,9 @@ export default function AbstractsPage() {
       const token = getBackofficeToken();
       const params: Record<string, string> = { page: "1", limit: "1000" };
       if (statusFilter) params.status = statusFilter;
+      if (confirmationStatusFilter) {
+        params.confirmationStatus = confirmationStatusFilter;
+      }
       if (categoryFilter) params.categoryId = categoryFilter;
       if (presentationTypeFilter) params.presentationType = presentationTypeFilter;
       if (eventFilter) params.eventId = eventFilter;
@@ -350,7 +356,18 @@ export default function AbstractsPage() {
   useEffect(() => {
     if (!eventSelected) return;
     fetchAbstracts();
-  }, [page, debouncedSearchTerm, statusFilter, categoryFilter, presentationTypeFilter, eventFilter, eventSelected, roundFilter, isPris2026Event]);
+  }, [
+    page,
+    debouncedSearchTerm,
+    statusFilter,
+    confirmationStatusFilter,
+    categoryFilter,
+    presentationTypeFilter,
+    eventFilter,
+    eventSelected,
+    roundFilter,
+    isPris2026Event,
+  ]);
 
   const fetchAbstracts = async () => {
     setIsLoading(true);
@@ -358,6 +375,9 @@ export default function AbstractsPage() {
       const token = getBackofficeToken();
       const params: Record<string, string> = { page: String(page), limit: String(limit) };
       if (statusFilter) params.status = statusFilter;
+      if (confirmationStatusFilter) {
+        params.confirmationStatus = confirmationStatusFilter;
+      }
       if (categoryFilter) params.categoryId = categoryFilter;
       if (presentationTypeFilter) params.presentationType = presentationTypeFilter;
       if (eventFilter) params.eventId = eventFilter;
@@ -616,7 +636,11 @@ export default function AbstractsPage() {
           <select
             value={statusFilter}
             onChange={(e) => {
-              setStatusFilter(e.target.value);
+              const nextStatus = e.target.value;
+              setStatusFilter(nextStatus);
+              if (nextStatus !== "accepted") {
+                setConfirmationStatusFilter("");
+              }
               setPage(1);
             }}
             className="input-field w-full"
@@ -626,6 +650,23 @@ export default function AbstractsPage() {
             <option value="accepted">Accepted</option>
             <option value="rejected">Rejected</option>
             <option value="revision">Revision Requested</option>
+          </select>
+
+          <select
+            aria-label="Confirmation status"
+            value={confirmationStatusFilter}
+            onChange={(e) => {
+              setConfirmationStatusFilter(
+                e.target.value as "" | "confirmed" | "awaiting",
+              );
+              setPage(1);
+            }}
+            className="input-field w-full"
+            disabled={statusFilter !== "accepted"}
+          >
+            <option value="">All Confirmation Statuses</option>
+            <option value="confirmed">Confirmed</option>
+            <option value="awaiting">Awaiting confirmation</option>
           </select>
         </div>
 
