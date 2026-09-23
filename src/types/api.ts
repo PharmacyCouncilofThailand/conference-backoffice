@@ -443,6 +443,31 @@ export interface Abstract {
   createdAt: string;
 }
 
+export interface PromoCodeAbstractReportRow {
+  eventId: number;
+  buyer: { id: number; firstName: string; lastName: string; email: string };
+  promoCode: { id: number; currentCode: string; usedCodes: string[] };
+  orders: { id: number; orderNumber: string; createdAt: string }[];
+  registrations: {
+    id: number;
+    regCode: string;
+    attendeeName: string;
+    ticketName: string;
+  }[];
+  abstracts: {
+    id: number;
+    trackingId: string | null;
+    title: string;
+    status: "pending" | "accepted" | "rejected" | "revision";
+    categoryName: string;
+    presentationType: PresentationType;
+    confirmedAt: string | null;
+    archivedAt: string | null;
+    archiveReason: string | null;
+  }[];
+  hasSubmitted: boolean;
+}
+
 // ============================================================================
 // Speaker Types
 // ============================================================================

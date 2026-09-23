@@ -21,6 +21,7 @@ import type {
   TeamRegistrationConfig,
   TeamRegistrationDetail,
   TeamRegistrationListItem,
+  PromoCodeAbstractReportRow,
 } from "@/types/api";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL;
@@ -711,6 +712,14 @@ export const api = {
         `/api/backoffice/promo-codes/${id}/toggle`,
         { method: "PATCH", token },
       ),
+  },
+
+  promoCodeAbstracts: {
+    list: (token: string, query: string) =>
+      fetchAPI<{
+        rows: PromoCodeAbstractReportRow[];
+        pagination: Pagination;
+      }>(`/api/backoffice/reports/promo-code-abstracts?${query}`, { token }),
   },
 
   abstractCategories: {

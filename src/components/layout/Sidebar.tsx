@@ -91,6 +91,7 @@ const menuStructure = [
     icon: IconUsers,
     children: [
       { href: "/registrations", label: "All Registrations" },
+      { href: "/promo-code-abstracts", label: "Promo Code & Abstracts" },
       { href: "/verification", label: "Student Verification" },
       { href: "/student-eligibility", label: "Postgrad Eligibility" },
     ],
@@ -230,7 +231,9 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
           return {
             ...item,
             children: item.children.filter(
-              (child) => child.href === "/registrations" || child.href === "/verification",
+              (child) => child.href === "/registrations" ||
+                child.href === "/promo-code-abstracts" ||
+                child.href === "/verification",
             ),
           };
         }
