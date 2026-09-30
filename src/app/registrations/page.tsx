@@ -1,12 +1,17 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useCallback, useMemo, useRef, useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { AdminLayout } from '@/components/layout';
 import { api } from '@/lib/api';
 import { exportToExcel } from '@/lib/exportExcel';
 import { useDebounce } from '@/hooks/useDebounce';
 import { Pagination } from '@/components/common';
+import { AddSessionDialog } from '@/components/registrations/AddSessionDialog';
+import { SessionGrantResults } from '@/components/registrations/SessionGrantResults';
+import { SESSION_GRANT_SELECTION_LIMIT, updateSelection, type SelectedRegistration } from '@/lib/session-grant-selection';
+import type { GrantSessionChoiceDto } from '@/types/session-grants';
 import { useAuth } from '@/contexts/AuthContext';
 import toast from 'react-hot-toast';
 import {
@@ -36,6 +41,9 @@ interface Registration {
     addedNote?: string | null;
     addedByFirstName?: string | null;
     addedByLastName?: string | null;
+    grantEligible?: boolean;
+    grantSkipCode?: string | null;
+    hasSession?: boolean;
 }
 
 interface PromoCodeOption {
@@ -72,7 +80,10 @@ async function fetchEventPromoCodes(token: string, eventId: string): Promise<Pro
 
 export default function RegistrationsPage() {
     const { user } = useAuth();
+    const router = useRouter();
+    const searchParams = useSearchParams();
     const isOrganizer = user?.role === 'organizer';
+    const isAdmin = user?.role === 'admin';
     const [registrations, setRegistrations] = useState<Registration[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -85,6 +96,18 @@ export default function RegistrationsPage() {
     const [isLoadingPromoCodes, setIsLoadingPromoCodes] = useState(false);
     const [eventSelected, setEventSelected] = useState(false);
     const [isExporting, setIsExporting] = useState(false);
+    const [grantFeatureEnabled, setGrantFeatureEnabled] = useState(false);
+    const [grantDialogOpen, setGrantDialogOpen] = useState(false);
+    const [grantSession, setGrantSession] = useState<GrantSessionChoiceDto | null>(null);
+    const [selectedRegistrations, setSelectedRegistrations] = useState<Map<number, SelectedRegistration>>(new Map());
+    const [isGrantSubmitting, setIsGrantSubmitting] = useState(false);
+    const [pendingGrantOperation, setPendingGrantOperation] = useState<{
+        key: string;
+        sessionId: number;
+        registrationIds: number[];
+    } | null>(null);
+    const [grantBatchId, setGrantBatchId] = useState<string | null>(() => searchParams.get('grantBatchId'));
+    const registrationRequestRef = useRef(0);
 
     // Pagination
     const [page, setPage] = useState(1);
@@ -95,6 +118,24 @@ export default function RegistrationsPage() {
 
     // Debounce search term to avoid API calls on every keystroke
     const debouncedSearchTerm = useDebounce(searchTerm, 300);
+    const visibleEligibleRegistrations = useMemo(
+        () => registrations.filter((registration) => registration.grantEligible),
+        [registrations],
+    );
+    const selectedCount = selectedRegistrations.size;
+    const allVisibleSelected = visibleEligibleRegistrations.length > 0 &&
+        visibleEligibleRegistrations.every((registration) => selectedRegistrations.has(registration.id));
+    const someVisibleSelected = visibleEligibleRegistrations.some((registration) => selectedRegistrations.has(registration.id));
+
+    useEffect(() => {
+        if (!isAdmin) {
+            setGrantFeatureEnabled(false);
+            return;
+        }
+        api.sessionGrants.status(getBackofficeToken())
+            .then((status) => setGrantFeatureEnabled(status.enabled))
+            .catch(() => setGrantFeatureEnabled(false));
+    }, [isAdmin]);
 
     // Fetch events for filter dropdown
     useEffect(() => {
@@ -142,7 +183,7 @@ export default function RegistrationsPage() {
     useEffect(() => {
         if (!eventSelected) return;
         fetchRegistrations();
-    }, [page, debouncedSearchTerm, statusFilter, sourceFilter, eventFilter, promoCodeFilter, eventSelected]);
+    }, [page, debouncedSearchTerm, statusFilter, sourceFilter, eventFilter, promoCodeFilter, eventSelected, grantSession?.id]);
 
     const handleExport = async () => {
         if (!eventFilter) return;
@@ -183,6 +224,7 @@ export default function RegistrationsPage() {
     };
 
     const fetchRegistrations = async () => {
+        const requestId = ++registrationRequestRef.current;
         setIsLoading(true);
         try {
             const token = getBackofficeToken();
@@ -192,17 +234,118 @@ export default function RegistrationsPage() {
             if (sourceFilter) params.source = sourceFilter;
             if (eventFilter) params.eventId = eventFilter;
             if (promoCodeFilter) params.promoCodeId = promoCodeFilter;
+            if (grantSession) params.sessionId = grantSession.id;
 
             const res = await api.registrations.list(token, new URLSearchParams(params).toString());
+            if (requestId !== registrationRequestRef.current) return;
             setRegistrations(res.registrations as unknown as Registration[]);
             setTotalCount(res.pagination.total);
             setTotalPages(res.pagination.totalPages);
         } catch (error) {
-            console.error('Failed to fetch registrations:', error);
+            if (requestId === registrationRequestRef.current) {
+                console.error('Failed to fetch registrations:', error);
+            }
         } finally {
-            setIsLoading(false);
+            if (requestId === registrationRequestRef.current) setIsLoading(false);
         }
     };
+
+    const selectRow = (registration: Registration, checked: boolean) => {
+        if (!registration.grantEligible) return;
+        if (checked && !selectedRegistrations.has(registration.id) && selectedRegistrations.size >= SESSION_GRANT_SELECTION_LIMIT) {
+            toast.error(`เลือกได้สูงสุด ${SESSION_GRANT_SELECTION_LIMIT} Registration ต่อรายการ`);
+            return;
+        }
+        setSelectedRegistrations((current) => updateSelection(current, checked
+            ? {
+                type: 'add',
+                rows: [{
+                    id: registration.id,
+                    regCode: registration.regCode,
+                    name: `${registration.firstName} ${registration.lastName}`.trim(),
+                    email: registration.email,
+                }],
+            }
+            : { type: 'remove', ids: [registration.id] }));
+    };
+
+    const toggleVisible = (checked: boolean) => {
+        if (!checked) {
+            setSelectedRegistrations((current) => updateSelection(current, {
+                type: 'remove',
+                ids: visibleEligibleRegistrations.map((registration) => registration.id),
+            }));
+            return;
+        }
+        const remaining = SESSION_GRANT_SELECTION_LIMIT - selectedRegistrations.size;
+        const newVisibleRows = visibleEligibleRegistrations.filter(
+            (registration) => !selectedRegistrations.has(registration.id),
+        );
+        if (newVisibleRows.length > remaining) {
+            toast.error(`เลือกได้สูงสุด ${SESSION_GRANT_SELECTION_LIMIT} Registration ต่อรายการ`);
+            return;
+        }
+        setSelectedRegistrations((current) => updateSelection(current, {
+            type: 'add',
+            rows: newVisibleRows.map((registration) => ({
+                id: registration.id,
+                regCode: registration.regCode,
+                name: `${registration.firstName} ${registration.lastName}`.trim(),
+                email: registration.email,
+            })),
+        }));
+    };
+
+    const chooseGrantSession = (session: GrantSessionChoiceDto) => {
+        if (grantSession && grantSession.id !== session.id && selectedCount > 0) {
+            const confirmed = window.confirm('เปลี่ยน Session จะล้างรายการ Registration ที่เลือกไว้ ต้องการดำเนินการต่อหรือไม่?');
+            if (!confirmed) return;
+            setSelectedRegistrations(new Map());
+        }
+        setGrantSession(session);
+        setPendingGrantOperation(null);
+        setPage(1);
+    };
+
+    const submitGrant = async () => {
+        if (!grantSession || selectedCount === 0 || isGrantSubmitting) return;
+        if (selectedCount > SESSION_GRANT_SELECTION_LIMIT) {
+            toast.error(`เลือกได้สูงสุด ${SESSION_GRANT_SELECTION_LIMIT} Registration ต่อรายการ`);
+            return;
+        }
+        const operation = pendingGrantOperation || {
+            key: crypto.randomUUID(),
+            sessionId: grantSession.id,
+            registrationIds: [...selectedRegistrations.keys()].sort((a, b) => a - b),
+        };
+        if (!pendingGrantOperation) setPendingGrantOperation(operation);
+        setIsGrantSubmitting(true);
+        try {
+            const result = await api.sessionGrants.create(getBackofficeToken(), operation.key, {
+                sessionId: operation.sessionId,
+                registrationIds: operation.registrationIds,
+            });
+            setGrantBatchId(result.batchId);
+            const next = new URLSearchParams(searchParams.toString());
+            next.set('grantBatchId', result.batchId);
+            router.replace(`/registrations?${next.toString()}`);
+            setSelectedRegistrations(new Map());
+            setPendingGrantOperation(null);
+            toast.success(`เพิ่มสิทธิ์สำเร็จ ${result.addedCount} Registration`);
+            await fetchRegistrations();
+        } catch (error) {
+            console.error('Grant session failed:', error);
+            toast.error(error instanceof Error ? error.message : 'เพิ่มสิทธิ์ Session ไม่สำเร็จ');
+        } finally {
+            setIsGrantSubmitting(false);
+        }
+    };
+
+    const refreshGrantEntitlements = useCallback(() => {
+        void fetchRegistrations();
+    // fetchRegistrations intentionally follows the active page/filter/session state.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [page, limit, debouncedSearchTerm, statusFilter, sourceFilter, eventFilter, promoCodeFilter, grantSession?.id]);
 
     return (
         <AdminLayout title="Registrations">
@@ -228,11 +371,19 @@ export default function RegistrationsPage() {
                         <select
                             value={eventFilter}
                             onChange={(e) => {
-                                setEventFilter(e.target.value);
+                                const nextEventId = e.target.value;
+                                if (nextEventId !== eventFilter && selectedCount > 0) {
+                                    const confirmed = window.confirm('เปลี่ยน Event จะล้างรายการ Registration ที่เลือกไว้ ต้องการดำเนินการต่อหรือไม่?');
+                                    if (!confirmed) return;
+                                    setSelectedRegistrations(new Map());
+                                    setGrantSession(null);
+                                    setPendingGrantOperation(null);
+                                }
+                                setEventFilter(nextEventId);
                                 setPromoCodeFilter('');
                                 setPromoCodeOptions([]);
-                                setIsLoadingPromoCodes(!!e.target.value);
-                                setEventSelected(!!e.target.value);
+                                setIsLoadingPromoCodes(!!nextEventId);
+                                setEventSelected(!!nextEventId);
                                 setPage(1);
                             }}
                             className="input-field w-auto"
@@ -293,7 +444,17 @@ export default function RegistrationsPage() {
                         </select>
                     </div>
 
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
+                        {isAdmin && grantFeatureEnabled && eventSelected && (
+                            <button
+                                type="button"
+                                onClick={() => setGrantDialogOpen(true)}
+                                className="btn-primary flex items-center gap-2"
+                            >
+                                <IconUserPlus size={18} />
+                                {grantSession ? `Session: ${grantSession.sessionName}` : 'เพิ่มสิทธิ์ Session'}
+                            </button>
+                        )}
                         <button
                             onClick={handleExport}
                             disabled={!eventSelected || isExporting}
@@ -313,6 +474,41 @@ export default function RegistrationsPage() {
                     </div>
                 </div>
             </div>
+
+            {isAdmin && grantFeatureEnabled && grantSession && (
+                <div className="card mb-6 space-y-3">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                            <p className="font-semibold text-zinc-900">เพิ่มสิทธิ์: {grantSession.sessionName}</p>
+                            <p className="text-sm text-zinc-500">เลือกแล้ว {selectedCount} / {SESSION_GRANT_SELECTION_LIMIT} Registration · การค้นหา/กรอง/เปลี่ยนหน้าจะไม่ล้างรายการที่เลือก</p>
+                        </div>
+                        <div className="flex gap-2">
+                            <button type="button" className="btn-secondary" onClick={() => setSelectedRegistrations(new Map())} disabled={selectedCount === 0}>
+                                ล้างรายการ
+                            </button>
+                            <button type="button" className="btn-primary" onClick={() => void submitGrant()} disabled={selectedCount === 0 || isGrantSubmitting}>
+                                {isGrantSubmitting ? 'กำลังดำเนินการ...' : pendingGrantOperation ? 'ลองคำขอเดิมอีกครั้ง' : `ยืนยัน ${selectedCount} คน`}
+                            </button>
+                        </div>
+                    </div>
+                    {selectedCount > 0 && (
+                        <div className="max-h-28 overflow-y-auto rounded-lg bg-zinc-50 p-3 text-sm text-zinc-600">
+                            {[...selectedRegistrations.values()].map((registration) => (
+                                <span key={registration.id} className="mr-3 inline-flex items-center gap-1">
+                                    {registration.name} ({registration.regCode})
+                                    <button type="button" className="text-red-600" aria-label={`เอา ${registration.regCode} ออกจากรายการ`} onClick={() => setSelectedRegistrations((current) => updateSelection(current, { type: 'remove', ids: [registration.id] }))}>×</button>
+                                </span>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {grantBatchId && (
+                <div className="card mb-6">
+                    <SessionGrantResults batchId={grantBatchId} onEntitlementsChanged={refreshGrantEntitlements} />
+                </div>
+            )}
 
             {/* Table */}
             <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm">
@@ -335,6 +531,17 @@ export default function RegistrationsPage() {
                             <table className="w-full table-sticky-actions">
                                 <thead>
                                     <tr className="bg-zinc-50 border-b border-zinc-200">
+                                        {isAdmin && grantFeatureEnabled && grantSession && (
+                                            <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={allVisibleSelected}
+                                                    ref={(element) => { if (element) element.indeterminate = !allVisibleSelected && someVisibleSelected; }}
+                                                    onChange={(event) => toggleVisible(event.target.checked)}
+                                                    aria-label="เลือก Registration ที่มีสิทธิ์ทั้งหมดในหน้าปัจจุบัน"
+                                                />
+                                            </th>
+                                        )}
                                         <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-500 uppercase tracking-wider">Code</th>
                                         <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-500 uppercase tracking-wider">Attendee</th>
                                         <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">Event</th>
@@ -348,6 +555,18 @@ export default function RegistrationsPage() {
                                 <tbody className="divide-y divide-gray-100">
                                     {registrations.map((reg) => (
                                         <tr key={reg.id} className="hover:bg-zinc-50 transition-colors">
+                                            {isAdmin && grantFeatureEnabled && grantSession && (
+                                                <td className="px-4 py-4">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={selectedRegistrations.has(reg.id)}
+                                                        disabled={!reg.grantEligible}
+                                                        onChange={(event) => selectRow(reg, event.target.checked)}
+                                                        aria-label={`เลือก ${reg.firstName} ${reg.lastName} ${reg.regCode}`}
+                                                        title={reg.grantEligible ? 'เลือกเพื่อเพิ่มสิทธิ์' : (reg.grantSkipCode || 'ไม่สามารถเพิ่มสิทธิ์ได้')}
+                                                    />
+                                                </td>
+                                            )}
                                             <td className="px-4 py-4">
                                                 <span className="font-mono text-sm text-zinc-500 bg-zinc-100 px-2 py-1 rounded">
                                                     {reg.regCode}
@@ -447,6 +666,16 @@ export default function RegistrationsPage() {
                     </>
                 )}
             </div>
+
+            {isAdmin && grantFeatureEnabled && eventFilter && (
+                <AddSessionDialog
+                    open={grantDialogOpen}
+                    eventId={Number(eventFilter)}
+                    existingSessionIds={[]}
+                    onClose={() => setGrantDialogOpen(false)}
+                    onSessionSelected={chooseGrantSession}
+                />
+            )}
 
         </AdminLayout>
     );

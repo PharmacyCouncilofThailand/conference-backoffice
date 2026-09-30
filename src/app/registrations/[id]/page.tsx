@@ -5,6 +5,10 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { AdminLayout } from '@/components/layout';
 import { api } from '@/lib/api';
+import { AddSessionDialog } from '@/components/registrations/AddSessionDialog';
+import { SessionGrantResults } from '@/components/registrations/SessionGrantResults';
+import type { GrantSessionChoiceDto, SessionGrantHistoryItemDto } from '@/types/session-grants';
+import { useAuth } from '@/contexts/AuthContext';
 import {
     IconArrowLeft,
     IconLoader2,
@@ -96,17 +100,34 @@ const sessionTypeConfig: Record<string, { label: string; bg: string; text: strin
 export default function RegistrationDetailPage() {
     const params = useParams();
     const router = useRouter();
+    const { user } = useAuth();
     const id = params.id as string;
 
     const [registration, setRegistration] = useState<RegistrationDetail | null>(null);
+    const [grantFeatureEnabled, setGrantFeatureEnabled] = useState(false);
+    const [grantDialogOpen, setGrantDialogOpen] = useState(false);
+    const [grantBatchId, setGrantBatchId] = useState<string | null>(null);
+    const [grantSubmitting, setGrantSubmitting] = useState(false);
+    const [pendingGrant, setPendingGrant] = useState<{ key: string; sessionId: number } | null>(null);
+    const [grantHistory, setGrantHistory] = useState<SessionGrantHistoryItemDto[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (user?.role !== 'admin') {
+            setGrantFeatureEnabled(false);
+            return;
+        }
+        api.sessionGrants.status(getBackofficeToken())
+            .then((status) => setGrantFeatureEnabled(status.enabled))
+            .catch(() => setGrantFeatureEnabled(false));
+    }, [user?.role]);
 
     useEffect(() => {
         if (id) {
             fetchRegistration();
         }
-    }, [id]);
+    }, [id, user?.role]);
 
     const fetchRegistration = async () => {
         setIsLoading(true);
@@ -115,11 +136,48 @@ export default function RegistrationDetailPage() {
             const token = getBackofficeToken();
             const res = await api.registrations.get(token, parseInt(id));
             setRegistration(res.registration as unknown as RegistrationDetail);
+            if (user?.role === 'admin') {
+                try {
+                    const history = await api.sessionGrants.list(token, new URLSearchParams({
+                        registrationId: id,
+                        page: '1',
+                        limit: '50',
+                    }).toString());
+                    setGrantHistory(history.batches);
+                } catch (historyError) {
+                    console.error('Failed to fetch session grant history:', historyError);
+                    setGrantHistory([]);
+                }
+            }
         } catch (err: any) {
             console.error('Failed to fetch registration:', err);
             setError(err.message || 'Failed to load registration');
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const grantSelectedSession = async (session: GrantSessionChoiceDto) => {
+        if (!registration || grantSubmitting) return;
+        const operation = pendingGrant?.sessionId === session.id
+            ? pendingGrant
+            : { key: crypto.randomUUID(), sessionId: session.id };
+        if (!pendingGrant || pendingGrant.sessionId !== session.id) setPendingGrant(operation);
+        setGrantSubmitting(true);
+        try {
+            const result = await api.sessionGrants.create(getBackofficeToken(), operation.key, {
+                sessionId: session.id,
+                registrationIds: [registration.id],
+            });
+            setGrantBatchId(result.batchId);
+            setPendingGrant(null);
+            toast.success(result.addedCount > 0 ? 'เพิ่มสิทธิ์ Session สำเร็จ' : 'ดำเนินการเสร็จแล้วโดยไม่มีสิทธิ์ใหม่');
+            await fetchRegistration();
+        } catch (err) {
+            console.error('Failed to grant session:', err);
+            toast.error(err instanceof Error ? err.message : 'เพิ่มสิทธิ์ Session ไม่สำเร็จ');
+        } finally {
+            setGrantSubmitting(false);
         }
     };
 
@@ -199,6 +257,11 @@ export default function RegistrationDetailPage() {
                     </div>
                 </div>
                 <div className="flex gap-2">
+                    {user?.role === 'admin' && grantFeatureEnabled && (
+                        <button type="button" className="btn-primary flex items-center gap-2" onClick={() => setGrantDialogOpen(true)} disabled={grantSubmitting}>
+                            <IconUserPlus size={18} /> {grantSubmitting ? 'กำลังเพิ่มสิทธิ์...' : 'เพิ่มสิทธิ์ Session'}
+                        </button>
+                    )}
                     <button className="btn-secondary flex items-center gap-2">
                         <IconPrinter size={18} /> Print Badge
                     </button>
@@ -420,6 +483,39 @@ export default function RegistrationDetailPage() {
                     </div>
                 </div>
             </div>
+
+            {user?.role === 'admin' && grantHistory.length > 0 && (
+                <div className="card mt-6">
+                    <h2 className="text-lg font-semibold mb-4">ประวัติการเพิ่มสิทธิ์ Session โดย Admin</h2>
+                    <div className="space-y-2">
+                        {grantHistory.map((entry) => (
+                            <div key={`${entry.batchId}-${entry.sessionId}-${entry.createdAt}`} className="rounded-lg border border-zinc-200 p-3 text-sm">
+                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                    <span className="font-medium text-zinc-900">{entry.sessionName}</span>
+                                    <span className="text-zinc-500">{new Date(entry.createdAt).toLocaleString('th-TH')}</span>
+                                </div>
+                                <p className="mt-1 text-zinc-500">ผลสิทธิ์: {entry.outcome} · อีเมล: {entry.emailStatus} · Attempts: {entry.attemptCount}</p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {grantBatchId && (
+                <div className="card mt-6">
+                    <SessionGrantResults batchId={grantBatchId} onEntitlementsChanged={() => { void fetchRegistration(); }} />
+                </div>
+            )}
+
+            {user?.role === 'admin' && grantFeatureEnabled && (
+                <AddSessionDialog
+                    open={grantDialogOpen}
+                    eventId={registration.eventId}
+                    existingSessionIds={registration.sessions.map((session) => session.sessionId)}
+                    onClose={() => setGrantDialogOpen(false)}
+                    onSessionSelected={(session) => { void grantSelectedSession(session); }}
+                />
+            )}
         </AdminLayout>
     );
 }
