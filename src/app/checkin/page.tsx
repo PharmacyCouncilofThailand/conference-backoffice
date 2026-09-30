@@ -30,7 +30,7 @@ type ScanResult = null | {
     status: 'success' | 'error' | 'duplicate' | 'no_access';
     code: string;
     name?: string;
-    ticketType?: string;
+    ticketType?: string | null;
     message: string;
     eventName?: string;
     registrationSessionId?: number;
@@ -57,7 +57,8 @@ interface SessionInfo {
     sessionId: number;
     sessionName: string;
     sessionType?: string;
-    ticketName: string;
+    ticketName: string | null;
+    source?: string;
     checkedInAt: string | null;
 }
 
@@ -852,7 +853,12 @@ export default function CheckinPage() {
                                                 <div className="flex justify-between items-center">
                                                     <div>
                                                         <p className="font-medium text-zinc-800">{session.sessionName}</p>
-                                                        <p className="text-xs text-zinc-400">{session.ticketName}</p>
+                                                        <p className="text-xs text-zinc-400">{session.ticketName ?? '—'}</p>
+                                                        {session.source === 'admin_grant' && (
+                                                            <span className="inline-block mt-1 px-2 py-0.5 rounded-full text-xs bg-purple-50 text-purple-700 border border-purple-200">
+                                                                เพิ่มโดย Admin
+                                                            </span>
+                                                        )}
                                                     </div>
                                                     {session.checkedInAt ? (
                                                         <span className="text-green-600 flex items-center gap-1 text-sm font-medium">

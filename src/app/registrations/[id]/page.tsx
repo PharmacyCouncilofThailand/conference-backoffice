@@ -33,9 +33,12 @@ const getBackofficeToken = () =>
 interface RegistrationSession {
     id: number;
     sessionId: number;
-    ticketTypeId: number;
+    ticketTypeId: number | null;
     checkedInAt: string | null;
     checkedInById: number | null;
+    source: string;
+    addedById: number | null;
+    addedAt: string;
     createdAt: string;
     sessionCode: string;
     sessionName: string;
@@ -43,10 +46,12 @@ interface RegistrationSession {
     startTime: string;
     endTime: string;
     room: string | null;
-    ticketName: string;
-    ticketCategory: string;
+    ticketName: string | null;
+    ticketCategory: string | null;
     checkedInByFirstName: string | null;
     checkedInByLastName: string | null;
+    addedByFirstName: string | null;
+    addedByLastName: string | null;
 }
 
 interface RegistrationDetail {
@@ -169,8 +174,11 @@ export default function RegistrationDetailPage() {
         );
     }
 
-    const mainSessions = registration.sessions.filter(s => s.ticketCategory === 'primary');
-    const addonSessions = registration.sessions.filter(s => s.ticketCategory === 'addon');
+    const adminGrantedSessions = registration.sessions.filter(s => s.source === 'admin_grant');
+    const attributedSessions = registration.sessions.filter(s => s.source !== 'admin_grant');
+    const mainSessions = attributedSessions.filter(s => s.ticketCategory === 'primary');
+    const addonSessions = attributedSessions.filter(s => s.ticketCategory === 'addon');
+    const otherSessions = attributedSessions.filter(s => s.ticketCategory !== 'primary' && s.ticketCategory !== 'addon');
 
     return (
         <AdminLayout title="Registration Details">
@@ -277,9 +285,19 @@ export default function RegistrationDetailPage() {
                             <p className="text-zinc-400 text-center py-8">No sessions registered</p>
                         ) : (
                             <div className="space-y-4">
-                                {/* Main Sessions */}
-                                {mainSessions.length > 0 && (
+                                {adminGrantedSessions.length > 0 && (
                                     <div>
+                                        <p className="text-sm font-medium text-zinc-400 mb-2">Admin-added Sessions</p>
+                                        <div className="space-y-2">
+                                            {adminGrantedSessions.map((session) => (
+                                                <SessionCard key={session.id} session={session} formatTime={formatTime} formatDate={formatDate} />
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {mainSessions.length > 0 && (
+                                    <div className="pt-4 border-t border-zinc-100">
                                         <p className="text-sm font-medium text-zinc-400 mb-2">Main Conference</p>
                                         <div className="space-y-2">
                                             {mainSessions.map((session) => (
@@ -289,12 +307,22 @@ export default function RegistrationDetailPage() {
                                     </div>
                                 )}
 
-                                {/* Add-on Sessions */}
                                 {addonSessions.length > 0 && (
                                     <div className="pt-4 border-t border-zinc-100">
                                         <p className="text-sm font-medium text-zinc-400 mb-2">Add-on Sessions</p>
                                         <div className="space-y-2">
                                             {addonSessions.map((session) => (
+                                                <SessionCard key={session.id} session={session} formatTime={formatTime} formatDate={formatDate} />
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {otherSessions.length > 0 && (
+                                    <div className="pt-4 border-t border-zinc-100">
+                                        <p className="text-sm font-medium text-zinc-400 mb-2">Other Sessions</p>
+                                        <div className="space-y-2">
+                                            {otherSessions.map((session) => (
                                                 <SessionCard key={session.id} session={session} formatTime={formatTime} formatDate={formatDate} />
                                             ))}
                                         </div>
@@ -410,6 +438,16 @@ function SessionCard({ session, formatTime, formatDate }: { session: Registratio
                         <span className="text-xs text-zinc-400 font-mono">{session.sessionCode}</span>
                     </div>
                     <p className="font-medium text-zinc-900">{session.sessionName}</p>
+                    {session.source === 'admin_grant' && (
+                        <div className="flex flex-wrap items-center gap-2 mt-1 text-xs">
+                            <span className="inline-flex px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200">
+                                เพิ่มโดย Admin
+                            </span>
+                            <span className="text-zinc-400">
+                                {session.addedByFirstName ? `เพิ่มโดย ${session.addedByFirstName} ${session.addedByLastName || ''}`.trim() : 'ผู้ดูแล'} · {formatDate(session.addedAt)}
+                            </span>
+                        </div>
+                    )}
                     <div className="flex flex-wrap items-center gap-3 mt-2 text-sm text-zinc-400">
                         <span className="flex items-center gap-1">
                             <IconCalendar size={14} />

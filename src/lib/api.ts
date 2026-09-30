@@ -46,7 +46,8 @@ interface BackofficeCheckinSession {
   sessionId: number;
   sessionName: string;
   sessionType?: string;
-  ticketName: string;
+  ticketName: string | null;
+  source?: string;
   checkedInAt: string | null;
 }
 
@@ -70,6 +71,8 @@ interface BackofficeCheckinRow {
   university: string | null;
   institution: string | null;
   ticketName: string | null;
+  source: string;
+  addedAt: string;
   sessionName: string | null;
   eventName: string | null;
   scannedBy: { firstName: string | null; lastName: string | null } | null;
@@ -337,6 +340,8 @@ export const api = {
           status: string;
           createdAt: string;
           ticketName: string | null;
+          source: string;
+          addedAt: string;
         }[];
         count: number;
       }>(
