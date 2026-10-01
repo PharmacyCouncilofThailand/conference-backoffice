@@ -44,6 +44,31 @@ export function AddSessionDialog({
   }, [open]);
 
   useEffect(() => {
+    if (!open) return;
+    const trapTab = (event: KeyboardEvent) => {
+      if (event.key !== 'Tab') return;
+      const dialog = dialogRef.current;
+      if (!dialog?.open) return;
+      const focusable = [...dialog.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      )].filter((element) => element.offsetParent !== null);
+      if (focusable.length === 0) return;
+      const active = document.activeElement as HTMLElement | null;
+      const activeIndex = active ? focusable.indexOf(active) : -1;
+      event.preventDefault();
+      if (event.shiftKey) {
+        const previousIndex = activeIndex <= 0 ? focusable.length - 1 : activeIndex - 1;
+        focusable[previousIndex].focus();
+      } else {
+        const nextIndex = activeIndex < 0 || activeIndex >= focusable.length - 1 ? 0 : activeIndex + 1;
+        focusable[nextIndex].focus();
+      }
+    };
+    document.addEventListener('keydown', trapTab, true);
+    return () => document.removeEventListener('keydown', trapTab, true);
+  }, [open]);
+
+  useEffect(() => {
     if (!open || !eventId) return;
     let current = true;
     setLoading(true);

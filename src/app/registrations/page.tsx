@@ -42,7 +42,7 @@ interface Registration {
     addedByFirstName?: string | null;
     addedByLastName?: string | null;
     grantEligible?: boolean;
-    grantSkipCode?: string | null;
+    grantDisabledReason?: string | null;
     hasSession?: boolean;
 }
 
@@ -481,6 +481,9 @@ export default function RegistrationsPage() {
                         <div>
                             <p className="font-semibold text-zinc-900">เพิ่มสิทธิ์: {grantSession.sessionName}</p>
                             <p className="text-sm text-zinc-500">เลือกแล้ว {selectedCount} / {SESSION_GRANT_SELECTION_LIMIT} Registration · การค้นหา/กรอง/เปลี่ยนหน้าจะไม่ล้างรายการที่เลือก</p>
+                            <p className="mt-1 text-sm text-zinc-500" aria-live="polite">
+                                ผู้มีสิทธิ์ปัจจุบัน {grantSession.enrollmentCount} · เลือกเพิ่ม {selectedCount} · หลังยืนยันโดยประมาณ {grantSession.enrollmentCount + selectedCount} · ตรวจอีกครั้งตอนยืนยัน
+                            </p>
                         </div>
                         <div className="flex gap-2">
                             <button type="button" className="btn-secondary" onClick={() => setSelectedRegistrations(new Map())} disabled={selectedCount === 0}>
@@ -563,7 +566,7 @@ export default function RegistrationsPage() {
                                                         disabled={!reg.grantEligible}
                                                         onChange={(event) => selectRow(reg, event.target.checked)}
                                                         aria-label={`เลือก ${reg.firstName} ${reg.lastName} ${reg.regCode}`}
-                                                        title={reg.grantEligible ? 'เลือกเพื่อเพิ่มสิทธิ์' : (reg.grantSkipCode || 'ไม่สามารถเพิ่มสิทธิ์ได้')}
+                                                        title={reg.grantEligible ? 'เลือกเพื่อเพิ่มสิทธิ์' : (reg.grantDisabledReason || 'ไม่สามารถเพิ่มสิทธิ์ได้')}
                                                     />
                                                 </td>
                                             )}
