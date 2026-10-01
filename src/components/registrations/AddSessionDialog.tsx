@@ -107,7 +107,7 @@ export function AddSessionDialog({
         if (open) onClose();
         queueMicrotask(() => returnFocusRef.current?.focus());
       }}
-      className="w-[min(720px,calc(100vw-2rem))] rounded-2xl p-0 shadow-2xl backdrop:bg-black/40"
+      className="fixed inset-0 m-auto w-[min(720px,calc(100vw-2rem))] max-h-[calc(100dvh-2rem)] rounded-2xl p-0 shadow-2xl backdrop:bg-black/40"
       aria-labelledby="session-grant-dialog-title"
     >
       <div className="border-b border-zinc-200 px-6 py-4 flex items-center justify-between">

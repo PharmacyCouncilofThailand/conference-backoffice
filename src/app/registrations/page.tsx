@@ -495,13 +495,27 @@ export default function RegistrationsPage() {
                         </div>
                     </div>
                     {selectedCount > 0 && (
-                        <div className="max-h-28 overflow-y-auto rounded-lg bg-zinc-50 p-3 text-sm text-zinc-600">
-                            {[...selectedRegistrations.values()].map((registration) => (
-                                <span key={registration.id} className="mr-3 inline-flex items-center gap-1">
-                                    {registration.name} ({registration.regCode})
-                                    <button type="button" className="text-red-600" aria-label={`เอา ${registration.regCode} ออกจากรายการ`} onClick={() => setSelectedRegistrations((current) => updateSelection(current, { type: 'remove', ids: [registration.id] }))}>×</button>
-                                </span>
-                            ))}
+                        <div className="max-h-32 overflow-y-auto rounded-xl border border-zinc-200 bg-zinc-50/70 p-3">
+                            <div className="flex flex-wrap gap-2">
+                                {[...selectedRegistrations.values()].map((registration) => (
+                                    <span
+                                        key={registration.id}
+                                        className="inline-flex items-center gap-2 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-700 shadow-sm"
+                                    >
+                                        <span className="leading-5">
+                                            {registration.name} ({registration.regCode})
+                                        </span>
+                                        <button
+                                            type="button"
+                                            className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-red-500 transition-colors hover:bg-red-50 hover:text-red-700 focus:outline-none focus:ring-2 focus:ring-red-200"
+                                            aria-label={`เอา ${registration.regCode} ออกจากรายการ`}
+                                            onClick={() => setSelectedRegistrations((current) => updateSelection(current, { type: 'remove', ids: [registration.id] }))}
+                                        >
+                                            ×
+                                        </button>
+                                    </span>
+                                ))}
+                            </div>
                         </div>
                     )}
                 </div>
