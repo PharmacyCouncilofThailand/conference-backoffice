@@ -23,12 +23,34 @@ import type {
   TeamRegistrationListItem,
   PromoCodeAbstractReportRow,
 } from "@/types/api";
+import type {
+  GrantBatchDto,
+  GrantSessionChoiceDto,
+  InvitationCapacity,
+  SessionGrantCreateInput,
+  SessionGrantEmailAttemptsDto,
+  SessionGrantHistoryDto,
+  SessionGrantRetryDto,
+} from "@/types/session-grants";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL;
 const AUTH_UNAUTHORIZED_EVENT = "accp-backoffice-auth:unauthorized";
 
 interface FetchOptions extends RequestInit {
   token?: string;
+}
+
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    public readonly status: number,
+    public readonly code?: string,
+    public readonly details?: unknown,
+    public readonly capacity?: InvitationCapacity,
+  ) {
+    super(message);
+    this.name = "ApiError";
+  }
 }
 
 interface BackofficeCheckinRegistration {
@@ -46,7 +68,8 @@ interface BackofficeCheckinSession {
   sessionId: number;
   sessionName: string;
   sessionType?: string;
-  ticketName: string;
+  ticketName: string | null;
+  source?: string;
   checkedInAt: string | null;
 }
 
@@ -70,6 +93,8 @@ interface BackofficeCheckinRow {
   university: string | null;
   institution: string | null;
   ticketName: string | null;
+  source: string;
+  addedAt: string;
   sessionName: string | null;
   eventName: string | null;
   scannedBy: { firstName: string | null; lastName: string | null } | null;
@@ -127,10 +152,17 @@ export async function fetchAPI<T>(
     }
 
     const error = await res.json().catch(() => ({ error: "Request failed" }));
-    const details = error.details ? ` — ${JSON.stringify(error.details)}` : "";
+    const detailsText = error.details ? ` — ${JSON.stringify(error.details)}` : "";
     const message =
       typeof error.error === "object" ? error.error?.message : error.error;
-    throw new Error((message || `API Error: ${res.status}`) + details);
+    const capacity = error.capacity ?? error.details?.capacity;
+    throw new ApiError(
+      (message || `API Error: ${res.status}`) + detailsText,
+      res.status,
+      typeof error.code === "string" ? error.code : undefined,
+      error.details,
+      capacity && typeof capacity === "object" ? capacity as InvitationCapacity : undefined,
+    );
   }
 
   return res.json();
@@ -293,9 +325,12 @@ export const api = {
       }),
 
     // Sessions nested routes (using Record for page compatibility)
-    getSessions: (token: string, eventId: number) =>
-      fetchAPI<{ sessions: Record<string, unknown>[] }>(
-        `/api/backoffice/events/${eventId}/sessions`,
+    getSessions: (token: string, eventId: number, forGrant = false) =>
+      fetchAPI<{
+        sessions: (Record<string, unknown> | GrantSessionChoiceDto)[];
+        serverNow?: string;
+      }>(
+        `/api/backoffice/events/${eventId}/sessions${forGrant ? "?forGrant=true" : ""}`,
         { token },
       ),
     createSession: (
@@ -337,6 +372,8 @@ export const api = {
           status: string;
           createdAt: string;
           ticketName: string | null;
+          source: string;
+          addedAt: string;
         }[];
         count: number;
       }>(
@@ -554,6 +591,57 @@ export const api = {
       fetchAPI<{ success: boolean; addedCount: number }>(
         `/api/backoffice/registrations/${id}/sessions`,
         { method: "POST", body: JSON.stringify(data), token },
+      ),
+  },
+
+  sessionGrants: {
+    status: (token: string) =>
+      fetchAPI<{ enabled: boolean }>("/api/backoffice/session-grants/status", { token }),
+    create: (
+      token: string,
+      idempotencyKey: string,
+      body: SessionGrantCreateInput,
+    ) =>
+      fetchAPI<GrantBatchDto>("/api/backoffice/session-grants", {
+        method: "POST",
+        body: JSON.stringify(body),
+        headers: { "Idempotency-Key": idempotencyKey },
+        token,
+      }),
+    get: (token: string, batchId: string, page = 1, limit = 50) =>
+      fetchAPI<GrantBatchDto>(
+        `/api/backoffice/session-grants/${encodeURIComponent(batchId)}?page=${page}&limit=${limit}`,
+        { token },
+      ),
+    list: (token: string, query: string) =>
+      fetchAPI<SessionGrantHistoryDto>(
+        `/api/backoffice/session-grants${query ? `?${query}` : ""}`,
+        { token },
+      ),
+    retry: (
+      token: string,
+      batchId: string,
+      itemIds: string[],
+      acknowledgeUnknown = false,
+    ) =>
+      fetchAPI<SessionGrantRetryDto>(
+        `/api/backoffice/session-grants/${encodeURIComponent(batchId)}/retry`,
+        {
+          method: "POST",
+          body: JSON.stringify({ itemIds, acknowledgeUnknown }),
+          token,
+        },
+      ),
+    emailAttempts: (
+      token: string,
+      batchId: string,
+      itemId: string,
+      page = 1,
+      limit = 50,
+    ) =>
+      fetchAPI<SessionGrantEmailAttemptsDto>(
+        `/api/backoffice/session-grants/${encodeURIComponent(batchId)}/items/${encodeURIComponent(itemId)}/email-attempts?page=${page}&limit=${limit}`,
+        { token },
       ),
   },
 

@@ -30,6 +30,8 @@ interface CheckinRow {
     university: string | null;
     institution: string | null;
     ticketName: string | null;
+    source: string;
+    addedAt: string;
     sessionName: string | null;
     eventName: string | null;
     scannedBy: { firstName: string | null; lastName: string | null } | null;
@@ -175,6 +177,8 @@ export default function CheckinsListPage() {
                 'Ticket': r.ticketName ?? '',
                 'Session': r.sessionName ?? '',
                 'Checked-in At': formatDateTime(r.scannedAt),
+                'Source': r.source === 'admin_grant' ? 'Admin Grant' : r.source,
+                'Entitlement Added At': formatDateTime(r.addedAt),
                 'Scanned By': r.scannedBy ? `${r.scannedBy.firstName ?? ''} ${r.scannedBy.lastName ?? ''}`.trim() : '',
             }));
             exportToExcel(data, `checkins_${eventName.replace(/\s+/g, '_')}`);

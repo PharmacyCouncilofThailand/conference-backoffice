@@ -5,6 +5,10 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { AdminLayout } from '@/components/layout';
 import { api } from '@/lib/api';
+import { AddSessionDialog } from '@/components/registrations/AddSessionDialog';
+import { SessionGrantResults } from '@/components/registrations/SessionGrantResults';
+import type { GrantSessionChoiceDto, InvitationStatus, SessionGrantHistoryItemDto } from '@/types/session-grants';
+import { useAuth } from '@/contexts/AuthContext';
 import {
     IconArrowLeft,
     IconLoader2,
@@ -33,9 +37,12 @@ const getBackofficeToken = () =>
 interface RegistrationSession {
     id: number;
     sessionId: number;
-    ticketTypeId: number;
+    ticketTypeId: number | null;
     checkedInAt: string | null;
     checkedInById: number | null;
+    source: string;
+    addedById: number | null;
+    addedAt: string;
     createdAt: string;
     sessionCode: string;
     sessionName: string;
@@ -43,10 +50,30 @@ interface RegistrationSession {
     startTime: string;
     endTime: string;
     room: string | null;
-    ticketName: string;
-    ticketCategory: string;
+    ticketName: string | null;
+    ticketCategory: string | null;
     checkedInByFirstName: string | null;
     checkedInByLastName: string | null;
+    addedByFirstName: string | null;
+    addedByLastName: string | null;
+}
+
+interface RegistrationInvitation {
+    invitationId: string;
+    sessionId: number;
+    sessionName: string;
+    sessionType: string | null;
+    startTime: string;
+    endTime: string;
+    room: string | null;
+    status: InvitationStatus;
+    expiresAt: string;
+    effectiveDeadline: string;
+    respondedAt: string | null;
+    createdAt: string;
+    emailStatus: string;
+    attemptCount: number;
+    lastErrorCode: string | null;
 }
 
 interface RegistrationDetail {
@@ -77,7 +104,22 @@ interface RegistrationDetail {
     addedByFirstName: string | null;
     addedByLastName: string | null;
     sessions: RegistrationSession[];
+    invitations: RegistrationInvitation[];
 }
+
+const invitationLabels: Record<InvitationStatus, string> = {
+    pending: 'รอตอบรับ',
+    accepted: 'ยืนยันเข้าร่วม',
+    declined: 'ปฏิเสธ',
+    expired: 'หมดเวลา',
+    revoked: 'ใช้คำเชิญไม่ได้',
+};
+
+const bangkokDateTime = (value: string) => new Date(value).toLocaleString('th-TH', {
+    timeZone: 'Asia/Bangkok',
+    dateStyle: 'medium',
+    timeStyle: 'short',
+});
 
 const sessionTypeConfig: Record<string, { label: string; bg: string; text: string }> = {
     workshop: { label: 'Workshop', bg: 'bg-orange-100', text: 'text-orange-700' },
@@ -91,17 +133,34 @@ const sessionTypeConfig: Record<string, { label: string; bg: string; text: strin
 export default function RegistrationDetailPage() {
     const params = useParams();
     const router = useRouter();
+    const { user } = useAuth();
     const id = params.id as string;
 
     const [registration, setRegistration] = useState<RegistrationDetail | null>(null);
+    const [grantFeatureEnabled, setGrantFeatureEnabled] = useState(false);
+    const [grantDialogOpen, setGrantDialogOpen] = useState(false);
+    const [grantBatchId, setGrantBatchId] = useState<string | null>(null);
+    const [grantSubmitting, setGrantSubmitting] = useState(false);
+    const [pendingGrant, setPendingGrant] = useState<{ key: string; sessionId: number } | null>(null);
+    const [grantHistory, setGrantHistory] = useState<SessionGrantHistoryItemDto[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (user?.role !== 'admin') {
+            setGrantFeatureEnabled(false);
+            return;
+        }
+        api.sessionGrants.status(getBackofficeToken())
+            .then((status) => setGrantFeatureEnabled(status.enabled))
+            .catch(() => setGrantFeatureEnabled(false));
+    }, [user?.role]);
 
     useEffect(() => {
         if (id) {
             fetchRegistration();
         }
-    }, [id]);
+    }, [id, user?.role]);
 
     const fetchRegistration = async () => {
         setIsLoading(true);
@@ -110,11 +169,56 @@ export default function RegistrationDetailPage() {
             const token = getBackofficeToken();
             const res = await api.registrations.get(token, parseInt(id));
             setRegistration(res.registration as unknown as RegistrationDetail);
+            if (user?.role === 'admin') {
+                try {
+                    const history = await api.sessionGrants.list(token, new URLSearchParams({
+                        registrationId: id,
+                        page: '1',
+                        limit: '50',
+                    }).toString());
+                    setGrantHistory(history.batches);
+                } catch (historyError) {
+                    console.error('Failed to fetch session grant history:', historyError);
+                    setGrantHistory([]);
+                }
+            }
         } catch (err: any) {
             console.error('Failed to fetch registration:', err);
             setError(err.message || 'Failed to load registration');
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const grantSelectedSession = async (session: GrantSessionChoiceDto) => {
+        if (!registration || grantSubmitting) return;
+        if (session.adminGrantRequiresConfirmation) {
+            const deadline = session.effectiveDeadline ? `\nตอบรับได้ก่อน ${bangkokDateTime(session.effectiveDeadline)} เวลาไทย` : '';
+            if (!window.confirm(`Session นี้ต้องให้ผู้เข้าร่วมตอบรับก่อนจึงจะมีสิทธิ์เข้า Session${deadline}\n\nต้องการสร้างคำเชิญหรือไม่?`)) return;
+        }
+        const operation = pendingGrant?.sessionId === session.id
+            ? pendingGrant
+            : { key: crypto.randomUUID(), sessionId: session.id };
+        if (!pendingGrant || pendingGrant.sessionId !== session.id) setPendingGrant(operation);
+        setGrantSubmitting(true);
+        try {
+            const result = await api.sessionGrants.create(getBackofficeToken(), operation.key, {
+                sessionId: session.id,
+                registrationIds: [registration.id],
+            });
+            setGrantBatchId(result.batchId);
+            setPendingGrant(null);
+            toast.success(result.invitedCount > 0
+                ? 'สร้างคำเชิญเข้าร่วม Session แล้ว'
+                : result.addedCount > 0
+                    ? 'เพิ่มสิทธิ์ Session สำเร็จ'
+                    : 'ดำเนินการเสร็จแล้วโดยไม่มีสิทธิ์ใหม่');
+            await fetchRegistration();
+        } catch (err) {
+            console.error('Failed to grant session:', err);
+            toast.error(err instanceof Error ? err.message : 'เพิ่มสิทธิ์ Session ไม่สำเร็จ');
+        } finally {
+            setGrantSubmitting(false);
         }
     };
 
@@ -169,8 +273,11 @@ export default function RegistrationDetailPage() {
         );
     }
 
-    const mainSessions = registration.sessions.filter(s => s.ticketCategory === 'primary');
-    const addonSessions = registration.sessions.filter(s => s.ticketCategory === 'addon');
+    const adminGrantedSessions = registration.sessions.filter(s => s.source === 'admin_grant');
+    const attributedSessions = registration.sessions.filter(s => s.source !== 'admin_grant');
+    const mainSessions = attributedSessions.filter(s => s.ticketCategory === 'primary');
+    const addonSessions = attributedSessions.filter(s => s.ticketCategory === 'addon');
+    const otherSessions = attributedSessions.filter(s => s.ticketCategory !== 'primary' && s.ticketCategory !== 'addon');
 
     return (
         <AdminLayout title="Registration Details">
@@ -191,6 +298,11 @@ export default function RegistrationDetailPage() {
                     </div>
                 </div>
                 <div className="flex gap-2">
+                    {user?.role === 'admin' && grantFeatureEnabled && (
+                        <button type="button" className="btn-primary flex items-center gap-2" onClick={() => setGrantDialogOpen(true)} disabled={grantSubmitting}>
+                            <IconUserPlus size={18} /> {grantSubmitting ? 'กำลังเพิ่มสิทธิ์...' : 'เพิ่มสิทธิ์ Session'}
+                        </button>
+                    )}
                     <button className="btn-secondary flex items-center gap-2">
                         <IconPrinter size={18} /> Print Badge
                     </button>
@@ -277,9 +389,19 @@ export default function RegistrationDetailPage() {
                             <p className="text-zinc-400 text-center py-8">No sessions registered</p>
                         ) : (
                             <div className="space-y-4">
-                                {/* Main Sessions */}
-                                {mainSessions.length > 0 && (
+                                {adminGrantedSessions.length > 0 && (
                                     <div>
+                                        <p className="text-sm font-medium text-zinc-400 mb-2">Admin-added Sessions</p>
+                                        <div className="space-y-2">
+                                            {adminGrantedSessions.map((session) => (
+                                                <SessionCard key={session.id} session={session} formatTime={formatTime} formatDate={formatDate} />
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {mainSessions.length > 0 && (
+                                    <div className="pt-4 border-t border-zinc-100">
                                         <p className="text-sm font-medium text-zinc-400 mb-2">Main Conference</p>
                                         <div className="space-y-2">
                                             {mainSessions.map((session) => (
@@ -289,7 +411,6 @@ export default function RegistrationDetailPage() {
                                     </div>
                                 )}
 
-                                {/* Add-on Sessions */}
                                 {addonSessions.length > 0 && (
                                     <div className="pt-4 border-t border-zinc-100">
                                         <p className="text-sm font-medium text-zinc-400 mb-2">Add-on Sessions</p>
@@ -300,9 +421,50 @@ export default function RegistrationDetailPage() {
                                         </div>
                                     </div>
                                 )}
+
+                                {otherSessions.length > 0 && (
+                                    <div className="pt-4 border-t border-zinc-100">
+                                        <p className="text-sm font-medium text-zinc-400 mb-2">Other Sessions</p>
+                                        <div className="space-y-2">
+                                            {otherSessions.map((session) => (
+                                                <SessionCard key={session.id} session={session} formatTime={formatTime} formatDate={formatDate} />
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         )}
                     </div>
+                    {registration.invitations.length > 0 && (
+                        <div className="card">
+                            <h2 className="text-lg font-semibold mb-4">ประวัติคำเชิญ Session</h2>
+                            <div className="space-y-3">
+                                {registration.invitations.map((invitation) => (
+                                    <div key={invitation.invitationId} className="rounded-xl border border-zinc-200 p-4">
+                                        <div className="flex flex-wrap items-start justify-between gap-2">
+                                            <div>
+                                                <p className="font-medium text-zinc-900">{invitation.sessionName}</p>
+                                                <p className="mt-1 text-xs text-zinc-500">
+                                                    {bangkokDateTime(invitation.startTime)}{invitation.room ? ` · ${invitation.room}` : ''}
+                                                </p>
+                                            </div>
+                                            <span className="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700">
+                                                {invitationLabels[invitation.status]}
+                                            </span>
+                                        </div>
+                                        <p className="mt-2 text-sm text-zinc-500">
+                                            ตอบรับได้ก่อน {bangkokDateTime(invitation.effectiveDeadline)} เวลาไทย
+                                            {invitation.respondedAt ? ` · ตอบเมื่อ ${bangkokDateTime(invitation.respondedAt)}` : ''}
+                                        </p>
+                                        <p className="mt-1 text-xs text-zinc-400">
+                                            อีเมล: {invitation.emailStatus} · Attempts: {invitation.attemptCount}
+                                            {invitation.lastErrorCode ? ` · ${invitation.lastErrorCode}` : ''}
+                                        </p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* Right Column - Attendee Info */}
@@ -392,6 +554,47 @@ export default function RegistrationDetailPage() {
                     </div>
                 </div>
             </div>
+
+            {user?.role === 'admin' && grantHistory.length > 0 && (
+                <div className="card mt-6">
+                    <h2 className="text-lg font-semibold mb-4">ประวัติการเพิ่มสิทธิ์ Session โดย Admin</h2>
+                    <div className="space-y-2">
+                        {grantHistory.map((entry) => (
+                            <div key={`${entry.batchId}-${entry.sessionId}-${entry.createdAt}`} className="rounded-lg border border-zinc-200 p-3 text-sm">
+                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                    <span className="font-medium text-zinc-900">{entry.sessionName}</span>
+                                    <span className="text-zinc-500">{new Date(entry.createdAt).toLocaleString('th-TH')}</span>
+                                </div>
+                                <p className="mt-1 text-zinc-500">
+                                    ผลสิทธิ์: {entry.outcome === 'added' ? 'เพิ่มสิทธิ์แล้ว' : entry.outcome === 'invited' ? 'สร้างคำเชิญแล้ว' : 'ข้าม'} · อีเมล: {entry.emailStatus} · Attempts: {entry.attemptCount}
+                                </p>
+                                {entry.invitation && (
+                                    <p className="mt-1 text-xs text-amber-700">
+                                        {invitationLabels[entry.invitation.invitationStatus]} · ก่อน {bangkokDateTime(entry.invitation.effectiveDeadline)} เวลาไทย
+                                        {entry.invitation.respondedAt ? ` · ตอบเมื่อ ${bangkokDateTime(entry.invitation.respondedAt)}` : ''}
+                                    </p>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {grantBatchId && (
+                <div className="card mt-6">
+                    <SessionGrantResults batchId={grantBatchId} onEntitlementsChanged={() => { void fetchRegistration(); }} />
+                </div>
+            )}
+
+            {user?.role === 'admin' && grantFeatureEnabled && (
+                <AddSessionDialog
+                    open={grantDialogOpen}
+                    eventId={registration.eventId}
+                    existingSessionIds={registration.sessions.map((session) => session.sessionId)}
+                    onClose={() => setGrantDialogOpen(false)}
+                    onSessionSelected={(session) => { void grantSelectedSession(session); }}
+                />
+            )}
         </AdminLayout>
     );
 }
@@ -410,6 +613,16 @@ function SessionCard({ session, formatTime, formatDate }: { session: Registratio
                         <span className="text-xs text-zinc-400 font-mono">{session.sessionCode}</span>
                     </div>
                     <p className="font-medium text-zinc-900">{session.sessionName}</p>
+                    {session.source === 'admin_grant' && (
+                        <div className="flex flex-wrap items-center gap-2 mt-1 text-xs">
+                            <span className="inline-flex px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200">
+                                เพิ่มโดย Admin
+                            </span>
+                            <span className="text-zinc-400">
+                                {session.addedByFirstName ? `เพิ่มโดย ${session.addedByFirstName} ${session.addedByLastName || ''}`.trim() : 'ผู้ดูแล'} · {formatDate(session.addedAt)}
+                            </span>
+                        </div>
+                    )}
                     <div className="flex flex-wrap items-center gap-3 mt-2 text-sm text-zinc-400">
                         <span className="flex items-center gap-1">
                             <IconCalendar size={14} />

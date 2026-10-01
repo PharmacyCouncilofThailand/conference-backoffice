@@ -96,6 +96,8 @@ export default function SessionsPage() {
         status: string;
         createdAt: string;
         ticketName: string | null;
+        source: string;
+        addedAt: string;
     }
     const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
     const [enrollmentsLoading, setEnrollmentsLoading] = useState(false);
@@ -1379,6 +1381,11 @@ export default function SessionsPage() {
                                                                     {enrollment.status}
                                                                 </span>
                                                                 <p className="text-xs text-zinc-400 mt-1">{enrollment.regCode}</p>
+                                                                {enrollment.source === 'admin_grant' && (
+                                                                    <span className="inline-block mt-1 px-2 py-0.5 rounded-full text-xs bg-purple-50 text-purple-700 border border-purple-200">
+                                                                        เพิ่มโดย Admin
+                                                                    </span>
+                                                                )}
                                                             </div>
                                                         </div>
                                                     ))}
