@@ -1,8 +1,34 @@
+export type InvitationStatus =
+  | "pending"
+  | "accepted"
+  | "declined"
+  | "expired"
+  | "revoked";
+
+export type GrantOutcome = "added" | "invited" | "skipped";
+
+export interface InvitationMetadata {
+  invitationId: string;
+  invitationStatus: InvitationStatus;
+  expiresAt: string;
+  effectiveDeadline: string;
+  respondedAt: string | null;
+}
+
+export interface InvitationCapacity {
+  currentEnrollmentCount: number;
+  reservedCount: number;
+  occupiedCount: number;
+  seatsRemaining: number;
+}
+
 export type SessionGrantSkipCode =
   | "REGISTRATION_NOT_FOUND"
   | "EVENT_MISMATCH"
   | "REGISTRATION_NOT_CONFIRMED"
-  | "ALREADY_REGISTERED";
+  | "ALREADY_REGISTERED"
+  | "ALREADY_INVITED"
+  | "DUPLICATE_PARTICIPANT";
 
 export type SessionGrantEmailStatus =
   | "not_applicable"
@@ -25,12 +51,13 @@ export interface SessionGrantItemDto {
   registrationId: number;
   regCode: string | null;
   name: string | null;
-  outcome: "added" | "skipped";
+  outcome: GrantOutcome;
   reasonCode: SessionGrantSkipCode | null;
   registrationSessionId: number | null;
   emailStatus: SessionGrantEmailStatus;
   attemptCount: number;
   lastErrorCode: string | null;
+  invitation: InvitationMetadata | null;
 }
 
 export interface GrantBatchDto {
@@ -39,8 +66,12 @@ export interface GrantBatchDto {
   eventId: number;
   requestedCount: number;
   addedCount: number;
+  invitedCount: number;
   skippedCount: number;
   currentEnrollmentCount: number;
+  reservedCount: number;
+  occupiedCount: number;
+  seatsRemaining: number | null;
   createdAt: string;
   results: SessionGrantItemDto[];
   emailCounts: Record<SessionGrantEmailStatus, number>;
@@ -54,10 +85,11 @@ export interface SessionGrantHistoryItemDto {
   sessionName: string;
   actorName: string;
   createdAt: string;
-  outcome: "added" | "skipped";
+  outcome: GrantOutcome;
   reasonCode: SessionGrantSkipCode | null;
   emailStatus: SessionGrantEmailStatus;
   attemptCount: number;
+  invitation: InvitationMetadata | null;
 }
 
 export interface SessionGrantHistoryDto {
@@ -108,7 +140,16 @@ export interface GrantSessionChoiceDto {
   room: string | null;
   maxCapacity: number | null;
   isActive: boolean;
+  adminGrantRequiresConfirmation: boolean;
   enrollmentCount: number;
+  reservedCount: number;
+  occupiedCount: number;
+  seatsRemaining: number | null;
+  effectiveDeadline: string | null;
   grantEligible: boolean;
-  disabledReason: "SESSION_INACTIVE" | "SESSION_ENDED" | null;
+  disabledReason:
+    | "SESSION_INACTIVE"
+    | "SESSION_ENDED"
+    | "SESSION_RESPONSE_CLOSED"
+    | null;
 }

@@ -26,6 +26,7 @@ import type {
 import type {
   GrantBatchDto,
   GrantSessionChoiceDto,
+  InvitationCapacity,
   SessionGrantCreateInput,
   SessionGrantEmailAttemptsDto,
   SessionGrantHistoryDto,
@@ -45,6 +46,7 @@ export class ApiError extends Error {
     public readonly status: number,
     public readonly code?: string,
     public readonly details?: unknown,
+    public readonly capacity?: InvitationCapacity,
   ) {
     super(message);
     this.name = "ApiError";
@@ -153,11 +155,13 @@ export async function fetchAPI<T>(
     const detailsText = error.details ? ` — ${JSON.stringify(error.details)}` : "";
     const message =
       typeof error.error === "object" ? error.error?.message : error.error;
+    const capacity = error.capacity ?? error.details?.capacity;
     throw new ApiError(
       (message || `API Error: ${res.status}`) + detailsText,
       res.status,
       typeof error.code === "string" ? error.code : undefined,
       error.details,
+      capacity && typeof capacity === "object" ? capacity as InvitationCapacity : undefined,
     );
   }
 

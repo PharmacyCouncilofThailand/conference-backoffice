@@ -7,7 +7,7 @@ import { AdminLayout } from '@/components/layout';
 import { api } from '@/lib/api';
 import { AddSessionDialog } from '@/components/registrations/AddSessionDialog';
 import { SessionGrantResults } from '@/components/registrations/SessionGrantResults';
-import type { GrantSessionChoiceDto, SessionGrantHistoryItemDto } from '@/types/session-grants';
+import type { GrantSessionChoiceDto, InvitationStatus, SessionGrantHistoryItemDto } from '@/types/session-grants';
 import { useAuth } from '@/contexts/AuthContext';
 import {
     IconArrowLeft,
@@ -58,6 +58,24 @@ interface RegistrationSession {
     addedByLastName: string | null;
 }
 
+interface RegistrationInvitation {
+    invitationId: string;
+    sessionId: number;
+    sessionName: string;
+    sessionType: string | null;
+    startTime: string;
+    endTime: string;
+    room: string | null;
+    status: InvitationStatus;
+    expiresAt: string;
+    effectiveDeadline: string;
+    respondedAt: string | null;
+    createdAt: string;
+    emailStatus: string;
+    attemptCount: number;
+    lastErrorCode: string | null;
+}
+
 interface RegistrationDetail {
     id: number;
     regCode: string;
@@ -86,7 +104,22 @@ interface RegistrationDetail {
     addedByFirstName: string | null;
     addedByLastName: string | null;
     sessions: RegistrationSession[];
+    invitations: RegistrationInvitation[];
 }
+
+const invitationLabels: Record<InvitationStatus, string> = {
+    pending: 'รอตอบรับ',
+    accepted: 'ยืนยันเข้าร่วม',
+    declined: 'ปฏิเสธ',
+    expired: 'หมดเวลา',
+    revoked: 'ใช้คำเชิญไม่ได้',
+};
+
+const bangkokDateTime = (value: string) => new Date(value).toLocaleString('th-TH', {
+    timeZone: 'Asia/Bangkok',
+    dateStyle: 'medium',
+    timeStyle: 'short',
+});
 
 const sessionTypeConfig: Record<string, { label: string; bg: string; text: string }> = {
     workshop: { label: 'Workshop', bg: 'bg-orange-100', text: 'text-orange-700' },
@@ -159,6 +192,10 @@ export default function RegistrationDetailPage() {
 
     const grantSelectedSession = async (session: GrantSessionChoiceDto) => {
         if (!registration || grantSubmitting) return;
+        if (session.adminGrantRequiresConfirmation) {
+            const deadline = session.effectiveDeadline ? `\nตอบรับได้ก่อน ${bangkokDateTime(session.effectiveDeadline)} เวลาไทย` : '';
+            if (!window.confirm(`Session นี้ต้องให้ผู้เข้าร่วมตอบรับก่อนจึงจะมีสิทธิ์เข้า Session${deadline}\n\nต้องการสร้างคำเชิญหรือไม่?`)) return;
+        }
         const operation = pendingGrant?.sessionId === session.id
             ? pendingGrant
             : { key: crypto.randomUUID(), sessionId: session.id };
@@ -171,7 +208,11 @@ export default function RegistrationDetailPage() {
             });
             setGrantBatchId(result.batchId);
             setPendingGrant(null);
-            toast.success(result.addedCount > 0 ? 'เพิ่มสิทธิ์ Session สำเร็จ' : 'ดำเนินการเสร็จแล้วโดยไม่มีสิทธิ์ใหม่');
+            toast.success(result.invitedCount > 0
+                ? 'สร้างคำเชิญเข้าร่วม Session แล้ว'
+                : result.addedCount > 0
+                    ? 'เพิ่มสิทธิ์ Session สำเร็จ'
+                    : 'ดำเนินการเสร็จแล้วโดยไม่มีสิทธิ์ใหม่');
             await fetchRegistration();
         } catch (err) {
             console.error('Failed to grant session:', err);
@@ -394,6 +435,36 @@ export default function RegistrationDetailPage() {
                             </div>
                         )}
                     </div>
+                    {registration.invitations.length > 0 && (
+                        <div className="card">
+                            <h2 className="text-lg font-semibold mb-4">ประวัติคำเชิญ Session</h2>
+                            <div className="space-y-3">
+                                {registration.invitations.map((invitation) => (
+                                    <div key={invitation.invitationId} className="rounded-xl border border-zinc-200 p-4">
+                                        <div className="flex flex-wrap items-start justify-between gap-2">
+                                            <div>
+                                                <p className="font-medium text-zinc-900">{invitation.sessionName}</p>
+                                                <p className="mt-1 text-xs text-zinc-500">
+                                                    {bangkokDateTime(invitation.startTime)}{invitation.room ? ` · ${invitation.room}` : ''}
+                                                </p>
+                                            </div>
+                                            <span className="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700">
+                                                {invitationLabels[invitation.status]}
+                                            </span>
+                                        </div>
+                                        <p className="mt-2 text-sm text-zinc-500">
+                                            ตอบรับได้ก่อน {bangkokDateTime(invitation.effectiveDeadline)} เวลาไทย
+                                            {invitation.respondedAt ? ` · ตอบเมื่อ ${bangkokDateTime(invitation.respondedAt)}` : ''}
+                                        </p>
+                                        <p className="mt-1 text-xs text-zinc-400">
+                                            อีเมล: {invitation.emailStatus} · Attempts: {invitation.attemptCount}
+                                            {invitation.lastErrorCode ? ` · ${invitation.lastErrorCode}` : ''}
+                                        </p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* Right Column - Attendee Info */}
@@ -494,7 +565,15 @@ export default function RegistrationDetailPage() {
                                     <span className="font-medium text-zinc-900">{entry.sessionName}</span>
                                     <span className="text-zinc-500">{new Date(entry.createdAt).toLocaleString('th-TH')}</span>
                                 </div>
-                                <p className="mt-1 text-zinc-500">ผลสิทธิ์: {entry.outcome} · อีเมล: {entry.emailStatus} · Attempts: {entry.attemptCount}</p>
+                                <p className="mt-1 text-zinc-500">
+                                    ผลสิทธิ์: {entry.outcome === 'added' ? 'เพิ่มสิทธิ์แล้ว' : entry.outcome === 'invited' ? 'สร้างคำเชิญแล้ว' : 'ข้าม'} · อีเมล: {entry.emailStatus} · Attempts: {entry.attemptCount}
+                                </p>
+                                {entry.invitation && (
+                                    <p className="mt-1 text-xs text-amber-700">
+                                        {invitationLabels[entry.invitation.invitationStatus]} · ก่อน {bangkokDateTime(entry.invitation.effectiveDeadline)} เวลาไทย
+                                        {entry.invitation.respondedAt ? ` · ตอบเมื่อ ${bangkokDateTime(entry.invitation.respondedAt)}` : ''}
+                                    </p>
+                                )}
                             </div>
                         ))}
                     </div>

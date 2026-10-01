@@ -5,6 +5,8 @@ import { IconLoader2, IconRefresh, IconSend } from '@tabler/icons-react';
 import { api } from '@/lib/api';
 import type {
   GrantBatchDto,
+  GrantOutcome,
+  InvitationStatus,
   SessionGrantEmailAttemptDto,
   SessionGrantItemDto,
 } from '@/types/session-grants';
@@ -18,6 +20,31 @@ const getBackofficeToken = () =>
   localStorage.getItem('backoffice_token') ||
   sessionStorage.getItem('backoffice_token') ||
   '';
+
+const outcomeLabels: Record<GrantOutcome, string> = {
+  added: 'เพิ่มสิทธิ์แล้ว',
+  invited: 'สร้างคำเชิญแล้ว',
+  skipped: 'ข้าม',
+};
+
+const invitationLabels: Record<InvitationStatus, string> = {
+  pending: 'รอตอบรับ',
+  accepted: 'ยืนยันเข้าร่วม',
+  declined: 'ปฏิเสธ',
+  expired: 'หมดเวลา',
+  revoked: 'ใช้คำเชิญไม่ได้',
+};
+
+const bangkokDateTime = (value: string) => new Date(value).toLocaleString('th-TH', {
+  timeZone: 'Asia/Bangkok',
+  dateStyle: 'medium',
+  timeStyle: 'short',
+});
+
+function canRetryItem(item: SessionGrantItemDto): boolean {
+  if (item.emailStatus !== 'failed' && item.emailStatus !== 'unknown') return false;
+  return item.outcome !== 'invited' || item.invitation?.invitationStatus === 'pending';
+}
 
 export function SessionGrantResults({ batchId, onEntitlementsChanged }: SessionGrantResultsProps) {
   const [batch, setBatch] = useState<GrantBatchDto | null>(null);
@@ -33,6 +60,10 @@ export function SessionGrantResults({ batchId, onEntitlementsChanged }: SessionG
     try {
       const response = await api.sessionGrants.get(getBackofficeToken(), batchId, 1, 100);
       setBatch(response);
+      setSelectedRetryIds((current) => new Set([...current].filter((id) => {
+        const item = response.results.find((row) => row.id === id);
+        return item ? canRetryItem(item) : false;
+      })));
       setError(null);
       return response;
     } catch (err) {
@@ -67,13 +98,13 @@ export function SessionGrantResults({ batchId, onEntitlementsChanged }: SessionG
   }, [load, shouldPoll]);
 
   const retryable = useMemo(
-    () => batch?.results.filter((item) => item.emailStatus === 'failed' || item.emailStatus === 'unknown') || [],
+    () => batch?.results.filter(canRetryItem) || [],
     [batch],
   );
 
   const retrySelected = async () => {
     if (!batch || selectedRetryIds.size === 0) return;
-    const selected = batch.results.filter((item) => selectedRetryIds.has(item.id));
+    const selected = batch.results.filter((item) => selectedRetryIds.has(item.id) && canRetryItem(item));
     const hasUnknown = selected.some((item) => item.emailStatus === 'unknown');
     if (hasUnknown && !window.confirm('บางรายการมีสถานะไม่ทราบผลและอาจส่งอีเมลไปแล้ว ต้องการยืนยันการส่งซ้ำหรือไม่?')) {
       return;
@@ -126,8 +157,13 @@ export function SessionGrantResults({ batchId, onEntitlementsChanged }: SessionG
         <div>
           <h3 className="font-semibold text-zinc-900">ผลการเพิ่มสิทธิ์ Session</h3>
           <p className="text-sm text-zinc-500">
-            เพิ่มสำเร็จ {batch.addedCount} · ข้าม {batch.skippedCount} · เลือกทั้งหมด {batch.requestedCount}
+            เพิ่มสิทธิ์ {batch.addedCount} · สร้างคำเชิญ {batch.invitedCount} · ข้าม {batch.skippedCount} · เลือกทั้งหมด {batch.requestedCount}
           </p>
+          {batch.seatsRemaining !== null && (
+            <p className="mt-1 text-xs text-zinc-500">
+              มีสิทธิ์แล้ว {batch.currentEnrollmentCount} · รอตอบรับ {batch.reservedCount} · รวม {batch.occupiedCount} · เหลือ {batch.seatsRemaining}
+            </p>
+          )}
         </div>
         <button type="button" onClick={() => void load()} className="btn-secondary flex items-center gap-2">
           <IconRefresh size={16} /> รีเฟรช
@@ -145,7 +181,7 @@ export function SessionGrantResults({ batchId, onEntitlementsChanged }: SessionG
 
       {retryable.length > 0 && (
         <div className="flex items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 p-3">
-          <p className="text-sm text-amber-900">เลือกเฉพาะรายการ failed/unknown ที่ต้องการส่งอีเมลซ้ำ</p>
+          <p className="text-sm text-amber-900">เลือกเฉพาะรายการ failed/unknown ที่คำเชิญยังรอตอบรับเพื่อส่งอีเมลซ้ำ</p>
           <button
             type="button"
             disabled={selectedRetryIds.size === 0 || retrying}
@@ -165,6 +201,7 @@ export function SessionGrantResults({ batchId, onEntitlementsChanged }: SessionG
               <th className="px-3 py-2">เลือก</th>
               <th className="px-3 py-2">Registration</th>
               <th className="px-3 py-2">ผลสิทธิ์</th>
+              <th className="px-3 py-2">คำตอบ</th>
               <th className="px-3 py-2">เหตุผล</th>
               <th className="px-3 py-2">อีเมล</th>
               <th className="px-3 py-2">Attempts</th>
@@ -172,7 +209,7 @@ export function SessionGrantResults({ batchId, onEntitlementsChanged }: SessionG
           </thead>
           <tbody className="divide-y divide-zinc-100">
             {batch.results.map((item) => {
-              const canRetry = item.emailStatus === 'failed' || item.emailStatus === 'unknown';
+              const canRetry = canRetryItem(item);
               return (
                 <Fragment key={item.id}>
                   <tr>
@@ -190,7 +227,18 @@ export function SessionGrantResults({ batchId, onEntitlementsChanged }: SessionG
                       />
                     </td>
                     <td className="px-3 py-3">{item.name || '-'}<div className="font-mono text-xs text-zinc-500">{item.regCode || item.registrationId}</div></td>
-                    <td className="px-3 py-3">{item.outcome === 'added' ? 'เพิ่มแล้ว' : 'ข้าม'}</td>
+                    <td className="px-3 py-3">{outcomeLabels[item.outcome]}</td>
+                    <td className="px-3 py-3">
+                      {item.invitation ? (
+                        <div className="space-y-1">
+                          <div>{invitationLabels[item.invitation.invitationStatus]}</div>
+                          <div className="text-xs text-zinc-500">ก่อน {bangkokDateTime(item.invitation.effectiveDeadline)} เวลาไทย</div>
+                          {item.invitation.respondedAt && (
+                            <div className="text-xs text-zinc-500">ตอบเมื่อ {bangkokDateTime(item.invitation.respondedAt)}</div>
+                          )}
+                        </div>
+                      ) : '-'}
+                    </td>
                     <td className="px-3 py-3">{item.reasonCode || '-'}</td>
                     <td className="px-3 py-3">{item.emailStatus}</td>
                     <td className="px-3 py-3">
@@ -201,14 +249,14 @@ export function SessionGrantResults({ batchId, onEntitlementsChanged }: SessionG
                   </tr>
                   {attemptsByItem[item.id] && (
                     <tr key={`${item.id}-attempts`} className="bg-zinc-50">
-                      <td colSpan={6} className="px-4 py-3">
+                      <td colSpan={7} className="px-4 py-3">
                         {attemptsByItem[item.id].length === 0 ? (
                           <p className="text-zinc-500">ยังไม่มีประวัติการส่ง</p>
                         ) : (
                           <ol className="space-y-2">
                             {attemptsByItem[item.id].map((attempt) => (
                               <li key={attempt.id} className="rounded border border-zinc-200 bg-white p-2">
-                                #{attempt.attemptNo} · {attempt.result} · {new Date(attempt.startedAt).toLocaleString('th-TH')}
+                                #{attempt.attemptNo} · {attempt.result} · {bangkokDateTime(attempt.startedAt)}
                                 {attempt.errorCode ? ` · ${attempt.errorCode}` : ''}
                                 {attempt.errorMessage ? <div className="text-xs text-red-600">{attempt.errorMessage}</div> : null}
                               </li>

@@ -18,6 +18,12 @@ const getBackofficeToken = () =>
   sessionStorage.getItem('backoffice_token') ||
   '';
 
+const bangkokDateTime = (value: string) => new Date(value).toLocaleString('th-TH', {
+  timeZone: 'Asia/Bangkok',
+  dateStyle: 'medium',
+  timeStyle: 'short',
+});
+
 export function AddSessionDialog({
   open,
   eventId,
@@ -71,20 +77,22 @@ export function AddSessionDialog({
   useEffect(() => {
     if (!open || !eventId) return;
     let current = true;
-    setLoading(true);
-    setError(null);
-    api.backofficeEvents.getSessions(getBackofficeToken(), eventId, true)
-      .then((response) => {
+    void (async () => {
+      await Promise.resolve();
+      if (!current) return;
+      setLoading(true);
+      setError(null);
+      try {
+        const response = await api.backofficeEvents.getSessions(getBackofficeToken(), eventId, true);
         if (!current) return;
         setSessions(response.sessions as GrantSessionChoiceDto[]);
         setServerNow(response.serverNow || null);
-      })
-      .catch((err: Error) => {
-        if (current) setError(err.message || 'ไม่สามารถโหลด Session ได้');
-      })
-      .finally(() => {
+      } catch (err) {
+        if (current) setError(err instanceof Error ? err.message : 'ไม่สามารถโหลด Session ได้');
+      } finally {
         if (current) setLoading(false);
-      });
+      }
+    })();
     return () => { current = false; };
   }, [eventId, open]);
 
@@ -94,7 +102,7 @@ export function AddSessionDialog({
   };
 
   const existing = new Set(existingSessionIds);
-  const now = serverNow ? new Date(serverNow).getTime() : Date.now();
+  const now = serverNow ? new Date(serverNow).getTime() : 0;
 
   return (
     <dialog
@@ -115,7 +123,7 @@ export function AddSessionDialog({
           <h2 id="session-grant-dialog-title" className="text-lg font-semibold text-zinc-900">
             เลือก Session ที่จะเพิ่มสิทธิ์
           </h2>
-          <p className="text-sm text-zinc-500">Session ที่สิ้นสุดแล้วหรือไม่เปิดใช้งานจะเลือกไม่ได้</p>
+          <p className="text-sm text-zinc-500">Session ที่สิ้นสุดแล้ว ปิดใช้งาน หรือปิดรับคำตอบแล้วจะเลือกไม่ได้</p>
         </div>
         <button type="button" onClick={close} className="p-2 rounded-lg hover:bg-zinc-100" aria-label="ปิด">
           <IconX size={20} />
@@ -138,9 +146,11 @@ export function AddSessionDialog({
                 ? 'มีสิทธิ์ Session นี้แล้ว'
                 : session.disabledReason === 'SESSION_INACTIVE'
                   ? 'Session ไม่เปิดใช้งาน'
-                  : session.disabledReason === 'SESSION_ENDED' || ended
-                    ? 'Session สิ้นสุดแล้ว'
-                    : null;
+                  : session.disabledReason === 'SESSION_RESPONSE_CLOSED'
+                    ? 'Session ปิดรับคำตอบแล้ว'
+                    : session.disabledReason === 'SESSION_ENDED' || ended
+                      ? 'Session สิ้นสุดแล้ว'
+                      : null;
               return (
                 <button
                   key={session.id}
@@ -157,12 +167,30 @@ export function AddSessionDialog({
                     <div>
                       <p className="font-medium text-zinc-900">{session.sessionName}</p>
                       <p className="mt-1 text-sm text-zinc-500">
-                        {new Date(session.startTime).toLocaleString('th-TH')} – {new Date(session.endTime).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })}
+                        {bangkokDateTime(session.startTime)} – {new Date(session.endTime).toLocaleTimeString('th-TH', {
+                          timeZone: 'Asia/Bangkok', hour: '2-digit', minute: '2-digit',
+                        })}
                         {session.room ? ` · ${session.room}` : ''}
                       </p>
                     </div>
-                    <span className="text-xs text-zinc-500">ผู้มีสิทธิ์ {session.enrollmentCount}</span>
+                    {session.adminGrantRequiresConfirmation ? (
+                      <span className="rounded-full bg-amber-50 px-2 py-1 text-xs font-medium text-amber-700">ต้องตอบรับ</span>
+                    ) : (
+                      <span className="text-xs text-zinc-500">ผู้มีสิทธิ์ {session.enrollmentCount}</span>
+                    )}
                   </div>
+                  {session.adminGrantRequiresConfirmation ? (
+                    <div className="mt-2 space-y-1 text-sm text-zinc-600">
+                      <p>
+                        มีสิทธิ์แล้ว {session.enrollmentCount} · รอตอบรับ {session.reservedCount} · รวม {session.occupiedCount}
+                        {session.maxCapacity !== null ? `/${session.maxCapacity}` : ''}
+                        {session.seatsRemaining !== null ? ` · เหลือ ${session.seatsRemaining}` : ''}
+                      </p>
+                      {session.effectiveDeadline && (
+                        <p className="text-xs text-amber-700">ตอบรับได้ก่อน {bangkokDateTime(session.effectiveDeadline)} เวลาไทย</p>
+                      )}
+                    </div>
+                  ) : null}
                   {reason && <p id={`session-${session.id}-reason`} className="mt-2 text-sm text-red-600">{reason}</p>}
                 </button>
               );
