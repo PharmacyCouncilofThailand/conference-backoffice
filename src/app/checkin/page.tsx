@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { Scanner } from '@yudiel/react-qr-scanner';
 import { AdminLayout } from '@/components/layout';
 import { useAuth, type AssignedSession } from '@/contexts/AuthContext';
-import { api } from '@/lib/api';
+import { api, ApiError } from '@/lib/api';
 import toast from 'react-hot-toast';
 import {
     IconScan,
@@ -60,6 +60,9 @@ interface SessionInfo {
     ticketName: string | null;
     source?: string;
     checkedInAt: string | null;
+    attendanceMode?: 'daily' | 'single';
+    attendanceId?: string | null;
+    attendanceDate?: string | null;
 }
 
 interface PendingRegistration {
@@ -73,7 +76,10 @@ interface PendingRegistration {
 }
 
 interface RecentCheckin {
-    id: number;
+    id: number | string;
+    kind?: 'daily' | 'single';
+    attendanceId?: string | null;
+    registrationSessionId: number;
     regCode: string;
     firstName: string;
     lastName: string;
@@ -141,8 +147,27 @@ const ALREADY_CHECKED_IN_MESSAGE = 'เช็คอินไปแล้ว';
 
 const isAlreadyCheckedInMessage = (message: string) =>
     message.includes('เช็คอินแล้ว') ||
+    message.includes('เช็คอินวันนี้แล้ว') ||
     message.includes(ALREADY_CHECKED_IN_MESSAGE) ||
     message.toLowerCase().includes('already checked');
+
+const errorMessage = (error: unknown, fallback: string) =>
+    error instanceof Error ? error.message : fallback;
+
+const duplicateMessage = (error: unknown) => {
+    if (!(error instanceof ApiError) || !error.details || typeof error.details !== 'object') {
+        return ALREADY_CHECKED_IN_MESSAGE;
+    }
+    const details = error.details as Record<string, unknown>;
+    const checkedInAt = typeof details.checkedInAt === 'string' ? details.checkedInAt : undefined;
+    if (details.attendanceMode === 'daily') {
+        const time = checkedInAt
+            ? new Date(checkedInAt).toLocaleTimeString('th-TH', { timeZone: 'Asia/Bangkok', hour: '2-digit', minute: '2-digit' })
+            : null;
+        return time ? `เช็คอินวันนี้แล้ว เวลา ${time}` : 'เช็คอินวันนี้แล้ว';
+    }
+    return ALREADY_CHECKED_IN_MESSAGE;
+};
 
 export default function CheckinPage() {
     const { user, isAdmin } = useAuth();
@@ -179,6 +204,8 @@ export default function CheckinPage() {
 
     // Data stats
     const [stats, setStats] = useState({ total: 0, checkedIn: 0, remaining: 0, percentage: 0 });
+    const [serverDate, setServerDate] = useState<string | null>(null);
+    const [attendanceMode, setAttendanceMode] = useState<'daily' | 'single' | null>(null);
     const [sessionBreakdown, setSessionBreakdown] = useState<SessionBreakdownItem[]>([]);
     const [recentCheckins, setRecentCheckins] = useState<RecentCheckin[]>([]);
 
@@ -205,7 +232,11 @@ export default function CheckinPage() {
                 try {
                     const token = getBackofficeToken();
                     const res = await api.backofficeEvents.list(token, 'limit=100');
-                    setEvents((res.events || []).map((e: any) => ({ id: e.id, eventName: e.eventName })));
+                    setEvents((res.events || []).flatMap((event) =>
+                        typeof event.id === 'number' && typeof event.eventName === 'string'
+                            ? [{ id: event.id, eventName: event.eventName }]
+                            : []
+                    ));
                 } catch (error) {
                     console.error('Failed to fetch events:', error);
                 } finally {
@@ -223,16 +254,20 @@ export default function CheckinPage() {
                 try {
                     const token = getBackofficeToken();
                     const res = await api.backofficeEvents.getSessions(token, selectedEvent.id);
-                    setEventSessions((res.sessions || []).map((s: any) => ({
-                        sessionId: s.id,
-                        sessionName: s.sessionName,
-                        sessionType: s.sessionType,
-                        room: s.room,
-                        startTime: s.startTime || '',
-                        endTime: s.endTime || '',
-                        eventId: selectedEvent.id,
-                        eventName: selectedEvent.eventName,
-                    })));
+                    setEventSessions((res.sessions || []).flatMap((session) => {
+                        const record = session as Record<string, unknown>;
+                        if (typeof record.id !== 'number' || typeof record.sessionName !== 'string') return [];
+                        return [{
+                            sessionId: record.id,
+                            sessionName: record.sessionName,
+                            sessionType: typeof record.sessionType === 'string' ? record.sessionType : null,
+                            room: typeof record.room === 'string' ? record.room : null,
+                            startTime: typeof record.startTime === 'string' ? record.startTime : '',
+                            endTime: typeof record.endTime === 'string' ? record.endTime : '',
+                            eventId: selectedEvent.id,
+                            eventName: selectedEvent.eventName,
+                        }];
+                    }));
                 } catch (error) {
                     console.error('Failed to fetch sessions:', error);
                 }
@@ -249,19 +284,23 @@ export default function CheckinPage() {
             // Build stats query
             const statsParams: string[] = [];
             if (activeSession) {
+                statsParams.push(`eventId=${activeSession.eventId}`);
                 statsParams.push(`sessionId=${activeSession.sessionId}`);
             } else if (selectedEvent) {
                 statsParams.push(`eventId=${selectedEvent.id}`);
             }
             const statsQuery = statsParams.join('&');
 
-            const statsRes: any = await api.checkins.stats(token, statsQuery);
+            const statsRes = await api.checkins.stats(token, statsQuery);
             setStats(statsRes);
+            setServerDate(statsRes.serverDate || null);
+            setAttendanceMode(statsRes.attendanceMode || null);
             setSessionBreakdown(statsRes.sessionBreakdown || []);
 
             // Fetch recent check-ins
             const listParams: string[] = ['limit=10'];
             if (activeSession) {
+                listParams.push(`eventId=${activeSession.eventId}`);
                 listParams.push(`sessionId=${activeSession.sessionId}`);
             } else if (selectedEvent) {
                 listParams.push(`eventId=${selectedEvent.id}`);
@@ -269,13 +308,16 @@ export default function CheckinPage() {
             const listQuery = listParams.join('&');
             const checkinRes = await api.checkins.list(token, listQuery);
 
-            setRecentCheckins(checkinRes.checkins.map((c: any) => ({
+            setRecentCheckins(checkinRes.checkins.map((c) => ({
                 id: c.id,
+                kind: c.kind,
+                attendanceId: c.attendanceId,
+                registrationSessionId: c.registrationSessionId,
                 regCode: c.regCode,
                 firstName: c.firstName,
                 lastName: c.lastName,
-                ticketName: c.ticketName,
-                sessionName: c.sessionName,
+                ticketName: c.ticketName ?? '',
+                sessionName: c.sessionName ?? undefined,
                 scannedAt: new Date(c.scannedAt).toLocaleTimeString("en-US", { timeZone: "Asia/Bangkok" }),
             })));
         } catch (error) {
@@ -287,6 +329,23 @@ export default function CheckinPage() {
         if (!showSessionPicker) {
             fetchData();
         }
+    }, [showSessionPicker, fetchData]);
+
+    useEffect(() => {
+        if (showSessionPicker) return;
+        const refreshOnVisible = () => {
+            if (document.visibilityState === 'visible') void fetchData();
+        };
+        document.addEventListener('visibilitychange', refreshOnVisible);
+        const now = new Date();
+        const bangkok = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Bangkok' }));
+        const nextMidnight = new Date(bangkok);
+        nextMidnight.setHours(24, 0, 1, 0);
+        const timer = window.setTimeout(() => void fetchData(), Math.max(1000, nextMidnight.getTime() - bangkok.getTime()));
+        return () => {
+            document.removeEventListener('visibilitychange', refreshOnVisible);
+            window.clearTimeout(timer);
+        };
     }, [showSessionPicker, fetchData]);
 
     // ─── QR Scanner handler ───
@@ -367,12 +426,13 @@ export default function CheckinPage() {
                     fetchData();
                 }
             }
-        } catch (error: any) {
-            const msg = error.message || 'Scan failed';
+        } catch (error) {
+            const msg = errorMessage(error, 'Scan failed');
             if (isAlreadyCheckedInMessage(msg)) {
                 if (soundEnabled) playDuplicateSound();
-                toast.error(ALREADY_CHECKED_IN_MESSAGE);
-                setScanResult({ status: 'duplicate', code, message: ALREADY_CHECKED_IN_MESSAGE });
+                const message = duplicateMessage(error);
+                toast.error(message);
+                setScanResult({ status: 'duplicate', code, message });
             } else if (msg.includes('ไม่มีสิทธิ์') || msg.includes('NO_ACCESS') || msg.includes('No access')) {
                 if (soundEnabled) playErrorSound();
                 setScanResult({ status: 'no_access', code, message: 'No access to this session' });
@@ -409,8 +469,8 @@ export default function CheckinPage() {
                 toast.success(`Checked in: ${res.checkedInSession?.sessionName}`);
                 fetchData();
             }
-        } catch (error: any) {
-            const msg = error.message || 'Check-in failed';
+        } catch (error) {
+            const msg = errorMessage(error, 'Check-in failed');
             if (isAlreadyCheckedInMessage(msg)) {
                 if (soundEnabled) playDuplicateSound();
                 toast.error(ALREADY_CHECKED_IN_MESSAGE);
@@ -446,8 +506,8 @@ export default function CheckinPage() {
                 setPendingRegistration(null);
                 fetchData();
             }
-        } catch (error: any) {
-            const msg = error.message || 'Check-in failed';
+        } catch (error) {
+            const msg = errorMessage(error, 'Check-in failed');
             if (isAlreadyCheckedInMessage(msg)) {
                 if (soundEnabled) playDuplicateSound();
                 toast.error(ALREADY_CHECKED_IN_MESSAGE);
@@ -461,16 +521,24 @@ export default function CheckinPage() {
     };
 
     // ─── Undo check-in ───
-    const handleUndo = async (registrationSessionId: number) => {
+    const handleUndo = async (checkin: RecentCheckin) => {
         try {
             const token = getBackofficeToken();
-            const res = await api.checkins.undo(token, registrationSessionId);
+            let res;
+            if (checkin.kind === 'daily' && checkin.attendanceId) {
+                const reason = window.prompt('เหตุผลในการยกเลิกเช็คอิน (จำเป็น)')?.trim();
+                if (!reason) return;
+                res = await api.checkins.undoDaily(token, checkin.attendanceId, reason);
+            } else {
+                if (!window.confirm('Undo this session check-in?')) return;
+                res = await api.checkins.undo(token, checkin.registrationSessionId);
+            }
             if (res.success) {
-                toast.success(`Undo: ${res.undone.name} — ${res.undone.sessionName}`);
+                toast.success('ยกเลิกเช็คอินแล้ว');
                 fetchData();
             }
-        } catch (error: any) {
-            toast.error(error.message || 'Undo failed');
+        } catch (error) {
+            toast.error(errorMessage(error, 'Undo failed'));
         }
     };
 
@@ -675,6 +743,14 @@ export default function CheckinPage() {
     // ─── MAIN SCANNER SCREEN ───
     return (
         <AdminLayout title={activeSession ? `Check-in: ${activeSession.sessionName}` : 'Check-in Scanner'}>
+            <div className="mb-4 flex flex-wrap items-center gap-2 text-sm text-zinc-500">
+                <span className="rounded-full bg-emerald-50 px-3 py-1 font-medium text-emerald-700">เวลาระบบ: {serverDate || 'กำลังโหลด'}</span>
+                {activeSession && attendanceMode === 'daily' && (
+                    <span className="rounded-full bg-blue-50 px-3 py-1 font-medium text-blue-700">
+                        Daily attendance: ตรวจสิทธิ์และนับใหม่ทุกวันตามเวลาไทย
+                    </span>
+                )}
+            </div>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Scanner Area */}
                 <div className="lg:col-span-2">
@@ -1094,7 +1170,7 @@ export default function CheckinPage() {
                                         <div className="flex items-center gap-2">
                                             <span className="text-xs text-zinc-400">{checkin.scannedAt}</span>
                                             <button
-                                                onClick={() => handleUndo(checkin.id)}
+                                                onClick={() => void handleUndo(checkin)}
                                                 className="p-1 rounded hover:bg-red-100 text-zinc-400 hover:text-red-600 transition-colors"
                                                 title="Undo check-in"
                                             >

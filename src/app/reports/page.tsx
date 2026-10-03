@@ -1,284 +1,248 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { AdminLayout } from '@/components/layout';
 import { useAuth } from '@/contexts/AuthContext';
+import { api } from '@/lib/api';
 import {
-    IconReportAnalytics,
-    IconDownload,
     IconCalendarEvent,
-    IconUsers,
-    IconCreditCard,
-    IconTicket,
     IconCheck,
-    IconTrendingUp,
+    IconLoader2,
+    IconRefresh,
+    IconUsers,
 } from '@tabler/icons-react';
-import {
-    AreaChart,
-    Area,
-    XAxis,
-    YAxis,
-    CartesianGrid,
-    Tooltip,
-    ResponsiveContainer,
-    BarChart,
-    Bar,
-    PieChart,
-    Pie,
-    Cell,
-} from 'recharts';
 
-// Mock data
-const registrationTrend = [
+interface AttendanceStats {
+    eligibleRegistrations: number;
+    checkedInPeopleOnDate: number;
+    uniquePeople: number;
+    attendanceOccurrences: number;
+    unlinkedRegistrationCount: number;
+    serverDate: string;
+    selectedDate: string;
+}
+
+interface AttendanceRow {
+    id: string | number;
+    regCode: string;
+    firstName: string;
+    lastName: string;
+    attendanceDate?: string | null;
+    scannedAt: string;
+    cancelledAt?: string | null;
+    cancellationReason?: string | null;
+}
+
+const demoRegistrationTrend = [
     { date: 'Jan 1', count: 45 },
-    { date: 'Jan 5', count: 78 },
     { date: 'Jan 10', count: 125 },
-    { date: 'Jan 15', count: 189 },
     { date: 'Jan 20', count: 256 },
-    { date: 'Jan 25', count: 312 },
-    { date: 'Jan 30', count: 378 },
     { date: 'Feb 5', count: 423 },
 ];
 
-const revenueByTicket = [
-    { name: 'Professional', value: 450000, count: 120 },
-    { name: 'Student', value: 90000, count: 60 },
-    { name: 'Guest', value: 320000, count: 80 },
-    { name: 'General', value: 50000, count: 25 },
-];
+const getBackofficeToken = () =>
+    localStorage.getItem('backoffice_token') ||
+    sessionStorage.getItem('backoffice_token') ||
+    '';
 
-const dailyRevenue = [
-    { date: 'Mon', amount: 45000 },
-    { date: 'Tue', amount: 52000 },
-    { date: 'Wed', amount: 48000 },
-    { date: 'Thu', amount: 75000 },
-    { date: 'Fri', amount: 95000 },
-    { date: 'Sat', amount: 68000 },
-    { date: 'Sun', amount: 84000 },
-];
-
-const checkInBySession = [
-    { name: 'Opening Keynote', registered: 423, checkedIn: 398 },
-    { name: 'Clinical Panel', registered: 178, checkedIn: 156 },
-    { name: 'Workshop A', registered: 40, checkedIn: 38 },
-    { name: 'Workshop B', registered: 35, checkedIn: 32 },
-    { name: 'Closing', registered: 380, checkedIn: 0 },
-];
-
-const COLORS = ['#059669', '#059669', '#d97706', '#34d399'];
+const todayBangkok = () => new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Bangkok',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+}).format(new Date());
 
 export default function ReportsPage() {
     const { currentEvent } = useAuth();
-    const [reportType, setReportType] = useState('overview');
-    const [dateRange, setDateRange] = useState('all');
+    const [sessionId, setSessionId] = useState('');
+    const [sessions, setSessions] = useState<{ id: number; name: string }[]>([]);
+    const [date, setDate] = useState(todayBangkok());
+    const [stats, setStats] = useState<AttendanceStats | null>(null);
+    const [rows, setRows] = useState<AttendanceRow[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
-    const totalRevenue = revenueByTicket.reduce((sum, t) => sum + t.value, 0);
-    const totalRegistrations = revenueByTicket.reduce((sum, t) => sum + t.count, 0);
-    const totalCheckedIn = checkInBySession.reduce((sum, s) => sum + s.checkedIn, 0);
+    useEffect(() => {
+        setSessionId('');
+        setSessions([]);
+        setStats(null);
+        setRows([]);
+        if (!currentEvent) return;
+        api.backofficeEvents.getSessions(getBackofficeToken(), currentEvent.id)
+            .then((response) => {
+                setSessions((response.sessions as Record<string, unknown>[]).map((session) => ({
+                    id: session.id as number,
+                    name: session.sessionName as string,
+                })));
+            })
+            .catch((loadError) => {
+                setError(loadError instanceof Error ? loadError.message : 'โหลด Session ไม่สำเร็จ');
+            });
+    }, [currentEvent]);
+
+    const loadAttendance = useCallback(async () => {
+        if (!currentEvent || !sessionId) {
+            setStats(null);
+            setRows([]);
+            return;
+        }
+        setLoading(true);
+        setError(null);
+        try {
+            const token = getBackofficeToken();
+            const query = new URLSearchParams({
+                eventId: String(currentEvent.id),
+                sessionId,
+                date,
+            });
+            const [statsResponse, rowsResponse] = await Promise.all([
+                api.checkins.stats(token, query.toString()),
+                api.checkins.list(token, new URLSearchParams({
+                    ...Object.fromEntries(query),
+                    history: 'active',
+                    page: '1',
+                    limit: '100',
+                }).toString()),
+            ]);
+            setStats({
+                eligibleRegistrations: statsResponse.eligibleRegistrations ?? statsResponse.total,
+                checkedInPeopleOnDate: statsResponse.checkedInPeopleOnDate ?? statsResponse.checkedIn,
+                uniquePeople: statsResponse.uniquePeople ?? statsResponse.checkedIn,
+                attendanceOccurrences: statsResponse.attendanceOccurrences ?? statsResponse.checkedIn,
+                unlinkedRegistrationCount: statsResponse.unlinkedRegistrationCount ?? 0,
+                serverDate: statsResponse.serverDate ?? date,
+                selectedDate: statsResponse.selectedDate ?? date,
+            });
+            setRows(rowsResponse.checkins as AttendanceRow[]);
+        } catch (loadError) {
+            setError(loadError instanceof Error ? loadError.message : 'โหลดรายงาน Attendance ไม่สำเร็จ');
+        } finally {
+            setLoading(false);
+        }
+    }, [currentEvent, sessionId, date]);
+
+    useEffect(() => {
+        void loadAttendance();
+    }, [loadAttendance]);
 
     return (
-        <AdminLayout title={currentEvent ? `Reports: ${currentEvent.name}` : "Reports & Analytics"}>
-            {/* Header Controls */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-                <div className="flex gap-2">
-                    <button
-                        onClick={() => setReportType('overview')}
-                        className={`px-4 py-2 rounded-xl font-medium transition-colors ${reportType === 'overview' ? 'bg-emerald-700 text-white' : 'bg-zinc-100 text-zinc-500 hover:bg-zinc-200'}`}
-                    >
-                        Overview
-                    </button>
-                    <button
-                        onClick={() => setReportType('revenue')}
-                        className={`px-4 py-2 rounded-xl font-medium transition-colors ${reportType === 'revenue' ? 'bg-emerald-700 text-white' : 'bg-zinc-100 text-zinc-500 hover:bg-zinc-200'}`}
-                    >
-                        Revenue
-                    </button>
-                    <button
-                        onClick={() => setReportType('attendance')}
-                        className={`px-4 py-2 rounded-xl font-medium transition-colors ${reportType === 'attendance' ? 'bg-emerald-700 text-white' : 'bg-zinc-100 text-zinc-500 hover:bg-zinc-200'}`}
-                    >
-                        Attendance
-                    </button>
-                </div>
-                <div className="flex gap-2">
-                    <select
-                        value={dateRange}
-                        onChange={(e) => setDateRange(e.target.value)}
-                        className="input-field w-auto"
-                    >
-                        <option value="all">All Time</option>
-                        <option value="week">This Week</option>
-                        <option value="month">This Month</option>
-                    </select>
-                    <button className="btn-secondary flex items-center gap-2">
-                        <IconDownload size={18} /> Export PDF
-                    </button>
-                </div>
-            </div>
-
-            {/* Summary Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                <div className="card py-4 bg-gradient-to-br from-blue-500 to-blue-600 text-white">
-                    <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
-                            <IconCreditCard size={24} />
-                        </div>
-                        <div>
-                            <p className="text-2xl font-bold">฿{totalRevenue.toLocaleString()}</p>
-                            <p className="text-blue-100 text-sm">Total Revenue</p>
-                        </div>
-                    </div>
-                </div>
-                <div className="card py-4">
-                    <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-green-100 text-green-600 rounded-xl flex items-center justify-center">
-                            <IconUsers size={24} />
-                        </div>
-                        <div>
-                            <p className="text-2xl font-bold text-zinc-800">{totalRegistrations}</p>
-                            <p className="text-zinc-400 text-sm">Total Registrations</p>
-                        </div>
-                    </div>
-                </div>
-                <div className="card py-4">
-                    <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-purple-100 text-purple-600 rounded-xl flex items-center justify-center">
-                            <IconCheck size={24} />
-                        </div>
-                        <div>
-                            <p className="text-2xl font-bold text-zinc-800">{totalCheckedIn}</p>
-                            <p className="text-zinc-400 text-sm">Checked In</p>
-                        </div>
-                    </div>
-                </div>
-                <div className="card py-4">
-                    <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-yellow-100 text-yellow-600 rounded-xl flex items-center justify-center">
-                            <IconTrendingUp size={24} />
-                        </div>
-                        <div>
-                            <p className="text-2xl font-bold text-zinc-800">{Math.round((totalCheckedIn / totalRegistrations) * 100)}%</p>
-                            <p className="text-zinc-400 text-sm">Check-in Rate</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Charts Section */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-                {/* Registration Trend */}
+        <AdminLayout title={currentEvent ? `Reports: ${currentEvent.name}` : 'Reports & Analytics'}>
+            <div className="space-y-6">
                 <div className="card">
-                    <h3 className="text-lg font-semibold text-zinc-800 mb-4 flex items-center gap-2">
-                        <IconUsers size={20} className="text-emerald-600" />
-                        Registration Trend
-                    </h3>
-                    <div className="h-72">
-                        <ResponsiveContainer width="100%" height={288}>
-                            <AreaChart data={registrationTrend}>
-                                <defs>
-                                    <linearGradient id="colorReg" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#059669" stopOpacity={0.3} />
-                                        <stop offset="95%" stopColor="#059669" stopOpacity={0} />
-                                    </linearGradient>
-                                </defs>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
-                                <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: '#6b7280', fontSize: 12 }} />
-                                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#6b7280', fontSize: 12 }} />
-                                <Tooltip contentStyle={{ borderRadius: '0.5rem', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }} />
-                                <Area type="monotone" dataKey="count" stroke="#059669" strokeWidth={2.5} fillOpacity={1} fill="url(#colorReg)" />
-                            </AreaChart>
-                        </ResponsiveContainer>
+                    <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
+                        <div>
+                            <h2 className="text-lg font-semibold text-zinc-900">Live Attendance</h2>
+                            <p className="text-sm text-zinc-500">
+                                ข้อมูลส่วนนี้อ่านจาก attendance API จริง ไม่ใช้ sample totals
+                            </p>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                            <select
+                                className="input min-w-56"
+                                value={sessionId}
+                                onChange={(event) => setSessionId(event.target.value)}
+                                disabled={!currentEvent}
+                            >
+                                <option value="">Select session</option>
+                                {sessions.map((session) => (
+                                    <option key={session.id} value={session.id}>{session.name}</option>
+                                ))}
+                            </select>
+                            <input
+                                type="date"
+                                className="input w-auto"
+                                value={date}
+                                onChange={(event) => setDate(event.target.value)}
+                                disabled={!sessionId}
+                            />
+                            <button className="btn btn-secondary" onClick={() => void loadAttendance()} disabled={!sessionId || loading}>
+                                {loading ? <IconLoader2 size={18} className="animate-spin" /> : <IconRefresh size={18} />}
+                                Retry / Refresh
+                            </button>
+                        </div>
                     </div>
                 </div>
 
-                {/* Revenue by Ticket Type */}
-                <div className="card">
-                    <h3 className="text-lg font-semibold text-zinc-800 mb-4 flex items-center gap-2">
-                        <IconTicket size={20} className="text-purple-600" />
-                        Revenue by Ticket Type
-                    </h3>
-                    <div className="flex items-center gap-6 h-72">
-                        <div className="w-48 h-48">
-                            <ResponsiveContainer width={192} height={192}>
-                                <PieChart>
-                                    <Pie
-                                        data={revenueByTicket}
-                                        innerRadius={50}
-                                        outerRadius={80}
-                                        paddingAngle={3}
-                                        dataKey="value"
-                                    >
-                                        {revenueByTicket.map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                        ))}
-                                    </Pie>
-                                    <Tooltip formatter={(value: number | undefined) => `฿${(value || 0).toLocaleString()}`} />
-                                </PieChart>
-                            </ResponsiveContainer>
-                        </div>
-                        <div className="flex-1 space-y-3">
-                            {revenueByTicket.map((item, index) => (
-                                <div key={item.name} className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[index] }} />
-                                        <span className="text-sm text-zinc-500">{item.name}</span>
-                                    </div>
-                                    <div className="text-right">
-                                        <span className="font-semibold text-zinc-800">฿{item.value.toLocaleString()}</span>
-                                        <span className="text-xs text-zinc-400 ml-2">({item.count} tickets)</span>
-                                    </div>
+                {error && (
+                    <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
+                        <p>{error}</p>
+                        <button className="mt-2 font-medium underline" onClick={() => void loadAttendance()}>Retry</button>
+                    </div>
+                )}
+
+                {loading && (
+                    <div className="card flex items-center justify-center gap-2 py-16 text-zinc-500">
+                        <IconLoader2 size={22} className="animate-spin" /> Loading attendance…
+                    </div>
+                )}
+
+                {!loading && sessionId && stats && (
+                    <>
+                        <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
+                            {([
+                                ['Eligible entitlements', stats.eligibleRegistrations, IconUsers],
+                                ['People on selected day', stats.checkedInPeopleOnDate, IconCheck],
+                                ['Unique identified people', stats.uniquePeople, IconUsers],
+                                ['Attendance occurrences', stats.attendanceOccurrences, IconCalendarEvent],
+                                ['Unlinked registrations', stats.unlinkedRegistrationCount, IconUsers],
+                            ] as Array<[string, number, typeof IconUsers]>).map(([label, value, Icon]) => (
+                                <div className="card py-4" key={String(label)}>
+                                    <Icon size={22} className="mb-2 text-emerald-600" />
+                                    <p className="text-2xl font-bold text-zinc-900">{String(value)}</p>
+                                    <p className="text-xs text-zinc-500">{String(label)}</p>
                                 </div>
                             ))}
                         </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Daily Revenue & Check-in by Session */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Daily Revenue */}
-                <div className="card">
-                    <h3 className="text-lg font-semibold text-zinc-800 mb-4 flex items-center gap-2">
-                        <IconCreditCard size={20} className="text-green-600" />
-                        Daily Revenue (This Week)
-                    </h3>
-                    <div className="h-64">
-                        <ResponsiveContainer width="100%" height={256}>
-                            <BarChart data={dailyRevenue}>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
-                                <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: '#6b7280', fontSize: 12 }} />
-                                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#6b7280', fontSize: 12 }} tickFormatter={(value) => `฿${(value / 1000)}k`} />
-                                <Tooltip formatter={(value: number | undefined) => `฿${(value || 0).toLocaleString()}`} />
-                                <Bar dataKey="amount" fill="#10b981" radius={[4, 4, 0, 0]} />
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </div>
-                </div>
-
-                {/* Check-in by Session */}
-                <div className="card">
-                    <h3 className="text-lg font-semibold text-zinc-800 mb-4 flex items-center gap-2">
-                        <IconCalendarEvent size={20} className="text-emerald-600" />
-                        Check-in by Session
-                    </h3>
-                    <div className="space-y-4">
-                        {checkInBySession.map(session => {
-                            const percent = session.registered > 0 ? Math.round((session.checkedIn / session.registered) * 100) : 0;
-                            return (
-                                <div key={session.name}>
-                                    <div className="flex items-center justify-between mb-1">
-                                        <span className="text-sm text-zinc-500 truncate flex-1">{session.name}</span>
-                                        <span className="text-sm font-medium text-zinc-800">{session.checkedIn}/{session.registered}</span>
-                                    </div>
-                                    <div className="w-full h-2 bg-zinc-100 rounded-full overflow-hidden">
-                                        <div
-                                            className={`h-full rounded-full transition-all ${percent >= 90 ? 'bg-green-500' : percent >= 50 ? 'bg-emerald-600' : percent > 0 ? 'bg-yellow-500' : 'bg-gray-300'}`}
-                                            style={{ width: `${percent}%` }}
-                                        />
-                                    </div>
+                        <div className="card">
+                            <div className="mb-4 flex flex-wrap justify-between gap-2">
+                                <div>
+                                    <h3 className="font-semibold text-zinc-900">Active attendance — {stats.selectedDate}</h3>
+                                    <p className="text-xs text-zinc-500">Server date: {stats.serverDate}</p>
                                 </div>
-                            );
-                        })}
+                                <p className="text-sm text-zinc-500">Showing first {rows.length} matching rows</p>
+                            </div>
+                            {rows.length === 0 ? (
+                                <p className="py-10 text-center text-zinc-400">ไม่มี attendance ในวันที่เลือก</p>
+                            ) : (
+                                <div className="overflow-x-auto">
+                                    <table className="w-full min-w-[720px] text-sm">
+                                        <thead>
+                                            <tr className="border-b border-zinc-200 text-left text-zinc-500">
+                                                <th className="py-3 pr-4">Registration</th>
+                                                <th className="py-3 pr-4">Name</th>
+                                                <th className="py-3 pr-4">Day</th>
+                                                <th className="py-3">Scan time</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {rows.map((row) => (
+                                                <tr key={String(row.id)} className="border-b border-zinc-100">
+                                                    <td className="py-3 pr-4">{row.regCode}</td>
+                                                    <td className="py-3 pr-4">{row.firstName} {row.lastName}</td>
+                                                    <td className="py-3 pr-4">{row.attendanceDate || '-'}</td>
+                                                    <td className="py-3">{new Date(row.scannedAt).toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' })}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                        </div>
+                    </>
+                )}
+
+                <div className="card border-dashed">
+                    <h2 className="text-lg font-semibold text-zinc-900">Demonstration analytics</h2>
+                    <p className="mt-1 text-sm text-amber-700">
+                        ส่วน revenue/registration trend เดิมยังเป็นข้อมูลสาธิต ไม่ใช่ตัวเลข production ที่ยืนยันแล้ว
+                    </p>
+                    <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
+                        {demoRegistrationTrend.map((item) => (
+                            <div key={item.date} className="rounded-xl bg-zinc-50 p-3">
+                                <p className="text-xs text-zinc-500">{item.date}</p>
+                                <p className="text-xl font-semibold text-zinc-800">{item.count}</p>
+                            </div>
+                        ))}
                     </div>
                 </div>
             </div>

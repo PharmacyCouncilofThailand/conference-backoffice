@@ -70,6 +70,9 @@ interface BackofficeCheckinSession {
   sessionType?: string;
   ticketName: string | null;
   source?: string;
+  attendanceMode?: "daily" | "single";
+  attendanceId?: string | null;
+  attendanceDate?: string | null;
   checkedInAt: string | null;
 }
 
@@ -83,8 +86,15 @@ interface BackofficeCheckinResponse {
 }
 
 interface BackofficeCheckinRow {
-  id: number;
+  kind?: "daily" | "single";
+  id: number | string;
+  attendanceId?: string | null;
+  registrationSessionId: number;
+  attendanceDate?: string | null;
   scannedAt: string;
+  cancelledAt?: string | null;
+  cancelledBy?: number | null;
+  cancellationReason?: string | null;
   regCode: string;
   firstName: string;
   lastName: string;
@@ -530,9 +540,9 @@ export const api = {
         registrations: Record<string, unknown>[];
         pagination: Pagination;
       }>(`/api/backoffice/registrations${query ? `?${query}` : ""}`, { token }),
-    get: (token: string, id: number) =>
-      fetchAPI<{ registration: Record<string, unknown> }>(
-        `/api/backoffice/registrations/${id}`,
+    get: (token: string, id: number, date?: string) =>
+      fetchAPI<{ registration: Record<string, unknown>; attendance?: { serverNow: string; serverDate: string; selectedDate: string } }>(
+        `/api/backoffice/registrations/${id}${date ? `?date=${encodeURIComponent(date)}` : ""}`,
         { token },
       ),
     update: (token: string, id: number, data: Record<string, unknown>) =>
@@ -705,7 +715,7 @@ export const api = {
 
   checkins: {
     list: (token: string, query?: string) =>
-      fetchAPI<{ checkins: BackofficeCheckinRow[]; pagination: Pagination }>(
+      fetchAPI<{ checkins: BackofficeCheckinRow[]; pagination: Pagination; serverNow?: string; serverDate?: string; selectedDate?: string | null }>(
         `/api/backoffice/checkins${query ? `?${query}` : ""}`,
         { token },
       ),
@@ -729,6 +739,25 @@ export const api = {
         checkedIn: number;
         remaining: number;
         percentage: number;
+        serverNow?: string;
+        serverDate?: string;
+        selectedDate?: string;
+        attendanceMode?: "daily" | "single";
+        eligibleRegistrations?: number;
+        checkedInPeopleOnDate?: number;
+        uniquePeople?: number;
+        attendanceOccurrences?: number;
+        unlinkedRegistrationCount?: number;
+        sessionBreakdown?: {
+          sessionId: number;
+          sessionName: string;
+          sessionType?: string;
+          room?: string;
+          total: number;
+          checkedIn: number;
+          remaining: number;
+          percentage: number;
+        }[];
       }>(`/api/backoffice/checkins/stats${query ? `?${query}` : ""}`, {
         token,
       }),
@@ -743,6 +772,15 @@ export const api = {
         {
           method: "POST",
           body: JSON.stringify({ registrationSessionId }),
+          token,
+        },
+      ),
+    undoDaily: (token: string, attendanceId: string, reason: string) =>
+      fetchAPI<{ success: boolean; undone: Record<string, unknown> }>(
+        `/api/backoffice/checkins/undo`,
+        {
+          method: "POST",
+          body: JSON.stringify({ attendanceId, reason }),
           token,
         },
       ),

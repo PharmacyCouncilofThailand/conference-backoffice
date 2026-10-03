@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { AdminLayout } from '@/components/layout';
 import { api } from '@/lib/api';
 import { exportToExcel } from '@/lib/exportExcel';
@@ -8,33 +8,34 @@ import { useDebounce } from '@/hooks/useDebounce';
 import { Pagination } from '@/components/common';
 import toast from 'react-hot-toast';
 import {
-    IconUserCheck,
-    IconSearch,
+    IconArrowBackUp,
+    IconChartBar,
     IconDownload,
     IconLoader2,
-    IconCheck,
-    IconClock,
-    IconArrowBackUp,
+    IconSearch,
+    IconUserCheck,
     IconUsers,
-    IconChartBar,
 } from '@tabler/icons-react';
 
 interface CheckinRow {
-    id: number;
+    kind?: 'daily' | 'single';
+    id: number | string;
+    attendanceId?: string | null;
+    registrationSessionId: number;
+    attendanceDate?: string | null;
     scannedAt: string;
+    cancelledAt?: string | null;
+    cancelledBy?: number | null;
+    cancellationReason?: string | null;
     regCode: string;
     firstName: string;
     lastName: string;
     email: string;
-    attendeeType: string | null;
     university: string | null;
     institution: string | null;
-    ticketName: string | null;
-    source: string;
-    addedAt: string;
     sessionName: string | null;
     eventName: string | null;
-    scannedBy: { firstName: string | null; lastName: string | null } | null;
+    scannedBy: { id?: number | null; firstName: string | null; lastName: string | null } | null;
 }
 
 interface SessionOption { id: number; name: string }
@@ -44,6 +45,13 @@ interface Stats {
     checkedIn: number;
     remaining: number;
     percentage: number;
+    serverDate?: string;
+    selectedDate?: string;
+    eligibleRegistrations?: number;
+    checkedInPeopleOnDate?: number;
+    uniquePeople?: number;
+    attendanceOccurrences?: number;
+    unlinkedRegistrationCount?: number;
 }
 
 const getBackofficeToken = () =>
@@ -51,10 +59,10 @@ const getBackofficeToken = () =>
     sessionStorage.getItem('backoffice_token') ||
     '';
 
-const formatDateTime = (iso: string) => {
+const formatDateTime = (iso: string | null | undefined) => {
     if (!iso) return '-';
-    const d = new Date(iso);
-    return d.toLocaleString('th-TH', {
+    return new Date(iso).toLocaleString('th-TH', {
+        timeZone: 'Asia/Bangkok',
         day: '2-digit',
         month: 'short',
         year: 'numeric',
@@ -64,6 +72,15 @@ const formatDateTime = (iso: string) => {
     });
 };
 
+function todayBangkok() {
+    return new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Asia/Bangkok',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+    }).format(new Date());
+}
+
 export default function CheckinsListPage() {
     const [rows, setRows] = useState<CheckinRow[]>([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -71,13 +88,14 @@ export default function CheckinsListPage() {
     const [eventFilter, setEventFilter] = useState('');
     const [sessionFilter, setSessionFilter] = useState('');
     const [universityFilter, setUniversityFilter] = useState('');
+    const [dateFilter, setDateFilter] = useState(todayBangkok());
+    const [historyFilter, setHistoryFilter] = useState<'active' | 'cancelled' | 'all'>('active');
     const [eventOptions, setEventOptions] = useState<{ id: number; name: string }[]>([]);
     const [sessionOptions, setSessionOptions] = useState<SessionOption[]>([]);
     const [universityOptions, setUniversityOptions] = useState<string[]>([]);
     const [stats, setStats] = useState<Stats | null>(null);
     const [isExporting, setIsExporting] = useState(false);
-    const [undoingId, setUndoingId] = useState<number | null>(null);
-
+    const [undoingId, setUndoingId] = useState<string | number | null>(null);
     const [page, setPage] = useState(1);
     const [limit, setLimit] = useState(20);
     const [totalPages, setTotalPages] = useState(1);
@@ -85,15 +103,16 @@ export default function CheckinsListPage() {
 
     const debouncedSearch = useDebounce(searchTerm, 300);
 
-    // Load events for filter
     useEffect(() => {
         const token = getBackofficeToken();
         api.backofficeEvents.list(token, 'limit=100').then((res) => {
-            setEventOptions((res.events as Record<string, unknown>[]).map((e) => ({ id: e.id as number, name: e.eventName as string })));
-        }).catch(() => { });
+            setEventOptions((res.events as Record<string, unknown>[]).map((event) => ({
+                id: event.id as number,
+                name: event.eventName as string,
+            })));
+        }).catch(() => undefined);
     }, []);
 
-    // Load sessions + universities when event changes
     useEffect(() => {
         if (!eventFilter) {
             setSessionOptions([]);
@@ -104,7 +123,10 @@ export default function CheckinsListPage() {
         }
         const token = getBackofficeToken();
         api.backofficeEvents.getSessions(token, Number(eventFilter)).then((res) => {
-            setSessionOptions((res.sessions as Record<string, unknown>[]).map((s) => ({ id: s.id as number, name: s.sessionName as string })));
+            setSessionOptions((res.sessions as Record<string, unknown>[]).map((session) => ({
+                id: session.id as number,
+                name: session.sessionName as string,
+            })));
         }).catch(() => setSessionOptions([]));
         api.checkins.universities(token, Number(eventFilter)).then((res) => {
             setUniversityOptions(res.universities ?? []);
@@ -113,43 +135,70 @@ export default function CheckinsListPage() {
         setUniversityFilter('');
     }, [eventFilter]);
 
+    useEffect(() => setPage(1), [
+        debouncedSearch,
+        eventFilter,
+        sessionFilter,
+        universityFilter,
+        dateFilter,
+        historyFilter,
+    ]);
+
+    const buildQuery = useCallback((queryPage: number, queryLimit: number) => {
+        const params: Record<string, string> = {
+            page: String(queryPage),
+            limit: String(queryLimit),
+            eventId: eventFilter,
+        };
+        if (sessionFilter) {
+            params.sessionId = sessionFilter;
+            params.date = dateFilter;
+            params.history = historyFilter;
+        }
+        if (debouncedSearch) params.search = debouncedSearch;
+        if (universityFilter) params.university = universityFilter;
+        return new URLSearchParams(params).toString();
+    }, [
+        eventFilter,
+        sessionFilter,
+        dateFilter,
+        historyFilter,
+        debouncedSearch,
+        universityFilter,
+    ]);
+
     const fetchData = useCallback(async () => {
-        if (!eventFilter) return;
+        if (!eventFilter) {
+            setRows([]);
+            setStats(null);
+            return;
+        }
         setIsLoading(true);
         try {
             const token = getBackofficeToken();
-            const params: Record<string, string> = { page: String(page), limit: String(limit), eventId: eventFilter };
-            if (debouncedSearch) params.search = debouncedSearch;
-            if (sessionFilter) params.sessionId = sessionFilter;
-            if (universityFilter) params.university = universityFilter;
-
+            const listPromise = api.checkins.list(token, buildQuery(page, limit));
+            const statsParams = new URLSearchParams({
+                eventId: eventFilter,
+                ...(sessionFilter ? { sessionId: sessionFilter, date: dateFilter } : {}),
+            });
             const [listRes, statsRes] = await Promise.all([
-                api.checkins.list(token, new URLSearchParams(params).toString()),
-                api.checkins.stats(token, new URLSearchParams({
-                    eventId: eventFilter,
-                    ...(sessionFilter ? { sessionId: sessionFilter } : {}),
-                }).toString()),
+                listPromise,
+                api.checkins.stats(token, statsParams.toString()),
             ]);
-
             setRows((listRes.checkins || []) as CheckinRow[]);
             setTotalCount(listRes.pagination.total);
             setTotalPages(listRes.pagination.totalPages);
-            setStats({
-                total: statsRes.total,
-                checkedIn: statsRes.checkedIn,
-                remaining: statsRes.remaining,
-                percentage: statsRes.percentage,
-            });
-        } catch (err) {
-            console.error('Failed to load check-ins:', err);
-            toast.error('Failed to load check-ins');
+            setStats(statsRes);
+        } catch (error) {
+            console.error('Failed to load check-ins:', error);
+            toast.error(error instanceof Error ? error.message : 'Failed to load check-ins');
         } finally {
             setIsLoading(false);
         }
-    }, [page, debouncedSearch, eventFilter, sessionFilter, universityFilter]);
+    }, [eventFilter, sessionFilter, dateFilter, page, limit, buildQuery]);
 
     useEffect(() => {
-        fetchData();
+        void fetchData();
     }, [fetchData]);
 
     const handleExport = async () => {
@@ -157,292 +206,221 @@ export default function CheckinsListPage() {
         setIsExporting(true);
         try {
             const token = getBackofficeToken();
-            const params: Record<string, string> = { page: '1', limit: '5000', eventId: eventFilter };
-            if (debouncedSearch) params.search = debouncedSearch;
-            if (sessionFilter) params.sessionId = sessionFilter;
-            if (universityFilter) params.university = universityFilter;
+            const allRows: CheckinRow[] = [];
+            const pageSize = 500;
+            let exportPage = 1;
+            let pages = 1;
+            do {
+                const res = await api.checkins.list(token, buildQuery(exportPage, pageSize));
+                allRows.push(...(res.checkins as CheckinRow[]));
+                pages = Math.max(1, res.pagination.totalPages);
+                exportPage += 1;
+            } while (exportPage <= pages);
 
-            const res = await api.checkins.list(token, new URLSearchParams(params).toString());
-            const eventName = eventOptions.find(e => String(e.id) === eventFilter)?.name || 'event';
-
-            const data = (res.checkins as CheckinRow[]).map((r) => ({
-                'Reg Code': r.regCode,
-                'First Name': r.firstName,
-                'Last Name': r.lastName,
-                'Email': r.email,
-                'Attendee Type': r.attendeeType ?? '',
-                'University': r.university ?? '',
-                'Institution': r.institution ?? '',
-                'Event': r.eventName ?? '',
-                'Ticket': r.ticketName ?? '',
-                'Session': r.sessionName ?? '',
-                'Checked-in At': formatDateTime(r.scannedAt),
-                'Source': r.source === 'admin_grant' ? 'Admin Grant' : r.source,
-                'Entitlement Added At': formatDateTime(r.addedAt),
-                'Scanned By': r.scannedBy ? `${r.scannedBy.firstName ?? ''} ${r.scannedBy.lastName ?? ''}`.trim() : '',
-            }));
-            exportToExcel(data, `checkins_${eventName.replace(/\s+/g, '_')}`);
-            toast.success(`Exported ${data.length} rows`);
-        } catch (err) {
-            console.error('Export failed:', err);
-            toast.error('Export failed');
+            const eventName = eventOptions.find((event) => String(event.id) === eventFilter)?.name || 'event';
+            exportToExcel(allRows.map((row) => ({
+                'Reg Code': row.regCode,
+                'First Name': row.firstName,
+                'Last Name': row.lastName,
+                Email: row.email,
+                University: row.university ?? '',
+                Institution: row.institution ?? '',
+                Event: row.eventName ?? '',
+                Session: row.sessionName ?? '',
+                'Attendance Day': row.attendanceDate ?? '',
+                'Scanned At (Bangkok)': formatDateTime(row.scannedAt),
+                'Scanned By': row.scannedBy
+                    ? `${row.scannedBy.firstName ?? ''} ${row.scannedBy.lastName ?? ''}`.trim()
+                    : '',
+                'Cancelled At (Bangkok)': formatDateTime(row.cancelledAt),
+                'Cancelled By ID': row.cancelledBy ?? '',
+                'Cancellation Reason': row.cancellationReason ?? '',
+                'History State': row.cancelledAt ? 'cancelled' : 'active',
+            })), `checkins_${eventName}_${dateFilter}_${historyFilter}`);
+            toast.success(`Exported ${allRows.length} rows`);
+        } catch (error) {
+            toast.error(error instanceof Error ? error.message : 'Export failed');
         } finally {
             setIsExporting(false);
         }
     };
 
     const handleUndo = async (row: CheckinRow) => {
-        if (!confirm(`Undo check-in for ${row.firstName} ${row.lastName} (${row.regCode})?\nSession: ${row.sessionName ?? '-'}`)) return;
+        const token = getBackofficeToken();
         setUndoingId(row.id);
         try {
-            const token = getBackofficeToken();
-            await api.checkins.undo(token, row.id);
-            toast.success('Check-in undone');
-            fetchData();
-        } catch (err) {
-            const msg = err instanceof Error ? err.message : 'Undo failed';
-            toast.error(msg);
+            if (row.kind === 'daily' && row.attendanceId) {
+                const reason = window.prompt('เหตุผลในการยกเลิกเช็คอิน (จำเป็น)')?.trim();
+                if (!reason) return;
+                await api.checkins.undoDaily(token, row.attendanceId, reason);
+            } else {
+                if (!window.confirm('Undo this session check-in?')) return;
+                await api.checkins.undo(token, row.registrationSessionId);
+            }
+            toast.success('ยกเลิกเช็คอินแล้ว และยังคงประวัติไว้');
+            await fetchData();
+        } catch (error) {
+            toast.error(error instanceof Error ? error.message : 'Undo failed');
         } finally {
             setUndoingId(null);
         }
     };
 
     return (
-        <AdminLayout title="Checked-in Attendees">
-            {/* Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                <StatCard
-                    icon={<IconUsers size={22} />}
-                    color="blue"
-                    label="Total Registered"
-                    value={stats?.total ?? '-'}
-                />
-                <StatCard
-                    icon={<IconUserCheck size={22} />}
-                    color="green"
-                    label="Checked-in"
-                    value={stats?.checkedIn ?? '-'}
-                />
-                <StatCard
-                    icon={<IconClock size={22} />}
-                    color="amber"
-                    label="Remaining"
-                    value={stats?.remaining ?? '-'}
-                />
-                <StatCard
-                    icon={<IconChartBar size={22} />}
-                    color="violet"
-                    label="Progress"
-                    value={stats ? `${stats.percentage}%` : '-'}
-                />
-            </div>
-
-            {/* Filters */}
-            <div className="card mb-6">
-                <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
-                    <div className="flex flex-col md:flex-row gap-4 flex-1">
-                        <select
-                            value={eventFilter}
-                            onChange={(e) => { setEventFilter(e.target.value); setPage(1); }}
-                            className="input-field w-auto"
-                        >
-                            <option value="">-- เลือก Event --</option>
-                            {eventOptions.map((e) => (
-                                <option key={e.id} value={e.id}>{e.name}</option>
-                            ))}
-                        </select>
-
-                        <div className="relative flex-1 max-w-md">
-                            <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" size={18} />
-                            <input
-                                type="text"
-                                placeholder="Search by name or reg code..."
-                                value={searchTerm}
-                                onChange={(e) => { setSearchTerm(e.target.value); setPage(1); }}
-                                className="input-field-search"
-                            />
-                        </div>
-
-                        <select
-                            value={sessionFilter}
-                            onChange={(e) => { setSessionFilter(e.target.value); setPage(1); }}
-                            className="input-field w-auto"
-                            disabled={!eventFilter || sessionOptions.length === 0}
-                        >
-                            <option value="">All Sessions</option>
-                            {sessionOptions.map((s) => (
-                                <option key={s.id} value={s.id}>{s.name}</option>
-                            ))}
-                        </select>
-
-                        <select
-                            value={universityFilter}
-                            onChange={(e) => { setUniversityFilter(e.target.value); setPage(1); }}
-                            className="input-field w-auto max-w-[220px]"
-                            disabled={!eventFilter || universityOptions.length === 0}
-                            title={universityFilter || 'All Universities'}
-                        >
-                            <option value="">All Universities</option>
-                            {universityOptions.map((u) => (
-                                <option key={u} value={u}>{u}</option>
-                            ))}
-                        </select>
-                    </div>
-
-                    <div className="flex gap-2">
-                        <button
-                            onClick={handleExport}
-                            disabled={!eventFilter || isExporting}
-                            className="btn-secondary flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
-                        >
-                            {isExporting ? <IconLoader2 size={18} className="animate-spin" /> : <IconDownload size={18} />}
-                            Export Excel
-                        </button>
+        <AdminLayout title="Check-in History">
+            <div className="space-y-6">
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-6">
+                    <select value={eventFilter} onChange={(event) => setEventFilter(event.target.value)} className="input">
+                        <option value="">Select event</option>
+                        {eventOptions.map((event) => <option key={event.id} value={event.id}>{event.name}</option>)}
+                    </select>
+                    <select value={sessionFilter} onChange={(event) => setSessionFilter(event.target.value)} className="input" disabled={!eventFilter}>
+                        <option value="">All sessions (legacy view)</option>
+                        {sessionOptions.map((session) => <option key={session.id} value={session.id}>{session.name}</option>)}
+                    </select>
+                    <input
+                        type="date"
+                        value={dateFilter}
+                        onChange={(event) => setDateFilter(event.target.value)}
+                        className="input"
+                        disabled={!sessionFilter}
+                        aria-label="Attendance date"
+                    />
+                    <select
+                        value={historyFilter}
+                        onChange={(event) => setHistoryFilter(event.target.value as 'active' | 'cancelled' | 'all')}
+                        className="input"
+                        disabled={!sessionFilter}
+                    >
+                        <option value="active">Active attendance</option>
+                        <option value="cancelled">Cancelled history</option>
+                        <option value="all">All history</option>
+                    </select>
+                    <select value={universityFilter} onChange={(event) => setUniversityFilter(event.target.value)} className="input" disabled={!eventFilter}>
+                        <option value="">All universities</option>
+                        {universityOptions.map((university) => <option key={university} value={university}>{university}</option>)}
+                    </select>
+                    <div className="relative">
+                        <IconSearch size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
+                        <input value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} className="input pl-10" placeholder="Name / Reg code" />
                     </div>
                 </div>
-            </div>
 
-            {/* Table */}
-            <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm">
-                {!eventFilter ? (
-                    <div className="text-center py-16 text-zinc-400">
-                        <IconUserCheck size={40} className="mx-auto mb-3 opacity-30" />
-                        <p className="font-medium">กรุณาเลือก Event เพื่อดูผู้ที่เช็คอินแล้ว</p>
-                    </div>
-                ) : isLoading ? (
-                    <div className="flex justify-center py-12">
-                        <IconLoader2 size={32} className="animate-spin text-emerald-600" />
-                    </div>
-                ) : rows.length === 0 ? (
-                    <div className="text-center py-12 text-zinc-400">
-                        ยังไม่มีผู้เช็คอินตามเงื่อนไขที่เลือก
-                    </div>
-                ) : (
-                    <div className="overflow-x-auto">
-                        <table className="w-full table-sticky-actions">
-                            <thead>
-                                <tr className="bg-zinc-50 border-b border-zinc-200">
-                                    <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-500 uppercase tracking-wider">เวลาเช็คอิน</th>
-                                    <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-500 uppercase tracking-wider">Code</th>
-                                    <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-500 uppercase tracking-wider">Attendee</th>
-                                    <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">Type</th>
-                                    <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-500 uppercase tracking-wider">University</th>
-                                    <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">Ticket</th>
-                                    <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">Session</th>
-                                    <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">Scanned By</th>
-                                    <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider w-[90px]">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-100">
-                                {rows.map((r) => (
-                                    <tr key={r.id} className="hover:bg-zinc-50 transition-colors">
-                                        <td className="px-4 py-3">
-                                            <div className="flex items-center gap-2 text-sm text-zinc-600">
-                                                <span className="inline-flex w-5 h-5 rounded-full bg-green-100 text-green-700 items-center justify-center">
-                                                    <IconCheck size={12} stroke={3} />
-                                                </span>
-                                                {formatDateTime(r.scannedAt)}
-                                            </div>
-                                        </td>
-                                        <td className="px-4 py-3">
-                                            <span className="font-mono text-sm text-zinc-500 bg-zinc-100 px-2 py-1 rounded">
-                                                {r.regCode}
-                                            </span>
-                                        </td>
-                                        <td className="px-4 py-3">
-                                            <div>
-                                                <p className="font-medium text-zinc-900">{r.firstName} {r.lastName}</p>
-                                                <p className="text-sm text-zinc-400">{r.email}</p>
-                                            </div>
-                                        </td>
-                                        <td className="px-4 py-3 text-center">
-                                            {r.attendeeType === 'student' ? (
-                                                <span className="inline-flex px-2.5 py-1 rounded-full text-xs font-medium bg-sky-50 text-sky-700">Student</span>
-                                            ) : r.attendeeType === 'parent' ? (
-                                                <span className="inline-flex px-2.5 py-1 rounded-full text-xs font-medium bg-violet-50 text-violet-700">Parent</span>
-                                            ) : (
-                                                <span className="text-zinc-400 text-xs">-</span>
-                                            )}
-                                        </td>
-                                        <td className="px-4 py-3 text-sm text-zinc-600 max-w-[220px]">
-                                            {r.university ? (
-                                                <p className="truncate" title={r.university}>{r.university}</p>
-                                            ) : r.institution ? (
-                                                <p className="truncate text-zinc-400" title={r.institution}>{r.institution}</p>
-                                            ) : (
-                                                <span className="text-zinc-400">-</span>
-                                            )}
-                                        </td>
-                                        <td className="px-4 py-3 text-center">
-                                            <span className="inline-flex px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700">
-                                                {r.ticketName ?? '-'}
-                                            </span>
-                                        </td>
-                                        <td className="px-4 py-3 text-center text-sm text-zinc-600">
-                                            {r.sessionName ?? '-'}
-                                        </td>
-                                        <td className="px-4 py-3 text-center text-sm text-zinc-500">
-                                            {r.scannedBy?.firstName
-                                                ? `${r.scannedBy.firstName} ${r.scannedBy.lastName ?? ''}`
-                                                : <span className="text-zinc-400">system</span>}
-                                        </td>
-                                        <td className="px-4 py-3 text-center">
-                                            <button
-                                                onClick={() => handleUndo(r)}
-                                                disabled={undoingId === r.id}
-                                                className="p-2 hover:bg-red-50 rounded-lg text-zinc-400 hover:text-red-600 transition-colors disabled:opacity-40"
-                                                title="Undo check-in"
-                                            >
-                                                {undoingId === r.id
-                                                    ? <IconLoader2 size={18} className="animate-spin" />
-                                                    : <IconArrowBackUp size={18} />}
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-
-                        <Pagination
-                            currentPage={page}
-                            totalPages={totalPages}
-                            totalCount={totalCount}
-                            pageSize={limit}
-                            onPageChange={setPage}
-                            onPageSizeChange={setLimit}
-                            itemName="check-ins"
-                        />
+                {sessionFilter && stats && (
+                    <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+                        {([
+                            ['Eligible entitlements', stats.eligibleRegistrations ?? stats.total, IconUsers],
+                            ['People on selected day', stats.checkedInPeopleOnDate ?? stats.checkedIn, IconUserCheck],
+                            ['Unique identified people', stats.uniquePeople ?? stats.checkedIn, IconUsers],
+                            ['Attendance occurrences', stats.attendanceOccurrences ?? stats.checkedIn, IconChartBar],
+                            ['Unlinked registrations', stats.unlinkedRegistrationCount ?? 0, IconChartBar],
+                        ] as Array<[string, number, typeof IconUsers]>).map(([label, value, Icon]) => (
+                            <div className="card py-4" key={String(label)}>
+                                <Icon size={20} className="mb-2 text-emerald-600" />
+                                <p className="text-2xl font-bold text-zinc-900">{String(value)}</p>
+                                <p className="text-xs text-zinc-500">{String(label)}</p>
+                            </div>
+                        ))}
                     </div>
                 )}
+
+                <div className="card">
+                    <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                            <h2 className="font-semibold text-zinc-900">
+                                {sessionFilter ? `Attendance for ${dateFilter}` : 'Legacy session check-ins'}
+                            </h2>
+                            <p className="text-sm text-zinc-500">
+                                {sessionFilter
+                                    ? `${historyFilter} history · ${totalCount} matching rows`
+                                    : `${totalCount} rows · choose a session for daily attendance semantics`}
+                            </p>
+                        </div>
+                        <button onClick={handleExport} disabled={isExporting || !eventFilter} className="btn btn-secondary">
+                            {isExporting ? <IconLoader2 size={18} className="animate-spin" /> : <IconDownload size={18} />}
+                            Export all filtered rows
+                        </button>
+                    </div>
+
+                    {isLoading ? (
+                        <div className="flex justify-center py-16"><IconLoader2 className="animate-spin text-emerald-600" /></div>
+                    ) : rows.length === 0 ? (
+                        <div className="py-16 text-center text-zinc-400">No matching attendance records</div>
+                    ) : (
+                        <div className="overflow-x-auto">
+                            <table className="w-full min-w-[980px] text-sm">
+                                <thead>
+                                    <tr className="border-b border-zinc-200 text-left text-zinc-500">
+                                        <th className="py-3 pr-4">Person</th>
+                                        <th className="py-3 pr-4">Session</th>
+                                        <th className="py-3 pr-4">Attendance day</th>
+                                        <th className="py-3 pr-4">Scan time</th>
+                                        <th className="py-3 pr-4">Actor</th>
+                                        <th className="py-3 pr-4">State</th>
+                                        <th className="py-3 text-right">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {rows.map((row) => (
+                                        <tr key={`${row.kind || 'single'}-${row.id}`} className="border-b border-zinc-100 align-top">
+                                            <td className="py-4 pr-4">
+                                                <p className="font-medium text-zinc-900">{row.firstName} {row.lastName}</p>
+                                                <p className="text-xs text-zinc-500">{row.regCode} · {row.university || 'No university'}</p>
+                                            </td>
+                                            <td className="py-4 pr-4 text-zinc-700">{row.sessionName || '-'}</td>
+                                            <td className="py-4 pr-4">{row.attendanceDate || 'single-session'}</td>
+                                            <td className="py-4 pr-4">{formatDateTime(row.scannedAt)}</td>
+                                            <td className="py-4 pr-4">
+                                                {row.scannedBy
+                                                    ? `${row.scannedBy.firstName ?? ''} ${row.scannedBy.lastName ?? ''}`.trim() || '-'
+                                                    : '-'}
+                                            </td>
+                                            <td className="py-4 pr-4">
+                                                {row.cancelledAt ? (
+                                                    <div>
+                                                        <span className="rounded-full bg-rose-50 px-2 py-1 text-xs font-medium text-rose-700">Cancelled</span>
+                                                        <p className="mt-1 max-w-xs text-xs text-zinc-500">{row.cancellationReason || '-'}</p>
+                                                    </div>
+                                                ) : (
+                                                    <span className="rounded-full bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700">Active</span>
+                                                )}
+                                            </td>
+                                            <td className="py-4 text-right">
+                                                {!row.cancelledAt && (
+                                                    <button
+                                                        onClick={() => void handleUndo(row)}
+                                                        disabled={undoingId === row.id}
+                                                        className="inline-flex items-center gap-1 text-sm font-medium text-amber-700 hover:text-amber-800"
+                                                    >
+                                                        {undoingId === row.id
+                                                            ? <IconLoader2 size={16} className="animate-spin" />
+                                                            : <IconArrowBackUp size={16} />}
+                                                        Undo
+                                                    </button>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+
+                    {totalPages > 1 && (
+                        <div className="mt-5">
+                            <Pagination
+                                currentPage={page}
+                                totalPages={totalPages}
+                                totalCount={totalCount}
+                                onPageChange={setPage}
+                                pageSize={limit}
+                                onPageSizeChange={(value) => { setLimit(value); setPage(1); }}
+                                itemName="attendance rows"
+                            />
+                        </div>
+                    )}
+                </div>
             </div>
         </AdminLayout>
-    );
-}
-
-const colorMap = {
-    blue: 'bg-emerald-50 text-emerald-600',
-    green: 'bg-green-100 text-green-600',
-    amber: 'bg-amber-100 text-amber-600',
-    violet: 'bg-violet-100 text-violet-600',
-} as const;
-
-function StatCard({ icon, color, label, value }: {
-    icon: React.ReactNode;
-    color: keyof typeof colorMap;
-    label: string;
-    value: number | string;
-}) {
-    return (
-        <div className="card py-4">
-            <div className="flex items-center gap-4">
-                <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${colorMap[color]}`}>
-                    {icon}
-                </div>
-                <div>
-                    <p className="text-2xl font-bold text-zinc-800">{value}</p>
-                    <p className="text-sm text-zinc-400">{label}</p>
-                </div>
-            </div>
-        </div>
     );
 }

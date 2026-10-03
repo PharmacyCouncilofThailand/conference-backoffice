@@ -34,6 +34,16 @@ const getBackofficeToken = () =>
     sessionStorage.getItem('backoffice_token') ||
     '';
 
+interface AttendanceHistoryRow {
+    kind: 'daily' | 'single';
+    id: string | number;
+    attendanceId: string | null;
+    attendanceDate: string | null;
+    scannedAt: string;
+    cancelledAt: string | null;
+    cancellationReason: string | null;
+}
+
 interface RegistrationSession {
     id: number;
     sessionId: number;
@@ -56,6 +66,9 @@ interface RegistrationSession {
     checkedInByLastName: string | null;
     addedByFirstName: string | null;
     addedByLastName: string | null;
+    attendanceMode?: 'daily' | 'single';
+    selectedDayAttendance?: AttendanceHistoryRow | null;
+    attendanceHistory?: AttendanceHistoryRow[];
 }
 
 interface RegistrationInvitation {
@@ -145,6 +158,8 @@ export default function RegistrationDetailPage() {
     const [grantHistory, setGrantHistory] = useState<SessionGrantHistoryItemDto[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [attendanceDate, setAttendanceDate] = useState(() => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date()));
+    const [attendanceMeta, setAttendanceMeta] = useState<{ serverDate: string; selectedDate: string } | null>(null);
 
     useEffect(() => {
         if (user?.role !== 'admin') {
@@ -160,15 +175,16 @@ export default function RegistrationDetailPage() {
         if (id) {
             fetchRegistration();
         }
-    }, [id, user?.role]);
+    }, [id, user?.role, attendanceDate]);
 
     const fetchRegistration = async () => {
         setIsLoading(true);
         setError(null);
         try {
             const token = getBackofficeToken();
-            const res = await api.registrations.get(token, parseInt(id));
+            const res = await api.registrations.get(token, parseInt(id), attendanceDate);
             setRegistration(res.registration as unknown as RegistrationDetail);
+            setAttendanceMeta(res.attendance ? { serverDate: res.attendance.serverDate, selectedDate: res.attendance.selectedDate } : null);
             if (user?.role === 'admin') {
                 try {
                     const history = await api.sessionGrants.list(token, new URLSearchParams({
@@ -182,9 +198,9 @@ export default function RegistrationDetailPage() {
                     setGrantHistory([]);
                 }
             }
-        } catch (err: any) {
+        } catch (err) {
             console.error('Failed to fetch registration:', err);
-            setError(err.message || 'Failed to load registration');
+            setError(err instanceof Error ? err.message : 'Failed to load registration');
         } finally {
             setIsLoading(false);
         }
@@ -528,27 +544,103 @@ export default function RegistrationDetailPage() {
                         </div>
                     </div>
 
-                    {/* Check-in Summary */}
                     <div className="card">
-                        <h2 className="text-lg font-semibold mb-4">Check-in Status</h2>
-                        <div className="space-y-3">
+                        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                            <div>
+                                <h2 className="text-lg font-semibold">Check-in Status</h2>
+                                <p className="text-xs text-zinc-500">
+                                    เวลาเซิร์ฟเวอร์: {attendanceMeta?.serverDate || '-'} · เลือกดูสถานะตามวันไทย
+                                </p>
+                            </div>
+                            <input
+                                type="date"
+                                value={attendanceDate}
+                                onChange={(event) => setAttendanceDate(event.target.value)}
+                                className="input w-auto"
+                                aria-label="Attendance date"
+                            />
+                        </div>
+                        <div className="space-y-4">
                             {registration.sessions.length === 0 ? (
                                 <p className="text-zinc-400 text-sm">No sessions to check in</p>
                             ) : (
-                                registration.sessions.map((session) => (
-                                    <div key={session.id} className="flex items-center justify-between">
-                                        <span className="text-sm text-zinc-600 truncate flex-1 mr-2">{session.sessionName}</span>
-                                        {session.checkedInAt ? (
-                                            <span className="flex items-center gap-1 text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full">
-                                                <IconCheck size={14} /> Checked In
-                                            </span>
-                                        ) : (
-                                            <span className="flex items-center gap-1 text-xs text-zinc-400 bg-zinc-50 px-2 py-1 rounded-full">
-                                                <IconX size={14} /> Not Yet
-                                            </span>
-                                        )}
-                                    </div>
-                                ))
+                                registration.sessions.map((session) => {
+                                    const current = session.attendanceMode === 'daily'
+                                        ? session.selectedDayAttendance
+                                        : session.checkedInAt
+                                            ? {
+                                                attendanceId: null,
+                                                attendanceDate: null,
+                                                scannedAt: session.checkedInAt,
+                                                cancelledAt: null,
+                                                cancellationReason: null,
+                                            }
+                                            : null;
+                                    return (
+                                        <div key={session.id} className="rounded-xl border border-zinc-200 p-3">
+                                            <div className="flex items-center justify-between gap-3">
+                                                <div>
+                                                    <p className="text-sm font-medium text-zinc-800">{session.sessionName}</p>
+                                                    <p className="text-xs text-zinc-500">
+                                                        {session.attendanceMode === 'daily'
+                                                            ? `Daily attendance · ${attendanceMeta?.selectedDate || attendanceDate}`
+                                                            : 'Single-session attendance'}
+                                                    </p>
+                                                </div>
+                                                {current ? (
+                                                    <span className="flex items-center gap-1 rounded-full bg-green-50 px-2 py-1 text-xs text-green-600">
+                                                        <IconCheck size={14} /> Checked In
+                                                    </span>
+                                                ) : (
+                                                    <span className="flex items-center gap-1 rounded-full bg-zinc-50 px-2 py-1 text-xs text-zinc-400">
+                                                        <IconX size={14} /> Not Yet
+                                                    </span>
+                                                )}
+                                            </div>
+                                            {current && (
+                                                <p className="mt-2 text-xs text-zinc-500">
+                                                    {bangkokDateTime(current.scannedAt)}
+                                                </p>
+                                            )}
+                                            {session.attendanceMode === 'daily' && (session.attendanceHistory?.length ?? 0) > 0 && (
+                                                <div className="mt-3 border-t border-zinc-100 pt-3">
+                                                    <p className="mb-2 text-xs font-medium text-zinc-500">Attendance history</p>
+                                                    <div className="space-y-2">
+                                                        {session.attendanceHistory!.map((row) => (
+                                                            <div key={String(row.id)} className="flex items-start justify-between gap-3 text-xs">
+                                                                <div>
+                                                                    <span className={row.cancelledAt ? 'text-rose-600' : 'text-emerald-700'}>
+                                                                        {row.attendanceDate} · {row.cancelledAt ? 'Cancelled' : 'Active'}
+                                                                    </span>
+                                                                    <p className="text-zinc-400">{bangkokDateTime(row.scannedAt)}</p>
+                                                                    {row.cancellationReason && <p className="text-rose-500">{row.cancellationReason}</p>}
+                                                                </div>
+                                                                {!row.cancelledAt && row.attendanceId && (
+                                                                    <button
+                                                                        className="font-medium text-amber-700 hover:text-amber-800"
+                                                                        onClick={async () => {
+                                                                            const reason = window.prompt('เหตุผลในการยกเลิกเช็คอิน (จำเป็น)')?.trim();
+                                                                            if (!reason) return;
+                                                                            try {
+                                                                                await api.checkins.undoDaily(getBackofficeToken(), row.attendanceId!, reason);
+                                                                                toast.success('ยกเลิกเช็คอินแล้ว โดยเก็บประวัติเดิมไว้');
+                                                                                await fetchRegistration();
+                                                                            } catch (error) {
+                                                                                toast.error(error instanceof Error ? error.message : 'ยกเลิกเช็คอินไม่สำเร็จ');
+                                                                            }
+                                                                        }}
+                                                                    >
+                                                                        Cancel
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })
                             )}
                         </div>
                     </div>
