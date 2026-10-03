@@ -1,5 +1,79 @@
 export type LocalizedText = { th: string; en: string };
 
+export type WheelDayWindow = {
+  id: string;
+  date: string;
+  startAt: string;
+  endAt: string;
+  version: number;
+};
+
+export type WheelDayChange = {
+  id: number;
+  actorId: number;
+  operation: "day_window_create" | "day_window_edit";
+  reason: string | null;
+  before: WheelDayWindow | null;
+  after: WheelDayWindow;
+  createdAt: string;
+};
+
+export type WheelQrCode = {
+  id: string;
+  eventId: number;
+  date: string;
+  name: string;
+  status: "closed" | "open";
+  createdBy: number;
+  createdAt: string;
+  openedBy: number | null;
+  openedAt: string | null;
+  openedReason: string | null;
+  closedBy: number | null;
+  closedAt: string | null;
+  closedReason: string | null;
+};
+
+export type WheelQrListItem = WheelQrCode & {
+  currentDeadline: string;
+  claimCount: number;
+  spentCount: number;
+  revokedCount: number;
+};
+
+export type WheelQrProjection = WheelQrCode & {
+  currentDeadline: string;
+  claimUrl: string;
+  qrDataUrl: string;
+};
+
+export type WheelCreditClaim = {
+  id: string;
+  userId: number;
+  recipient: { firstName: string; lastName: string; email: string };
+  attendanceId: string;
+  claimedAt: string;
+  displayedDeadlineAt: string;
+  revokedAt: string | null;
+  revokedBy: number | null;
+  revocationReason: string | null;
+  spentAt: string | null;
+};
+
+export type WheelCreditRevocation = {
+  claimId: string;
+  revokedAt: string;
+  revokedBy: number;
+  reason: string;
+  replayed: boolean;
+  requestId: string;
+};
+
+export type WheelPage<T> = {
+  items: T[];
+  pagination: { page: number; pageSize: number; total: number; totalPages: number };
+};
+
 export type WheelConfigurationSegment = {
   id: string;
   kind: "prize" | "no_prize";

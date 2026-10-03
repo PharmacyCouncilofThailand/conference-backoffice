@@ -41,6 +41,14 @@ import type {
   StockAdjustmentInput,
   WheelConfiguration,
   WheelImageUpload,
+  WheelDayWindow,
+  WheelDayChange,
+  WheelQrListItem,
+  WheelQrProjection,
+  WheelQrCode,
+  WheelCreditClaim,
+  WheelCreditRevocation,
+  WheelPage,
 } from "@/types/lucky-wheel";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL;
@@ -1075,6 +1083,50 @@ export const api = {
   },
 
   luckyWheel: {
+    getDay: (token: string, eventId: number, date: string) =>
+      fetchAPI<{ eventId: number; day: WheelDayWindow | null; requestId: string }>(
+        `/api/backoffice/lucky-wheel/events/${eventId}/days/${date}`, { token },
+      ),
+    saveDay: (token: string, eventId: number, date: string, data: {
+      startAt: string; endAt: string; expectedVersion: number | null; reason: string | null;
+    }) => fetchAPI<{ eventId: number; day: WheelDayWindow; requestId: string }>(
+      `/api/backoffice/lucky-wheel/events/${eventId}/days/${date}`,
+      { method: "PUT", body: JSON.stringify(data), token },
+    ),
+    listDayChanges: (token: string, eventId: number, date: string, page = 1) =>
+      fetchAPI<WheelPage<WheelDayChange> & { eventId: number; date: string; requestId: string }>(
+        `/api/backoffice/lucky-wheel/events/${eventId}/days/${date}/changes?page=${page}&pageSize=20`, { token },
+      ),
+    createQrBatch: (token: string, eventId: number, data: {
+      date: string; names: string[]; idempotencyKey: string;
+    }) => fetchAPI<{ eventId: number; date: string; qrCodes: WheelQrCode[]; replayed: boolean; requestId: string }>(
+      `/api/backoffice/lucky-wheel/events/${eventId}/qr-codes`,
+      { method: "POST", body: JSON.stringify(data), token },
+    ),
+    listQrCodes: (token: string, eventId: number, date: string, page = 1) =>
+      fetchAPI<WheelPage<WheelQrListItem> & { eventId: number; date: string; requestId: string }>(
+        `/api/backoffice/lucky-wheel/events/${eventId}/qr-codes?date=${date}&page=${page}&pageSize=20`, { token },
+      ),
+    setQrStatus: (token: string, eventId: number, qrId: string, data: {
+      status: "open" | "closed"; reason: string; idempotencyKey: string;
+    }) => fetchAPI<WheelQrCode & { replayed: boolean; requestId: string }>(
+      `/api/backoffice/lucky-wheel/events/${eventId}/qr-codes/${qrId}`,
+      { method: "PATCH", body: JSON.stringify(data), token },
+    ),
+    getQrProjection: (token: string, eventId: number, qrId: string) =>
+      fetchAPI<WheelQrProjection & { requestId: string }>(
+        `/api/backoffice/lucky-wheel/events/${eventId}/qr-codes/${qrId}`, { token },
+      ),
+    listQrClaims: (token: string, eventId: number, qrId: string, page = 1) =>
+      fetchAPI<WheelPage<WheelCreditClaim> & { eventId: number; qrId: string; requestId: string }>(
+        `/api/backoffice/lucky-wheel/events/${eventId}/qr-codes/${qrId}/claims?page=${page}&pageSize=20`, { token },
+      ),
+    revokeCreditClaim: (token: string, eventId: number, claimId: string, data: {
+      reason: string; idempotencyKey: string;
+    }) => fetchAPI<WheelCreditRevocation>(
+      `/api/backoffice/lucky-wheel/events/${eventId}/credit-claims/${claimId}/revocations`,
+      { method: "POST", body: JSON.stringify(data), token },
+    ),
     getState: (token: string, eventId: number) =>
       fetchAPI<AdminWheelState>(
         `/api/backoffice/lucky-wheel/events/${eventId}`,

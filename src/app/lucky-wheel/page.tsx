@@ -21,9 +21,10 @@ import type {
 import { WheelConfiguration } from "@/components/lucky-wheel/WheelConfiguration";
 import { StockAdjustmentDialog } from "@/components/lucky-wheel/StockAdjustmentDialog";
 import { RewardCollection } from "@/components/lucky-wheel/RewardCollection";
+import { QrRights } from "@/components/lucky-wheel/QrRights";
 
 type EventOption = { id: number; name: string };
-type Tab = "configuration" | "stock" | "results";
+type Tab = "configuration" | "rights" | "stock" | "results";
 
 const formatBangkok = (value: string) =>
   new Date(value).toLocaleString("th-TH", {
@@ -213,6 +214,7 @@ export default function LuckyWheelAdminPage() {
             <div className="flex gap-1 overflow-x-auto border-b border-zinc-200">
               {([
                 ["configuration", "การตั้งค่า"],
+                ["rights", "วันและ QR สิทธิ์"],
                 ["stock", "สต็อกและ Audit"],
                 ["results", "ผลและรับของ"],
               ] as Array<[Tab, string]>).map(([value, label]) => (
@@ -233,6 +235,8 @@ export default function LuckyWheelAdminPage() {
                 <WheelConfiguration eventId={eventId} token={token ?? ""} state={state} onReload={loadState} />
               </div>
             )}
+
+            {tab === "rights" && <QrRights token={token ?? ""} eventId={eventId} wheelState={state} />}
 
             {tab === "stock" && (
               <div className="space-y-5">
