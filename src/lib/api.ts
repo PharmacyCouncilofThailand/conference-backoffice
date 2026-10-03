@@ -1132,6 +1132,18 @@ export const api = {
         `/api/backoffice/lucky-wheel/events/${eventId}`,
         { token },
       ),
+    initialize: (token: string, eventId: number, mainSessionId: number) =>
+      fetchAPI<{
+        eventId: number;
+        wheelId: string;
+        mainSessionId: number;
+        created: boolean;
+        requestId: string;
+      }>(`/api/backoffice/lucky-wheel/events/${eventId}`, {
+        method: "PUT",
+        body: JSON.stringify({ mainSessionId }),
+        token,
+      }),
     publish: (
       token: string,
       eventId: number,

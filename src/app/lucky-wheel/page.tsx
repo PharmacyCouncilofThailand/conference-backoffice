@@ -12,7 +12,7 @@ import toast from "react-hot-toast";
 import { AdminLayout } from "@/components/layout";
 import { Pagination } from "@/components/common";
 import { useAuth } from "@/contexts/AuthContext";
-import { api } from "@/lib/api";
+import { api, ApiError } from "@/lib/api";
 import type {
   AdminWheelSpinsResponse,
   AdminWheelState,
@@ -23,7 +23,8 @@ import { StockAdjustmentDialog } from "@/components/lucky-wheel/StockAdjustmentD
 import { RewardCollection } from "@/components/lucky-wheel/RewardCollection";
 import { QrRights } from "@/components/lucky-wheel/QrRights";
 
-type EventOption = { id: number; name: string };
+type EventOption = { id: number; name: string; code: string };
+type MainSession = { id: number; name: string; startTime: string; endTime: string };
 type Tab = "configuration" | "rights" | "stock" | "results";
 
 const formatBangkok = (value: string) =>
@@ -48,6 +49,10 @@ export default function LuckyWheelAdminPage() {
   const [tab, setTab] = useState<Tab>("configuration");
   const [loading, setLoading] = useState(false);
   const [stateError, setStateError] = useState<string | null>(null);
+  const [uninitialized, setUninitialized] = useState(false);
+  const [mainSession, setMainSession] = useState<MainSession | null>(null);
+  const [setupError, setSetupError] = useState<string | null>(null);
+  const [setupBusy, setSetupBusy] = useState(false);
   const [pauseReason, setPauseReason] = useState("");
   const [pauseBusy, setPauseBusy] = useState(false);
   const [stockTarget, setStockTarget] = useState<{
@@ -68,7 +73,7 @@ export default function LuckyWheelAdminPage() {
       .then((response) => {
         const options = (response.events || []).flatMap((event) => {
           if (typeof event.id !== "number" || typeof event.eventName !== "string") return [];
-          return [{ id: event.id, name: event.eventName }];
+          return [{ id: event.id, name: event.eventName, code: typeof event.eventCode === "string" ? event.eventCode : "" }];
         });
         setEvents(options);
         setEventId((current) => current ?? options[0]?.id ?? null);
@@ -80,12 +85,17 @@ export default function LuckyWheelAdminPage() {
     if (!token || !eventId) return;
     setLoading(true);
     setStateError(null);
+    setUninitialized(false);
     try {
       const next = await api.luckyWheel.getState(token, eventId);
       setState(next);
     } catch (error) {
       setState(null);
-      setStateError(error instanceof Error ? error.message : "โหลดสถานะวงล้อไม่สำเร็จ");
+      if (error instanceof ApiError && error.code === "WHEEL_NOT_FOUND") {
+        setUninitialized(true);
+      } else {
+        setStateError(error instanceof Error ? error.message : "โหลดสถานะวงล้อไม่สำเร็จ");
+      }
     } finally {
       setLoading(false);
     }
@@ -110,9 +120,59 @@ export default function LuckyWheelAdminPage() {
   useEffect(() => {
     setState(null);
     setSpins(null);
+    setUninitialized(false);
+    setMainSession(null);
+    setSetupError(null);
     setPage(1);
     if (eventId) void loadState();
   }, [eventId, loadState]);
+
+  const selectedEvent = events.find((event) => event.id === eventId);
+  useEffect(() => {
+    if (!token || !eventId || !uninitialized || selectedEvent?.code !== "PRIS-2026") return;
+    let active = true;
+    void api.backofficeEvents.getSessions(token, eventId)
+      .then(({ sessions }) => {
+        if (!active) return;
+        const choices = sessions.flatMap((session) => {
+          if (
+            typeof session.id !== "number" ||
+            typeof session.sessionName !== "string" ||
+            typeof session.startTime !== "string" ||
+            typeof session.endTime !== "string" ||
+            !("isMainSession" in session && session.isMainSession === true) ||
+            session.isActive !== true ||
+            new Date(session.startTime).getTime() >= new Date(session.endTime).getTime()
+          ) return [];
+          return [{ id: session.id, name: session.sessionName, startTime: session.startTime, endTime: session.endTime }];
+        });
+        setMainSession(choices.length === 1 ? choices[0] : null);
+        setSetupError(choices.length === 1 ? null : "ต้องมี Main Session ที่เปิดใช้งานเพียงรายการเดียวสำหรับ PRIS ก่อนสร้างวงล้อ");
+      })
+      .catch((error) => {
+        if (active) setSetupError(error instanceof Error ? error.message : "โหลด Main Session ไม่สำเร็จ");
+      });
+    return () => { active = false; };
+  }, [token, eventId, uninitialized, selectedEvent?.code]);
+
+  const initialize = async () => {
+    if (!token || !eventId || !mainSession || setupBusy) return;
+    setSetupBusy(true);
+    setSetupError(null);
+    try {
+      await api.luckyWheel.initialize(token, eventId, mainSession.id);
+      toast.success("สร้างวงล้อแล้ว กิจกรรมยังปิดอยู่");
+      await loadState();
+    } catch (error) {
+      if (error instanceof ApiError && error.code === "WHEEL_UPDATED") {
+        await loadState();
+      } else {
+        setSetupError(error instanceof Error ? error.message : "สร้างวงล้อไม่สำเร็จ");
+      }
+    } finally {
+      setSetupBusy(false);
+    }
+  };
 
   useEffect(() => {
     if (eventId) void loadSpins();
@@ -179,7 +239,7 @@ export default function LuckyWheelAdminPage() {
                   เหตุผล {state.wheel.paused ? "เปิด" : "พัก"}วงล้อ
                   <input className="input mt-1 w-64" value={pauseReason} onChange={(event) => setPauseReason(event.target.value)} />
                 </label>
-                <button type="button" className="btn btn-secondary" disabled={pauseBusy || !pauseReason.trim()} onClick={() => void togglePause()}>
+                <button type="button" className="btn btn-secondary" disabled={pauseBusy || !pauseReason.trim() || (state.wheel.paused && !state.wheel.enabled)} onClick={() => void togglePause()}>
                   {pauseBusy ? <IconLoader2 size={17} className="animate-spin" /> : state.wheel.paused ? <IconPlayerPlay size={17} /> : <IconPlayerPause size={17} />}
                   {state.wheel.paused ? "เปิดวงล้อ" : "พักวงล้อ"}
                 </button>
@@ -204,6 +264,30 @@ export default function LuckyWheelAdminPage() {
           <div className="card py-14 text-center text-zinc-500">เลือก Event เพื่อจัดการ Lucky Wheel</div>
         ) : loading && !state ? (
           <div className="card flex justify-center py-16"><IconLoader2 className="animate-spin text-emerald-600" /></div>
+        ) : uninitialized ? (
+          <div className="card space-y-4" role="status">
+            <div>
+              <h2 className="text-lg font-semibold text-zinc-900">ยังไม่มีวงล้อสำหรับ {selectedEvent?.name ?? "Event นี้"}</h2>
+              <p className="mt-1 text-sm text-zinc-600">การสร้างวงล้อจะเปิดหน้าจัดการรางวัล โดยยังไม่เปิดให้ผู้เข้าร่วมเล่น</p>
+            </div>
+            {selectedEvent?.code === "PRIS-2026" ? (
+              <>
+                {mainSession && (
+                  <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4 text-sm text-zinc-700">
+                    <p className="font-semibold">ผูกกับ Main Session เดิม: {mainSession.name}</p>
+                    <p className="mt-1">{formatBangkok(mainSession.startTime)} – {formatBangkok(mainSession.endTime)}</p>
+                  </div>
+                )}
+                {setupError && <p className="text-sm text-rose-700" role="alert">{setupError}</p>}
+                <button type="button" className="btn btn-primary" disabled={!mainSession || setupBusy} onClick={() => void initialize()}>
+                  {setupBusy ? <IconLoader2 size={17} className="animate-spin" /> : null}
+                  สร้างวงล้อ (ยังไม่เปิดเล่น)
+                </button>
+              </>
+            ) : (
+              <p className="text-sm text-zinc-600">ขณะนี้สร้างวงล้อจากหน้านี้ได้เฉพาะ PRIS 2026</p>
+            )}
+          </div>
         ) : stateError ? (
           <div className="card flex gap-3 text-amber-800" role="alert">
             <IconAlertTriangle className="shrink-0" />
