@@ -32,6 +32,16 @@ import type {
   SessionGrantHistoryDto,
   SessionGrantRetryDto,
 } from "@/types/session-grants";
+import type {
+  AdminWheelSpinsResponse,
+  AdminWheelState,
+  RedemptionCorrectionInput,
+  RedemptionInput,
+  RewardLookup,
+  StockAdjustmentInput,
+  WheelConfiguration,
+  WheelImageUpload,
+} from "@/types/lucky-wheel";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL;
 const AUTH_UNAUTHORIZED_EVENT = "accp-backoffice-auth:unauthorized";
@@ -1061,6 +1071,124 @@ export const api = {
       fetchAPI<{ application: SponsorApplication }>(
         `/api/backoffice/sponsor-applications/${id}/payment-status`,
         { method: "PATCH", body: JSON.stringify(data), token },
+      ),
+  },
+
+  luckyWheel: {
+    getState: (token: string, eventId: number) =>
+      fetchAPI<AdminWheelState>(
+        `/api/backoffice/lucky-wheel/events/${eventId}`,
+        { token },
+      ),
+    publish: (
+      token: string,
+      eventId: number,
+      data: {
+        expectedVersion: number;
+        configuration: WheelConfiguration;
+        reason?: string;
+      },
+    ) =>
+      fetchAPI<{
+        eventId: number;
+        version: number;
+        poolRevision: number;
+        paused: boolean;
+        configuration: WheelConfiguration;
+        replayed: boolean;
+        requestId: string;
+      }>(`/api/backoffice/lucky-wheel/events/${eventId}/publication`, {
+        method: "PUT",
+        body: JSON.stringify(data),
+        token,
+      }),
+    adjustStock: (
+      token: string,
+      eventId: number,
+      data: StockAdjustmentInput,
+    ) =>
+      fetchAPI<{
+        eventId: number;
+        segmentId: string;
+        before: number;
+        after: number;
+        delta: number;
+        poolRevision: number;
+        replayed: boolean;
+        requestId: string;
+      }>(`/api/backoffice/lucky-wheel/events/${eventId}/stock`, {
+        method: "POST",
+        body: JSON.stringify(data),
+        token,
+      }),
+    setPaused: (
+      token: string,
+      eventId: number,
+      data: {
+        paused: boolean;
+        reason: string;
+        idempotencyKey: string;
+      },
+    ) =>
+      fetchAPI<{
+        eventId: number;
+        paused: boolean;
+        replayed: boolean;
+        requestId: string;
+      }>(`/api/backoffice/lucky-wheel/events/${eventId}/pause`, {
+        method: "PUT",
+        body: JSON.stringify(data),
+        token,
+      }),
+    listSpins: (
+      token: string,
+      eventId: number,
+      query?: URLSearchParams,
+    ) =>
+      fetchAPI<AdminWheelSpinsResponse>(
+        `/api/backoffice/lucky-wheel/events/${eventId}/spins${query && query.size ? `?${query.toString()}` : ""}`,
+        { token },
+      ),
+    uploadImage: (token: string, eventId: number, file: File) => {
+      const formData = new FormData();
+      formData.append("file", file);
+      return fetchAPI<WheelImageUpload>(
+        `/api/backoffice/lucky-wheel/events/${eventId}/images`,
+        {
+          method: "POST",
+          body: formData as unknown as BodyInit,
+          token,
+        },
+      );
+    },
+    lookupReward: (token: string, eventId: number, credential: string) =>
+      fetchAPI<RewardLookup>(
+        `/api/backoffice/lucky-wheel/events/${eventId}/reward-lookups`,
+        {
+          method: "POST",
+          body: JSON.stringify({ credential }),
+          token,
+        },
+      ),
+    confirmRedemption: (
+      token: string,
+      eventId: number,
+      spinId: string,
+      data: RedemptionInput,
+    ) =>
+      fetchAPI<Record<string, unknown>>(
+        `/api/backoffice/lucky-wheel/events/${eventId}/spins/${spinId}/redemption`,
+        { method: "PUT", body: JSON.stringify(data), token },
+      ),
+    correctRedemption: (
+      token: string,
+      eventId: number,
+      spinId: string,
+      data: RedemptionCorrectionInput,
+    ) =>
+      fetchAPI<Record<string, unknown>>(
+        `/api/backoffice/lucky-wheel/events/${eventId}/spins/${spinId}/redemption-corrections`,
+        { method: "POST", body: JSON.stringify(data), token },
       ),
   },
 

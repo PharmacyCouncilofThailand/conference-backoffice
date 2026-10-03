@@ -22,6 +22,7 @@ import {
   IconMailForward,
   IconMailBolt,
   IconBriefcase,
+  IconGift,
 } from "@tabler/icons-react";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -129,6 +130,12 @@ const menuStructure = [
     href: "/reports",
     label: "Reports",
     icon: IconReportAnalytics,
+  },
+  {
+    type: "link",
+    href: "/lucky-wheel",
+    label: "Lucky Wheel",
+    icon: IconGift,
   },
   {
     type: "category",

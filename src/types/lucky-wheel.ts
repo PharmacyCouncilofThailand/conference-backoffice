@@ -1,0 +1,161 @@
+export type LocalizedText = { th: string; en: string };
+
+export type WheelConfigurationSegment = {
+  id: string;
+  kind: "prize" | "no_prize";
+  name: LocalizedText;
+  imageId: string | null;
+  enabled: boolean;
+  position: number;
+};
+
+export type WheelConfiguration = {
+  segments: WheelConfigurationSegment[];
+  collectionInstructions: LocalizedText;
+  collectionDeadline: string;
+};
+
+export type WheelSegmentState = {
+  id: string;
+  kind: "prize" | "no_prize";
+  name: LocalizedText;
+  imageId: string | null;
+  imageKey: string | null;
+  imageUrl: string | null;
+  enabled: boolean;
+  position: number;
+  remaining: number | null;
+  allocated: number;
+  collected: number;
+};
+
+export type WheelAuditEntry = {
+  id: string;
+  operation: string;
+  reason: string | null;
+  actorId: number;
+  actorEmail: string | null;
+  before: unknown;
+  after: unknown;
+  createdAt: string;
+};
+
+export type AdminWheelState = {
+  eventId: number;
+  actorId: number;
+  wheel: {
+    id: string;
+    mainSessionId: number;
+    enabled: boolean;
+    paused: boolean;
+    version: number;
+    poolRevision: number;
+    configuration: WheelConfiguration | null;
+    collectionInstructions: LocalizedText | null;
+    collectionDeadline: string | null;
+  };
+  segments: WheelSegmentState[];
+  audit: WheelAuditEntry[];
+  requestId: string;
+};
+
+export type AdminWheelSpin = {
+  id: string;
+  eventId: number;
+  userId: number;
+  playDate: string;
+  attendanceId: string;
+  attendanceCheckedInAt: string;
+  segmentId: string;
+  outcomeKind: "prize" | "no_prize";
+  awardedName: LocalizedText;
+  awardedImageKey: string | null;
+  configurationVersion: number;
+  poolRevision: number;
+  createdAt: string;
+  configurationSnapshot: unknown;
+  outcomeSnapshot: unknown;
+  claim: null | {
+    generation: number;
+    status: "open" | "redeemed";
+    redeemedAt: string | null;
+    redeemedBy: number | null;
+    collectionPoint: string | null;
+    deliveredDetails: string | null;
+  };
+};
+
+export type AdminWheelSpinsResponse = {
+  eventId: number;
+  actorId: number;
+  spins: AdminWheelSpin[];
+  pagination: {
+    page: number;
+    pageSize: number;
+    total: number;
+    totalPages: number;
+  };
+  requestId: string;
+};
+
+export type WheelImageUpload = {
+  imageId: string;
+  imageKey: string;
+  url: string;
+  width: number;
+  height: number;
+  requestId: string;
+};
+
+export type RewardLookup = {
+  eventId: number;
+  spinId: string;
+  owner: {
+    id: number;
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
+  prize: {
+    name: LocalizedText;
+    imageKey: string | null;
+    awardedAt: string;
+  };
+  claimGeneration: number;
+  status: "open" | "redeemed";
+  redeemedAt: string | null;
+  redeemedBy: number | null;
+  collectionPoint: string | null;
+  deliveredDetails: string | null;
+  collectionInstructions: LocalizedText | null;
+  collectionDeadline: string | null;
+  lookedUpBy: "token" | "code";
+  actorId: number;
+  requestId: string;
+};
+
+export type StockAdjustmentInput = {
+  segmentId: string;
+  delta: number;
+  reason: string;
+  idempotencyKey: string;
+};
+
+export type RedemptionInput = {
+  eventId: number;
+  spinId: string;
+  claimGeneration: number;
+  idempotencyKey: string;
+  identityChecked: true;
+  collectionPoint: string;
+  deliveredDetails: string | null;
+};
+
+export type RedemptionCorrectionInput = {
+  eventId: number;
+  spinId: string;
+  claimGeneration: number;
+  reason: string;
+  reopen: boolean;
+  idempotencyKey: string;
+};
