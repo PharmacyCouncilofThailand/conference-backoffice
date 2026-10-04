@@ -10,7 +10,6 @@ type Props = {
   eventId: number;
   token: string;
   segment: WheelSegmentState | null;
-  mode: "add" | "reduce";
   onClose: () => void;
   onDone: () => Promise<void> | void;
 };
@@ -20,7 +19,6 @@ export function StockAdjustmentDialog({
   eventId,
   token,
   segment,
-  mode,
   onClose,
   onDone,
 }: Props) {
@@ -45,7 +43,7 @@ export function StockAdjustmentDialog({
     } else if (!open && dialog.open) {
       dialog.close();
     }
-  }, [open, segment?.id, mode]);
+  }, [open, segment?.id]);
 
   const close = () => {
     if (submitting) return;
@@ -60,16 +58,12 @@ export function StockAdjustmentDialog({
       setError("กรอกจำนวนเต็มที่มากกว่า 0 และเหตุผล");
       return;
     }
-    if (mode === "reduce" && amount > (segment.remaining ?? 0)) {
-      setError("จำนวนที่ลดมากกว่าสต็อกคงเหลือ");
-      return;
-    }
     setSubmitting(true);
     setError(null);
     try {
       await api.luckyWheel.adjustStock(token, eventId, {
         segmentId: segment.id,
-        delta: mode === "add" ? amount : -amount,
+        delta: amount,
         reason: reason.trim(),
         idempotencyKey: requestKey,
       });
@@ -99,7 +93,7 @@ export function StockAdjustmentDialog({
       <div className="flex items-start justify-between border-b border-zinc-200 px-5 py-5 sm:px-6">
         <div>
           <h2 id="stock-adjustment-title" className="text-xl font-semibold text-zinc-950">
-            {mode === "add" ? "เพิ่มสต็อก" : "ลดสต็อก"}
+            เติมสต็อก
           </h2>
           <p className="mt-1 text-sm text-zinc-600">{segment?.name.th}</p>
         </div>
@@ -135,7 +129,7 @@ export function StockAdjustmentDialog({
           <button type="button" className="btn-secondary disabled:cursor-not-allowed disabled:opacity-50 min-h-11" onClick={close} disabled={submitting}>ยกเลิก</button>
           <button type="button" className="btn-primary min-h-11" onClick={() => void submit()} disabled={submitting}>
             {submitting && <IconLoader2 size={17} className="animate-spin" />}
-            ยืนยัน{mode === "add" ? "เพิ่ม" : "ลด"}สต็อก
+            ยืนยันเติมสต็อก
           </button>
         </div>
       </div>

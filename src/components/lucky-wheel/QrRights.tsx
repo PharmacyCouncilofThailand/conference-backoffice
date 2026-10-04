@@ -1,13 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { IconAlertTriangle, IconLoader2, IconRefresh } from "@tabler/icons-react";
+import { IconAlertTriangle, IconDownload, IconLoader2, IconRefresh } from "@tabler/icons-react";
 import toast from "react-hot-toast";
 import { api, ApiError } from "@/lib/api";
 import type { AdminWheelState, WheelCreditClaim, WheelDayChange, WheelDayWindow, WheelPage, WheelQrListItem } from "@/types/lucky-wheel";
-import { QrProjection } from "./QrProjection";
 
-type Props = { token: string; eventId: number; wheelState: AdminWheelState | null };
+type Props = { token: string; eventId: number; eventWebsiteUrl: string | null; wheelState: AdminWheelState | null };
 type PendingBatch = { names: string[]; idempotencyKey: string };
 type PendingStatus = { qrId: string; status: "open" | "closed"; reason: string; idempotencyKey: string };
 type PendingRevocation = { claimId: string; reason: string; idempotencyKey: string };
@@ -37,8 +36,29 @@ function formatBangkok(value: string): string {
   });
 }
 
-export function QrRights({ token, eventId, wheelState }: Props) {
+function preferredDate(days: WheelDayWindow[], today: string, saved: string | null): string {
+  const dates = days.map((day) => day.date).sort();
+  if (saved && dates.includes(saved)) return saved;
+  if (dates.includes(today)) return today;
+  return dates.find((day) => day > today) ?? dates.at(-1) ?? "";
+}
+
+function qrClaimUrl(websiteUrl: string | null, qrId: string): string | null {
+  if (!websiteUrl) return null;
+  try {
+    const url = new URL(websiteUrl);
+    const local = ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname);
+    if ((url.protocol !== "https:" && !(process.env.NODE_ENV !== "production" && local && url.protocol === "http:")) ||
+      url.username || url.password || url.pathname !== "/" || url.search || url.hash ||
+      (typeof window !== "undefined" && url.origin === window.location.origin)) return null;
+    return `${url.origin}/th/lucky-wheel/claim#${qrId}`;
+  } catch { return null; }
+}
+
+export function QrRights({ token, eventId, eventWebsiteUrl, wheelState }: Props) {
   const [date, setDate] = useState("");
+  const [configuredDays, setConfiguredDays] = useState<WheelDayWindow[]>([]);
+  const [daysLoading, setDaysLoading] = useState(false);
   const [day, setDay] = useState<WheelDayWindow | null>(null);
   const [startInput, setStartInput] = useState("");
   const [endInput, setEndInput] = useState("");
@@ -49,7 +69,8 @@ export function QrRights({ token, eventId, wheelState }: Props) {
   const [qrList, setQrList] = useState<WheelPage<WheelQrListItem> | null>(null);
   const [names, setNames] = useState("");
   const [reasonByQr, setReasonByQr] = useState<Record<string, string>>({});
-  const [projectionId, setProjectionId] = useState<string | null>(null);
+  const [downloadBusyId, setDownloadBusyId] = useState<string | null>(null);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
   const [selectedQrId, setSelectedQrId] = useState<string | null>(null);
   const [claimPage, setClaimPage] = useState(1);
   const [claims, setClaims] = useState<WheelPage<WheelCreditClaim> | null>(null);
@@ -134,10 +155,21 @@ export function QrRights({ token, eventId, wheelState }: Props) {
   useEffect(() => { void load(); return () => { sequence.current += 1; }; }, [load]);
   useEffect(() => { void loadClaims(); return () => { claimSequence.current += 1; }; }, [loadClaims]);
   useEffect(() => {
-    setDate(""); setDay(null); setQrList(null); setDayChanges(null);
+    let active = true;
+    setDate(""); setDay(null); setQrList(null); setDayChanges(null); setConfiguredDays([]);
     setQrPage(1); setChangePage(1); setPendingBatch(null); setPendingStatus(null); setConfirmCloseQrId(null);
     setSelectedQrId(null); setClaims(null); setClaimPage(1); setPendingRevocation(null);
-  }, [eventId]);
+    setDaysLoading(true);
+    const today = toBangkokInput(new Date().toISOString()).slice(0, 10);
+    void api.luckyWheel.listDays(token, eventId).then(({ days }) => {
+      if (!active) return;
+      setConfiguredDays(days);
+      setDate(preferredDate(days, today, sessionStorage.getItem(`wheel-day-${eventId}`)));
+    }).catch((cause) => {
+      if (active) setError(cause instanceof Error ? cause.message : "โหลดวันที่ตั้งค่าไว้ไม่สำเร็จ");
+    }).finally(() => { if (active) setDaysLoading(false); });
+    return () => { active = false; };
+  }, [token, eventId]);
 
   const selectedQr = qrList?.items.find((qr) => qr.id === selectedQrId) ?? null;
   const unspentCount = selectedQr ? Math.max(0, selectedQr.claimCount - selectedQr.spentCount - selectedQr.revokedCount) : 0;
@@ -214,8 +246,15 @@ export function QrRights({ token, eventId, wheelState }: Props) {
         startAt, endAt, expectedVersion: day?.version ?? null,
         reason: day ? editReason.trim() : null,
       });
+      sessionStorage.setItem(`wheel-day-${eventId}`, date);
       toast.success("บันทึกช่วงเวลารับสิทธิ์และหมุนพร้อมกันแล้ว");
-      await load();
+      const [daysResult, dayResult] = await Promise.allSettled([
+        api.luckyWheel.listDays(token, eventId), load(),
+      ]);
+      if (daysResult.status === "fulfilled") setConfiguredDays(daysResult.value.days);
+      if (daysResult.status === "rejected" || dayResult.status === "rejected") {
+        setError("บันทึกสำเร็จแล้ว แต่โหลดข้อมูลล่าสุดไม่ครบ กรุณากดรีโหลด");
+      }
     } catch (cause) {
       if (cause instanceof ApiError && cause.status === 409) await load();
       setError(cause instanceof Error ? cause.message : "บันทึกเวลาไม่สำเร็จ");
@@ -245,7 +284,6 @@ export function QrRights({ token, eventId, wheelState }: Props) {
   const changeStatus = async (qr: WheelQrListItem) => {
     if (busy) return;
     const reason = reasonByQr[qr.id]?.trim() ?? "";
-    if (!pendingStatus && !reason) { setError("กรอกเหตุผลก่อนเปิดหรือปิด QR"); return; }
     if (!pendingStatus && qr.status === "open" && confirmCloseQrId !== qr.id) { setConfirmCloseQrId(qr.id); return; }
     const request = pendingStatus ?? {
       qrId: qr.id, status: qr.status === "open" ? "closed" as const : "open" as const,
@@ -254,7 +292,7 @@ export function QrRights({ token, eventId, wheelState }: Props) {
     setPendingStatus(request); setBusy("status"); setError(null);
     try {
       await api.luckyWheel.setQrStatus(token, eventId, request.qrId, {
-        status: request.status, reason: request.reason, idempotencyKey: request.idempotencyKey,
+        status: request.status, ...(request.reason ? { reason: request.reason } : {}), idempotencyKey: request.idempotencyKey,
       });
       setPendingStatus(null);
       setConfirmCloseQrId(null);
@@ -267,21 +305,48 @@ export function QrRights({ token, eventId, wheelState }: Props) {
     } finally { setBusy(null); }
   };
 
+  const downloadQr = async (qr: WheelQrListItem) => {
+    const expectedUrl = qrClaimUrl(eventWebsiteUrl, qr.id);
+    if (!expectedUrl || downloadBusyId) return;
+    setDownloadBusyId(qr.id); setDownloadError(null);
+    try {
+      const download = await api.luckyWheel.getQrDownload(token, eventId, qr.id);
+      if (download.claimUrl !== expectedUrl) {
+        setDownloadError("URL ของ Event เปลี่ยนแล้ว กรุณาโหลดหน้าใหม่ก่อนดาวน์โหลด QR");
+        return;
+      }
+      const safeName = qr.name.normalize("NFKD").replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "").slice(0, 40) || "credit";
+      const anchor = document.createElement("a");
+      anchor.href = download.qrDataUrl;
+      anchor.download = `pris-wheel-${eventId}-${date}-${safeName}-${qr.id.slice(0, 8)}.png`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      toast.success("ดาวน์โหลด QR แล้ว");
+    } catch (cause) {
+      setDownloadError(cause instanceof Error ? cause.message : "ดาวน์โหลด QR ไม่สำเร็จ");
+    } finally { setDownloadBusyId(null); }
+  };
+
   return <div className="space-y-5">
     <div className="px-1">
       <p className="text-xs font-bold uppercase tracking-[0.16em] text-emerald-700">02 · Rights &amp; QR</p>
       <h2 className="mt-2 text-xl font-semibold tracking-tight text-zinc-950 sm:text-2xl">กำหนดวันและแจกสิทธิ์หมุน</h2>
-      <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-600">ทำตามลำดับจากบนลงล่าง: ตั้งช่วงเวลาของวัน สร้าง QR แล้วเปิดใบที่จะนำขึ้นจอ</p>
+      <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-600">เลือกวันที่ตั้งไว้ ตั้งช่วงเวลาของวัน สร้าง QR แล้วดาวน์โหลดไฟล์เพื่อนำไปแจก</p>
     </div>
     <section className="card border border-zinc-200/80" aria-labelledby="wheel-day-heading">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex items-start gap-3"><span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-zinc-950 text-sm font-bold text-white">1</span><div><h3 id="wheel-day-heading" className="text-lg font-semibold text-zinc-900">เลือกวันและช่วงเวลา</h3><p className="mt-1 text-sm leading-6 text-zinc-600">เวลาเดียวกันสำหรับรับ QR และหมุนวงล้อ · Asia/Bangkok</p></div></div>
         <button type="button" className="btn-secondary disabled:cursor-not-allowed disabled:opacity-50 min-h-11" disabled={!date || loading} onClick={() => void load()}><IconRefresh size={17} /> รีโหลด</button>
       </div>
-      <label className="mt-6 block max-w-xs text-sm font-medium text-zinc-700">วันที่ไทย
-        <input type="date" className="input-field mt-1" value={date} onChange={(event) => { setDate(event.target.value); setDay(null); setQrList(null); setDayChanges(null); setQrPage(1); setChangePage(1); setPendingBatch(null); setSelectedQrId(null); setClaims(null); setClaimPage(1); }} />
+      {configuredDays.length > 0 && <div className="mt-5 flex flex-wrap gap-2" aria-label="วันที่วงล้อที่ตั้งค่าไว้">
+        {configuredDays.map((item) => <button key={item.id} type="button" className={`min-h-11 rounded-xl border px-4 text-sm font-semibold ${date === item.date ? "border-emerald-700 bg-emerald-50 text-emerald-900" : "border-zinc-200 bg-white text-zinc-700 hover:border-emerald-400"}`} onClick={() => { setDate(item.date); sessionStorage.setItem(`wheel-day-${eventId}`, item.date); setQrPage(1); setChangePage(1); }} aria-pressed={date === item.date}>{new Date(`${item.date}T12:00:00+07:00`).toLocaleDateString("th-TH", { timeZone: "Asia/Bangkok", day: "numeric", month: "short", year: "numeric" })}</button>)}
+      </div>}
+      <label className="mt-5 block max-w-xs text-sm font-medium text-zinc-700">{configuredDays.length > 0 ? "เลือกวันอื่นหรือสร้างวันใหม่" : "วันที่ไทย"}
+        <input type="date" className="input-field mt-1" value={date} onChange={(event) => { setDate(event.target.value); setDay(null); setQrList(null); setDayChanges(null); setQrPage(1); setChangePage(1); setPendingBatch(null); setSelectedQrId(null); setClaims(null); setClaimPage(1); if (configuredDays.some((item) => item.date === event.target.value)) sessionStorage.setItem(`wheel-day-${eventId}`, event.target.value); }} />
       </label>
-      {!date ? <p className="mt-5 text-sm text-zinc-600">เลือกวันที่ก่อนกำหนดเวลาและสร้าง QR</p> : loading && !day && !qrList ? <p role="status" className="mt-5 text-sm text-zinc-600">กำลังโหลดข้อมูล…</p> : <>
+      {daysLoading && <p role="status" className="mt-3 text-sm text-zinc-600">กำลังโหลดวันที่ตั้งค่าไว้…</p>}
+      {!date ? <p className="mt-5 text-sm text-zinc-600">ยังไม่มีวันที่ตั้งค่าไว้ เลือกวันที่เพื่อกำหนดเวลาและสร้าง QR</p> : loading && !day && !qrList ? <p role="status" className="mt-5 text-sm text-zinc-600">กำลังโหลดข้อมูล…</p> : <>
         <div className="mt-5 grid gap-4 rounded-2xl bg-zinc-50 p-4 sm:grid-cols-2 sm:p-5">
           <label className="text-sm font-medium text-zinc-700">เวลาเริ่มรับสิทธิ์และหมุน<input type="datetime-local" className="input-field mt-1" value={startInput} onChange={(event) => setStartInput(event.target.value)} /></label>
           <label className="text-sm font-medium text-zinc-700">เวลาสิ้นสุดรับสิทธิ์และหมุน<input type="datetime-local" className="input-field mt-1" value={endInput} onChange={(event) => setEndInput(event.target.value)} /></label>
@@ -299,31 +364,34 @@ export function QrRights({ token, eventId, wheelState }: Props) {
     {date && day && <>
       <section className="card border border-zinc-200/80" aria-labelledby="qr-batch-heading">
         <div className="flex items-start gap-3"><span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-zinc-950 text-sm font-bold text-white">2</span><div><h3 id="qr-batch-heading" className="text-lg font-semibold text-zinc-900">เตรียม QR รับสิทธิ์</h3><p className="mt-1 text-sm leading-6 text-zinc-600">ใส่ชื่อหนึ่งบรรทัดต่อ QR · สร้างแล้วจะยังปิดรับจนกว่า Admin เปิด</p></div></div>
-        <label className="mt-5 block text-sm font-medium text-zinc-700">ชื่อ QR สำหรับเลือกขึ้นจอ
+        <label className="mt-5 block text-sm font-medium text-zinc-700">ชื่อ QR สำหรับไฟล์ดาวน์โหลด
           <textarea className="input-field mt-2 min-h-28 w-full" value={names} onChange={(event) => setNames(event.target.value)} disabled={Boolean(pendingBatch)} placeholder={"หลังจบกิจกรรมช่วงเช้า\nหลังจบกิจกรรมช่วงบ่าย"} />
         </label>
         <div className="mt-3 flex flex-wrap items-center gap-3"><button type="button" className="btn-primary min-h-11" disabled={Boolean(busy)} onClick={() => void createBatch()}>{busy === "batch" && <IconLoader2 size={17} className="animate-spin" />}{pendingBatch ? "ตรวจ QR ชุดเดิมอีกครั้ง" : "สร้าง QR แบบปิดรับ"}</button><span className="text-xs text-zinc-500">สร้างได้ครั้งละ 1–20 ใบ</span></div>
       </section>
 
       <section className="card border border-zinc-200/80" aria-labelledby="qr-list-heading">
-        <div className="flex items-start gap-3"><span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-zinc-950 text-sm font-bold text-white">3</span><div><h3 id="qr-list-heading" className="text-lg font-semibold text-zinc-900">เปิด QR และนำขึ้นจอ</h3><p className="mt-1 text-sm leading-6 text-zinc-600">QR วันที่ {date} · เปิดใบใหม่แล้วใบเดิมยังรับได้จนถึงเวลาปิดหรือ Admin ปิดเอง</p></div></div>
+        <div className="flex items-start gap-3"><span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-zinc-950 text-sm font-bold text-white">3</span><div><h3 id="qr-list-heading" className="text-lg font-semibold text-zinc-900">เปิดรับสิทธิ์และดาวน์โหลด QR</h3><p className="mt-1 text-sm leading-6 text-zinc-600">QR วันที่ {date} · เปิดใบใหม่แล้วใบเดิมยังรับได้จนถึงเวลาปิดหรือ Admin ปิดเอง</p></div></div>
+        {!qrClaimUrl(eventWebsiteUrl, "00000000-0000-4000-8000-000000000000") && <p className="mt-4 rounded-xl bg-amber-50 p-4 text-sm leading-6 text-amber-900" role="alert">Website URL ของ Event ยังไม่ใช่เว็บ PRIS ที่ถูกต้อง{eventWebsiteUrl ? ` (${eventWebsiteUrl})` : ""} กรุณาแก้ที่หน้า <a className="font-semibold underline" href={`/events/${eventId}/edit`}>แก้ไข Event</a> แล้วรีโหลดก่อนดาวน์โหลด QR</p>}
+        {downloadError && <p className="mt-4 rounded-xl bg-rose-50 p-3 text-sm text-rose-700" role="alert">{downloadError}</p>}
         <div className="mt-4 space-y-3">
           {(qrList?.items ?? []).map((qr) => <div key={qr.id} className="rounded-2xl border border-zinc-200 p-4 sm:p-5">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="min-w-0"><span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${qr.status === "open" ? "bg-emerald-100 text-emerald-800" : "bg-zinc-100 text-zinc-700"}`}>{qr.status === "open" ? "เปิดรับสิทธิ์" : "ปิดรับ"}</span><p className="mt-2 break-words text-base font-semibold text-zinc-900">{qr.name}</p><p className="mt-1 text-xs text-zinc-600">รับแล้ว {qr.claimCount} · ใช้แล้ว {qr.spentCount} · ยกเลิก {qr.revokedCount}</p></div>
               <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto">
                 <button type="button" className="btn-secondary disabled:cursor-not-allowed disabled:opacity-50 min-h-11 px-2 text-xs sm:text-sm" onClick={() => selectQr(qr.id)} aria-pressed={selectedQrId === qr.id}>ดูผู้รับสิทธิ์</button>
-                <button type="button" className="btn-secondary disabled:cursor-not-allowed disabled:opacity-50 min-h-11 px-2 text-xs sm:text-sm" onClick={() => setProjectionId(qr.id)}>แสดงบนจอ</button>
+                <button type="button" className="btn-secondary disabled:cursor-not-allowed disabled:opacity-50 min-h-11 px-2 text-xs sm:text-sm" disabled={!qrClaimUrl(eventWebsiteUrl, qr.id) || Boolean(downloadBusyId)} onClick={() => void downloadQr(qr)}>{downloadBusyId === qr.id ? <IconLoader2 size={16} className="animate-spin" /> : <IconDownload size={16} />} ดาวน์โหลด PNG</button>
               </div>
             </div>
+            {qrClaimUrl(eventWebsiteUrl, qr.id) && <div className="mt-3 rounded-xl bg-zinc-50 px-3 py-2 text-xs text-zinc-600"><span className="font-semibold text-zinc-800">ลิงก์ที่อยู่ใน QR</span><code className="mt-1 block break-all text-zinc-700">{qrClaimUrl(eventWebsiteUrl, qr.id)}</code></div>}
             <p className="mt-2 text-xs text-zinc-600">เวลาปิดล่าสุด {formatBangkok(qr.currentDeadline)} น.</p>
             <div className="mt-2 space-y-1 text-xs text-zinc-600">
               <p>สร้าง {formatBangkok(qr.createdAt)} น. โดย Admin #{qr.createdBy}</p>
-              {qr.openedAt && <p>เปิดครั้งล่าสุด {formatBangkok(qr.openedAt)} น. โดย Admin #{qr.openedBy} · {qr.openedReason}</p>}
-              {qr.closedAt && <p>ปิดครั้งล่าสุด {formatBangkok(qr.closedAt)} น. โดย Admin #{qr.closedBy} · {qr.closedReason}</p>}
+              {qr.openedAt && <p>เปิดครั้งล่าสุด {formatBangkok(qr.openedAt)} น. โดย Admin #{qr.openedBy}{qr.openedReason ? ` · ${qr.openedReason}` : ""}</p>}
+              {qr.closedAt && <p>ปิดครั้งล่าสุด {formatBangkok(qr.closedAt)} น. โดย Admin #{qr.closedBy}{qr.closedReason ? ` · ${qr.closedReason}` : ""}</p>}
             </div>
             <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-end">
-              <label className="min-w-0 flex-1 text-sm text-zinc-700">เหตุผลเปิด/ปิด QR<input className="input-field mt-1" maxLength={500} value={reasonByQr[qr.id] ?? ""} onChange={(event) => { setReasonByQr((current) => ({ ...current, [qr.id]: event.target.value })); setConfirmCloseQrId(null); }} disabled={Boolean(pendingStatus)} /></label>
+              <label className="min-w-0 flex-1 text-sm text-zinc-700">เหตุผลเปิด/ปิด QR (ไม่บังคับ)<input className="input-field mt-1" maxLength={500} value={reasonByQr[qr.id] ?? ""} onChange={(event) => { setReasonByQr((current) => ({ ...current, [qr.id]: event.target.value })); setConfirmCloseQrId(null); }} disabled={Boolean(pendingStatus)} /></label>
               <button type="button" className={`min-h-11 disabled:cursor-not-allowed disabled:opacity-50 ${qr.status === "open" ? "btn-secondary" : "btn-primary"}`} disabled={Boolean(busy) || Boolean(pendingStatus && pendingStatus.qrId !== qr.id)} onClick={() => void changeStatus(qr)}>{pendingStatus?.qrId === qr.id ? "ตรวจคำขอเดิม" : confirmCloseQrId === qr.id ? "ยืนยันปิด QR" : qr.status === "open" ? "ปิด QR" : "เปิด QR"}</button>
               {confirmCloseQrId === qr.id && !pendingStatus && <button type="button" className="btn-secondary disabled:cursor-not-allowed disabled:opacity-50" onClick={() => setConfirmCloseQrId(null)}>ไม่ปิด</button>}
             </div>
@@ -372,6 +440,5 @@ export function QrRights({ token, eventId, wheelState }: Props) {
         {dayChanges && dayChanges.pagination.totalPages > 1 && <div className="mt-4 flex items-center gap-3 text-sm"><button className="btn-secondary disabled:cursor-not-allowed disabled:opacity-50" disabled={changePage <= 1} onClick={() => setChangePage(changePage - 1)}>ก่อนหน้า</button><span>หน้า {changePage} / {dayChanges.pagination.totalPages}</span><button className="btn-secondary disabled:cursor-not-allowed disabled:opacity-50" disabled={changePage >= dayChanges.pagination.totalPages} onClick={() => setChangePage(changePage + 1)}>ถัดไป</button></div>}
       </section>
     </>}
-    {projectionId && <QrProjection token={token} eventId={eventId} qrId={projectionId} onClose={() => setProjectionId(null)} />}
   </div>;
 }

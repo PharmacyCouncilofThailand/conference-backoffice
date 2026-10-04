@@ -28,12 +28,12 @@ import { StockAdjustmentDialog } from "@/components/lucky-wheel/StockAdjustmentD
 import { RewardCollection } from "@/components/lucky-wheel/RewardCollection";
 import { QrRights } from "@/components/lucky-wheel/QrRights";
 
-type EventOption = { id: number; name: string; code: string };
+type EventOption = { id: number; name: string; code: string; websiteUrl: string | null };
 type MainSession = { id: number; name: string; startTime: string; endTime: string };
 type Tab = "configuration" | "rights" | "stock" | "results";
 
 const tabs = [
-  { value: "configuration", label: "ตั้งค่าวงล้อ", hint: "รางวัลและจุดรับของ", Icon: IconAdjustmentsHorizontal },
+  { value: "configuration", label: "ตั้งค่าวงล้อ", hint: "รางวัลและจำนวนเริ่มต้น", Icon: IconAdjustmentsHorizontal },
   { value: "rights", label: "วันและ QR", hint: "เวลาและสิทธิ์หมุน", Icon: IconQrcode },
   { value: "stock", label: "สต็อก", hint: "ยอดคงเหลือและประวัติ", Icon: IconGift },
   { value: "results", label: "ผลและรับของ", hint: "ผลหมุนและส่งมอบ", Icon: IconChartBar },
@@ -50,6 +50,17 @@ function snapshotNumber(value: unknown, key: string): number | null {
   if (!value || typeof value !== "object") return null;
   const current = (value as Record<string, unknown>)[key];
   return typeof current === "number" ? current : null;
+}
+
+function initialStockCredits(value: unknown): Array<{ segmentId: string; before: number; after: number }> {
+  if (!value || typeof value !== "object") return [];
+  const credits = (value as Record<string, unknown>).initialStockCredits;
+  if (!Array.isArray(credits)) return [];
+  return credits.filter((credit): credit is { segmentId: string; before: number; after: number } =>
+    credit !== null && typeof credit === "object" &&
+    typeof credit.segmentId === "string" &&
+    typeof credit.before === "number" && typeof credit.after === "number",
+  );
 }
 
 export default function LuckyWheelAdminPage() {
@@ -69,7 +80,6 @@ export default function LuckyWheelAdminPage() {
   const [pauseBusy, setPauseBusy] = useState(false);
   const [stockTarget, setStockTarget] = useState<{
     segment: WheelSegmentState;
-    mode: "add" | "reduce";
   } | null>(null);
 
   const [dateFilter, setDateFilter] = useState("");
@@ -85,7 +95,7 @@ export default function LuckyWheelAdminPage() {
       .then((response) => {
         const options = (response.events || []).flatMap((event) => {
           if (typeof event.id !== "number" || typeof event.eventName !== "string") return [];
-          return [{ id: event.id, name: event.eventName, code: typeof event.eventCode === "string" ? event.eventCode : "" }];
+          return [{ id: event.id, name: event.eventName, code: typeof event.eventCode === "string" ? event.eventCode : "", websiteUrl: typeof event.websiteUrl === "string" ? event.websiteUrl : null }];
         });
         setEvents(options);
         setEventId((current) => current ?? options[0]?.id ?? null);
@@ -326,7 +336,7 @@ export default function LuckyWheelAdminPage() {
                   <p className="mt-2 font-semibold text-zinc-950">{mainSession?.name ?? "กำลังตรวจสอบ Main Session"}</p>
                   {mainSession && <p className="mt-2 text-sm leading-6 text-zinc-600">{formatBangkok(mainSession.startTime)} – {formatBangkok(mainSession.endTime)}</p>}
                 </div>
-                <p className="mt-4 text-sm leading-6 text-zinc-600">ขั้นถัดไป: เพิ่มช่องรางวัล ระบุจุดรับของ แล้วกด “บันทึกและเผยแพร่”</p>
+                <p className="mt-4 text-sm leading-6 text-zinc-600">ขั้นถัดไป: เพิ่มช่องรางวัลและจำนวนเริ่มต้น แล้วกด “บันทึกและเผยแพร่”</p>
               </div>
             </div>
           </div>
@@ -358,7 +368,7 @@ export default function LuckyWheelAdminPage() {
               </div>
             )}
 
-            {tab === "rights" && <QrRights token={token ?? ""} eventId={eventId} wheelState={state} />}
+            {tab === "rights" && <QrRights token={token ?? ""} eventId={eventId} eventWebsiteUrl={selectedEvent?.websiteUrl ?? null} wheelState={state} />}
 
             {tab === "stock" && (
               <div className="space-y-5">
@@ -366,7 +376,7 @@ export default function LuckyWheelAdminPage() {
                   <div className="mb-5 flex flex-col gap-2 border-b border-zinc-100 pb-5">
                     <p className="text-xs font-bold uppercase tracking-[0.16em] text-emerald-700">03 · Stock</p>
                     <h2 className="text-xl font-semibold tracking-tight text-zinc-950 sm:text-2xl">สต็อกของรางวัล</h2>
-                    <p className="max-w-3xl text-sm leading-6 text-zinc-600">สต็อกคงเหลือแยกตามรางวัล การเพิ่มหรือลดทุกครั้งต้องมีเหตุผลและจะบันทึกประวัติ</p>
+                    <p className="max-w-3xl text-sm leading-6 text-zinc-600">ยอดเริ่มต้นกำหนดในหน้าตั้งค่าวงล้อ ส่วนหน้านี้ใช้เติมของภายหลังพร้อมเหตุผลและประวัติ</p>
                   </div>
                   <div className="mb-5 grid gap-2 text-sm sm:grid-cols-3">
                     <div className="rounded-xl bg-emerald-50 p-3 text-emerald-950"><span className="block text-xs font-semibold">Available · สต็อกคงเหลือ</span><strong className="mt-1 block text-2xl tabular-nums">{prizeSegments.reduce((sum, segment) => sum + (segment.remaining ?? 0), 0)}</strong></div>
@@ -377,7 +387,7 @@ export default function LuckyWheelAdminPage() {
                     {prizeSegments.map((segment) => <article key={segment.id} className="rounded-2xl border border-zinc-200 p-4">
                       <div className="flex items-start justify-between gap-3"><div className="min-w-0"><h3 className="break-words font-semibold text-zinc-950">{segment.name.th}</h3><p className="text-xs text-zinc-500">{segment.name.en}</p></div><span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${segment.enabled && (segment.remaining ?? 0) > 0 ? "bg-emerald-50 text-emerald-800" : "bg-zinc-100 text-zinc-600"}`}>{!segment.enabled ? "ปิดใช้งาน" : (segment.remaining ?? 0) > 0 ? "สุ่มได้" : "หมดแล้ว"}</span></div>
                       <div className="mt-4 grid grid-cols-3 gap-2 border-y border-zinc-100 py-3 text-center"><div><p className="text-xs text-zinc-500">คงเหลือ</p><p className="mt-1 text-lg font-bold tabular-nums text-zinc-950">{segment.remaining ?? 0}</p></div><div><p className="text-xs text-zinc-500">จัดสรร</p><p className="mt-1 text-lg font-bold tabular-nums text-zinc-950">{segment.allocated}</p></div><div><p className="text-xs text-zinc-500">ส่งมอบ</p><p className="mt-1 text-lg font-bold tabular-nums text-zinc-950">{segment.collected}</p></div></div>
-                      <div className="mt-3 grid grid-cols-2 gap-2"><button type="button" className="btn-secondary disabled:cursor-not-allowed disabled:opacity-50 min-h-11" onClick={() => setStockTarget({ segment, mode: "add" })}>เติมสต็อก</button><button type="button" className="btn-secondary disabled:cursor-not-allowed disabled:opacity-50 min-h-11" disabled={(segment.remaining ?? 0) === 0} onClick={() => setStockTarget({ segment, mode: "reduce" })}>ลดสต็อก</button></div>
+                      <button type="button" className="btn-secondary mt-3 min-h-11 w-full" onClick={() => setStockTarget({ segment })}>เติมสต็อก</button>
                     </article>)}
                   </div>
                   <div className="hidden overflow-x-auto md:block">
@@ -400,8 +410,7 @@ export default function LuckyWheelAdminPage() {
                             <td className="py-4 pr-4 tabular-nums">{segment.collected}</td>
                             <td className="py-4 text-right">
                               <div className="flex justify-end gap-2">
-                                <button type="button" className="btn-secondary disabled:cursor-not-allowed disabled:opacity-50" onClick={() => setStockTarget({ segment, mode: "add" })}>เติม</button>
-                                <button type="button" className="btn-secondary disabled:cursor-not-allowed disabled:opacity-50" disabled={(segment.remaining ?? 0) === 0} onClick={() => setStockTarget({ segment, mode: "reduce" })}>ลด</button>
+                                <button type="button" className="btn-secondary" onClick={() => setStockTarget({ segment })}>เติมสต็อก</button>
                               </div>
                             </td>
                           </tr>
@@ -427,6 +436,11 @@ export default function LuckyWheelAdminPage() {
                               ก่อน {snapshotNumber(entry.before, "remaining") ?? "-"} → หลัง {snapshotNumber(entry.after, "remaining") ?? "-"}
                             </p>
                           )}
+                          {entry.operation === "publish" && initialStockCredits(entry.after).map((credit) => (
+                            <p key={credit.segmentId} className="mt-1 text-xs text-zinc-500">
+                              {state.segments.find((segment) => segment.id === credit.segmentId)?.name.th ?? credit.segmentId}: จำนวนเริ่มต้น {credit.before} → {credit.after}
+                            </p>
+                          ))}
                         </div>
                         <p className="text-xs text-zinc-500 md:text-right">{entry.actorEmail || `Admin #${entry.actorId}`}</p>
                       </div>
@@ -527,7 +541,6 @@ export default function LuckyWheelAdminPage() {
               eventId={eventId}
               token={token ?? ""}
               segment={stockTarget?.segment ?? null}
-              mode={stockTarget?.mode ?? "add"}
               onClose={() => setStockTarget(null)}
               onDone={async () => {
                 await Promise.all([loadState(), loadSpins()]);

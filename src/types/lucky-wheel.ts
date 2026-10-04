@@ -41,7 +41,7 @@ export type WheelQrListItem = WheelQrCode & {
   revokedCount: number;
 };
 
-export type WheelQrProjection = WheelQrCode & {
+export type WheelQrDownload = WheelQrCode & {
   currentDeadline: string;
   claimUrl: string;
   qrDataUrl: string;
@@ -81,12 +81,11 @@ export type WheelConfigurationSegment = {
   imageId: string | null;
   enabled: boolean;
   position: number;
+  initialQuantity?: number;
 };
 
 export type WheelConfiguration = {
   segments: WheelConfigurationSegment[];
-  collectionInstructions: LocalizedText;
-  collectionDeadline: string;
 };
 
 export type WheelSegmentState = {

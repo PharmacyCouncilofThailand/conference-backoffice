@@ -44,7 +44,7 @@ import type {
   WheelDayWindow,
   WheelDayChange,
   WheelQrListItem,
-  WheelQrProjection,
+  WheelQrDownload,
   WheelQrCode,
   WheelCreditClaim,
   WheelCreditRevocation,
@@ -1083,6 +1083,10 @@ export const api = {
   },
 
   luckyWheel: {
+    listDays: (token: string, eventId: number) =>
+      fetchAPI<{ eventId: number; days: WheelDayWindow[]; requestId: string }>(
+        `/api/backoffice/lucky-wheel/events/${eventId}/days`, { token },
+      ),
     getDay: (token: string, eventId: number, date: string) =>
       fetchAPI<{ eventId: number; day: WheelDayWindow | null; requestId: string }>(
         `/api/backoffice/lucky-wheel/events/${eventId}/days/${date}`, { token },
@@ -1108,13 +1112,13 @@ export const api = {
         `/api/backoffice/lucky-wheel/events/${eventId}/qr-codes?date=${date}&page=${page}&pageSize=20`, { token },
       ),
     setQrStatus: (token: string, eventId: number, qrId: string, data: {
-      status: "open" | "closed"; reason: string; idempotencyKey: string;
+      status: "open" | "closed"; reason?: string; idempotencyKey: string;
     }) => fetchAPI<WheelQrCode & { replayed: boolean; requestId: string }>(
       `/api/backoffice/lucky-wheel/events/${eventId}/qr-codes/${qrId}`,
       { method: "PATCH", body: JSON.stringify(data), token },
     ),
-    getQrProjection: (token: string, eventId: number, qrId: string) =>
-      fetchAPI<WheelQrProjection & { requestId: string }>(
+    getQrDownload: (token: string, eventId: number, qrId: string) =>
+      fetchAPI<WheelQrDownload & { requestId: string }>(
         `/api/backoffice/lucky-wheel/events/${eventId}/qr-codes/${qrId}`, { token },
       ),
     listQrClaims: (token: string, eventId: number, qrId: string, page = 1) =>

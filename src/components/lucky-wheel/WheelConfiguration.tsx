@@ -24,33 +24,11 @@ type Props = {
   onReload: () => Promise<void>;
 };
 
-const blankConfiguration = (): WheelConfigurationValue => ({
-  segments: [],
-  collectionInstructions: { th: "", en: "" },
-  collectionDeadline: "",
-});
-
-const toBangkokInput = (iso: string) => {
-  if (!iso) return "";
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Asia/Bangkok",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    hourCycle: "h23",
-  }).formatToParts(new Date(iso));
-  const value = Object.fromEntries(parts.map((part) => [part.type, part.value]));
-  return `${value.year}-${value.month}-${value.day}T${value.hour}:${value.minute}`;
-};
-
-const fromBangkokInput = (value: string) =>
-  value ? new Date(`${value}:00+07:00`).toISOString() : "";
+const blankConfiguration = (): WheelConfigurationValue => ({ segments: [] });
 
 const normalizeForEdit = (state: AdminWheelState): WheelConfigurationValue => {
   if (state.wheel.configuration) {
-    return structuredClone(state.wheel.configuration);
+    return { segments: structuredClone(state.wheel.configuration.segments) };
   }
   return blankConfiguration();
 };
@@ -99,6 +77,7 @@ export function WheelConfiguration({ eventId, token, state, onReload }: Props) {
           imageId: null,
           enabled: true,
           position: current.segments.length,
+          ...(kind === "prize" ? { initialQuantity: 0 } : {}),
         },
       ],
     }));
@@ -132,17 +111,13 @@ export function WheelConfiguration({ eventId, token, state, onReload }: Props) {
       toast.error("ต้องมีอย่างน้อย 1 ช่องของรางวัล");
       return;
     }
-    if (
-      draft.segments.some(
-        (segment) =>
-          !segment.name.th.trim() ||
-          !segment.name.en.trim(),
-      ) ||
-      !draft.collectionInstructions.th.trim() ||
-      !draft.collectionInstructions.en.trim() ||
-      !draft.collectionDeadline
-    ) {
-      toast.error("กรอกชื่อ TH/EN จุดรับของ และกำหนดเวลารับของให้ครบ");
+    if (draft.segments.some((segment) => !segment.name.th.trim() || !segment.name.en.trim())) {
+      toast.error("กรอกชื่อของแต่ละช่องทั้งภาษาไทยและอังกฤษให้ครบ");
+      return;
+    }
+    if (draft.segments.some((segment) => segment.kind === "prize" && !existingKinds.has(segment.id) &&
+      (!Number.isInteger(segment.initialQuantity) || (segment.initialQuantity ?? -1) < 0 || (segment.initialQuantity ?? 0) > 1_000_000))) {
+      toast.error("จำนวนเริ่มต้นต้องเป็นจำนวนเต็มตั้งแต่ 0 ถึง 1,000,000 ชิ้น");
       return;
     }
 
@@ -173,8 +148,8 @@ export function WheelConfiguration({ eventId, token, state, onReload }: Props) {
       <div className="flex flex-col gap-5 border-b border-zinc-100 pb-6 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.16em] text-emerald-700">01 · Configuration</p>
-          <h2 id="wheel-config-title" className="mt-2 text-xl font-semibold tracking-tight text-zinc-950 sm:text-2xl">ช่องในวงล้อและการรับรางวัล</h2>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-600">จัดลำดับช่อง กำหนดชื่อสองภาษาและรูป แล้วเผยแพร่ทั้งชุดพร้อมกัน</p>
+          <h2 id="wheel-config-title" className="mt-2 text-xl font-semibold tracking-tight text-zinc-950 sm:text-2xl">ช่องในวงล้อ</h2>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-600">เพิ่มรางวัลพร้อมจำนวนเริ่มต้น กำหนดชื่อและรูป แล้วเผยแพร่ทั้งชุดพร้อมกัน</p>
           <span className={`mt-3 inline-flex rounded-full px-3 py-1 text-xs font-semibold ${dirty ? "bg-amber-100 text-amber-800" : "bg-emerald-50 text-emerald-800"}`}>
             {dirty ? "มีการแก้ไขที่ยังไม่เผยแพร่" : `ข้อมูลตรงกับ server · v${state.wheel.version}`}
           </span>
@@ -237,11 +212,13 @@ export function WheelConfiguration({ eventId, token, state, onReload }: Props) {
                       value={segment.kind}
                       disabled={Boolean(originalKind)}
                       onChange={(event) =>
-                        updateSegment(segment.id, (current) => ({
-                          ...current,
-                          kind: event.target.value as "prize" | "no_prize",
-                          imageId: event.target.value === "no_prize" ? null : current.imageId,
-                        }))
+                        updateSegment(segment.id, (current) => {
+                          const withoutQuantity = { ...current };
+                          delete withoutQuantity.initialQuantity;
+                          return event.target.value === "prize"
+                            ? { ...withoutQuantity, kind: "prize", initialQuantity: 0 }
+                            : { ...withoutQuantity, kind: "no_prize", imageId: null };
+                        })
                       }
                     >
                       <option value="prize">ของรางวัล</option>
@@ -289,7 +266,15 @@ export function WheelConfiguration({ eventId, token, state, onReload }: Props) {
                 </div>
 
                 {segment.kind === "prize" && (
-                  <div className="mt-3 flex flex-wrap items-center gap-3 border-t border-zinc-100 pt-3">
+                  <div className="mt-4 grid gap-4 border-t border-zinc-100 pt-4 sm:grid-cols-[minmax(180px,240px)_minmax(0,1fr)] sm:items-end">
+                    {originalKind ? (
+                      <div className="rounded-xl bg-zinc-50 px-4 py-3"><p className="text-xs font-medium text-zinc-500">คงเหลือขณะนี้</p><p className="mt-1 text-xl font-semibold tabular-nums text-zinc-950">{state.segments.find((item) => item.id === segment.id)?.remaining ?? 0} <span className="text-sm font-normal">ชิ้น</span></p></div>
+                    ) : (
+                      <label className="text-sm font-medium text-zinc-700">จำนวนเริ่มต้น
+                        <input className="input-field mt-1" type="number" min="0" max="1000000" step="1" value={segment.initialQuantity ?? 0} onChange={(event) => updateSegment(segment.id, (current) => ({ ...current, initialQuantity: Number(event.target.value) }))} />
+                      </label>
+                    )}
+                    <div className="flex flex-wrap items-center gap-3">
                     <label className="btn-secondary disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer">
                       {uploadingId === segment.id ? <IconLoader2 size={17} className="animate-spin" /> : <IconPhoto size={17} />}
                       {segment.imageId ? "เปลี่ยนรูป" : "อัปโหลดรูป"}
@@ -308,6 +293,7 @@ export function WheelConfiguration({ eventId, token, state, onReload }: Props) {
                     <span className="text-xs text-zinc-500">
                       {segment.imageId ? `Trusted image ID: ${segment.imageId}` : "JPEG/PNG/WebP สูงสุด 5 MiB"}
                     </span>
+                    </div>
                   </div>
                 )}
               </div>
@@ -316,63 +302,9 @@ export function WheelConfiguration({ eventId, token, state, onReload }: Props) {
         )}
       </div>
 
-      <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4 sm:p-6">
-        <h3 className="text-base font-semibold text-zinc-950">การรับของรางวัล</h3>
-        <p className="mt-1 text-sm leading-6 text-zinc-600">ข้อความนี้แสดงบนหลักฐานรางวัลของผู้เข้าร่วม</p>
-        <div className="mt-5 grid gap-4 md:grid-cols-2">
-        <label className="text-sm font-medium text-zinc-700">
-          จุดรับของ / วิธีรับของ (TH)
-          <textarea
-            className="input-field mt-1 min-h-24 resize-y"
-            value={draft.collectionInstructions.th}
-            onChange={(event) =>
-              setDraft((current) => ({
-                ...current,
-                collectionInstructions: { ...current.collectionInstructions, th: event.target.value },
-              }))
-            }
-          />
-        </label>
-        <label className="text-sm font-medium text-zinc-700">
-          Collection instructions (EN)
-          <textarea
-            className="input-field mt-1 min-h-24 resize-y"
-            value={draft.collectionInstructions.en}
-            onChange={(event) =>
-              setDraft((current) => ({
-                ...current,
-                collectionInstructions: { ...current.collectionInstructions, en: event.target.value },
-              }))
-            }
-          />
-        </label>
-        <label className="text-sm font-medium text-zinc-700">
-          กำหนดเวลารับของ (เวลาไทย)
-          <input
-            className="input-field mt-1"
-            type="datetime-local"
-            value={toBangkokInput(draft.collectionDeadline)}
-            onChange={(event) =>
-              setDraft((current) => ({
-                ...current,
-                collectionDeadline: fromBangkokInput(event.target.value),
-              }))
-            }
-          />
-          <span className="mt-1 block text-xs font-normal text-zinc-500">Asia/Bangkok (UTC+7)</span>
-        </label>
-        <label className="text-sm font-medium text-zinc-700">
-          เหตุผลการแก้ไข
-          <input
-            className="input-field mt-1"
-            value={reason}
-            maxLength={500}
-            onChange={(event) => setReason(event.target.value)}
-            placeholder="จำเป็นเมื่อเปลี่ยน deadline ที่เคยเผยแพร่"
-          />
-        </label>
-        </div>
-      </div>
+      <label className="block max-w-xl text-sm font-medium text-zinc-700">หมายเหตุการเผยแพร่ (ไม่บังคับ)
+        <input className="input-field mt-1" value={reason} maxLength={500} onChange={(event) => setReason(event.target.value)} placeholder="เช่น เพิ่มรางวัลรอบบ่าย" />
+      </label>
 
       <div className="flex flex-col gap-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
         <p className="max-w-xl text-sm leading-6 text-emerald-950">
