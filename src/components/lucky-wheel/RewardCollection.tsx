@@ -135,18 +135,18 @@ export function RewardCollection({ eventId, token, onChanged }: Props) {
 
   return (
     <section className="space-y-5" aria-labelledby="reward-collection-title">
-      <div>
-        <h2 id="reward-collection-title" className="text-lg font-semibold text-zinc-900">ตรวจและส่งมอบของรางวัล</h2>
-        <p className="mt-1 text-sm text-zinc-500">
-          การสแกนทำแค่ค้นหาและ preview เท่านั้น ระบบไม่ยืนยันรับของอัตโนมัติ
-        </p>
+      <div className="border-b border-zinc-100 pb-5">
+        <p className="text-xs font-bold uppercase tracking-[0.16em] text-emerald-700">Collection desk</p>
+        <h2 id="reward-collection-title" className="mt-2 text-xl font-semibold tracking-tight text-zinc-950 sm:text-2xl">ตรวจและส่งมอบของรางวัล</h2>
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-600">ค้นหารายการ → ตรวจชื่อและรางวัลกับผู้มารับ → ยืนยันในระบบ → ส่งมอบของ</p>
+        <p className="mt-1 text-xs text-zinc-500">การสแกนเป็นเพียงการค้นหา ไม่เปลี่ยนสถานะรับของอัตโนมัติ</p>
       </div>
 
-      <div className="flex gap-2">
-        <button type="button" className={`btn ${mode === "manual" ? "btn-primary" : "btn-secondary"}`} onClick={() => setMode("manual")}>
+      <div className="grid grid-cols-2 gap-2 rounded-xl bg-zinc-100 p-1 sm:inline-grid" aria-label="วิธีค้นหารางวัล">
+        <button type="button" aria-pressed={mode === "manual"} className={`${mode === "manual" ? "btn-primary" : "btn-secondary"} min-h-11 gap-2`} onClick={() => setMode("manual")}>
           <IconSearch size={17} /> รหัส
         </button>
-        <button type="button" className={`btn ${mode === "camera" ? "btn-primary" : "btn-secondary"}`} onClick={() => setMode("camera")}>
+        <button type="button" aria-pressed={mode === "camera"} className={`${mode === "camera" ? "btn-primary" : "btn-secondary"} min-h-11 gap-2`} onClick={() => setMode("camera")}>
           <IconCamera size={17} /> กล้อง
         </button>
       </div>
@@ -166,20 +166,22 @@ export function RewardCollection({ eventId, token, onChanged }: Props) {
         </div>
       )}
 
-      <div className="flex flex-col gap-2 sm:flex-row">
-        <input
-          className="input flex-1"
-          value={credential}
-          onChange={(event) => {
-            setCredential(event.target.value);
-            lastScannedRef.current = "";
-          }}
-          placeholder="PRIS-REWARD:... หรือรหัสตัวอักษร"
-          onKeyDown={(event) => {
-            if (event.key === "Enter") void runLookup();
-          }}
-        />
-        <button type="button" className="btn btn-primary" disabled={loading || !credential.trim()} onClick={() => void runLookup()}>
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+        <label className="min-w-0 flex-1 text-sm font-medium text-zinc-700">QR หรือรหัสรับรางวัล
+          <input
+            className="input-field mt-1"
+            value={credential}
+            onChange={(event) => {
+              setCredential(event.target.value);
+              lastScannedRef.current = "";
+            }}
+            placeholder="PRIS-REWARD:... หรือรหัสตัวอักษร"
+            onKeyDown={(event) => {
+              if (event.key === "Enter") void runLookup();
+            }}
+          />
+        </label>
+        <button type="button" className="btn-primary min-h-11 gap-2" disabled={loading || !credential.trim()} onClick={() => void runLookup()}>
           {loading ? <IconLoader2 size={17} className="animate-spin" /> : <IconSearch size={17} />}
           ค้นหา
         </button>
@@ -198,7 +200,7 @@ export function RewardCollection({ eventId, token, onChanged }: Props) {
       )}
 
       {lookup && (
-        <div className="rounded-xl border border-zinc-200 bg-white">
+        <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white">
           <div className="grid gap-4 border-b border-zinc-100 p-5 md:grid-cols-2">
             <div>
               <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">ผู้ได้รับรางวัล</p>
@@ -254,12 +256,12 @@ export function RewardCollection({ eventId, token, onChanged }: Props) {
                 <div className="grid gap-3 md:grid-cols-2">
                   <label className="text-sm font-medium text-zinc-700">
                     จุดส่งมอบจริง
-                    <input className="input mt-1" value={collectionPoint} onChange={(event) => setCollectionPoint(event.target.value)} />
+                    <input className="input-field mt-1" value={collectionPoint} onChange={(event) => setCollectionPoint(event.target.value)} />
                   </label>
                   <label className="text-sm font-medium text-zinc-700">
                     รายละเอียดส่งมอบ (ถ้ามี)
                     <input
-                      className="input mt-1"
+                      className="input-field mt-1"
                       value={deliveredDetails}
                       onChange={(event) => setDeliveredDetails(event.target.value)}
                       placeholder="เช่น เสื้อ Size L — เป็นบันทึกที่ส่งมอบจริง ไม่ใช่การรับประกันไซซ์"
@@ -268,7 +270,7 @@ export function RewardCollection({ eventId, token, onChanged }: Props) {
                 </div>
                 <button
                   type="button"
-                  className="btn btn-primary"
+                  className="btn-primary min-h-11"
                   disabled={!identityChecked || !collectionPoint.trim() || deadlinePassed || loading}
                   onClick={() => void confirm()}
                 >
@@ -285,13 +287,13 @@ export function RewardCollection({ eventId, token, onChanged }: Props) {
                   <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
                     <p className="text-sm font-semibold text-amber-900">Correction เป็น action แยกและเก็บประวัติเดิมไว้</p>
                     <textarea
-                      className="input mt-3 min-h-20 resize-y"
+                      className="input-field mt-3 min-h-20 resize-y"
                       value={correctionReason}
                       maxLength={500}
                       onChange={(event) => setCorrectionReason(event.target.value)}
                       placeholder="เหตุผลที่ต้องเปิด claim ใหม่"
                     />
-                    <button type="button" className="btn btn-secondary mt-3" disabled={!correctionReason.trim() || loading} onClick={() => void correct()}>
+                    <button type="button" className="btn-secondary disabled:cursor-not-allowed disabled:opacity-50 mt-3" disabled={!correctionReason.trim() || loading} onClick={() => void correct()}>
                       เปิด claim รุ่นใหม่พร้อม audit
                     </button>
                   </div>

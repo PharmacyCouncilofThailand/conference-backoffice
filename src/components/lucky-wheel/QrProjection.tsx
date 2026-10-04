@@ -35,8 +35,8 @@ export function QrProjection({ token, eventId, qrId, onClose }: Props) {
       <div className="flex items-center justify-between gap-4 border-b border-zinc-200 px-5 py-4">
         <h2 id="qr-projection-title" className="text-lg font-bold text-zinc-900">QR รับสิทธิ์วงล้อ</h2>
         <div className="flex gap-2">
-          <button type="button" className="btn btn-secondary" onClick={() => void reload()} aria-label="รีโหลด QR"><IconRefresh size={20} /></button>
-          <button type="button" className="btn btn-secondary" onClick={onClose} aria-label="ปิดหน้าฉาย QR"><IconX size={20} /></button>
+          <button type="button" className="btn-secondary disabled:cursor-not-allowed disabled:opacity-50" onClick={() => void reload()} aria-label="รีโหลด QR"><IconRefresh size={20} /></button>
+          <button type="button" className="btn-secondary disabled:cursor-not-allowed disabled:opacity-50" onClick={onClose} aria-label="ปิดหน้าฉาย QR"><IconX size={20} /></button>
         </div>
       </div>
       <div className="flex flex-col items-center px-5 py-7 text-center sm:px-10">

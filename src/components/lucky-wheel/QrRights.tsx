@@ -268,23 +268,28 @@ export function QrRights({ token, eventId, wheelState }: Props) {
   };
 
   return <div className="space-y-5">
-    <section className="card" aria-labelledby="wheel-day-heading">
+    <div className="px-1">
+      <p className="text-xs font-bold uppercase tracking-[0.16em] text-emerald-700">02 · Rights &amp; QR</p>
+      <h2 className="mt-2 text-xl font-semibold tracking-tight text-zinc-950 sm:text-2xl">กำหนดวันและแจกสิทธิ์หมุน</h2>
+      <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-600">ทำตามลำดับจากบนลงล่าง: ตั้งช่วงเวลาของวัน สร้าง QR แล้วเปิดใบที่จะนำขึ้นจอ</p>
+    </div>
+    <section className="card border border-zinc-200/80" aria-labelledby="wheel-day-heading">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div><h2 id="wheel-day-heading" className="text-lg font-semibold text-zinc-900">วันและช่วงเวลากิจกรรม</h2><p className="mt-1 text-sm text-zinc-600">ใช้ช่วงเวลาเดียวกันสำหรับรับ QR และหมุนวงล้อ ตามเวลาไทย</p></div>
-        <button type="button" className="btn btn-secondary" disabled={!date || loading} onClick={() => void load()}><IconRefresh size={17} /> รีโหลด</button>
+        <div className="flex items-start gap-3"><span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-zinc-950 text-sm font-bold text-white">1</span><div><h3 id="wheel-day-heading" className="text-lg font-semibold text-zinc-900">เลือกวันและช่วงเวลา</h3><p className="mt-1 text-sm leading-6 text-zinc-600">เวลาเดียวกันสำหรับรับ QR และหมุนวงล้อ · Asia/Bangkok</p></div></div>
+        <button type="button" className="btn-secondary disabled:cursor-not-allowed disabled:opacity-50 min-h-11" disabled={!date || loading} onClick={() => void load()}><IconRefresh size={17} /> รีโหลด</button>
       </div>
-      <label className="mt-5 block max-w-xs text-sm font-medium text-zinc-700">วันที่ไทย
-        <input type="date" className="input mt-1" value={date} onChange={(event) => { setDate(event.target.value); setQrPage(1); setChangePage(1); setPendingBatch(null); setSelectedQrId(null); setClaims(null); setClaimPage(1); }} />
+      <label className="mt-6 block max-w-xs text-sm font-medium text-zinc-700">วันที่ไทย
+        <input type="date" className="input-field mt-1" value={date} onChange={(event) => { setDate(event.target.value); setDay(null); setQrList(null); setDayChanges(null); setQrPage(1); setChangePage(1); setPendingBatch(null); setSelectedQrId(null); setClaims(null); setClaimPage(1); }} />
       </label>
       {!date ? <p className="mt-5 text-sm text-zinc-600">เลือกวันที่ก่อนกำหนดเวลาและสร้าง QR</p> : loading && !day && !qrList ? <p role="status" className="mt-5 text-sm text-zinc-600">กำลังโหลดข้อมูล…</p> : <>
-        <div className="mt-5 grid gap-4 sm:grid-cols-2">
-          <label className="text-sm font-medium text-zinc-700">เวลาเริ่มรับสิทธิ์และหมุน<input type="datetime-local" className="input mt-1" value={startInput} onChange={(event) => setStartInput(event.target.value)} /></label>
-          <label className="text-sm font-medium text-zinc-700">เวลาสิ้นสุดรับสิทธิ์และหมุน<input type="datetime-local" className="input mt-1" value={endInput} onChange={(event) => setEndInput(event.target.value)} /></label>
+        <div className="mt-5 grid gap-4 rounded-2xl bg-zinc-50 p-4 sm:grid-cols-2 sm:p-5">
+          <label className="text-sm font-medium text-zinc-700">เวลาเริ่มรับสิทธิ์และหมุน<input type="datetime-local" className="input-field mt-1" value={startInput} onChange={(event) => setStartInput(event.target.value)} /></label>
+          <label className="text-sm font-medium text-zinc-700">เวลาสิ้นสุดรับสิทธิ์และหมุน<input type="datetime-local" className="input-field mt-1" value={endInput} onChange={(event) => setEndInput(event.target.value)} /></label>
         </div>
         {scanWindowWarning && <p className="mt-3 rounded-lg bg-amber-50 p-3 text-sm text-amber-900" role="status">{scanWindowWarning}</p>}
-        {day && <label className="mt-4 block text-sm font-medium text-zinc-700">เหตุผลที่แก้เวลา<textarea className="input mt-1 min-h-20" maxLength={500} value={editReason} onChange={(event) => setEditReason(event.target.value)} /></label>}
-        <div className="mt-4 flex flex-wrap items-center gap-3">
-          <button type="button" className="btn btn-primary" disabled={Boolean(busy) || !startInput || !endInput || Boolean(day && !editReason.trim())} onClick={() => void saveDay()}>{busy === "day" && <IconLoader2 size={17} className="animate-spin" />} {day ? "บันทึกเวลาใหม่" : "สร้างช่วงเวลาวันนี้"}</button>
+        {day && <label className="mt-4 block text-sm font-medium text-zinc-700">เหตุผลที่แก้เวลา<textarea className="input-field mt-1 min-h-20" maxLength={500} value={editReason} onChange={(event) => setEditReason(event.target.value)} /></label>}
+        <div className="mt-5 flex flex-wrap items-center gap-3">
+          <button type="button" className="btn-primary min-h-11" disabled={Boolean(busy) || !startInput || !endInput || Boolean(day && !editReason.trim())} onClick={() => void saveDay()}>{busy === "day" && <IconLoader2 size={17} className="animate-spin" />} {day ? "บันทึกเวลาใหม่" : "สร้างช่วงเวลาวันนี้"}</button>
           {day && <span className="text-xs text-zinc-600">เวอร์ชัน {day.version} · ปรับได้แม้เปิด QR แล้ว</span>}
         </div>
       </>}
@@ -292,23 +297,23 @@ export function QrRights({ token, eventId, wheelState }: Props) {
     </section>
 
     {date && day && <>
-      <section className="card" aria-labelledby="qr-batch-heading">
-        <h2 id="qr-batch-heading" className="text-lg font-semibold text-zinc-900">เตรียม QR รับสิทธิ์</h2>
-        <p className="mt-1 text-sm text-zinc-600">หนึ่งบรรทัดต่อ QR สร้างแล้วจะยังปิดรับจนกว่า Admin เปิดทีละใบ</p>
-        <textarea className="input mt-4 min-h-28 w-full" value={names} onChange={(event) => setNames(event.target.value)} disabled={Boolean(pendingBatch)} placeholder={"หลังจบกิจกรรมช่วงเช้า\nหลังจบกิจกรรมช่วงบ่าย"} />
-        <button type="button" className="btn btn-primary mt-3" disabled={Boolean(busy)} onClick={() => void createBatch()}>{busy === "batch" && <IconLoader2 size={17} className="animate-spin" />}{pendingBatch ? "ตรวจ QR ชุดเดิมอีกครั้ง" : "สร้าง QR แบบปิดรับ"}</button>
+      <section className="card border border-zinc-200/80" aria-labelledby="qr-batch-heading">
+        <div className="flex items-start gap-3"><span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-zinc-950 text-sm font-bold text-white">2</span><div><h3 id="qr-batch-heading" className="text-lg font-semibold text-zinc-900">เตรียม QR รับสิทธิ์</h3><p className="mt-1 text-sm leading-6 text-zinc-600">ใส่ชื่อหนึ่งบรรทัดต่อ QR · สร้างแล้วจะยังปิดรับจนกว่า Admin เปิด</p></div></div>
+        <label className="mt-5 block text-sm font-medium text-zinc-700">ชื่อ QR สำหรับเลือกขึ้นจอ
+          <textarea className="input-field mt-2 min-h-28 w-full" value={names} onChange={(event) => setNames(event.target.value)} disabled={Boolean(pendingBatch)} placeholder={"หลังจบกิจกรรมช่วงเช้า\nหลังจบกิจกรรมช่วงบ่าย"} />
+        </label>
+        <div className="mt-3 flex flex-wrap items-center gap-3"><button type="button" className="btn-primary min-h-11" disabled={Boolean(busy)} onClick={() => void createBatch()}>{busy === "batch" && <IconLoader2 size={17} className="animate-spin" />}{pendingBatch ? "ตรวจ QR ชุดเดิมอีกครั้ง" : "สร้าง QR แบบปิดรับ"}</button><span className="text-xs text-zinc-500">สร้างได้ครั้งละ 1–20 ใบ</span></div>
       </section>
 
-      <section className="card" aria-labelledby="qr-list-heading">
-        <h2 id="qr-list-heading" className="text-lg font-semibold text-zinc-900">QR ของวันที่ {date}</h2>
-        <p className="mt-1 text-sm text-zinc-600">เปิด QR ใบใหม่แล้ว ใบที่เปิดก่อนยังรับได้จนถึงเวลาปิดหรือจน Admin ปิดเอง</p>
+      <section className="card border border-zinc-200/80" aria-labelledby="qr-list-heading">
+        <div className="flex items-start gap-3"><span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-zinc-950 text-sm font-bold text-white">3</span><div><h3 id="qr-list-heading" className="text-lg font-semibold text-zinc-900">เปิด QR และนำขึ้นจอ</h3><p className="mt-1 text-sm leading-6 text-zinc-600">QR วันที่ {date} · เปิดใบใหม่แล้วใบเดิมยังรับได้จนถึงเวลาปิดหรือ Admin ปิดเอง</p></div></div>
         <div className="mt-4 space-y-3">
-          {(qrList?.items ?? []).map((qr) => <div key={qr.id} className="rounded-xl border border-zinc-200 p-4">
+          {(qrList?.items ?? []).map((qr) => <div key={qr.id} className="rounded-2xl border border-zinc-200 p-4 sm:p-5">
             <div className="flex flex-wrap items-start justify-between gap-3">
-              <div className="min-w-0"><p className="break-words font-semibold text-zinc-900">{qr.name}</p><p className="mt-1 text-xs text-zinc-600">{qr.status === "open" ? "เปิดรับ" : "ปิดรับ"} · รับแล้ว {qr.claimCount} · ใช้แล้ว {qr.spentCount} · ยกเลิก {qr.revokedCount}</p></div>
-              <div className="flex flex-wrap gap-2">
-                <button type="button" className="btn btn-secondary" onClick={() => selectQr(qr.id)} aria-pressed={selectedQrId === qr.id}>ดูผู้รับสิทธิ์</button>
-                <button type="button" className="btn btn-secondary" onClick={() => setProjectionId(qr.id)}>แสดงบนจอ</button>
+              <div className="min-w-0"><span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${qr.status === "open" ? "bg-emerald-100 text-emerald-800" : "bg-zinc-100 text-zinc-700"}`}>{qr.status === "open" ? "เปิดรับสิทธิ์" : "ปิดรับ"}</span><p className="mt-2 break-words text-base font-semibold text-zinc-900">{qr.name}</p><p className="mt-1 text-xs text-zinc-600">รับแล้ว {qr.claimCount} · ใช้แล้ว {qr.spentCount} · ยกเลิก {qr.revokedCount}</p></div>
+              <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto">
+                <button type="button" className="btn-secondary disabled:cursor-not-allowed disabled:opacity-50 min-h-11 px-2 text-xs sm:text-sm" onClick={() => selectQr(qr.id)} aria-pressed={selectedQrId === qr.id}>ดูผู้รับสิทธิ์</button>
+                <button type="button" className="btn-secondary disabled:cursor-not-allowed disabled:opacity-50 min-h-11 px-2 text-xs sm:text-sm" onClick={() => setProjectionId(qr.id)}>แสดงบนจอ</button>
               </div>
             </div>
             <p className="mt-2 text-xs text-zinc-600">เวลาปิดล่าสุด {formatBangkok(qr.currentDeadline)} น.</p>
@@ -318,20 +323,20 @@ export function QrRights({ token, eventId, wheelState }: Props) {
               {qr.closedAt && <p>ปิดครั้งล่าสุด {formatBangkok(qr.closedAt)} น. โดย Admin #{qr.closedBy} · {qr.closedReason}</p>}
             </div>
             <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-end">
-              <label className="min-w-0 flex-1 text-sm text-zinc-700">เหตุผลเปิด/ปิด QR<input className="input mt-1" maxLength={500} value={reasonByQr[qr.id] ?? ""} onChange={(event) => { setReasonByQr((current) => ({ ...current, [qr.id]: event.target.value })); setConfirmCloseQrId(null); }} disabled={Boolean(pendingStatus)} /></label>
-              <button type="button" className="btn btn-secondary" disabled={Boolean(busy) || Boolean(pendingStatus && pendingStatus.qrId !== qr.id)} onClick={() => void changeStatus(qr)}>{pendingStatus?.qrId === qr.id ? "ตรวจคำขอเดิม" : confirmCloseQrId === qr.id ? "ยืนยันปิด QR" : qr.status === "open" ? "ปิด QR" : "เปิด QR"}</button>
-              {confirmCloseQrId === qr.id && !pendingStatus && <button type="button" className="btn btn-secondary" onClick={() => setConfirmCloseQrId(null)}>ไม่ปิด</button>}
+              <label className="min-w-0 flex-1 text-sm text-zinc-700">เหตุผลเปิด/ปิด QR<input className="input-field mt-1" maxLength={500} value={reasonByQr[qr.id] ?? ""} onChange={(event) => { setReasonByQr((current) => ({ ...current, [qr.id]: event.target.value })); setConfirmCloseQrId(null); }} disabled={Boolean(pendingStatus)} /></label>
+              <button type="button" className={`min-h-11 disabled:cursor-not-allowed disabled:opacity-50 ${qr.status === "open" ? "btn-secondary" : "btn-primary"}`} disabled={Boolean(busy) || Boolean(pendingStatus && pendingStatus.qrId !== qr.id)} onClick={() => void changeStatus(qr)}>{pendingStatus?.qrId === qr.id ? "ตรวจคำขอเดิม" : confirmCloseQrId === qr.id ? "ยืนยันปิด QR" : qr.status === "open" ? "ปิด QR" : "เปิด QR"}</button>
+              {confirmCloseQrId === qr.id && !pendingStatus && <button type="button" className="btn-secondary disabled:cursor-not-allowed disabled:opacity-50" onClick={() => setConfirmCloseQrId(null)}>ไม่ปิด</button>}
             </div>
           </div>)}
           {qrList?.items.length === 0 && <p className="py-6 text-center text-sm text-zinc-600">ยังไม่มี QR ของวันนี้</p>}
         </div>
-        {qrList && qrList.pagination.totalPages > 1 && <div className="mt-4 flex items-center gap-3 text-sm"><button className="btn btn-secondary" disabled={qrPage <= 1} onClick={() => { setQrPage(qrPage - 1); setSelectedQrId(null); setClaims(null); }}>ก่อนหน้า</button><span>หน้า {qrPage} / {qrList.pagination.totalPages}</span><button className="btn btn-secondary" disabled={qrPage >= qrList.pagination.totalPages} onClick={() => { setQrPage(qrPage + 1); setSelectedQrId(null); setClaims(null); }}>ถัดไป</button></div>}
+        {qrList && qrList.pagination.totalPages > 1 && <div className="mt-4 flex items-center gap-3 text-sm"><button className="btn-secondary disabled:cursor-not-allowed disabled:opacity-50" disabled={qrPage <= 1} onClick={() => { setQrPage(qrPage - 1); setSelectedQrId(null); setClaims(null); }}>ก่อนหน้า</button><span>หน้า {qrPage} / {qrList.pagination.totalPages}</span><button className="btn-secondary disabled:cursor-not-allowed disabled:opacity-50" disabled={qrPage >= qrList.pagination.totalPages} onClick={() => { setQrPage(qrPage + 1); setSelectedQrId(null); setClaims(null); }}>ถัดไป</button></div>}
       </section>
 
-      {selectedQr && <section className="card" aria-labelledby="qr-claims-heading">
+      {selectedQr && <section className="card border border-zinc-200/80" aria-labelledby="qr-claims-heading">
         <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="min-w-0"><h2 id="qr-claims-heading" className="break-words text-lg font-semibold text-zinc-900">ผู้รับสิทธิ์ · {selectedQr.name}</h2><p className="mt-1 text-sm text-zinc-600">วันที่ไทย {date} · ปิด QR หยุดรับใหม่เท่านั้น ไม่ยกเลิกสิทธิ์ที่รับแล้ว</p></div>
-          <button type="button" className="btn btn-secondary" disabled={claimLoading} onClick={() => void Promise.all([loadClaims(), load()])}><IconRefresh size={17} /> รีโหลด</button>
+          <div className="flex min-w-0 items-start gap-3"><span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-zinc-950 text-sm font-bold text-white">4</span><div className="min-w-0"><h3 id="qr-claims-heading" className="break-words text-lg font-semibold text-zinc-900">ตรวจผู้รับสิทธิ์ · {selectedQr.name}</h3><p className="mt-1 text-sm leading-6 text-zinc-600">วันที่ไทย {date} · ปิด QR หยุดรับใหม่เท่านั้น ไม่ยกเลิกสิทธิ์ที่รับแล้ว</p></div></div>
+          <button type="button" className="btn-secondary disabled:cursor-not-allowed disabled:opacity-50" disabled={claimLoading} onClick={() => void Promise.all([loadClaims(), load()])}><IconRefresh size={17} /> รีโหลด</button>
         </div>
         <div className="mt-4 grid gap-2 text-sm sm:grid-cols-4">
           <div className="rounded-lg bg-emerald-50 p-3 text-emerald-900">รับแล้ว <strong className="block text-xl">{selectedQr.claimCount}</strong></div>
@@ -351,20 +356,20 @@ export function QrRights({ token, eventId, wheelState }: Props) {
             {claim.spentAt && <p className="mt-2 text-xs text-zinc-600">ใช้หมุน {formatBangkok(claim.spentAt)} น. · ไม่สามารถยกเลิกสิทธิ์นี้</p>}
             {claim.revokedAt && <p className="mt-2 text-xs text-zinc-700">ยกเลิก {formatBangkok(claim.revokedAt)} น. โดย Admin #{claim.revokedBy} · เหตุผล: {claim.revocationReason}</p>}
             {!claim.spentAt && !claim.revokedAt && <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-end">
-              <label className="min-w-0 flex-1 text-xs font-medium text-zinc-700">เหตุผลยกเลิกเฉพาะรายการนี้<input className="input mt-1" maxLength={500} value={revocationReasons[claim.id] ?? ""} onChange={(event) => { setRevocationReasons((current) => ({ ...current, [claim.id]: event.target.value })); setConfirmClaimId(null); }} disabled={Boolean(pendingRevocation)} /></label>
-              <button type="button" className="btn btn-secondary" disabled={revocationBusy || Boolean(pendingRevocation && pendingRevocation.claimId !== claim.id)} onClick={() => void revokeClaim(claim)}>{pendingRevocation?.claimId === claim.id ? "ตรวจคำขอเดิม" : confirmClaimId === claim.id ? "ยืนยันยกเลิกสิทธิ์" : "ยกเลิกสิทธิ์"}</button>
-              {confirmClaimId === claim.id && !pendingRevocation && <button type="button" className="btn btn-secondary" onClick={() => setConfirmClaimId(null)}>ไม่ยกเลิก</button>}
+              <label className="min-w-0 flex-1 text-xs font-medium text-zinc-700">เหตุผลยกเลิกเฉพาะรายการนี้<input className="input-field mt-1" maxLength={500} value={revocationReasons[claim.id] ?? ""} onChange={(event) => { setRevocationReasons((current) => ({ ...current, [claim.id]: event.target.value })); setConfirmClaimId(null); }} disabled={Boolean(pendingRevocation)} /></label>
+              <button type="button" className="btn-secondary disabled:cursor-not-allowed disabled:opacity-50" disabled={revocationBusy || Boolean(pendingRevocation && pendingRevocation.claimId !== claim.id)} onClick={() => void revokeClaim(claim)}>{pendingRevocation?.claimId === claim.id ? "ตรวจคำขอเดิม" : confirmClaimId === claim.id ? "ยืนยันยกเลิกสิทธิ์" : "ยกเลิกสิทธิ์"}</button>
+              {confirmClaimId === claim.id && !pendingRevocation && <button type="button" className="btn-secondary disabled:cursor-not-allowed disabled:opacity-50" onClick={() => setConfirmClaimId(null)}>ไม่ยกเลิก</button>}
             </div>}
           </div>)}
           {!claimLoading && claims?.items.length === 0 && <p className="py-6 text-center text-sm text-zinc-600">ยังไม่มีผู้รับสิทธิ์จาก QR ใบนี้</p>}
         </div>
-        {claims && claims.pagination.totalPages > 1 && <div className="mt-4 flex flex-wrap items-center gap-3 text-sm"><button className="btn btn-secondary" disabled={claimPage <= 1 || claimLoading} onClick={() => setClaimPage(claimPage - 1)}>ก่อนหน้า</button><span>หน้า {claimPage} / {claims.pagination.totalPages} · ทั้งหมด {claims.pagination.total}</span><button className="btn btn-secondary" disabled={claimPage >= claims.pagination.totalPages || claimLoading} onClick={() => setClaimPage(claimPage + 1)}>ถัดไป</button></div>}
+        {claims && claims.pagination.totalPages > 1 && <div className="mt-4 flex flex-wrap items-center gap-3 text-sm"><button className="btn-secondary disabled:cursor-not-allowed disabled:opacity-50" disabled={claimPage <= 1 || claimLoading} onClick={() => setClaimPage(claimPage - 1)}>ก่อนหน้า</button><span>หน้า {claimPage} / {claims.pagination.totalPages} · ทั้งหมด {claims.pagination.total}</span><button className="btn-secondary disabled:cursor-not-allowed disabled:opacity-50" disabled={claimPage >= claims.pagination.totalPages || claimLoading} onClick={() => setClaimPage(claimPage + 1)}>ถัดไป</button></div>}
       </section>}
 
-      <section className="card" aria-labelledby="day-audit-heading">
-        <h2 id="day-audit-heading" className="text-lg font-semibold text-zinc-900">ประวัติแก้ช่วงเวลา</h2>
+      <section className="card border border-zinc-200/80" aria-labelledby="day-audit-heading">
+        <h3 id="day-audit-heading" className="text-lg font-semibold text-zinc-900">ประวัติแก้ช่วงเวลา</h3>
         <div className="mt-3 space-y-2">{(dayChanges?.items ?? []).map((change) => <div key={change.id} className="rounded-lg bg-zinc-50 p-3 text-sm"><p className="font-semibold">{formatBangkok(change.createdAt)} · Admin #{change.actorId}</p><p className="mt-1">{change.before ? `${formatBangkok(change.before.startAt)}–${formatBangkok(change.before.endAt)} → ` : "สร้าง → "}{formatBangkok(change.after.startAt)}–{formatBangkok(change.after.endAt)}</p><p className="mt-1 text-zinc-600">{change.reason || "สร้างช่วงเวลา"}</p></div>)}{dayChanges?.items.length === 0 && <p className="text-sm text-zinc-600">ยังไม่มีประวัติ</p>}</div>
-        {dayChanges && dayChanges.pagination.totalPages > 1 && <div className="mt-4 flex items-center gap-3 text-sm"><button className="btn btn-secondary" disabled={changePage <= 1} onClick={() => setChangePage(changePage - 1)}>ก่อนหน้า</button><span>หน้า {changePage} / {dayChanges.pagination.totalPages}</span><button className="btn btn-secondary" disabled={changePage >= dayChanges.pagination.totalPages} onClick={() => setChangePage(changePage + 1)}>ถัดไป</button></div>}
+        {dayChanges && dayChanges.pagination.totalPages > 1 && <div className="mt-4 flex items-center gap-3 text-sm"><button className="btn-secondary disabled:cursor-not-allowed disabled:opacity-50" disabled={changePage <= 1} onClick={() => setChangePage(changePage - 1)}>ก่อนหน้า</button><span>หน้า {changePage} / {dayChanges.pagination.totalPages}</span><button className="btn-secondary disabled:cursor-not-allowed disabled:opacity-50" disabled={changePage >= dayChanges.pagination.totalPages} onClick={() => setChangePage(changePage + 1)}>ถัดไป</button></div>}
       </section>
     </>}
     {projectionId && <QrProjection token={token} eventId={eventId} qrId={projectionId} onClose={() => setProjectionId(null)} />}

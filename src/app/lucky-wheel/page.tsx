@@ -3,9 +3,14 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   IconAlertTriangle,
+  IconAdjustmentsHorizontal,
+  IconCalendarEvent,
+  IconChartBar,
+  IconGift,
   IconLoader2,
   IconPlayerPause,
   IconPlayerPlay,
+  IconQrcode,
   IconRefresh,
 } from "@tabler/icons-react";
 import toast from "react-hot-toast";
@@ -26,6 +31,13 @@ import { QrRights } from "@/components/lucky-wheel/QrRights";
 type EventOption = { id: number; name: string; code: string };
 type MainSession = { id: number; name: string; startTime: string; endTime: string };
 type Tab = "configuration" | "rights" | "stock" | "results";
+
+const tabs = [
+  { value: "configuration", label: "ตั้งค่าวงล้อ", hint: "รางวัลและจุดรับของ", Icon: IconAdjustmentsHorizontal },
+  { value: "rights", label: "วันและ QR", hint: "เวลาและสิทธิ์หมุน", Icon: IconQrcode },
+  { value: "stock", label: "สต็อก", hint: "ยอดคงเหลือและประวัติ", Icon: IconGift },
+  { value: "results", label: "ผลและรับของ", hint: "ผลหมุนและส่งมอบ", Icon: IconChartBar },
+] as const;
 
 const formatBangkok = (value: string) =>
   new Date(value).toLocaleString("th-TH", {
@@ -217,76 +229,106 @@ export default function LuckyWheelAdminPage() {
 
   return (
     <AdminLayout title="Lucky Wheel">
-      <div className="space-y-6">
-        <div className="card">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-            <div className="min-w-0 flex-1">
-              <label className="text-sm font-medium text-zinc-700">
-                Event
-                <select
-                  className="input mt-1 max-w-xl"
-                  value={eventId ?? ""}
-                  onChange={(event) => setEventId(event.target.value ? Number(event.target.value) : null)}
-                >
-                  <option value="">เลือก Event</option>
-                  {events.map((event) => <option key={event.id} value={event.id}>{event.name}</option>)}
-                </select>
-              </label>
+      <div className="mx-auto max-w-[1320px] space-y-6 pb-12">
+        <header className="card border border-zinc-200/80">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+            <div className="flex max-w-2xl items-start gap-4">
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700"><IconGift size={25} stroke={1.5} /></span>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700">Event operations</p>
+                <h1 className="mt-1 text-2xl font-semibold tracking-tight text-zinc-950 sm:text-3xl">จัดการวงล้อกิจกรรม</h1>
+                <p className="mt-2 text-sm leading-6 text-zinc-600">เตรียมรางวัล เปิด QR รับสิทธิ์ และติดตามผลการหมุนจากที่เดียว</p>
+              </div>
             </div>
-            {state && (
-              <div className="flex flex-wrap items-end gap-2">
-                <label className="text-sm font-medium text-zinc-700">
-                  เหตุผล {state.wheel.paused ? "เปิด" : "พัก"}วงล้อ
-                  <input className="input mt-1 w-64" value={pauseReason} onChange={(event) => setPauseReason(event.target.value)} />
-                </label>
-                <button type="button" className="btn btn-secondary" disabled={pauseBusy || !pauseReason.trim() || (state.wheel.paused && !state.wheel.enabled)} onClick={() => void togglePause()}>
-                  {pauseBusy ? <IconLoader2 size={17} className="animate-spin" /> : state.wheel.paused ? <IconPlayerPlay size={17} /> : <IconPlayerPause size={17} />}
-                  {state.wheel.paused ? "เปิดวงล้อ" : "พักวงล้อ"}
-                </button>
-                <button type="button" className="btn btn-secondary" onClick={() => void loadState()}>
+            <label className="block w-full text-xs font-semibold text-zinc-600 lg:w-72">
+              Event ที่กำลังจัดการ
+              <select
+                className="input-field mt-2 min-h-11"
+                value={eventId ?? ""}
+                onChange={(event) => setEventId(event.target.value ? Number(event.target.value) : null)}
+              >
+                <option value="">เลือก Event</option>
+                {events.map((event) => <option key={event.id} value={event.id}>{event.name}</option>)}
+              </select>
+            </label>
+          </div>
+        </header>
+
+        {state && (
+          <section className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(320px,0.9fr)]" aria-label="สถานะกิจกรรม">
+            <div className="card flex flex-col justify-between border border-zinc-200/80">
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">สถานะวงล้อ</p>
+                  <h2 className="mt-2 text-xl font-semibold text-zinc-950">
+                    {!state.wheel.enabled ? "ยังไม่เผยแพร่" : state.wheel.paused ? "พักกิจกรรม" : "เปิดให้เล่นแล้ว"}
+                  </h2>
+                  <p className="mt-1 text-sm leading-6 text-zinc-600">
+                    {!state.wheel.enabled ? "ตั้งค่ารางวัลและกดบันทึกและเผยแพร่ก่อนเปิดเล่น" : state.wheel.paused ? "การรับสิทธิ์และการหมุนใหม่ถูกพักไว้" : "ผู้เข้าร่วมที่ผ่านเงื่อนไขรับสิทธิ์และหมุนได้"}
+                  </p>
+                </div>
+                <span className={`rounded-full px-3 py-1.5 text-xs font-bold ${!state.wheel.enabled ? "bg-zinc-100 text-zinc-700" : state.wheel.paused ? "bg-amber-100 text-amber-800" : "bg-emerald-100 text-emerald-800"}`}>
+                  {!state.wheel.enabled ? "รอเผยแพร่" : state.wheel.paused ? "พักอยู่" : "กำลังเปิด"}
+                </span>
+              </div>
+              <div className="mt-6 flex flex-wrap gap-2 border-t border-zinc-100 pt-4 text-xs font-semibold text-zinc-600">
+                <span className="rounded-lg bg-zinc-100 px-3 py-2">Configuration v{state.wheel.version}</span>
+                <span className="rounded-lg bg-zinc-100 px-3 py-2">Stock revision {state.wheel.poolRevision}</span>
+                <span className="rounded-lg bg-zinc-100 px-3 py-2">{state.segments.length} ช่องในวงล้อ</span>
+              </div>
+            </div>
+            <div className="card border border-zinc-200/80">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <h2 className="text-base font-semibold text-zinc-950">ควบคุมการเปิดเล่น</h2>
+                  <p className="mt-1 text-sm text-zinc-600">การเปลี่ยนสถานะต้องระบุเหตุผลทุกครั้ง</p>
+                </div>
+                <button type="button" className="inline-flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm font-semibold text-zinc-600 hover:bg-zinc-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600" onClick={() => void loadState()}>
                   <IconRefresh size={17} /> รีโหลด
                 </button>
               </div>
-            )}
-          </div>
-          {state && (
-            <div className="mt-4 flex flex-wrap gap-2 text-xs">
-              <span className={`rounded-full px-2.5 py-1 font-medium ${state.wheel.paused ? "bg-amber-50 text-amber-700" : "bg-emerald-50 text-emerald-700"}`}>
-                {state.wheel.paused ? "Paused" : state.wheel.enabled ? "Active" : "Not active"}
-              </span>
-              <span className="rounded-full bg-zinc-100 px-2.5 py-1 font-medium text-zinc-700">Version {state.wheel.version}</span>
-              <span className="rounded-full bg-zinc-100 px-2.5 py-1 font-medium text-zinc-700">Pool {state.wheel.poolRevision}</span>
+              <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-end">
+                <label className="min-w-0 flex-1 text-sm font-medium text-zinc-700">
+                  เหตุผล{state.wheel.paused ? "เปิดเล่นต่อ" : "พักกิจกรรม"}
+                  <input className="input-field mt-1" value={pauseReason} onChange={(event) => setPauseReason(event.target.value)} placeholder="ระบุเหตุผลเพื่อบันทึกประวัติ" />
+                </label>
+                <button type="button" className="btn-secondary disabled:cursor-not-allowed disabled:opacity-50 min-h-11 shrink-0" disabled={pauseBusy || !pauseReason.trim() || (state.wheel.paused && !state.wheel.enabled)} onClick={() => void togglePause()}>
+                  {pauseBusy ? <IconLoader2 size={17} className="animate-spin" /> : state.wheel.paused ? <IconPlayerPlay size={17} /> : <IconPlayerPause size={17} />}
+                  {state.wheel.paused ? "เปิดเล่นต่อ" : "พักกิจกรรม"}
+                </button>
+              </div>
             </div>
-          )}
-        </div>
+          </section>
+        )}
 
         {!eventId ? (
           <div className="card py-14 text-center text-zinc-500">เลือก Event เพื่อจัดการ Lucky Wheel</div>
         ) : loading && !state ? (
           <div className="card flex justify-center py-16"><IconLoader2 className="animate-spin text-emerald-600" /></div>
         ) : uninitialized ? (
-          <div className="card space-y-4" role="status">
-            <div>
-              <h2 className="text-lg font-semibold text-zinc-900">ยังไม่มีวงล้อสำหรับ {selectedEvent?.name ?? "Event นี้"}</h2>
-              <p className="mt-1 text-sm text-zinc-600">การสร้างวงล้อจะเปิดหน้าจัดการรางวัล โดยยังไม่เปิดให้ผู้เข้าร่วมเล่น</p>
-            </div>
-            {selectedEvent?.code === "PRIS-2026" ? (
-              <>
-                {mainSession && (
-                  <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4 text-sm text-zinc-700">
-                    <p className="font-semibold">ผูกกับ Main Session เดิม: {mainSession.name}</p>
-                    <p className="mt-1">{formatBangkok(mainSession.startTime)} – {formatBangkok(mainSession.endTime)}</p>
-                  </div>
-                )}
-                {setupError && <p className="text-sm text-rose-700" role="alert">{setupError}</p>}
-                <button type="button" className="btn btn-primary" disabled={!mainSession || setupBusy} onClick={() => void initialize()}>
+          <div className="card overflow-hidden border border-zinc-200/80 p-0" role="status">
+            <div className="grid md:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
+              <div className="p-6 sm:p-8">
+                <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700"><IconCalendarEvent size={25} /></span>
+                <p className="mt-5 text-xs font-bold uppercase tracking-[0.16em] text-emerald-700">เริ่มต้นใช้งาน</p>
+                <h2 className="mt-2 text-xl font-semibold text-zinc-950 sm:text-2xl">ยังไม่มีวงล้อสำหรับ {selectedEvent?.name ?? "Event นี้"}</h2>
+                <p className="mt-2 max-w-lg text-sm leading-6 text-zinc-600">สร้างวงล้อเปล่าเพื่อเริ่มตั้งค่ารางวัล วงล้อจะยังปิดอยู่จนกว่าจะเผยแพร่และเปิดเล่นเอง</p>
+                {setupError && <p className="mt-5 rounded-xl bg-rose-50 p-3 text-sm text-rose-700" role="alert">{setupError}</p>}
+                {selectedEvent?.code === "PRIS-2026" ? <button type="button" className="btn-primary mt-6 min-h-11" disabled={!mainSession || setupBusy} onClick={() => void initialize()}>
                   {setupBusy ? <IconLoader2 size={17} className="animate-spin" /> : null}
                   สร้างวงล้อ (ยังไม่เปิดเล่น)
-                </button>
-              </>
-            ) : (
-              <p className="text-sm text-zinc-600">ขณะนี้สร้างวงล้อจากหน้านี้ได้เฉพาะ PRIS 2026</p>
-            )}
+                </button> : <p className="mt-5 text-sm text-zinc-600">ขณะนี้สร้างวงล้อจากหน้านี้ได้เฉพาะ PRIS 2026</p>}
+              </div>
+              <div className="bg-zinc-50 p-6 sm:p-8">
+                <p className="text-xs font-bold uppercase tracking-[0.16em] text-zinc-500">ข้อมูลที่จะผูกกับวงล้อ</p>
+                <div className="mt-5 rounded-2xl border border-zinc-200 bg-white p-5">
+                  <p className="text-xs font-semibold text-zinc-500">Main Session เดิม</p>
+                  <p className="mt-2 font-semibold text-zinc-950">{mainSession?.name ?? "กำลังตรวจสอบ Main Session"}</p>
+                  {mainSession && <p className="mt-2 text-sm leading-6 text-zinc-600">{formatBangkok(mainSession.startTime)} – {formatBangkok(mainSession.endTime)}</p>}
+                </div>
+                <p className="mt-4 text-sm leading-6 text-zinc-600">ขั้นถัดไป: เพิ่มช่องรางวัล ระบุจุดรับของ แล้วกด “บันทึกและเผยแพร่”</p>
+              </div>
+            </div>
           </div>
         ) : stateError ? (
           <div className="card flex gap-3 text-amber-800" role="alert">
@@ -295,24 +337,20 @@ export default function LuckyWheelAdminPage() {
           </div>
         ) : state ? (
           <>
-            <div className="flex gap-1 overflow-x-auto border-b border-zinc-200">
-              {([
-                ["configuration", "การตั้งค่า"],
-                ["rights", "วันและ QR สิทธิ์"],
-                ["stock", "สต็อกและ Audit"],
-                ["results", "ผลและรับของ"],
-              ] as Array<[Tab, string]>).map(([value, label]) => (
+            <nav className="grid grid-cols-2 gap-2 rounded-2xl bg-zinc-100 p-2 lg:grid-cols-4" aria-label="ส่วนจัดการวงล้อ">
+              {tabs.map(({ value, label, hint, Icon }) => (
                 <button
                   key={value}
                   type="button"
                   aria-current={tab === value ? "page" : undefined}
-                  className={`min-h-11 whitespace-nowrap border-b-2 px-4 text-sm font-semibold transition ${tab === value ? "border-emerald-600 text-emerald-700" : "border-transparent text-zinc-500 hover:text-zinc-900"}`}
+                  className={`min-h-14 rounded-xl px-3 py-2 text-left transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 sm:px-4 ${tab === value ? "bg-white text-emerald-800 shadow-sm" : "text-zinc-600 hover:bg-white/70 hover:text-zinc-950"}`}
                   onClick={() => setTab(value)}
                 >
-                  {label}
+                  <span className="flex items-center gap-2 text-sm font-semibold"><Icon size={18} />{label}</span>
+                  <span className="mt-1 hidden pl-[26px] text-xs font-medium opacity-70 sm:block">{hint}</span>
                 </button>
               ))}
-            </div>
+            </nav>
 
             {tab === "configuration" && (
               <div className="card">
@@ -324,14 +362,25 @@ export default function LuckyWheelAdminPage() {
 
             {tab === "stock" && (
               <div className="space-y-5">
-                <div className="card">
-                  <div className="mb-4">
-                    <h2 className="text-lg font-semibold text-zinc-900">สต็อกของรางวัล</h2>
-                    <p className="mt-1 text-sm text-zinc-500">
-                      Available = ของที่ยังสุ่มได้ · Allocated = รางวัลที่ถูกจัดสรรแล้ว · Collected = รางวัลที่ยืนยันส่งมอบแล้ว
-                    </p>
+                <div className="card border border-zinc-200/80">
+                  <div className="mb-5 flex flex-col gap-2 border-b border-zinc-100 pb-5">
+                    <p className="text-xs font-bold uppercase tracking-[0.16em] text-emerald-700">03 · Stock</p>
+                    <h2 className="text-xl font-semibold tracking-tight text-zinc-950 sm:text-2xl">สต็อกของรางวัล</h2>
+                    <p className="max-w-3xl text-sm leading-6 text-zinc-600">สต็อกคงเหลือแยกตามรางวัล การเพิ่มหรือลดทุกครั้งต้องมีเหตุผลและจะบันทึกประวัติ</p>
                   </div>
-                  <div className="overflow-x-auto">
+                  <div className="mb-5 grid gap-2 text-sm sm:grid-cols-3">
+                    <div className="rounded-xl bg-emerald-50 p-3 text-emerald-950"><span className="block text-xs font-semibold">Available · สต็อกคงเหลือ</span><strong className="mt-1 block text-2xl tabular-nums">{prizeSegments.reduce((sum, segment) => sum + (segment.remaining ?? 0), 0)}</strong></div>
+                    <div className="rounded-xl bg-sky-50 p-3 text-sky-950"><span className="block text-xs font-semibold">Allocated · จัดสรรแล้ว</span><strong className="mt-1 block text-2xl tabular-nums">{prizeSegments.reduce((sum, segment) => sum + segment.allocated, 0)}</strong></div>
+                    <div className="rounded-xl bg-zinc-100 p-3 text-zinc-900"><span className="block text-xs font-semibold">Collected · ส่งมอบแล้ว</span><strong className="mt-1 block text-2xl tabular-nums">{prizeSegments.reduce((sum, segment) => sum + segment.collected, 0)}</strong></div>
+                  </div>
+                  <div className="space-y-3 md:hidden">
+                    {prizeSegments.map((segment) => <article key={segment.id} className="rounded-2xl border border-zinc-200 p-4">
+                      <div className="flex items-start justify-between gap-3"><div className="min-w-0"><h3 className="break-words font-semibold text-zinc-950">{segment.name.th}</h3><p className="text-xs text-zinc-500">{segment.name.en}</p></div><span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${segment.enabled && (segment.remaining ?? 0) > 0 ? "bg-emerald-50 text-emerald-800" : "bg-zinc-100 text-zinc-600"}`}>{!segment.enabled ? "ปิดใช้งาน" : (segment.remaining ?? 0) > 0 ? "สุ่มได้" : "หมดแล้ว"}</span></div>
+                      <div className="mt-4 grid grid-cols-3 gap-2 border-y border-zinc-100 py-3 text-center"><div><p className="text-xs text-zinc-500">คงเหลือ</p><p className="mt-1 text-lg font-bold tabular-nums text-zinc-950">{segment.remaining ?? 0}</p></div><div><p className="text-xs text-zinc-500">จัดสรร</p><p className="mt-1 text-lg font-bold tabular-nums text-zinc-950">{segment.allocated}</p></div><div><p className="text-xs text-zinc-500">ส่งมอบ</p><p className="mt-1 text-lg font-bold tabular-nums text-zinc-950">{segment.collected}</p></div></div>
+                      <div className="mt-3 grid grid-cols-2 gap-2"><button type="button" className="btn-secondary disabled:cursor-not-allowed disabled:opacity-50 min-h-11" onClick={() => setStockTarget({ segment, mode: "add" })}>เติมสต็อก</button><button type="button" className="btn-secondary disabled:cursor-not-allowed disabled:opacity-50 min-h-11" disabled={(segment.remaining ?? 0) === 0} onClick={() => setStockTarget({ segment, mode: "reduce" })}>ลดสต็อก</button></div>
+                    </article>)}
+                  </div>
+                  <div className="hidden overflow-x-auto md:block">
                     <table className="w-full min-w-[760px] text-sm">
                       <thead>
                         <tr className="border-b border-zinc-200 text-left text-zinc-500">
@@ -351,8 +400,8 @@ export default function LuckyWheelAdminPage() {
                             <td className="py-4 pr-4 tabular-nums">{segment.collected}</td>
                             <td className="py-4 text-right">
                               <div className="flex justify-end gap-2">
-                                <button className="btn btn-secondary" onClick={() => setStockTarget({ segment, mode: "add" })}>เพิ่ม</button>
-                                <button className="btn btn-secondary" disabled={(segment.remaining ?? 0) === 0} onClick={() => setStockTarget({ segment, mode: "reduce" })}>ลด</button>
+                                <button type="button" className="btn-secondary disabled:cursor-not-allowed disabled:opacity-50" onClick={() => setStockTarget({ segment, mode: "add" })}>เติม</button>
+                                <button type="button" className="btn-secondary disabled:cursor-not-allowed disabled:opacity-50" disabled={(segment.remaining ?? 0) === 0} onClick={() => setStockTarget({ segment, mode: "reduce" })}>ลด</button>
                               </div>
                             </td>
                           </tr>
@@ -360,6 +409,7 @@ export default function LuckyWheelAdminPage() {
                       </tbody>
                     </table>
                   </div>
+                  {prizeSegments.length === 0 && <p className="rounded-xl bg-zinc-50 py-10 text-center text-sm text-zinc-600">ยังไม่มีช่องของรางวัลในวงล้อ</p>}
                 </div>
 
                 <div className="card">
@@ -388,22 +438,27 @@ export default function LuckyWheelAdminPage() {
 
             {tab === "results" && (
               <div className="space-y-5">
-                <div className="card">
+                <div className="card border border-zinc-200/80">
+                  <div className="mb-5 border-b border-zinc-100 pb-5">
+                    <p className="text-xs font-bold uppercase tracking-[0.16em] text-emerald-700">04 · Results</p>
+                    <h2 className="mt-2 text-xl font-semibold tracking-tight text-zinc-950 sm:text-2xl">ผลการหมุน</h2>
+                    <p className="mt-2 text-sm leading-6 text-zinc-600">กรองผลตามวัน รางวัล และสถานะรับของ ก่อนตรวจรายการย้อนหลัง</p>
+                  </div>
                   <div className="grid gap-3 md:grid-cols-3">
                     <label className="text-sm font-medium text-zinc-700">
                       วันที่เล่น
-                      <input type="date" className="input mt-1" value={dateFilter} onChange={(event) => setDateFilter(event.target.value)} />
+                      <input type="date" className="input-field mt-1" value={dateFilter} onChange={(event) => setDateFilter(event.target.value)} />
                     </label>
                     <label className="text-sm font-medium text-zinc-700">
                       รางวัล
-                      <select className="input mt-1" value={segmentFilter} onChange={(event) => setSegmentFilter(event.target.value)}>
+                      <select className="input-field mt-1" value={segmentFilter} onChange={(event) => setSegmentFilter(event.target.value)}>
                         <option value="">ทั้งหมด</option>
                         {state.segments.map((segment) => <option key={segment.id} value={segment.id}>{segment.name.th}</option>)}
                       </select>
                     </label>
                     <label className="text-sm font-medium text-zinc-700">
                       สถานะรับของ
-                      <select className="input mt-1" value={claimFilter} onChange={(event) => setClaimFilter(event.target.value)}>
+                      <select className="input-field mt-1" value={claimFilter} onChange={(event) => setClaimFilter(event.target.value)}>
                         <option value="">ทั้งหมด</option>
                         <option value="open">ยังไม่รับของ</option>
                         <option value="redeemed">รับของแล้ว</option>
@@ -411,7 +466,13 @@ export default function LuckyWheelAdminPage() {
                       </select>
                     </label>
                   </div>
-                  <div className="mt-4 overflow-x-auto">
+                  <div className="mt-5 space-y-3 md:hidden">
+                    {(spins?.spins ?? []).map((spin) => <article key={spin.id} className="rounded-2xl border border-zinc-200 p-4">
+                      <div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="break-words font-semibold text-zinc-950">{spin.awardedName.th}</p><p className="mt-1 text-xs text-zinc-500">{formatBangkok(spin.createdAt)}</p></div><span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${spin.claim?.status === "redeemed" ? "bg-zinc-100 text-zinc-700" : spin.claim ? "bg-emerald-50 text-emerald-800" : "bg-amber-50 text-amber-800"}`}>{spin.claim?.status === "redeemed" ? "รับแล้ว" : spin.claim ? "รอรับ" : "ไม่มีสิทธิ์รับของ"}</span></div>
+                      <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 border-t border-zinc-100 pt-3 text-xs text-zinc-600"><span>บัญชี #{spin.userId}</span><span>วันที่ {spin.playDate}</span><span>v{spin.configurationVersion} / p{spin.poolRevision}</span></div>
+                    </article>)}
+                  </div>
+                  <div className="mt-4 hidden overflow-x-auto md:block">
                     <table className="w-full min-w-[920px] text-sm">
                       <thead><tr className="border-b border-zinc-200 text-left text-zinc-500"><th className="py-3 pr-4">เวลา</th><th className="py-3 pr-4">User</th><th className="py-3 pr-4">ผล</th><th className="py-3 pr-4">สถานะรับของ</th><th className="py-3">Version</th></tr></thead>
                       <tbody>
@@ -432,8 +493,8 @@ export default function LuckyWheelAdminPage() {
                         ))}
                       </tbody>
                     </table>
-                    {spins && spins.spins.length === 0 && <p className="py-12 text-center text-sm text-zinc-500">ไม่พบผลตามตัวกรอง</p>}
                   </div>
+                  {spins && spins.spins.length === 0 && <p className="mt-4 rounded-xl bg-zinc-50 py-12 text-center text-sm text-zinc-600">ไม่พบผลตามตัวกรอง</p>}
                   {spins && spins.pagination.totalPages > 0 && (
                     <div className="mt-5">
                       <Pagination

@@ -169,20 +169,21 @@ export function WheelConfiguration({ eventId, token, state, onReload }: Props) {
   };
 
   return (
-    <section className="space-y-5" aria-labelledby="wheel-config-title">
-      <div className="flex flex-wrap items-start justify-between gap-3">
+    <section className="space-y-7" aria-labelledby="wheel-config-title">
+      <div className="flex flex-col gap-5 border-b border-zinc-100 pb-6 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <h2 id="wheel-config-title" className="text-lg font-semibold text-zinc-900">การตั้งค่าวงล้อ</h2>
-          <p className="mt-1 text-sm text-zinc-500">
-            เวอร์ชันที่บันทึก {state.wheel.version} · Pool revision {state.wheel.poolRevision}
-            {dirty ? " · มีการแก้ไขที่ยังไม่เผยแพร่" : " · ตรงกับข้อมูลบน server"}
-          </p>
+          <p className="text-xs font-bold uppercase tracking-[0.16em] text-emerald-700">01 · Configuration</p>
+          <h2 id="wheel-config-title" className="mt-2 text-xl font-semibold tracking-tight text-zinc-950 sm:text-2xl">ช่องในวงล้อและการรับรางวัล</h2>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-600">จัดลำดับช่อง กำหนดชื่อสองภาษาและรูป แล้วเผยแพร่ทั้งชุดพร้อมกัน</p>
+          <span className={`mt-3 inline-flex rounded-full px-3 py-1 text-xs font-semibold ${dirty ? "bg-amber-100 text-amber-800" : "bg-emerald-50 text-emerald-800"}`}>
+            {dirty ? "มีการแก้ไขที่ยังไม่เผยแพร่" : `ข้อมูลตรงกับ server · v${state.wheel.version}`}
+          </span>
         </div>
-        <div className="flex gap-2">
-          <button type="button" className="btn btn-secondary" onClick={() => addSegment("prize")}>
+        <div className="grid grid-cols-2 gap-2 sm:flex">
+          <button type="button" className="btn-secondary disabled:cursor-not-allowed disabled:opacity-50 min-h-11 px-3 text-xs sm:text-sm" onClick={() => addSegment("prize")}>
             <IconCirclePlus size={17} /> เพิ่มรางวัล
           </button>
-          <button type="button" className="btn btn-secondary" onClick={() => addSegment("no_prize")}>
+          <button type="button" className="btn-secondary disabled:cursor-not-allowed disabled:opacity-50 min-h-11 px-3 text-xs sm:text-sm" onClick={() => addSegment("no_prize")}>
             <IconCirclePlus size={17} /> เพิ่มช่องไม่ได้รางวัล
           </button>
         </div>
@@ -197,25 +198,42 @@ export function WheelConfiguration({ eventId, token, state, onReload }: Props) {
         </div>
       )}
 
-      <div className="space-y-3">
+      <div className="space-y-4">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h3 className="text-base font-semibold text-zinc-950">ช่องบนวงล้อ</h3>
+          <p className="text-xs font-medium text-zinc-500">{draft.segments.length} ช่อง · ช่องที่หมดจะยังแสดงตำแหน่งเดิม</p>
+        </div>
         {draft.segments.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-zinc-300 p-8 text-center text-sm text-zinc-500">
+          <div className="rounded-2xl border border-dashed border-zinc-300 bg-zinc-50 p-8 text-center text-sm leading-6 text-zinc-600">
             ยังไม่มีช่องในวงล้อ เพิ่มของรางวัลหรือช่องไม่ได้รางวัลก่อนเผยแพร่
           </div>
         ) : (
           draft.segments.map((segment, index) => {
             const originalKind = existingKinds.get(segment.id);
             return (
-              <div key={segment.id} className="rounded-xl border border-zinc-200 bg-white p-4">
-                <div className="grid gap-3 lg:grid-cols-[88px_140px_minmax(0,1fr)_minmax(0,1fr)_120px_44px] lg:items-end">
-                  <div>
-                    <label className="text-xs font-medium text-zinc-500">ลำดับ</label>
-                    <div className="mt-1 flex h-10 items-center rounded-lg bg-zinc-50 px-3 text-sm font-semibold text-zinc-700">{index + 1}</div>
+              <div key={segment.id} className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-[0_2px_12px_rgba(24,24,27,0.03)] sm:p-5">
+                <div className="mb-4 flex items-center justify-between gap-3 border-b border-zinc-100 pb-4">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-zinc-950 text-sm font-bold tabular-nums text-white">{String(index + 1).padStart(2, "0")}</span>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold text-zinc-950">{segment.name.th || (segment.kind === "prize" ? "รางวัลใหม่" : "ช่องไม่ได้รางวัล")}</p>
+                      <p className="text-xs text-zinc-500">ตำแหน่งที่ {index + 1} · {segment.kind === "prize" ? "ของรางวัล" : "ไม่ได้รางวัล"}</p>
+                    </div>
                   </div>
+                  <button
+                    type="button"
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-rose-600 hover:bg-rose-50 hover:text-rose-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-600"
+                    onClick={() => removeSegment(segment.id)}
+                    aria-label={`ลบช่อง ${segment.name.th || index + 1}`}
+                  >
+                    <IconTrash size={18} />
+                  </button>
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-[minmax(120px,0.7fr)_minmax(0,1fr)_minmax(0,1fr)_auto] lg:items-end">
                   <label className="text-xs font-medium text-zinc-500">
                     ประเภท
                     <select
-                      className="input mt-1"
+                      className="input-field mt-1"
                       value={segment.kind}
                       disabled={Boolean(originalKind)}
                       onChange={(event) =>
@@ -233,7 +251,7 @@ export function WheelConfiguration({ eventId, token, state, onReload }: Props) {
                   <label className="text-xs font-medium text-zinc-500">
                     ชื่อภาษาไทย
                     <input
-                      className="input mt-1"
+                      className="input-field mt-1"
                       maxLength={160}
                       value={segment.name.th}
                       onChange={(event) =>
@@ -247,7 +265,7 @@ export function WheelConfiguration({ eventId, token, state, onReload }: Props) {
                   <label className="text-xs font-medium text-zinc-500">
                     English name
                     <input
-                      className="input mt-1"
+                      className="input-field mt-1"
                       maxLength={160}
                       value={segment.name.en}
                       onChange={(event) =>
@@ -258,7 +276,7 @@ export function WheelConfiguration({ eventId, token, state, onReload }: Props) {
                       }
                     />
                   </label>
-                  <label className="flex h-10 items-center gap-2 rounded-lg border border-zinc-200 px-3 text-sm text-zinc-700">
+                  <label className="flex min-h-11 items-center gap-2 rounded-xl border border-zinc-200 px-3 text-sm text-zinc-700">
                     <input
                       type="checkbox"
                       checked={segment.enabled}
@@ -268,19 +286,11 @@ export function WheelConfiguration({ eventId, token, state, onReload }: Props) {
                     />
                     เปิดใช้งาน
                   </label>
-                  <button
-                    type="button"
-                    className="flex h-10 w-10 items-center justify-center rounded-lg text-rose-600 hover:bg-rose-50 hover:text-rose-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-600"
-                    onClick={() => removeSegment(segment.id)}
-                    aria-label={`ลบช่อง ${segment.name.th || index + 1}`}
-                  >
-                    <IconTrash size={18} />
-                  </button>
                 </div>
 
                 {segment.kind === "prize" && (
                   <div className="mt-3 flex flex-wrap items-center gap-3 border-t border-zinc-100 pt-3">
-                    <label className="btn btn-secondary cursor-pointer">
+                    <label className="btn-secondary disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer">
                       {uploadingId === segment.id ? <IconLoader2 size={17} className="animate-spin" /> : <IconPhoto size={17} />}
                       {segment.imageId ? "เปลี่ยนรูป" : "อัปโหลดรูป"}
                       <input
@@ -306,11 +316,14 @@ export function WheelConfiguration({ eventId, token, state, onReload }: Props) {
         )}
       </div>
 
-      <div className="grid gap-4 rounded-xl bg-zinc-50 p-4 md:grid-cols-2">
+      <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4 sm:p-6">
+        <h3 className="text-base font-semibold text-zinc-950">การรับของรางวัล</h3>
+        <p className="mt-1 text-sm leading-6 text-zinc-600">ข้อความนี้แสดงบนหลักฐานรางวัลของผู้เข้าร่วม</p>
+        <div className="mt-5 grid gap-4 md:grid-cols-2">
         <label className="text-sm font-medium text-zinc-700">
           จุดรับของ / วิธีรับของ (TH)
           <textarea
-            className="input mt-1 min-h-24 resize-y"
+            className="input-field mt-1 min-h-24 resize-y"
             value={draft.collectionInstructions.th}
             onChange={(event) =>
               setDraft((current) => ({
@@ -323,7 +336,7 @@ export function WheelConfiguration({ eventId, token, state, onReload }: Props) {
         <label className="text-sm font-medium text-zinc-700">
           Collection instructions (EN)
           <textarea
-            className="input mt-1 min-h-24 resize-y"
+            className="input-field mt-1 min-h-24 resize-y"
             value={draft.collectionInstructions.en}
             onChange={(event) =>
               setDraft((current) => ({
@@ -336,7 +349,7 @@ export function WheelConfiguration({ eventId, token, state, onReload }: Props) {
         <label className="text-sm font-medium text-zinc-700">
           กำหนดเวลารับของ (เวลาไทย)
           <input
-            className="input mt-1"
+            className="input-field mt-1"
             type="datetime-local"
             value={toBangkokInput(draft.collectionDeadline)}
             onChange={(event) =>
@@ -351,20 +364,21 @@ export function WheelConfiguration({ eventId, token, state, onReload }: Props) {
         <label className="text-sm font-medium text-zinc-700">
           เหตุผลการแก้ไข
           <input
-            className="input mt-1"
+            className="input-field mt-1"
             value={reason}
             maxLength={500}
             onChange={(event) => setReason(event.target.value)}
             placeholder="จำเป็นเมื่อเปลี่ยน deadline ที่เคยเผยแพร่"
           />
         </label>
+        </div>
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-zinc-200 pt-4">
-        <p className="text-sm text-zinc-500">
+      <div className="flex flex-col gap-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+        <p className="max-w-xl text-sm leading-6 text-emerald-950">
           การแก้ฟอร์มยังไม่กระทบผู้เข้าร่วมจนกดบันทึกและเผยแพร่
         </p>
-        <button type="button" className="btn btn-primary" disabled={!dirty || saving} onClick={() => void save()}>
+        <button type="button" className="btn-primary min-h-11 shrink-0" disabled={!dirty || saving} onClick={() => void save()}>
           {saving ? <IconLoader2 size={17} className="animate-spin" /> : <IconDeviceFloppy size={17} />}
           บันทึกและเผยแพร่
         </button>

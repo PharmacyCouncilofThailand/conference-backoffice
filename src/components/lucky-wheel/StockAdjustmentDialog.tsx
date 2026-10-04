@@ -93,27 +93,26 @@ export function StockAdjustmentDialog({
         if (open) onClose();
         queueMicrotask(() => returnFocusRef.current?.focus());
       }}
-      className="fixed inset-0 m-auto w-[min(520px,calc(100vw-2rem))] rounded-2xl p-0 shadow-2xl backdrop:bg-black/40"
+      className="fixed inset-0 m-auto max-h-[calc(100dvh-2rem)] w-[min(520px,calc(100vw-2rem))] overflow-y-auto rounded-2xl p-0 shadow-2xl backdrop:bg-black/40"
       aria-labelledby="stock-adjustment-title"
     >
-      <div className="flex items-start justify-between border-b border-zinc-200 px-6 py-4">
+      <div className="flex items-start justify-between border-b border-zinc-200 px-5 py-5 sm:px-6">
         <div>
-          <h2 id="stock-adjustment-title" className="text-lg font-semibold text-zinc-900">
+          <h2 id="stock-adjustment-title" className="text-xl font-semibold text-zinc-950">
             {mode === "add" ? "เพิ่มสต็อก" : "ลดสต็อก"}
           </h2>
-          <p className="mt-1 text-sm text-zinc-500">
-            {segment?.name.th} · คงเหลือ {segment?.remaining ?? 0}
-          </p>
+          <p className="mt-1 text-sm text-zinc-600">{segment?.name.th}</p>
         </div>
-        <button type="button" className="rounded-lg p-2 hover:bg-zinc-100" onClick={close} aria-label="ปิด">
+        <button type="button" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl hover:bg-zinc-100" onClick={close} aria-label="ปิด">
           <IconX size={20} />
         </button>
       </div>
-      <div className="space-y-4 p-6">
+      <div className="space-y-4 p-5 sm:p-6">
+        <div className="rounded-xl bg-zinc-50 p-4"><p className="text-xs font-semibold text-zinc-500">สต็อกคงเหลือปัจจุบัน</p><p className="mt-1 text-2xl font-bold tabular-nums text-zinc-950">{segment?.remaining ?? 0}</p></div>
         <label className="block text-sm font-medium text-zinc-700">
           จำนวน
           <input
-            className="input mt-1"
+            className="input-field mt-1"
             type="number"
             min={1}
             step={1}
@@ -124,7 +123,7 @@ export function StockAdjustmentDialog({
         <label className="block text-sm font-medium text-zinc-700">
           เหตุผล
           <textarea
-            className="input mt-1 min-h-24 resize-y"
+            className="input-field mt-1 min-h-24 resize-y"
             value={reason}
             maxLength={500}
             onChange={(event) => setReason(event.target.value)}
@@ -132,9 +131,9 @@ export function StockAdjustmentDialog({
           />
         </label>
         {error && <p role="alert" className="rounded-lg bg-rose-50 p-3 text-sm text-rose-700">{error}</p>}
-        <div className="flex justify-end gap-2">
-          <button type="button" className="btn btn-secondary" onClick={close} disabled={submitting}>ยกเลิก</button>
-          <button type="button" className="btn btn-primary" onClick={() => void submit()} disabled={submitting}>
+        <div className="grid grid-cols-2 gap-2 border-t border-zinc-100 pt-4 sm:flex sm:justify-end">
+          <button type="button" className="btn-secondary disabled:cursor-not-allowed disabled:opacity-50 min-h-11" onClick={close} disabled={submitting}>ยกเลิก</button>
+          <button type="button" className="btn-primary min-h-11" onClick={() => void submit()} disabled={submitting}>
             {submitting && <IconLoader2 size={17} className="animate-spin" />}
             ยืนยัน{mode === "add" ? "เพิ่ม" : "ลด"}สต็อก
           </button>
