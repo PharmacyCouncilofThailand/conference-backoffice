@@ -27,6 +27,7 @@ import { WheelConfiguration } from "@/components/lucky-wheel/WheelConfiguration"
 import { StockAdjustmentDialog } from "@/components/lucky-wheel/StockAdjustmentDialog";
 import { RewardCollection } from "@/components/lucky-wheel/RewardCollection";
 import { QrRights } from "@/components/lucky-wheel/QrRights";
+import { AttendanceSetup } from "@/components/lucky-wheel/AttendanceSetup";
 
 type EventOption = { id: number; name: string; code: string; websiteUrl: string | null };
 type MainSession = { id: number; name: string; startTime: string; endTime: string };
@@ -151,11 +152,17 @@ export default function LuckyWheelAdminPage() {
 
   const selectedEvent = events.find((event) => event.id === eventId);
   useEffect(() => {
-    if (!token || !eventId || !uninitialized || selectedEvent?.code !== "PRIS-2026") return;
+    if (!token || !eventId || (!uninitialized && !state) || selectedEvent?.code !== "PRIS-2026") return;
     let active = true;
     void api.backofficeEvents.getSessions(token, eventId)
       .then(({ sessions }) => {
         if (!active) return;
+        if (state) {
+          const bound = sessions.find(session => session.id === state.wheel.mainSessionId);
+          setMainSession(bound && typeof bound.sessionName === "string" && typeof bound.startTime === "string" && typeof bound.endTime === "string"
+            ? { id: state.wheel.mainSessionId, name: bound.sessionName, startTime: bound.startTime, endTime: bound.endTime } : null);
+          return;
+        }
         const choices = sessions.flatMap((session) => {
           if (
             typeof session.id !== "number" ||
@@ -175,7 +182,7 @@ export default function LuckyWheelAdminPage() {
         if (active) setSetupError(error instanceof Error ? error.message : "โหลด Main Session ไม่สำเร็จ");
       });
     return () => { active = false; };
-  }, [token, eventId, uninitialized, selectedEvent?.code]);
+  }, [token, eventId, uninitialized, selectedEvent?.code, state]);
 
   const initialize = async () => {
     if (!token || !eventId || !mainSession || setupBusy) return;
@@ -210,6 +217,10 @@ export default function LuckyWheelAdminPage() {
   const togglePause = async () => {
     if (!token || !eventId || !state || !pauseReason.trim()) {
       toast.error("กรอกเหตุผลก่อนเปลี่ยนสถานะพักวงล้อ");
+      return;
+    }
+    if (state.wheel.paused && !state.attendanceReadiness?.runtimeReady) {
+      toast.error("ตั้งค่าเช็คอินรายวันให้ครบก่อนเปิดกิจกรรม");
       return;
     }
     setPauseBusy(true);
@@ -302,10 +313,11 @@ export default function LuckyWheelAdminPage() {
                   เหตุผล{state.wheel.paused ? "เปิดเล่นต่อ" : "พักกิจกรรม"}
                   <input className="input-field mt-1" value={pauseReason} onChange={(event) => setPauseReason(event.target.value)} placeholder="ระบุเหตุผลเพื่อบันทึกประวัติ" />
                 </label>
-                <button type="button" className="btn-secondary disabled:cursor-not-allowed disabled:opacity-50 min-h-11 shrink-0" disabled={pauseBusy || !pauseReason.trim() || (state.wheel.paused && !state.wheel.enabled)} onClick={() => void togglePause()}>
+                <button type="button" className="btn-secondary disabled:cursor-not-allowed disabled:opacity-50 min-h-11 shrink-0" disabled={pauseBusy || !pauseReason.trim() || (state.wheel.paused && (!state.wheel.enabled || !state.attendanceReadiness?.runtimeReady))} onClick={() => void togglePause()}>
                   {pauseBusy ? <IconLoader2 size={17} className="animate-spin" /> : state.wheel.paused ? <IconPlayerPlay size={17} /> : <IconPlayerPause size={17} />}
                   {state.wheel.paused ? "เปิดเล่นต่อ" : "พักกิจกรรม"}
                 </button>
+                {!state.attendanceReadiness?.runtimeReady && <p className="text-sm text-amber-800">ตั้งค่าเช็คอินรายวันให้ครบก่อนเปิดกิจกรรม ยังเตรียมรางวัลและปิด QR ได้ตามปกติ</p>}
               </div>
             </div>
           </section>
@@ -347,6 +359,11 @@ export default function LuckyWheelAdminPage() {
           </div>
         ) : state ? (
           <>
+            <AttendanceSetup key={eventId} token={token ?? ""} eventId={eventId} state={state} mainSessionName={mainSession?.name}
+              onReload={async () => {
+                const next = await api.luckyWheel.getState(token ?? "", eventId);
+                setState(next);
+              }} />
             <nav className="grid grid-cols-2 gap-2 rounded-2xl bg-zinc-100 p-2 lg:grid-cols-4" aria-label="ส่วนจัดการวงล้อ">
               {tabs.map(({ value, label, hint, Icon }) => (
                 <button

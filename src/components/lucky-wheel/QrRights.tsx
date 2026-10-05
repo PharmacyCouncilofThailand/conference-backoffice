@@ -176,6 +176,7 @@ export function QrRights({ token, eventId, eventWebsiteUrl, wheelState }: Props)
   const bangkokDate = toBangkokInput(new Date(displayNow).toISOString()).slice(0, 10);
   const hasRealStock = wheelState?.segments.some((segment) => segment.kind === "prize" && segment.enabled && (segment.remaining ?? 0) > 0) ?? false;
   const globalUnavailableReason = !day || !wheelState ? "รอโหลดสถานะกิจกรรม"
+    : !wheelState.attendanceReadiness?.runtimeReady ? "ยังตั้งค่าเช็คอินรายวันไม่ครบ"
     : date !== bangkokDate ? "สิทธิ์ใช้ได้เฉพาะวันไทยของ QR"
     : displayNow < new Date(day.startAt).getTime() || displayNow >= new Date(day.endAt).getTime() ? "อยู่นอกช่วงเวลาที่กำหนดขณะนี้"
     : wheelState.wheel.paused || !wheelState.wheel.enabled ? "วงล้อพักอยู่ขณะนี้"
@@ -289,6 +290,10 @@ export function QrRights({ token, eventId, eventWebsiteUrl, wheelState }: Props)
       qrId: qr.id, status: qr.status === "open" ? "closed" as const : "open" as const,
       reason, idempotencyKey: crypto.randomUUID(),
     };
+    if (request.status === "open" && !wheelState?.attendanceReadiness?.runtimeReady) {
+      setError("ตั้งค่าเช็คอินรายวันให้ครบก่อนเปิดรับสิทธิ์ QR");
+      return;
+    }
     setPendingStatus(request); setBusy("status"); setError(null);
     try {
       await api.luckyWheel.setQrStatus(token, eventId, request.qrId, {
@@ -329,6 +334,7 @@ export function QrRights({ token, eventId, eventWebsiteUrl, wheelState }: Props)
   };
 
   return <div className="space-y-5">
+    {!wheelState?.attendanceReadiness?.runtimeReady && <p role="status" className="rounded-xl bg-amber-50 p-4 text-sm text-amber-900">ยังตั้งค่าเช็คอินรายวันไม่ครบ เปิด QR รับสิทธิ์ไม่ได้ แต่ยังเตรียมวัน สร้าง QR ที่ปิดไว้ ดาวน์โหลด และปิด QR ได้ การตั้งค่าเช็คอินไม่เปิด QR อัตโนมัติ</p>}
     <div className="px-1">
       <p className="text-xs font-bold uppercase tracking-[0.16em] text-emerald-700">02 · Rights &amp; QR</p>
       <h2 className="mt-2 text-xl font-semibold tracking-tight text-zinc-950 sm:text-2xl">กำหนดวันและแจกสิทธิ์หมุน</h2>
@@ -392,7 +398,7 @@ export function QrRights({ token, eventId, eventWebsiteUrl, wheelState }: Props)
             </div>
             <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-end">
               <label className="min-w-0 flex-1 text-sm text-zinc-700">เหตุผลเปิด/ปิด QR (ไม่บังคับ)<input className="input-field mt-1" maxLength={500} value={reasonByQr[qr.id] ?? ""} onChange={(event) => { setReasonByQr((current) => ({ ...current, [qr.id]: event.target.value })); setConfirmCloseQrId(null); }} disabled={Boolean(pendingStatus)} /></label>
-              <button type="button" className={`min-h-11 disabled:cursor-not-allowed disabled:opacity-50 ${qr.status === "open" ? "btn-secondary" : "btn-primary"}`} disabled={Boolean(busy) || Boolean(pendingStatus && pendingStatus.qrId !== qr.id)} onClick={() => void changeStatus(qr)}>{pendingStatus?.qrId === qr.id ? "ตรวจคำขอเดิม" : confirmCloseQrId === qr.id ? "ยืนยันปิด QR" : qr.status === "open" ? "ปิด QR" : "เปิด QR"}</button>
+              <button type="button" className={`min-h-11 disabled:cursor-not-allowed disabled:opacity-50 ${qr.status === "open" ? "btn-secondary" : "btn-primary"}`} disabled={Boolean(busy) || Boolean(pendingStatus && pendingStatus.qrId !== qr.id) || (!wheelState?.attendanceReadiness?.runtimeReady && (pendingStatus?.qrId === qr.id ? pendingStatus.status === "open" : qr.status !== "open"))} onClick={() => void changeStatus(qr)}>{pendingStatus?.qrId === qr.id ? "ตรวจคำขอเดิม" : confirmCloseQrId === qr.id ? "ยืนยันปิด QR" : qr.status === "open" ? "ปิด QR" : "เปิด QR"}</button>
               {confirmCloseQrId === qr.id && !pendingStatus && <button type="button" className="btn-secondary disabled:cursor-not-allowed disabled:opacity-50" onClick={() => setConfirmCloseQrId(null)}>ไม่ปิด</button>}
             </div>
           </div>)}

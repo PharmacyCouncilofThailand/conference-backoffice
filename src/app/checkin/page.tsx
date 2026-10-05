@@ -747,7 +747,7 @@ export default function CheckinPage() {
                 <span className="rounded-full bg-emerald-50 px-3 py-1 font-medium text-emerald-700">เวลาระบบ: {serverDate || 'กำลังโหลด'}</span>
                 {activeSession && attendanceMode === 'daily' && (
                     <span className="rounded-full bg-blue-50 px-3 py-1 font-medium text-blue-700">
-                        Daily attendance: ตรวจสิทธิ์และนับใหม่ทุกวันตามเวลาไทย
+                        Main Session — เช็คอินวันที่ {serverDate || 'กำลังโหลด'} · {activeSession.sessionName}
                     </span>
                 )}
             </div>

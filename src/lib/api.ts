@@ -35,6 +35,8 @@ import type {
 import type {
   AdminWheelSpinsResponse,
   AdminWheelState,
+  AttendanceSetupInput,
+  AttendanceSetupResult,
   RedemptionCorrectionInput,
   RedemptionInput,
   RewardLookup,
@@ -1136,6 +1138,9 @@ export const api = {
         `/api/backoffice/lucky-wheel/events/${eventId}`,
         { token },
       ),
+    setupAttendance: (token: string, eventId: number, data: AttendanceSetupInput) =>
+      fetchAPI<AttendanceSetupResult>(`/api/backoffice/lucky-wheel/events/${eventId}/attendance-setup`,
+        { method: "POST", body: JSON.stringify(data), token }),
     initialize: (token: string, eventId: number, mainSessionId: number) =>
       fetchAPI<{
         eventId: number;

@@ -116,6 +116,7 @@ export type WheelAuditEntry = {
 export type AdminWheelState = {
   eventId: number;
   actorId: number;
+  attendanceReadiness: AttendanceReadiness;
   wheel: {
     id: string;
     mainSessionId: number;
@@ -131,6 +132,19 @@ export type AdminWheelState = {
   audit: WheelAuditEntry[];
   requestId: string;
 };
+
+export type AttendanceSetupBlocker = "SCHEMA_REQUIRED" | "INVALID_MAIN_SESSION" | "MISSING_ENTITLEMENTS" |
+  "UNLINKED_ACCOUNTS" | "LEGACY_SCANNER_MISSING" | "LEGACY_TIME_INVALID" | "LEGACY_DAILY_CONFLICT" | "CANCELLATION_CONFLICT";
+export type AttendanceReadiness = {
+  eventId: number; mainSessionId: number; serverDate: string; policyEnabled: boolean; runtimeReady: boolean;
+  setupComplete: boolean; revision: string;
+  counts: { confirmedRegistrations: number; confirmedEntitlements: number; missingEntitlements: number;
+    unlinkedAccounts: number; legacySources: number; pendingLegacyImports: number; alreadyImported: number; alreadyCovered: number; conflicts: number };
+  blockers: Array<{ code: AttendanceSetupBlocker; count: number }>;
+};
+export type AttendanceSetupInput = { mainSessionId: number; expectedReadinessRevision: string; reason: string; idempotencyKey: string };
+export type AttendanceSetupResult = { eventId: number; mainSessionId: number; policyEnabled: true; importedCount: number;
+  alreadyImportedCount: number; alreadyCoveredCount: number; auditId: string; replayed: boolean };
 
 export type AdminWheelSpin = {
   id: string;
