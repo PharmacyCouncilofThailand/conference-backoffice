@@ -71,7 +71,7 @@ const rolePageAccess: Record<UserRole, string[]> = {
   admin: ["*"], // All pages
   organizer: ["/reports", "/members", "/verification", "/registrations", "/promo-code-abstracts", "/abstracts"],
   reviewer: ["/abstracts"],
-  staff: ["/checkin"],
+  staff: ["/checkin", "/reward-collection"],
   verifier: ["/verification", "/student-eligibility"],
   team_registration_viewer: ["/team-registrations"],
 };

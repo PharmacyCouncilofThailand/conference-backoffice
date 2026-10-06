@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import {
   IconAlertTriangle,
   IconAdjustmentsHorizontal,
@@ -25,7 +26,6 @@ import type {
 } from "@/types/lucky-wheel";
 import { WheelConfiguration } from "@/components/lucky-wheel/WheelConfiguration";
 import { StockAdjustmentDialog } from "@/components/lucky-wheel/StockAdjustmentDialog";
-import { RewardCollection } from "@/components/lucky-wheel/RewardCollection";
 import { QrRights } from "@/components/lucky-wheel/QrRights";
 import { AttendanceSetup } from "@/components/lucky-wheel/AttendanceSetup";
 
@@ -37,7 +37,7 @@ const tabs = [
   { value: "configuration", label: "ตั้งค่าวงล้อ", hint: "รางวัลและจำนวนเริ่มต้น", Icon: IconAdjustmentsHorizontal },
   { value: "rights", label: "วันและ QR", hint: "เวลาและสิทธิ์หมุน", Icon: IconQrcode },
   { value: "stock", label: "สต็อก", hint: "ยอดคงเหลือและประวัติ", Icon: IconGift },
-  { value: "results", label: "ผลและรับของ", hint: "ผลหมุนและส่งมอบ", Icon: IconChartBar },
+  { value: "results", label: "ผลการหมุน", hint: "ผลหมุนและสถานะรับของ", Icon: IconChartBar },
 ] as const;
 
 const formatBangkok = (value: string) =>
@@ -541,15 +541,9 @@ export default function LuckyWheelAdminPage() {
                   )}
                 </div>
 
-                <div className="card">
-                  <RewardCollection
-                    eventId={eventId}
-                    token={token ?? ""}
-                    onChanged={async () => {
-                      await Promise.all([loadState(), loadSpins()]);
-                    }}
-                  />
-                </div>
+                <Link href={`/reward-collection?eventId=${eventId}`} className="btn-primary w-fit gap-2">
+                  <IconGift size={18} /> ไปหน้าส่งมอบรางวัล
+                </Link>
               </div>
             )}
 

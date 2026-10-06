@@ -138,6 +138,12 @@ const menuStructure = [
     icon: IconGift,
   },
   {
+    type: "link",
+    href: "/reward-collection",
+    label: "ส่งมอบรางวัล",
+    icon: IconGift,
+  },
+  {
     type: "category",
     label: "SYSTEM ADMINISTRATION",
   },
@@ -267,8 +273,7 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
 
       // Staff specific restrictions
       if (role === "staff") {
-        // Only show Check-in Scanner
-        if (item.href === "/checkin") return item;
+        if (item.href === "/checkin" || item.href === "/reward-collection") return item;
         return null;
       }
 

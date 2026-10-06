@@ -28,7 +28,10 @@ const blankConfiguration = (): WheelConfigurationValue => ({ segments: [] });
 
 const normalizeForEdit = (state: AdminWheelState): WheelConfigurationValue => {
   if (state.wheel.configuration) {
-    return { segments: structuredClone(state.wheel.configuration.segments) };
+    return {
+      ...structuredClone(state.wheel.configuration),
+      collectionDeadline: state.wheel.collectionDeadline,
+    };
   }
   return blankConfiguration();
 };
@@ -301,6 +304,22 @@ export function WheelConfiguration({ eventId, token, state, onReload }: Props) {
           })
         )}
       </div>
+
+      <label className="block max-w-xl text-sm font-medium text-zinc-700">
+        กำหนดรับของ (เวลาไทย)
+        <input
+          type="datetime-local"
+          className="input-field mt-1"
+          value={draft.collectionDeadline
+            ? new Date(new Date(draft.collectionDeadline).getTime() + 7 * 60 * 60 * 1000).toISOString().slice(0, 16)
+            : ""}
+          onChange={(event) => setDraft((current) => ({
+            ...current,
+            collectionDeadline: event.target.value ? new Date(`${event.target.value}:00+07:00`).toISOString() : null,
+          }))}
+        />
+        <span className="mt-2 block text-xs font-normal text-zinc-500">เว้นว่างได้หากไม่กำหนดวันสิ้นสุด มีผลกับรางวัลทั้งหมดของ event นี้หลังบันทึกและเผยแพร่</span>
+      </label>
 
       <label className="block max-w-xl text-sm font-medium text-zinc-700">หมายเหตุการเผยแพร่ (ไม่บังคับ)
         <input className="input-field mt-1" value={reason} maxLength={500} onChange={(event) => setReason(event.target.value)} placeholder="เช่น เพิ่มรางวัลรอบบ่าย" />

@@ -17,7 +17,7 @@ import type { RewardLookup } from "@/types/lucky-wheel";
 type Props = {
   eventId: number;
   token: string;
-  onChanged: () => Promise<void> | void;
+  canCorrect: boolean;
 };
 
 const formatBangkok = (value: string | null) =>
@@ -29,14 +29,12 @@ const formatBangkok = (value: string | null) =>
       })
     : "-";
 
-export function RewardCollection({ eventId, token, onChanged }: Props) {
+export function RewardCollection({ eventId, token, canCorrect }: Props) {
   const [mode, setMode] = useState<"manual" | "camera">("manual");
   const [credential, setCredential] = useState("");
   const [lookup, setLookup] = useState<RewardLookup | null>(null);
   const [loading, setLoading] = useState(false);
   const [identityChecked, setIdentityChecked] = useState(false);
-  const [collectionPoint, setCollectionPoint] = useState("");
-  const [deliveredDetails, setDeliveredDetails] = useState("");
   const [confirmationKey, setConfirmationKey] = useState("");
   const [uncertain, setUncertain] = useState(false);
   const [correctionOpen, setCorrectionOpen] = useState(false);
@@ -52,8 +50,6 @@ export function RewardCollection({ eventId, token, onChanged }: Props) {
     setLookup(result);
     setCredential(normalized);
     setIdentityChecked(false);
-    setCollectionPoint(result.collectionPoint || "");
-    setDeliveredDetails(result.deliveredDetails || "");
     setConfirmationKey(crypto.randomUUID());
     setCorrectionOpen(false);
     setCorrectionReason("");
@@ -74,6 +70,7 @@ export function RewardCollection({ eventId, token, onChanged }: Props) {
       await refreshLookup(normalized);
     } catch (error) {
       setLookup(null);
+      lastScannedRef.current = "";
       toast.error(error instanceof Error ? error.message : "ไม่พบรางวัล");
     } finally {
       setLoading(false);
@@ -81,7 +78,7 @@ export function RewardCollection({ eventId, token, onChanged }: Props) {
   };
 
   const confirm = async () => {
-    if (!lookup || !identityChecked || !collectionPoint.trim() || loading) return;
+    if (!lookup || !identityChecked || (deadlinePassed && !uncertain) || loading) return;
     setLoading(true);
     setUncertain(false);
     try {
@@ -91,12 +88,9 @@ export function RewardCollection({ eventId, token, onChanged }: Props) {
         claimGeneration: lookup.claimGeneration,
         idempotencyKey: confirmationKey,
         identityChecked: true,
-        collectionPoint: collectionPoint.trim(),
-        deliveredDetails: deliveredDetails.trim() || null,
       });
       toast.success("ยืนยันส่งมอบของรางวัลแล้ว");
       await refreshLookup(credential);
-      await onChanged();
     } catch (error) {
       if (
         !(error instanceof ApiError) ||
@@ -112,7 +106,7 @@ export function RewardCollection({ eventId, token, onChanged }: Props) {
   };
 
   const correct = async () => {
-    if (!lookup || !correctionReason.trim() || loading) return;
+    if (!canCorrect || !lookup || !correctionReason.trim() || loading) return;
     setLoading(true);
     try {
       await api.luckyWheel.correctRedemption(token, eventId, lookup.spinId, {
@@ -125,7 +119,6 @@ export function RewardCollection({ eventId, token, onChanged }: Props) {
       });
       toast.success("เปิด claim รุ่นใหม่แล้ว พร้อมเก็บเหตุผลการแก้ไข");
       await refreshLookup(credential);
-      await onChanged();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "แก้ไขสถานะรับของไม่สำเร็จ");
     } finally {
@@ -142,50 +135,67 @@ export function RewardCollection({ eventId, token, onChanged }: Props) {
         <p className="mt-1 text-xs text-zinc-500">การสแกนเป็นเพียงการค้นหา ไม่เปลี่ยนสถานะรับของอัตโนมัติ</p>
       </div>
 
-      <div className="grid grid-cols-2 gap-2 rounded-xl bg-zinc-100 p-1 sm:inline-grid" aria-label="วิธีค้นหารางวัล">
-        <button type="button" aria-pressed={mode === "manual"} className={`${mode === "manual" ? "btn-primary" : "btn-secondary"} min-h-11 gap-2`} onClick={() => setMode("manual")}>
-          <IconSearch size={17} /> รหัส
-        </button>
-        <button type="button" aria-pressed={mode === "camera"} className={`${mode === "camera" ? "btn-primary" : "btn-secondary"} min-h-11 gap-2`} onClick={() => setMode("camera")}>
-          <IconCamera size={17} /> กล้อง
-        </button>
-      </div>
+      {!lookup && (
+        <>
+          <div className="grid grid-cols-2 gap-2 rounded-xl bg-zinc-100 p-1 sm:inline-grid" aria-label="วิธีค้นหารางวัล">
+            <button type="button" aria-pressed={mode === "manual"} className={`${mode === "manual" ? "btn-primary" : "btn-secondary"} min-h-11 gap-2`} onClick={() => setMode("manual")}>
+              <IconSearch size={17} /> รหัส
+            </button>
+            <button type="button" aria-pressed={mode === "camera"} className={`${mode === "camera" ? "btn-primary" : "btn-secondary"} min-h-11 gap-2`} onClick={() => setMode("camera")}>
+              <IconCamera size={17} /> กล้อง
+            </button>
+          </div>
 
-      {mode === "camera" && (
-        <div className="mx-auto max-w-sm overflow-hidden rounded-xl border border-zinc-200 bg-black">
-          <Scanner
-            onScan={(codes) => {
-              const raw = codes[0]?.rawValue?.trim();
-              if (!raw || raw === lastScannedRef.current) return;
-              lastScannedRef.current = raw;
-              setCredential(raw);
-              void runLookup(raw);
-            }}
-            onError={() => toast.error("ไม่สามารถเปิดกล้องได้")}
-          />
-        </div>
+          {mode === "camera" && (
+            <div className="mx-auto max-w-sm overflow-hidden rounded-xl border border-zinc-200 bg-black">
+              <Scanner
+                paused={loading}
+                onScan={(codes) => {
+                  const raw = codes[0]?.rawValue?.trim();
+                  if (loading || !raw || raw === lastScannedRef.current) return;
+                  lastScannedRef.current = raw;
+                  setCredential(raw);
+                  void runLookup(raw);
+                }}
+                onError={() => toast.error("ไม่สามารถเปิดกล้องได้")}
+              />
+            </div>
+          )}
+
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+            <label className="min-w-0 flex-1 text-sm font-medium text-zinc-700">QR หรือรหัสรับรางวัล
+              <input
+                className="input-field mt-1"
+                value={credential}
+                onChange={(event) => {
+                  setCredential(event.target.value);
+                  lastScannedRef.current = "";
+                }}
+                placeholder="PRIS-REWARD:... หรือรหัสตัวอักษร"
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") void runLookup();
+                }}
+              />
+            </label>
+            <button type="button" className="btn-primary min-h-11 gap-2" disabled={loading || !credential.trim()} onClick={() => void runLookup()}>
+              {loading ? <IconLoader2 size={17} className="animate-spin" /> : <IconSearch size={17} />}
+              ค้นหา
+            </button>
+          </div>
+        </>
       )}
 
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
-        <label className="min-w-0 flex-1 text-sm font-medium text-zinc-700">QR หรือรหัสรับรางวัล
-          <input
-            className="input-field mt-1"
-            value={credential}
-            onChange={(event) => {
-              setCredential(event.target.value);
-              lastScannedRef.current = "";
-            }}
-            placeholder="PRIS-REWARD:... หรือรหัสตัวอักษร"
-            onKeyDown={(event) => {
-              if (event.key === "Enter") void runLookup();
-            }}
-          />
-        </label>
-        <button type="button" className="btn-primary min-h-11 gap-2" disabled={loading || !credential.trim()} onClick={() => void runLookup()}>
-          {loading ? <IconLoader2 size={17} className="animate-spin" /> : <IconSearch size={17} />}
-          ค้นหา
+      {lookup && (
+        <button type="button" className="btn-secondary min-h-11 gap-2" disabled={loading || uncertain} onClick={() => {
+          setLookup(null);
+          setCredential("");
+          setIdentityChecked(false);
+          lastScannedRef.current = "";
+        }}>
+          {mode === "camera" ? <IconCamera size={17} /> : <IconSearch size={17} />}
+          ค้นหารายการถัดไป
         </button>
-      </div>
+      )}
 
       {uncertain && (
         <div className="rounded-xl bg-amber-50 p-4 text-sm text-amber-900" role="alert">
@@ -225,13 +235,13 @@ export function RewardCollection({ eventId, token, onChanged }: Props) {
             <div className="grid gap-3 md:grid-cols-2">
               <div className="rounded-lg bg-zinc-50 p-3 text-sm">
                 <p className="font-medium text-zinc-700">กำหนดรับของ</p>
-                <p className={deadlinePassed ? "mt-1 text-rose-700" : "mt-1 text-zinc-600"}>{formatBangkok(lookup.collectionDeadline)}</p>
+                <p className={deadlinePassed ? "mt-1 text-rose-700" : "mt-1 text-zinc-600"}>{lookup.collectionDeadline ? formatBangkok(lookup.collectionDeadline) : "ไม่กำหนดวันสิ้นสุด"}</p>
               </div>
               <div className="rounded-lg bg-zinc-50 p-3 text-sm">
                 <p className="font-medium text-zinc-700">สถานะเดิม</p>
                 <p className="mt-1 text-zinc-600">
                   {lookup.status === "redeemed"
-                    ? `ยืนยันโดย Admin #${lookup.redeemedBy ?? "-"} เมื่อ ${formatBangkok(lookup.redeemedAt)}`
+                    ? `ยืนยันโดย ${lookup.redeemedByName || `เจ้าหน้าที่ #${lookup.redeemedBy ?? "-"}`} เมื่อ ${formatBangkok(lookup.redeemedAt)}`
                     : "ยังไม่มีการยืนยันส่งมอบ"}
                 </p>
               </div>
@@ -241,7 +251,7 @@ export function RewardCollection({ eventId, token, onChanged }: Props) {
               <>
                 {deadlinePassed && (
                   <p className="rounded-lg bg-rose-50 p-3 text-sm text-rose-700">
-                    เลยกำหนดรับของแล้ว ต้องแก้ deadline ผ่านการตั้งค่าที่มี audit reason ก่อน จึงจะยืนยันได้
+                    เลยกำหนดรับของแล้ว ให้ admin แก้กำหนดรับของในแท็บตั้งค่าวงล้อก่อนยืนยัน
                   </p>
                 )}
                 <label className="flex items-start gap-3 rounded-lg border border-zinc-200 p-3 text-sm">
@@ -251,34 +261,19 @@ export function RewardCollection({ eventId, token, onChanged }: Props) {
                     checked={identityChecked}
                     onChange={(event) => setIdentityChecked(event.target.checked)}
                   />
-                  <span><strong>ตรวจตัวตนแล้ว</strong><br /><span className="text-zinc-500">ชื่อและบัญชีตรงกับผู้ที่มายืนยันรับของ</span></span>
+                  <span><strong>ตรวจสอบผู้รับแล้ว</strong><br /><span className="text-zinc-500">ชื่อและบัญชีตรงกับผู้ที่มารับของ</span></span>
                 </label>
-                <div className="grid gap-3 md:grid-cols-2">
-                  <label className="text-sm font-medium text-zinc-700">
-                    จุดส่งมอบจริง
-                    <input className="input-field mt-1" value={collectionPoint} onChange={(event) => setCollectionPoint(event.target.value)} />
-                  </label>
-                  <label className="text-sm font-medium text-zinc-700">
-                    รายละเอียดส่งมอบ (ถ้ามี)
-                    <input
-                      className="input-field mt-1"
-                      value={deliveredDetails}
-                      onChange={(event) => setDeliveredDetails(event.target.value)}
-                      placeholder="เช่น เสื้อ Size L — เป็นบันทึกที่ส่งมอบจริง ไม่ใช่การรับประกันไซซ์"
-                    />
-                  </label>
-                </div>
                 <button
                   type="button"
                   className="btn-primary min-h-11"
-                  disabled={!identityChecked || !collectionPoint.trim() || deadlinePassed || loading}
+                  disabled={!identityChecked || (deadlinePassed && !uncertain) || loading}
                   onClick={() => void confirm()}
                 >
                   {loading ? <IconLoader2 size={17} className="animate-spin" /> : uncertain ? <IconRefresh size={17} /> : <IconCheck size={17} />}
                   {uncertain ? "ตรวจ/ยืนยันคำขอเดิม" : "ยืนยันส่งมอบของรางวัล"}
                 </button>
               </>
-            ) : (
+            ) : canCorrect ? (
               <div className="space-y-3">
                 <button type="button" className="text-sm font-semibold text-amber-700 underline underline-offset-4" onClick={() => setCorrectionOpen((value) => !value)}>
                   ต้องแก้ไขการรับของ?
@@ -299,7 +294,7 @@ export function RewardCollection({ eventId, token, onChanged }: Props) {
                   </div>
                 )}
               </div>
-            )}
+            ) : null}
           </div>
         </div>
       )}

@@ -86,6 +86,8 @@ export type WheelConfigurationSegment = {
 
 export type WheelConfiguration = {
   segments: WheelConfigurationSegment[];
+  collectionInstructions?: LocalizedText;
+  collectionDeadline?: string | null;
 };
 
 export type WheelSegmentState = {
@@ -212,6 +214,7 @@ export type RewardLookup = {
   status: "open" | "redeemed";
   redeemedAt: string | null;
   redeemedBy: number | null;
+  redeemedByName: string | null;
   collectionPoint: string | null;
   deliveredDetails: string | null;
   collectionInstructions: LocalizedText | null;
@@ -234,8 +237,8 @@ export type RedemptionInput = {
   claimGeneration: number;
   idempotencyKey: string;
   identityChecked: true;
-  collectionPoint: string;
-  deliveredDetails: string | null;
+  collectionPoint?: string | null;
+  deliveredDetails?: string | null;
 };
 
 export type RedemptionCorrectionInput = {

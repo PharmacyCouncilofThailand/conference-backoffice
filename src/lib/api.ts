@@ -1234,6 +1234,11 @@ export const api = {
         },
       );
     },
+    collectionAccess: (token: string, eventId: number) =>
+      fetchAPI<{ eventId: number; role: "admin" | "staff" }>(
+        `/api/backoffice/lucky-wheel/events/${eventId}/collection-access`,
+        { token },
+      ),
     lookupReward: (token: string, eventId: number, credential: string) =>
       fetchAPI<RewardLookup>(
         `/api/backoffice/lucky-wheel/events/${eventId}/reward-lookups`,
