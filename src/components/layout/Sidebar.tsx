@@ -60,6 +60,7 @@ const menuStructure = [
     icon: IconFileText,
     children: [
       { href: "/abstracts", label: "All Abstracts" },
+      { href: "/posters", label: "Poster submissions" },
       { href: "/abstract-categories", label: "Categories" },
     ],
   },
@@ -253,7 +254,7 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
         if (item.label === "Abstracts" && item.children) {
           return {
             ...item,
-            children: item.children.filter((child) => child.href === "/abstracts"),
+            children: item.children.filter((child) => ["/abstracts", "/posters"].includes(child.href)),
           };
         }
         return null;
@@ -265,7 +266,7 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
         if (item.label === "Abstracts" && item.children) {
           return {
             ...item,
-            children: item.children.filter((child) => child.href === "/abstracts"),
+            children: item.children.filter((child) => ["/abstracts", "/posters"].includes(child.href)),
           };
         }
         return null;
