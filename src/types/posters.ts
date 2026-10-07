@@ -13,7 +13,7 @@ export type RevisionDto = { id: string; details: string; closesAt: string; statu
   createdAt: string; requestedBy: number; submittedAt: string | null; cancelledAt: string | null;
   cancelledBy: number | null; cancellationReason: string | null };
 export type PosterProgress='not_submitted'|'submitted'|'revision_pending'|'revised'|'revision_expired';
-export type PosterListRow={sourceKey:string;announcement:Announcement;abstractId:number|null;matchState:MatchState|'withdrawn';matchFingerprint:string;
+export type PosterListRow={sourceKey:string;announcement:Announcement;abstractId:number|null;matchState:MatchState|'withdrawn'|null;matchFingerprint:string;
  problems:string[];snapshot:unknown;verifiedBy:number|null;verifiedAt:string|null;verificationReason:string|null;
  submitterEmail:string|null;progress:PosterProgress;currentUpload:UploadDto|null;activeRequest:RevisionDto|null;
  lastEmail:{id:string;kind:MailKind;state:MailState;createdAt:string;errorCode:string|null}|null;canNotify:boolean};
@@ -23,11 +23,11 @@ export type PosterReconciliationDto={eventId:number;digest:string;counts:Record<
 export type PosterListDto={items:PosterListRow[];total:number;page:number;pageSize:number;settings:PosterSettingsDto;
  capabilities:{read:true;manage:boolean};counts:Record<PosterProgress,number>};
 export type PosterDetailDto={row:PosterListRow;uploads:UploadDto[];requests:RevisionDto[];
- emailJobs:Array<{id:string;kind:MailKind;state:MailState;recipient:string;subject:string;html:string;createdAt:string;finishedAt:string|null;
+ emailJobs:Array<{id:string;kind:MailKind;state:MailState;recipient:string;subject:string;html:string;text?:string;templateVersion?:string;createdAt:string;finishedAt:string|null;
   triggeredBy:number|null;parentJobId:string|null;requestId:string|null;uploadId:string|null;errorCode:string|null;attempts:unknown[]}>;
  audit:unknown[];capabilities:{read:true;manage:boolean}};
 export type PosterBatchDto={batchId:string;jobs:Array<{id:string;abstractId:number;recipient:string;state:MailState;errorCode:string|null}>};
-export type PosterPreviewDto = {fingerprint:string;messages:Array<{abstractId:number;recipient:string;subject:string;html:string;templateVersion:string}>;requestId?:string;closesAt?:string};
+export type PosterPreviewDto = {fingerprint:string;messages:Array<{abstractId:number;recipient:string;subject:string;html:string;text?:string;templateVersion:string}>;requestId?:string;closesAt?:string};
 export type PosterPreviewInput =
   | { kind: 'initial' | 'reminder'; abstractIds: number[] }
   | { kind: 'revision'; abstractId: number; requestId?: string; details: string; closesAt: string }

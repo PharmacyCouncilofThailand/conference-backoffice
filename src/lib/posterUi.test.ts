@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import type { PosterDetailDto, PosterListRow, RevisionDto } from '../types/posters';
-import { activePosterRequest, canResendPosterJob, canManagePosters, posterRouteId, thaiDeadlineInput, deadlineInputToClose, selectablePosterIds } from './posterUi';
+import { activePosterRequest, canResendPosterJob, isPosterActionAudit, canManagePosters, posterAuditSummary, posterRouteId, thaiDeadlineInput, deadlineInputToClose, selectablePosterIds } from './posterUi';
 import { api, ApiError } from './api';
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
@@ -10,6 +10,7 @@ import ts from 'typescript';
 import * as React from 'react';
 import type { AuthProvider, User } from '../contexts/AuthContext';
 import type { Sidebar } from '../components/layout/Sidebar';
+import { PosterComparison, PosterEmailAttempts, PosterDeadlineHistory, posterProblemLabel } from '../components/posters/PosterHistoryViews';
 
 test('only admins manage posters', () => {
   for (const role of ['organizer', 'reviewer', 'staff', 'verifier', 'team_registration_viewer', '', 'Admin']) {
@@ -103,7 +104,7 @@ function componentModule<T>(file: string, hooks: Partial<typeof React>, auth?: u
   const code = ts.transpileModule(readFileSync(file, 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true },
   }).outputText;
-  runInNewContext(code, { exports, crypto: globalThis.crypto, require: (name: string) => {
+  runInNewContext(code, { exports, URLSearchParams, crypto: globalThis.crypto, require: (name: string) => {
     if (name in modules) return modules[name];
     if (name === 'react') return { ...React, ...hooks };
     if (name === '@/contexts/AuthContext') return { useAuth: () => auth };
@@ -157,7 +158,7 @@ function nodes(element: unknown): React.ReactElement<Record<string, unknown>>[] 
 
 test('real table gates conflict approval, invalid selection and read-only controls', () => {
   const { PosterTable } = componentModule<{ PosterTable: (props: Record<string, unknown>) => React.ReactElement }>('src/components/posters/PosterTable.tsx', {}, undefined, {
-    'next/link': { default: 'a' }, './PosterDialog': { PosterSnapshot: 'dl' },
+    'next/link': { default: 'a' }, './PosterHistoryViews': { PosterComparison, posterProblemLabel },
   });
   const rows = ['ready', 'alias_pending', 'conflict', 'missing', 'withdrawn'].map((matchState, index) => ({
     sourceKey: `1:${index}`, abstractId: matchState === 'missing' ? null : index + 1, matchState,
@@ -172,6 +173,9 @@ test('real table gates conflict approval, invalid selection and read-only contro
   assert.equal(checkboxes.filter(node => !node.props.disabled).length, 1);
   assert.equal(managed.filter(node => node.type === 'button').length, 1, 'only alias pending can approve');
   const readonly = nodes(PosterTable({ ...props, manage: false, view: 'verify' }));
+  assert.equal(JSON.stringify(readonly).includes('ผลตรวจรายชื่อ'), false);
+  assert.equal(JSON.stringify(readonly).includes('Poster / Email'), false);
+  assert.equal(JSON.stringify(readonly).includes('ยังไม่แจ้ง'), false);
   assert.equal(readonly.filter(node => node.type === 'input' || node.type === 'button').length, 0);
 });
 
@@ -182,6 +186,7 @@ function posterHarness(file: string, component: string, modules: Record<string, 
   const hooks = {
     useState: (initial: unknown) => { const index = stateCursor++; if (!(index in states)) states[index] = typeof initial === 'function' ? initial() : initial;
       return [states[index], (value: unknown) => { states[index] = typeof value === 'function' ? value(states[index]) : value; }]; },
+    useMemo: (factory: () => unknown) => factory(),
     useRef: (initial: unknown) => { const index = refCursor++; refs[index] ??= { current: initial }; return refs[index]; },
     useEffect: (effect: () => unknown, deps: unknown[]) => { const index = effectCursor++; if (!dependencies[index] || deps.some((value, i) => value !== dependencies[index][i])) { effects.push(effect); dependencies[index] = deps; } },
   } as unknown as Partial<typeof React>;
@@ -199,6 +204,56 @@ function emailHarness(mockApi: unknown) {
     '@/lib/api': { api: mockApi, ApiError }, './PosterDialog': { PosterDialog: 'dialog' },
   });
 }
+
+test('plain-text poster drafts and stored bodies render as text without an HTML frame', async () => {
+  const text = 'เรียน ผู้ส่ง\n\n- รหัสผลงาน: P001\n- ชื่อผลงาน: <script>literal title</script>\n\n1. ตรวจสอบไฟล์';
+  const previewHarness = emailHarness({ posters: { preview: async () => ({ data: {
+    fingerprint: 'a'.repeat(64), messages: [{ abstractId: 501, recipient: 'owner@example.invalid', subject: 'Poster', html: text, text, templateVersion: 'poster-text-v2' }],
+  } }) } });
+  const props = { eventId: 42, token: 'synthetic', kind: 'initial', abstractIds: [501], onClose: () => {} };
+  previewHarness.render(props); previewHarness.effects.shift()!(); await new Promise(resolve => setImmediate(resolve));
+  const rendered = previewHarness.render(props);
+  assert.equal(rendered.filter(node => node.type === 'iframe').length, 0);
+  assert.equal(rendered.find(node => node.type === 'pre')!.props.children, text);
+  const storedHarness = emailHarness({ posters: { preview: async () => { throw new Error('stored body must not request a new draft'); } } });
+  const storedProps = { ...props, kind: 'stored', abstractId: 501, job: { id: 'job', recipient: 'owner@example.invalid', subject: 'Poster', html: text, text } };
+  storedHarness.render(storedProps); storedHarness.effects.shift()!();
+  assert.equal(storedHarness.render(storedProps).find(node => node.type === 'pre')!.props.children, text);
+});
+
+test('viewer list has only received navigation and never requests admin settings history', async () => {
+  for (const role of ['organizer', 'reviewer']) {
+    let reads = 0, settingsReads = 0;
+    const auth = { user: { role, assignedEvents: [{ id: 42, code: 'PRIS-2026', name: 'PRIS' }] }, token: 'synthetic', isAdmin: false, isLoading: false };
+    const harness = posterHarness('src/app/posters/page.tsx', 'default', {
+      '@/components/layout/AdminLayout': { AdminLayout: 'main' },
+      '@/components/common': { Pagination: 'pagination' },
+      '@/lib/api': { api: { posters: {
+        list: async (eventId: number, query: URLSearchParams) => {
+          reads++; assert.equal(eventId, 42); assert.equal(query.get('received'), 'true'); assert.equal(query.has('matchState'), false);
+          return { data: { items: [], counts: {}, total: 0, pageSize: 25, settings: {}, capabilities: { manage: false } } };
+        },
+        getSettings: async () => { settingsReads++; return { data: {} }; },
+      } } },
+      '@/lib/posterUi': { selectablePosterIds },
+      '@/components/posters/PosterTable': { PosterTable: 'poster-table', progressLabels: {}, matchLabels: {}, mailLabels: {}, thaiTime: (value: string) => value },
+      '@/components/posters/PosterEmailDialog': { PosterEmailDialog: 'email-dialog' },
+      '@/components/posters/PosterManagementDialog': { PosterManagementDialog: 'management-dialog' },
+      '@/components/posters/PosterHistoryViews': { PosterDeadlineHistory: 'deadline-history' },
+    }, auth);
+    harness.render({}); while (harness.effects.length) harness.effects.shift()!();
+    harness.render({}); while (harness.effects.length) harness.effects.shift()!();
+    await new Promise(resolve => setImmediate(resolve));
+    const rendered = harness.render({});
+    const navigation = rendered.find(node => node.type === 'nav')!;
+    assert.equal(nodes(navigation).filter(node => node.type === 'button').length, 1);
+    assert.ok(JSON.stringify(navigation).includes('Poster ที่ได้รับ'));
+    assert.equal(JSON.stringify(rendered).includes('ผลตรวจ'), false);
+    assert.equal(settingsReads, 0); assert.equal(reads, 1);
+    const table = rendered.find(node => node.type === 'poster-table')!;
+    assert.equal(table.props.view, 'received'); assert.equal(table.props.manage, false); assert.equal(table.props.showAdminDetails, false);
+  }
+});
 
 test('same email yields two sandboxed previews and network-unknown retry keeps identical key and payload', async () => {
   const calls: Array<{ input: unknown; key: string }> = [];
@@ -247,12 +302,13 @@ test('real deadline input change updates preview and submits the edited Thai dat
   const hooks = {
     useState: (initial: unknown) => { const index = stateCursor++; if (!(index in states)) states[index] = typeof initial === 'function' ? initial() : initial;
       return [states[index], (value: unknown) => { states[index] = typeof value === 'function' ? value(states[index]) : value; }]; },
+    useMemo: (factory: () => unknown) => factory(),
     useRef: (initial: unknown) => { const index = refCursor++; refs[index] ??= { current: initial }; return refs[index]; },
   } as unknown as Partial<typeof React>;
   const { PosterManagementDialog } = componentModule<{ PosterManagementDialog: (props: Record<string, unknown>) => React.ReactElement }>('src/components/posters/PosterManagementDialog.tsx', hooks, undefined, {
     '@/lib/api': { api: { posters: { settings: async (_event: number, input: unknown) => { submitted.push(input); } } }, ApiError },
     '@/lib/posterUi': { deadlineInputToClose, thaiDeadlineInput },
-    './PosterDialog': { PosterDialog: 'dialog', PosterSnapshot: 'dl' },
+    './PosterDialog': { PosterDialog: 'dialog' }, './PosterHistoryViews': { PosterComparison },
     './PosterTable': { thaiTime: (value: string) => value },
   });
   const props = { eventId: 42, token: 'synthetic', settings: { closesAt: '2026-10-15T17:00:00.000Z', version: 4 }, onClose: () => {}, onSaved: () => {} };
@@ -378,11 +434,12 @@ function detailHarness(auth: unknown, route: { abstractId: string; eventId: stri
   return posterHarness('src/app/posters/[abstractId]/page.tsx', 'default', {
     'next/navigation': { useParams: () => ({ abstractId: route.abstractId }), useSearchParams: () => new URLSearchParams({ eventId: route.eventId }) },
     'next/link': { default: 'a' }, '@/components/layout/AdminLayout': { AdminLayout: 'main' },
-    '@/lib/api': { api: { posters: { detail } } }, '@/lib/posterUi': { activePosterRequest, canResendPosterJob, posterRouteId },
-    '@/components/posters/PosterDialog': { PosterDialog: 'dialog', PosterSnapshot: 'dl' },
+    '@/lib/api': { api: { posters: { detail } } }, '@/lib/posterUi': { activePosterRequest, canResendPosterJob, isPosterActionAudit, posterAuditSummary, posterRouteId },
+    '@/components/posters/PosterDialog': { PosterDialog: 'dialog' },
+    '@/components/posters/PosterHistoryViews': { PosterComparison, PosterEmailAttempts, posterProblemLabel },
     '@/components/posters/PosterEmailDialog': { PosterEmailDialog: 'email-dialog' },
     '@/components/posters/PosterRevisionDialog': { PosterRevisionDialog: 'revision-dialog' },
-    '@/components/posters/PosterTable': { progressLabels: { revision_pending: 'Revision pending' }, matchLabels: { ready: 'Ready' }, mailLabels: { failed: 'Failed', unknown: 'Unknown' }, thaiTime: (value: string) => value },
+    '@/components/posters/PosterTable': { progressLabels: { revision_pending: 'Revision pending' }, progressColors: { revision_pending: 'bg-amber-100 text-amber-800' }, matchLabels: { ready: 'Ready' }, mailLabels: { failed: 'Failed', unknown: 'Unknown' }, thaiTime: (value: string) => value },
   }, auth, true);
 }
 
@@ -398,12 +455,19 @@ test('real detail page restricts viewer controls, invalid IDs and unassigned eve
   for (const role of ['admin', 'organizer', 'reviewer']) {
     let reads = 0;
     const auth = { user: { role, assignedEvents: [{ id: 42, code: 'PRIS-2026' }] }, token: 'synthetic', isAdmin: role === 'admin', isLoading: false };
-    const harness = detailHarness(auth, { abstractId: '501', eventId: '42' }, async (eventId, abstractId) => { reads++; assert.equal(eventId, 42); assert.equal(abstractId, 501); return { data: detailFixture() }; });
+    const harness = detailHarness(auth, { abstractId: '501', eventId: '42' }, async (eventId, abstractId) => { reads++; assert.equal(eventId, 42); assert.equal(abstractId, 501); const detail = detailFixture(); detail.audit = [{ action: 'match_changed' }, { action: 'alias_verified' }, { action: 'revision_created' }, { action: 'revision_cancelled' }]; return { data: detail }; });
     harness.render({}); harness.effects.shift()!(); await new Promise(resolve => setImmediate(resolve));
     const rendered = harness.render({}), buttons = rendered.filter(node => node.type === 'button');
     assert.equal(buttons.some(node => node.props.children === 'ยกเลิกคำขอ'), role === 'admin');
     assert.equal(buttons.some(node => node.props.children === 'ตรวจและส่งซ้ำ'), role === 'admin');
-    assert.equal(buttons.some(node => node.props.children === 'ดูอีเมลที่บันทึกไว้'), true);
+    assert.equal(buttons.some(node => node.props.children === 'ดูอีเมลที่บันทึกไว้'), role === 'admin');
+    assert.equal(JSON.stringify(rendered).includes('ประกาศ / ฐานข้อมูล / ผลตรวจ'), role === 'admin');
+    assert.equal(JSON.stringify(rendered).includes('รับรองโดย'), role === 'admin');
+    assert.equal(JSON.stringify(rendered).includes('ประวัติอีเมล'), role === 'admin');
+    assert.equal(JSON.stringify(rendered).includes('ตรวจข้อมูลประกาศ'), role === 'admin');
+    assert.equal(JSON.stringify(rendered).includes('รับรองรหัสเดิม'), role === 'admin');
+    assert.ok(JSON.stringify(rendered).includes('สร้างคำขอแก้ไข'));
+    assert.ok(JSON.stringify(rendered).includes('ยกเลิกคำขอแก้ไข'));
     assert.equal(reads, 1);
     assert.equal(rendered.find(node => node.type === 'iframe')!.props.src, 'http://127.0.0.1:53018/fixture.pdf');
   }
@@ -424,6 +488,41 @@ test('real detail late responses cannot replace a new scoped work', async () => 
   pending[1]({ data: detailFixture('New work') }); await new Promise(resolve => setImmediate(resolve));
   pending[0]({ data: detailFixture('Old work') }); await new Promise(resolve => setImmediate(resolve));
   const rendered = harness.render({});
-  assert.ok(rendered.some(node => node.type === 'p' && node.props.children === 'New work'));
-  assert.equal(rendered.some(node => node.type === 'p' && node.props.children === 'Old work'), false);
+  assert.ok(rendered.some(node => node.type === 'h1' && node.props.children === 'New work'));
+  assert.equal(rendered.some(node => node.type === 'h1' && node.props.children === 'Old work'), false);
+});
+
+test('audit summaries keep work actions readable without recursive technical snapshots', async () => {
+  const audit = { action: 'revision_cancelled', actor_id: 9, created_at: '2026-10-07T04:00:00Z', reason: 'แก้ไขคำขอใหม่', before_state: { status: 'open' }, after_state: { status: 'cancelled', nested: { candidates: Array(100).fill({ secretTechnicalField: 'raw snapshot' }) } } };
+  const { changes: auditChanges, ...summary } = posterAuditSummary(audit); assert.equal(auditChanges.length, 1); assert.deepEqual(summary, { action: 'ยกเลิกคำขอแก้ไข', actor: 'ผู้ดูแล #9', createdAt: audit.created_at, reason: audit.reason, change: 'เปิดรับฉบับแก้ไข → ยกเลิกแล้ว', closesAt: null });
+  assert.equal(posterAuditSummary({ action: 'match_changed', after_state: { match: { state: 'ready' } } }).actor, 'ระบบ');
+  const detail = detailFixture(); detail.audit = [audit];
+  const harness = detailHarness({ user: { role: 'admin' }, token: 'synthetic', isAdmin: true, isLoading: false }, { abstractId: '501', eventId: '42' }, async () => ({ data: detail }));
+  harness.render({}); harness.effects.shift()!(); await new Promise(resolve => setImmediate(resolve));
+  const rendered = harness.render({});
+  assert.ok(rendered.some(node => node.type === 'h3' && node.props.children === 'ยกเลิกคำขอแก้ไข'));
+  const changes = rendered.find(node => node.type === 'details' && nodes(node).some(child => child.type === 'summary' && JSON.stringify(child.props.children).includes('ดูรายละเอียดการเปลี่ยนแปลง')))!;
+  assert.equal(changes.props.open, undefined, 'technical details are collapsed by default');
+  assert.ok(nodes(changes).some(node => node.type === 'div' && String(node.props.className).includes('max-h-80 space-y-4 overflow-auto')));
+  assert.equal(nodes(changes).some(node => node.type === 'dl'), false); assert.equal(JSON.stringify(rendered).includes('secretTechnicalField'), false);
+  const sameState = posterAuditSummary({ action: 'match_changed', before_state: { match: { state: 'ready' } }, after_state: { match: { state: 'ready' } } });
+  assert.equal(sameState.change, null, 'same-status field changes remain available in the disclosure');
+  const titleChange = posterAuditSummary({ action: 'match_changed', before_state: { match: { state: 'conflict' }, candidates: [{ title: 'เดิม', firstName: 'ชื่อเดิม', lastName: 'นามสกุล', email: 'private@example.invalid', abstractId: 123 }] }, after_state: { match: { state: 'conflict' }, candidates: [{ title: 'ใหม่', firstName: 'ชื่อใหม่', lastName: 'นามสกุล', email: 'private@example.invalid', abstractId: 123 }] } });
+  assert.deepEqual(titleChange.changes.map(field => field.label), ['ชื่อผลงานในฐานข้อมูล', 'ผู้ส่งในฐานข้อมูล']);
+  assert.equal(JSON.stringify(titleChange).includes('private@example.invalid'), false);
+  assert.equal(posterAuditSummary({ action: 'unknown', after_state: { fingerprint: 'technical' } }).changes.length, 0);
+});
+
+test('shared reconciliation, attempt and deadline views expose business fields without raw snapshot keys', () => {
+  assert.deepEqual(['SOURCE_DUPLICATE_ABSTRACT', 'SOURCE_REMAP'].map(posterProblemLabel), ['หลายรายการประกาศอ้างถึงผลงานเดียวกัน', 'รายการประกาศเปลี่ยนไปอ้างถึงผลงานอื่น ต้องตรวจสอบข้อมูล']);
+  const snapshot = { announcement: { trackingId: 'ANN-1', title: 'ชื่อประกาศ', submitterName: 'ผู้ส่ง', presentationType: 'poster', categoryName: 'หมวด' }, candidates: [{ canonicalTrackingId: 'DB-1', title: 'ชื่อฐานข้อมูล', firstName: 'ชื่อ', lastName: 'สกุล', aliases: ['ANN-1'], userId: 99, email: 'private@example.invalid' }, { canonicalTrackingId: 'DB-2', title: 'อีกผลงาน' }], match: { state: 'alias_pending', via: 'alias', fingerprint: 'secret-fingerprint', problems: ['TITLE_MISMATCH'] } };
+  const rendered = nodes(PosterComparison({ value: snapshot }));
+  const output = JSON.stringify(rendered);
+  assert.ok(output.includes('ข้อมูลในประกาศ') && output.includes('ชื่อฐานข้อมูล') && output.includes('รหัสเดิมของผลงาน'));
+  assert.ok(output.includes('ชื่อผลงานไม่ตรงกัน') && output.includes('DB-2'));
+  for (const technical of ['canonicalTrackingId', 'fingerprint', 'private@example.invalid', 'userId']) assert.equal(output.includes(technical), false);
+  const attempts = JSON.stringify(nodes(PosterEmailAttempts({ value: [{ id: 'internal-id', claim_token: 'internal-token', result: 'sent', started_at: '2026-10-07T00:00:00Z' }] })));
+  assert.ok(attempts.includes('ผู้ให้บริการรับอีเมลแล้ว')); assert.equal(attempts.includes('internal-token'), false);
+  assert.ok(JSON.stringify(nodes(PosterDeadlineHistory({ value: { closesAt: '2026-10-15T17:00:00Z', version: 2, manifestDigest: 'internal-digest' } }))).includes('รุ่น 2'));
+  for (const path of ['src/app/posters/[abstractId]/page.tsx', 'src/components/posters/PosterTable.tsx', 'src/components/posters/PosterManagementDialog.tsx', 'src/app/posters/page.tsx']) assert.equal(readFileSync(path, 'utf8').includes('PosterSnapshot'), false, path);
 });

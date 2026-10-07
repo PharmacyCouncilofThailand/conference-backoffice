@@ -29,7 +29,7 @@ export function PosterEmailDialog(props: Props) {
     let current = true;
     setPreview(null);
     if (kind === 'stored' && job && abstractId) {
-      setPreview({ fingerprint: '', messages: [{ abstractId, recipient: job.recipient, subject: job.subject, html: job.html, templateVersion: 'stored' }] });
+      setPreview({ fingerprint: '', messages: [{ abstractId, recipient: job.recipient, subject: job.subject, html: job.html, text: job.text, templateVersion: 'stored' }] });
       return;
     }
     const input = kind === 'resend' ? { kind, jobId: job!.id } as const : { kind, abstractIds } as { kind: 'initial' | 'reminder'; abstractIds: number[] };
@@ -68,7 +68,7 @@ export function PosterEmailDialog(props: Props) {
     {pendingResend && !busy && <p className="mb-4 text-sm text-amber-800">ยังไม่ทราบผลคำขอ กรุณากดยืนยันอีกครั้งเพื่อตรวจคำขอเดิมก่อนปิด</p>}
     {failure && <p role="alert" className="mb-4 rounded-lg bg-red-50 p-3 text-red-700">{failure}</p>}
     {!preview && <p role="status">กำลังโหลดตัวอย่าง{failure ? ' / โหลดไม่สำเร็จ' : ''}</p>}
-    {preview?.messages.map(message => <section key={message.abstractId} className="mb-6 border-t border-zinc-200 pt-4"><p>abstractId {message.abstractId} · {message.recipient}</p><h3 className="my-2 font-semibold">{message.subject}</h3><iframe title={`ตัวอย่างอีเมล ${message.abstractId}`} sandbox="" referrerPolicy="no-referrer" srcDoc={message.html} className="h-96 w-full rounded-lg border border-zinc-200" /></section>)}
+    {preview?.messages.map(message => <section key={message.abstractId} className="mb-6 border-t border-zinc-200 pt-4"><p>abstractId {message.abstractId} · {message.recipient}</p><h3 className="my-2 font-semibold">{message.subject}</h3>{message.text !== undefined ? <pre className="max-h-96 overflow-auto whitespace-pre-wrap break-words rounded-lg border border-zinc-200 bg-zinc-50 p-4 font-sans text-sm leading-relaxed">{message.text}</pre> : <iframe title={`ตัวอย่างอีเมล ${message.abstractId}`} sandbox="" referrerPolicy="no-referrer" srcDoc={message.html} className="h-96 w-full rounded-lg border border-zinc-200" />}</section>)}
     {!preview && failure && <button className="btn-secondary mr-3" onClick={() => { setFailure(null); setRefresh(value => value + 1); }}>โหลดตัวอย่างใหม่</button>}
     {kind !== 'stored' && <button className="btn-primary" disabled={!preview || busy} onClick={send}>{busy ? 'กำลังสร้างงานอีเมล…' : kind === 'resend' ? 'ยืนยันส่งซ้ำ 1 อีเมล' : `ส่ง ${preview?.messages.length ?? 0} อีเมล`}</button>}
   </PosterDialog>;
