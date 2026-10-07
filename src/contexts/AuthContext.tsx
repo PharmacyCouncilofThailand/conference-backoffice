@@ -48,7 +48,7 @@ export interface User {
   assignedEvents: AssignedEvent[];
   assignedSessions?: AssignedSession[]; // For staff/verifier: sessions they can check-in
   assignedCategories?: string[]; // For reviewers: abstract categories they can review
-  assignedPresentationTypes?: string[]; // For reviewers: presentation types they can review
+  assignedPresentationTypes?: string[]; // For organizers/reviewers: assigned presentation types
 }
 
 // Auth context type

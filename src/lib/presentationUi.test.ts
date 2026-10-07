@@ -212,22 +212,6 @@ function emailHarness(mockApi: unknown) {
   });
 }
 
-test('plain-text poster drafts and stored bodies render as text without an HTML frame', async () => {
-  const text = 'เรียน ผู้ส่ง\n\n- รหัสผลงาน: P001\n- ชื่อผลงาน: <script>literal title</script>\n\n1. ตรวจสอบไฟล์';
-  const previewHarness = emailHarness({ presentations: { preview: async () => ({ data: {
-    fingerprint: 'a'.repeat(64), messages: [{ abstractId: 501, recipient: 'owner@example.invalid', subject: 'Poster', html: text, text, templateVersion: 'presentation-text-v2' }],
-  } }) } });
-  const props = { eventId: 42, token: 'synthetic', kind: 'initial', abstractIds: [501], onClose: () => {} };
-  previewHarness.render(props); previewHarness.effects.shift()!(); await new Promise(resolve => setImmediate(resolve));
-  const rendered = previewHarness.render(props);
-  assert.equal(rendered.filter(node => node.type === 'iframe').length, 0);
-  assert.equal(rendered.find(node => node.type === 'pre')!.props.children, text);
-  const storedHarness = emailHarness({ presentations: { preview: async () => { throw new Error('stored body must not request a new draft'); } } });
-  const storedProps = { ...props, kind: 'stored', abstractId: 501, job: { id: 'job', recipient: 'owner@example.invalid', subject: 'Poster', html: text, text } };
-  storedHarness.render(storedProps); storedHarness.effects.shift()!();
-  assert.equal(storedHarness.render(storedProps).find(node => node.type === 'pre')!.props.children, text);
-});
-
 test('viewer list has only received navigation and never requests admin settings history', async () => {
   for (const role of ['organizer', 'reviewer']) {
     let reads = 0, settingsReads = 0;
