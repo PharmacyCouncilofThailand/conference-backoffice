@@ -178,7 +178,7 @@ export default function RegistrationDetailPage() {
     }, [id, user?.role, attendanceDate]);
 
     const fetchRegistration = async () => {
-        setIsLoading(true);
+        setIsLoading(!registration);
         setError(null);
         try {
             const token = getBackofficeToken();
