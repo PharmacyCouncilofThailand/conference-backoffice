@@ -1,6 +1,6 @@
-import type { PosterDetailDto, PosterListRow, RevisionDto } from '../types/posters';
+import type { PresentationDetailDto, PresentationListRow, RevisionDto } from '../types/presentations';
 
-export const canManagePosters = (role: string): boolean => role === 'admin';
+export const canManagePresentations = (role: string): boolean => role === 'admin';
 
 // Inputs show the last permitted Thai second; the API stores an exclusive close.
 export function thaiDeadlineInput(close: string): string {
@@ -23,32 +23,32 @@ export function deadlineInputToClose(value: string): string {
   return close;
 }
 
-export const selectablePosterIds = (rows: PosterListRow[]): number[] =>
+export const selectablePresentationIds = (rows: PresentationListRow[]): number[] =>
   [...new Set(rows.filter(row => row.canNotify && row.abstractId !== null).map(row => row.abstractId!))];
 
-export function posterRouteId(value: string | string[] | null | undefined): number | null {
+export function presentationRouteId(value: string | string[] | null | undefined): number | null {
   if (typeof value !== 'string' || !/^[1-9]\d*$/.test(value)) return null;
   const id = Number(value);
   return Number.isSafeInteger(id) && id <= 2147483647 ? id : null;
 }
 
 // Request statuses already reflect the server clock; never expire rights with the browser clock.
-export const activePosterRequest = (requests: RevisionDto[]): RevisionDto | null =>
+export const activePresentationRequest = (requests: RevisionDto[]): RevisionDto | null =>
   requests.find(request => request.status === 'open') ?? null;
 
-export function canResendPosterJob(job: PosterDetailDto['emailJobs'][number], detail: PosterDetailDto): boolean {
+export function canResendPresentationJob(job: PresentationDetailDto['emailJobs'][number], detail: PresentationDetailDto): boolean {
   if (job.state === 'pending' || job.state === 'sending') return false;
   if (job.kind === 'revision') return detail.requests.some(request => request.id === job.requestId && request.status === 'open');
   if (job.kind === 'initial' || job.kind === 'reminder') return detail.row.canNotify;
   return job.kind === 'receipt' && detail.uploads.some(upload => upload.id === job.uploadId);
 }
 
-export function isPosterActionAudit(value: unknown): boolean {
+export function isPresentationActionAudit(value: unknown): boolean {
   return !!value && typeof value === 'object' && 'action' in value
     && ['revision_created', 'revision_cancelled'].includes(String(value.action));
 }
 
-export function posterAuditSummary(value: unknown) {
+export function presentationAuditSummary(value: unknown) {
   const object = (item: unknown): Record<string, unknown> => item && typeof item === 'object' && !Array.isArray(item) ? item as Record<string, unknown> : {};
   const text = (item: unknown) => typeof item === 'string' && item.trim() ? item : null;
   const audit = object(value), before = object(audit.before_state), after = object(audit.after_state);

@@ -2,14 +2,14 @@
 
 import { useRef, useState } from 'react';
 import { api, ApiError } from '@/lib/api';
-import { deadlineInputToClose, thaiDeadlineInput } from '@/lib/posterUi';
-import type { PosterListRow, PosterSettingsDto } from '@/types/posters';
-import { PosterDialog } from './PosterDialog';
-import { PosterComparison } from './PosterHistoryViews';
-import { thaiTime } from './PosterTable';
+import { deadlineInputToClose, thaiDeadlineInput } from '@/lib/presentationUi';
+import type { PresentationListRow, PresentationSettingsDto } from '@/types/presentations';
+import { PresentationDialog } from './PresentationDialog';
+import { PresentationComparison } from './PresentationHistoryViews';
+import { thaiTime } from './PresentationTable';
 
-export function PosterManagementDialog({ eventId, token, row, settings, onClose, onSaved }: {
-  eventId: number; token: string; row?: PosterListRow; settings: PosterSettingsDto; onClose: () => void; onSaved: (stale?: boolean) => void;
+export function PresentationManagementDialog({ eventId, token, row, settings, onClose, onSaved }: {
+  eventId: number; token: string; row?: PresentationListRow; settings: PresentationSettingsDto; onClose: () => void; onSaved: (stale?: boolean) => void;
 }) {
   const [reason, setReason] = useState('');
   const [deadline, setDeadline] = useState(() => thaiDeadlineInput(settings.closesAt));
@@ -23,8 +23,8 @@ export function PosterManagementDialog({ eventId, token, row, settings, onClose,
     if (lock.current || !reason.trim() || (row && row.matchState !== 'alias_pending')) return;
     lock.current = true; setBusy(true); setFailure(null); setAttempted(true);
     try {
-      if (row) await api.posters.verify(eventId, { sourceKey: row.sourceKey, fingerprint: row.matchFingerprint, reason }, key.current, token);
-      else await api.posters.settings(eventId, { closesAt: deadlineInputToClose(deadline), version: settings.version, reason }, key.current, token);
+      if (row) await api.presentations.verify(eventId, { sourceKey: row.sourceKey, fingerprint: row.matchFingerprint, reason }, key.current, token);
+      else await api.presentations.settings(eventId, { closesAt: deadlineInputToClose(deadline), version: settings.version, reason }, key.current, token);
       onSaved(); onClose();
     } catch (error) {
       if (error instanceof ApiError && error.status === 409) {
@@ -35,8 +35,8 @@ export function PosterManagementDialog({ eventId, token, row, settings, onClose,
       }
     } finally { lock.current = false; setBusy(false); }
   };
-  return <PosterDialog title={row ? 'ตรวจและรับรองรหัสเดิม' : 'เปลี่ยนกำหนดส่ง Poster'} busy={busy} onClose={onClose}>
-    {row ? <><p className="mb-4">รับรองเฉพาะรหัสเดิมที่ข้อมูลอื่นตรงกัน: {row.announcement.trackingId} · abstractId {row.abstractId}</p><PosterComparison value={row.snapshot} /></> : <p className="mb-4">วันสุดท้ายเดิม (เวลาไทย): {thaiTime(new Date(Date.parse(settings.closesAt) - 1000).toISOString())}</p>}
+  return <PresentationDialog title={row ? 'ตรวจและรับรองรหัสเดิม' : 'เปลี่ยนกำหนดส่ง Poster'} busy={busy} onClose={onClose}>
+    {row ? <><p className="mb-4">รับรองเฉพาะรหัสเดิมที่ข้อมูลอื่นตรงกัน: {row.announcement.trackingId} · abstractId {row.abstractId}</p><PresentationComparison value={row.snapshot} /></> : <p className="mb-4">วันสุดท้ายเดิม (เวลาไทย): {thaiTime(new Date(Date.parse(settings.closesAt) - 1000).toISOString())}</p>}
     <form onSubmit={save} className="mt-5 space-y-4">
       {!row && <><label className="block">วันสุดท้ายเวลาไทย (Asia/Bangkok)<input className="input-field mt-2" type="datetime-local" step="1" required value={deadline} disabled={busy || attempted} onChange={event => setDeadline(event.target.value)} /></label><p>วันสุดท้ายใหม่ (เวลาไทย): {deadline.replace('T', ' ')} · ค่าปิดรับเดิม UTC: {settings.closesAt}</p></>}
       <label className="block">เหตุผล (จำเป็น)<textarea className="input-field mt-2" required maxLength={10000} rows={3} value={reason} disabled={busy || attempted} onChange={event => setReason(event.target.value)} /></label>
@@ -44,5 +44,5 @@ export function PosterManagementDialog({ eventId, token, row, settings, onClose,
       <button className="btn-primary" disabled={busy || !reason.trim()}>{busy ? 'กำลังบันทึก…' : row ? 'รับรองรหัสเดิม' : 'ยืนยันวันสุดท้ายใหม่'}</button>
       <p className="text-xs text-zinc-500">หากข้อมูลเปลี่ยนระหว่างบันทึก ระบบจะโหลดข้อมูลล่าสุด กรุณาตรวจและเปิดแบบฟอร์มใหม่</p>
     </form>
-  </PosterDialog>;
+  </PresentationDialog>;
 }

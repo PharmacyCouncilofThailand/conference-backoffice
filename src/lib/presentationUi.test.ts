@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import type { PosterDetailDto, PosterListRow, RevisionDto } from '../types/posters';
-import { activePosterRequest, canResendPosterJob, isPosterActionAudit, canManagePosters, posterAuditSummary, posterRouteId, thaiDeadlineInput, deadlineInputToClose, selectablePosterIds } from './posterUi';
+import type { PresentationDetailDto, PresentationListRow, RevisionDto } from '../types/presentations';
+import { activePresentationRequest, canResendPresentationJob, isPresentationActionAudit, canManagePresentations, presentationAuditSummary, presentationRouteId, thaiDeadlineInput, deadlineInputToClose, selectablePresentationIds } from './presentationUi';
 import { api, ApiError } from './api';
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
@@ -10,13 +10,13 @@ import ts from 'typescript';
 import * as React from 'react';
 import type { AuthProvider, User } from '../contexts/AuthContext';
 import type { Sidebar } from '../components/layout/Sidebar';
-import { PosterComparison, PosterEmailAttempts, PosterDeadlineHistory, posterProblemLabel } from '../components/posters/PosterHistoryViews';
+import { PresentationComparison, PresentationEmailAttempts, PresentationDeadlineHistory, presentationProblemLabel } from '../components/presentations/PresentationHistoryViews';
 
 test('only admins manage posters', () => {
   for (const role of ['organizer', 'reviewer', 'staff', 'verifier', 'team_registration_viewer', '', 'Admin']) {
-    assert.equal(canManagePosters(role), false);
+    assert.equal(canManagePresentations(role), false);
   }
-  assert.equal(canManagePosters('admin'), true);
+  assert.equal(canManagePresentations('admin'), true);
 });
 
 test('Thai inclusive seconds map to the exclusive UTC close independently of host timezone', () => {
@@ -44,11 +44,11 @@ test('deadline inputs reject invalid calendar dates and missing seconds', () => 
 });
 
 test('selection deduplicates abstract IDs and excludes ineligible rows', () => {
-  assert.deepEqual(selectablePosterIds([
+  assert.deepEqual(selectablePresentationIds([
     { abstractId: 501, canNotify: true }, { abstractId: null, canNotify: false },
     { abstractId: 501, canNotify: true }, { abstractId: 502, canNotify: false },
     { abstractId: null, canNotify: true }, { abstractId: 503, canNotify: true },
-  ] as PosterListRow[]), [501, 503]);
+  ] as PresentationListRow[]), [501, 503]);
 });
 
 test('all poster routes preserve envelopes, verbs, scoped IDs, JSON and idempotency headers', async () => {
@@ -58,20 +58,20 @@ test('all poster routes preserve envelopes, verbs, scoped IDs, JSON and idempote
   const key = '22222222-2222-4222-8222-222222222222';
   const closesAt = '2026-10-15T17:00:00.000Z';
   const revision = { kind: 'revision' as const, abstractId: 501, requestId, details: 'Fix caption', closesAt };
-  const preview = { fingerprint, requestId, closesAt, messages: [{ abstractId: 501, recipient: 'owner@example.invalid', subject: 'Revision', html: '<p>Revision</p>', templateVersion: 'poster-v1' }] };
+  const preview = { fingerprint, requestId, closesAt, messages: [{ abstractId: 501, recipient: 'owner@example.invalid', subject: 'Revision', html: '<p>Revision</p>', templateVersion: 'presentation-v1' }] };
   const cases: Array<{ path: string; method: string; status?: number; body?: unknown; data?: unknown; keyed?: boolean; call: () => Promise<unknown> }> = [
-    { path: '/poster-settings', method: 'GET', call: () => api.posters.getSettings(42, 'token') },
-    { path: '/poster-reconciliations', method: 'POST', status: 201, keyed: true, body: {}, call: () => api.posters.recheck(42, key, 'token') },
-    { path: '/poster-targets?page=2&search=A%26B', method: 'GET', call: () => api.posters.list(42, new URLSearchParams({ page: '2', search: 'A&B' }), 'token') },
-    { path: '/poster-targets/501', method: 'GET', call: () => api.posters.detail(42, 501, 'token') },
-    { path: '/poster-email-previews', method: 'POST', body: revision, data: preview, call: () => api.posters.preview(42, revision, 'token') },
-    { path: '/poster-notification-batches', method: 'POST', status: 202, keyed: true, body: { kind: 'initial', abstractIds: [501], previewFingerprint: fingerprint }, call: () => api.posters.batch(42, { kind: 'initial', abstractIds: [501], previewFingerprint: fingerprint }, key, 'token') },
-    { path: `/poster-notification-batches/${requestId}`, method: 'GET', call: () => api.posters.batchResult(42, requestId, 'token') },
-    { path: '/poster-verifications', method: 'POST', status: 201, keyed: true, body: { sourceKey: '1:501', fingerprint, reason: 'Checked' }, call: () => api.posters.verify(42, { sourceKey: '1:501', fingerprint, reason: 'Checked' }, key, 'token') },
-    { path: '/poster-settings', method: 'PATCH', keyed: true, body: { closesAt, version: 1, reason: 'Extension' }, call: () => api.posters.settings(42, { closesAt, version: 1, reason: 'Extension' }, key, 'token') },
-    { path: '/poster-targets/501/revision-requests', method: 'POST', status: 201, keyed: true, body: { requestId, details: 'Fix caption', closesAt, previewFingerprint: fingerprint }, call: () => api.posters.createRevision(42, 501, { requestId, details: 'Fix caption', closesAt, previewFingerprint: fingerprint }, key, 'token') },
-    { path: `/poster-revision-requests/${requestId}/cancellations`, method: 'POST', status: 201, keyed: true, body: { reason: 'Replacement' }, call: () => api.posters.cancelRevision(42, requestId, 'Replacement', key, 'token') },
-    { path: `/poster-email-jobs/${requestId}/resends`, method: 'POST', status: 202, keyed: true, body: { previewFingerprint: fingerprint }, call: () => api.posters.resend(42, requestId, fingerprint, key, 'token') },
+    { path: '/presentation-settings', method: 'GET', call: () => api.presentations.getSettings(42, 'token') },
+    { path: '/presentation-reconciliations', method: 'POST', status: 201, keyed: true, body: {}, call: () => api.presentations.recheck(42, key, 'token') },
+    { path: '/presentation-targets?page=2&search=A%26B', method: 'GET', call: () => api.presentations.list(42, new URLSearchParams({ page: '2', search: 'A&B' }), 'token') },
+    { path: '/presentation-targets/501', method: 'GET', call: () => api.presentations.detail(42, 501, 'token') },
+    { path: '/presentation-email-previews', method: 'POST', body: revision, data: preview, call: () => api.presentations.preview(42, revision, 'token') },
+    { path: '/presentation-notification-batches', method: 'POST', status: 202, keyed: true, body: { kind: 'initial', abstractIds: [501], previewFingerprint: fingerprint }, call: () => api.presentations.batch(42, { kind: 'initial', abstractIds: [501], previewFingerprint: fingerprint }, key, 'token') },
+    { path: `/presentation-notification-batches/${requestId}`, method: 'GET', call: () => api.presentations.batchResult(42, requestId, 'token') },
+    { path: '/presentation-verifications', method: 'POST', status: 201, keyed: true, body: { sourceKey: '1:501', fingerprint, reason: 'Checked' }, call: () => api.presentations.verify(42, { sourceKey: '1:501', fingerprint, reason: 'Checked' }, key, 'token') },
+    { path: '/presentation-settings', method: 'PATCH', keyed: true, body: { closesAt, version: 1, reason: 'Extension' }, call: () => api.presentations.settings(42, { closesAt, version: 1, reason: 'Extension' }, key, 'token') },
+    { path: '/presentation-targets/501/revision-requests', method: 'POST', status: 201, keyed: true, body: { requestId, details: 'Fix caption', closesAt, previewFingerprint: fingerprint }, call: () => api.presentations.createRevision(42, 501, { requestId, details: 'Fix caption', closesAt, previewFingerprint: fingerprint }, key, 'token') },
+    { path: `/presentation-revision-requests/${requestId}/cancellations`, method: 'POST', status: 201, keyed: true, body: { reason: 'Replacement' }, call: () => api.presentations.cancelRevision(42, requestId, 'Replacement', key, 'token') },
+    { path: `/presentation-email-jobs/${requestId}/resends`, method: 'POST', status: 202, keyed: true, body: { previewFingerprint: fingerprint }, call: () => api.presentations.resend(42, requestId, fingerprint, key, 'token') },
   ];
   try {
     for (const item of cases) {
@@ -90,8 +90,8 @@ test('all poster routes preserve envelopes, verbs, scoped IDs, JSON and idempote
       };
       assert.deepEqual(await item.call(), envelope);
     }
-    globalThis.fetch = async () => Response.json({ error: 'Forbidden', code: 'POSTER_FORBIDDEN' }, { status: 403 });
-    await assert.rejects(api.posters.recheck(42, key, 'token'), (error: unknown) => error instanceof ApiError && error.status === 403 && error.code === 'POSTER_FORBIDDEN');
+    globalThis.fetch = async () => Response.json({ error: 'Forbidden', code: 'PRESENTATION_FORBIDDEN' }, { status: 403 });
+    await assert.rejects(api.presentations.recheck(42, key, 'token'), (error: unknown) => error instanceof ApiError && error.status === 403 && error.code === 'PRESENTATION_FORBIDDEN');
   } finally {
     globalThis.fetch = originalFetch;
   }
@@ -109,7 +109,7 @@ function componentModule<T>(file: string, hooks: Partial<typeof React>, auth?: u
     if (name === 'react') return { ...React, ...hooks };
     if (name === '@/contexts/AuthContext') return { useAuth: () => auth };
     if (name === '@/lib/jwt') return { isTokenExpired: () => false };
-    if (name === 'next/navigation') return { usePathname: () => '/posters' };
+    if (name === 'next/navigation') return { usePathname: () => '/presentations' };
     return require(name);
   } });
   return exports as T;
@@ -126,8 +126,8 @@ test('page access, real sidebar links and assigned-event scope agree for every r
     });
     const context = Provider({ children: null }).props.value;
     const readable = ['admin', 'organizer', 'reviewer'].includes(role);
-    assert.equal(context.hasAccess('/posters'), readable, role);
-    assert.equal(context.hasAccess('/posters/501'), readable, role);
+    assert.equal(context.hasAccess('/presentations'), readable, role);
+    assert.equal(context.hasAccess('/presentations/501'), readable, role);
     assert.equal(context.canAccessEvent(42), true, role);
     assert.equal(context.canAccessEvent(99), role === 'admin', role);
     assert.deepEqual(Array.from(context.getAccessibleEventIds()), role === 'admin' ? [] : [42]);
@@ -142,7 +142,7 @@ test('page access, real sidebar links and assigned-event scope agree for every r
       visit(node.props.children);
     };
     visit(Menu({}));
-    assert.equal(hrefs.includes('/posters'), readable, role);
+    assert.equal(hrefs.includes('/presentations'), readable, role);
     if (role === 'organizer' || role === 'reviewer') {
       assert.equal(hrefs.includes('/abstracts'), true, role);
       assert.equal(hrefs.includes('/abstract-categories'), false, role);
@@ -157,8 +157,8 @@ function nodes(element: unknown): React.ReactElement<Record<string, unknown>>[] 
 }
 
 test('real table gates conflict approval, invalid selection and read-only controls', () => {
-  const { PosterTable } = componentModule<{ PosterTable: (props: Record<string, unknown>) => React.ReactElement }>('src/components/posters/PosterTable.tsx', {}, undefined, {
-    'next/link': { default: 'a' }, './PosterHistoryViews': { PosterComparison, posterProblemLabel },
+  const { PresentationTable } = componentModule<{ PresentationTable: (props: Record<string, unknown>) => React.ReactElement }>('src/components/presentations/PresentationTable.tsx', {}, undefined, {
+    'next/link': { default: 'a' }, './PresentationHistoryViews': { PresentationComparison, presentationProblemLabel },
   });
   const rows = ['ready', 'alias_pending', 'conflict', 'missing', 'withdrawn'].map((matchState, index) => ({
     sourceKey: `1:${index}`, abstractId: matchState === 'missing' ? null : index + 1, matchState,
@@ -167,19 +167,19 @@ test('real table gates conflict approval, invalid selection and read-only contro
     canNotify: matchState === 'ready', submitterEmail: 'same@example.invalid', snapshot: {},
   }));
   const props = { rows, selected: new Set(), onSelect: () => {}, onVerify: () => {}, eventId: 42, closesAt: '2026-10-15T17:00:00.000Z' };
-  const managed = nodes(PosterTable({ ...props, manage: true, view: 'notifications' }));
+  const managed = nodes(PresentationTable({ ...props, manage: true, view: 'notifications' }));
   const checkboxes = managed.filter(node => node.type === 'input');
   assert.equal(checkboxes.length, 4);
   assert.equal(checkboxes.filter(node => !node.props.disabled).length, 1);
   assert.equal(managed.filter(node => node.type === 'button').length, 1, 'only alias pending can approve');
-  const readonly = nodes(PosterTable({ ...props, manage: false, view: 'verify' }));
+  const readonly = nodes(PresentationTable({ ...props, manage: false, view: 'verify' }));
   assert.equal(JSON.stringify(readonly).includes('ผลตรวจรายชื่อ'), false);
   assert.equal(JSON.stringify(readonly).includes('Poster / Email'), false);
   assert.equal(JSON.stringify(readonly).includes('ยังไม่แจ้ง'), false);
   assert.equal(readonly.filter(node => node.type === 'input' || node.type === 'button').length, 0);
 });
 
-function posterHarness(file: string, component: string, modules: Record<string, unknown>, auth?: unknown, unwrap = false) {
+function presentationHarness(file: string, component: string, modules: Record<string, unknown>, auth?: unknown, unwrap = false) {
   const states: unknown[] = [], refs: unknown[] = [], dependencies: unknown[][] = [];
   let stateCursor = 0, refCursor = 0, effectCursor = 0;
   const effects: Array<() => unknown> = [];
@@ -200,22 +200,22 @@ function posterHarness(file: string, component: string, modules: Record<string, 
 }
 
 function emailHarness(mockApi: unknown) {
-  return posterHarness('src/components/posters/PosterEmailDialog.tsx', 'PosterEmailDialog', {
-    '@/lib/api': { api: mockApi, ApiError }, './PosterDialog': { PosterDialog: 'dialog' },
+  return presentationHarness('src/components/presentations/PresentationEmailDialog.tsx', 'PresentationEmailDialog', {
+    '@/lib/api': { api: mockApi, ApiError }, './PresentationDialog': { PresentationDialog: 'dialog' },
   });
 }
 
 test('plain-text poster drafts and stored bodies render as text without an HTML frame', async () => {
   const text = 'เรียน ผู้ส่ง\n\n- รหัสผลงาน: P001\n- ชื่อผลงาน: <script>literal title</script>\n\n1. ตรวจสอบไฟล์';
-  const previewHarness = emailHarness({ posters: { preview: async () => ({ data: {
-    fingerprint: 'a'.repeat(64), messages: [{ abstractId: 501, recipient: 'owner@example.invalid', subject: 'Poster', html: text, text, templateVersion: 'poster-text-v2' }],
+  const previewHarness = emailHarness({ presentations: { preview: async () => ({ data: {
+    fingerprint: 'a'.repeat(64), messages: [{ abstractId: 501, recipient: 'owner@example.invalid', subject: 'Poster', html: text, text, templateVersion: 'presentation-text-v2' }],
   } }) } });
   const props = { eventId: 42, token: 'synthetic', kind: 'initial', abstractIds: [501], onClose: () => {} };
   previewHarness.render(props); previewHarness.effects.shift()!(); await new Promise(resolve => setImmediate(resolve));
   const rendered = previewHarness.render(props);
   assert.equal(rendered.filter(node => node.type === 'iframe').length, 0);
   assert.equal(rendered.find(node => node.type === 'pre')!.props.children, text);
-  const storedHarness = emailHarness({ posters: { preview: async () => { throw new Error('stored body must not request a new draft'); } } });
+  const storedHarness = emailHarness({ presentations: { preview: async () => { throw new Error('stored body must not request a new draft'); } } });
   const storedProps = { ...props, kind: 'stored', abstractId: 501, job: { id: 'job', recipient: 'owner@example.invalid', subject: 'Poster', html: text, text } };
   storedHarness.render(storedProps); storedHarness.effects.shift()!();
   assert.equal(storedHarness.render(storedProps).find(node => node.type === 'pre')!.props.children, text);
@@ -225,21 +225,21 @@ test('viewer list has only received navigation and never requests admin settings
   for (const role of ['organizer', 'reviewer']) {
     let reads = 0, settingsReads = 0;
     const auth = { user: { role, assignedEvents: [{ id: 42, code: 'PRIS-2026', name: 'PRIS' }] }, token: 'synthetic', isAdmin: false, isLoading: false };
-    const harness = posterHarness('src/app/posters/page.tsx', 'default', {
+    const harness = presentationHarness('src/app/presentations/page.tsx', 'default', {
       '@/components/layout/AdminLayout': { AdminLayout: 'main' },
       '@/components/common': { Pagination: 'pagination' },
-      '@/lib/api': { api: { posters: {
+      '@/lib/api': { api: { presentations: {
         list: async (eventId: number, query: URLSearchParams) => {
           reads++; assert.equal(eventId, 42); assert.equal(query.get('received'), 'true'); assert.equal(query.has('matchState'), false);
           return { data: { items: [], counts: {}, total: 0, pageSize: 25, settings: {}, capabilities: { manage: false } } };
         },
         getSettings: async () => { settingsReads++; return { data: {} }; },
       } } },
-      '@/lib/posterUi': { selectablePosterIds },
-      '@/components/posters/PosterTable': { PosterTable: 'poster-table', progressLabels: {}, matchLabels: {}, mailLabels: {}, thaiTime: (value: string) => value },
-      '@/components/posters/PosterEmailDialog': { PosterEmailDialog: 'email-dialog' },
-      '@/components/posters/PosterManagementDialog': { PosterManagementDialog: 'management-dialog' },
-      '@/components/posters/PosterHistoryViews': { PosterDeadlineHistory: 'deadline-history' },
+      '@/lib/presentationUi': { selectablePresentationIds },
+      '@/components/presentations/PresentationTable': { PresentationTable: 'presentation-table', progressLabels: {}, matchLabels: {}, mailLabels: {}, thaiTime: (value: string) => value },
+      '@/components/presentations/PresentationEmailDialog': { PresentationEmailDialog: 'email-dialog' },
+      '@/components/presentations/PresentationManagementDialog': { PresentationManagementDialog: 'management-dialog' },
+      '@/components/presentations/PresentationHistoryViews': { PresentationDeadlineHistory: 'deadline-history' },
     }, auth);
     harness.render({}); while (harness.effects.length) harness.effects.shift()!();
     harness.render({}); while (harness.effects.length) harness.effects.shift()!();
@@ -250,7 +250,7 @@ test('viewer list has only received navigation and never requests admin settings
     assert.ok(JSON.stringify(navigation).includes('Poster ที่ได้รับ'));
     assert.equal(JSON.stringify(rendered).includes('ผลตรวจ'), false);
     assert.equal(settingsReads, 0); assert.equal(reads, 1);
-    const table = rendered.find(node => node.type === 'poster-table')!;
+    const table = rendered.find(node => node.type === 'presentation-table')!;
     assert.equal(table.props.view, 'received'); assert.equal(table.props.manage, false); assert.equal(table.props.showAdminDetails, false);
   }
 });
@@ -259,7 +259,7 @@ test('same email yields two sandboxed previews and network-unknown retry keeps i
   const calls: Array<{ input: unknown; key: string }> = [];
   let queued = 0;
   const preview = { fingerprint: 'a'.repeat(64), messages: [501, 502].map(abstractId => ({ abstractId, recipient: 'same@example.invalid', subject: `Work ${abstractId}`, html: '<p>Body</p>' })) };
-  const harness = emailHarness({ posters: {
+  const harness = emailHarness({ presentations: {
     preview: async () => ({ data: preview }), batch: async (_event: number, input: unknown, key: string) => {
       calls.push({ input, key }); if (calls.length === 1) throw new Error('Network outcome unknown');
       return { data: { batchId: 'batch', queued: 2 } };
@@ -280,9 +280,9 @@ test('same email yields two sandboxed previews and network-unknown retry keeps i
 
 test('stale preview disables send, refreshes preview and requires another review with a fresh operation key', async () => {
   const keys: string[] = []; let previewCount = 0;
-  const harness = emailHarness({ posters: {
+  const harness = emailHarness({ presentations: {
     preview: async () => ({ data: { fingerprint: String(++previewCount).repeat(64), messages: [{ abstractId: 501, recipient: 'a@example.invalid', subject: 'Work', html: '<p>Body</p>' }] } }),
-    batch: async (_event: number, _input: unknown, key: string) => { keys.push(key); if (keys.length === 1) throw new ApiError('Changed', 409, 'POSTER_PREVIEW_STALE'); return { data: { batchId: 'batch', queued: 1 } }; },
+    batch: async (_event: number, _input: unknown, key: string) => { keys.push(key); if (keys.length === 1) throw new ApiError('Changed', 409, 'PRESENTATION_PREVIEW_STALE'); return { data: { batchId: 'batch', queued: 1 } }; },
   } });
   const props = { eventId: 42, token: 'synthetic', kind: 'reminder', abstractIds: [501], onClose: () => {}, onQueued: () => {} };
   harness.render(props); harness.effects.shift()!(); await new Promise(resolve => setImmediate(resolve));
@@ -305,14 +305,14 @@ test('real deadline input change updates preview and submits the edited Thai dat
     useMemo: (factory: () => unknown) => factory(),
     useRef: (initial: unknown) => { const index = refCursor++; refs[index] ??= { current: initial }; return refs[index]; },
   } as unknown as Partial<typeof React>;
-  const { PosterManagementDialog } = componentModule<{ PosterManagementDialog: (props: Record<string, unknown>) => React.ReactElement }>('src/components/posters/PosterManagementDialog.tsx', hooks, undefined, {
-    '@/lib/api': { api: { posters: { settings: async (_event: number, input: unknown) => { submitted.push(input); } } }, ApiError },
-    '@/lib/posterUi': { deadlineInputToClose, thaiDeadlineInput },
-    './PosterDialog': { PosterDialog: 'dialog' }, './PosterHistoryViews': { PosterComparison },
-    './PosterTable': { thaiTime: (value: string) => value },
+  const { PresentationManagementDialog } = componentModule<{ PresentationManagementDialog: (props: Record<string, unknown>) => React.ReactElement }>('src/components/presentations/PresentationManagementDialog.tsx', hooks, undefined, {
+    '@/lib/api': { api: { presentations: { settings: async (_event: number, input: unknown) => { submitted.push(input); } } }, ApiError },
+    '@/lib/presentationUi': { deadlineInputToClose, thaiDeadlineInput },
+    './PresentationDialog': { PresentationDialog: 'dialog' }, './PresentationHistoryViews': { PresentationComparison },
+    './PresentationTable': { thaiTime: (value: string) => value },
   });
   const props = { eventId: 42, token: 'synthetic', settings: { closesAt: '2026-10-15T17:00:00.000Z', version: 4 }, onClose: () => {}, onSaved: () => {} };
-  const render = () => { stateCursor = 0; refCursor = 0; return nodes(PosterManagementDialog(props)); };
+  const render = () => { stateCursor = 0; refCursor = 0; return nodes(PresentationManagementDialog(props)); };
   let rendered = render();
   const input = rendered.find(node => node.type === 'input' && node.props.type === 'datetime-local')!;
   assert.equal(input.props.value, '2026-10-15T23:59:59');
@@ -326,26 +326,26 @@ test('real deadline input change updates preview and submits the edited Thai dat
 });
 
 test('detail route IDs and lifecycle gates use server effective request statuses and preserve exact file bindings', () => {
-  for (const value of ['0', '-1', '1.5', '1e3', ' 42', '42 ', '01', '2147483648', '', null, undefined, ['42', '43']]) assert.equal(posterRouteId(value), null);
-  assert.equal(posterRouteId('42'), 42); assert.equal(posterRouteId('2147483647'), 2147483647);
+  for (const value of ['0', '-1', '1.5', '1e3', ' 42', '42 ', '01', '2147483648', '', null, undefined, ['42', '43']]) assert.equal(presentationRouteId(value), null);
+  assert.equal(presentationRouteId('42'), 42); assert.equal(presentationRouteId('2147483647'), 2147483647);
   const requests = ['expired', 'cancelled', 'submitted', 'open'].map((status, index) => ({ id: `request-${index}`, status, closesAt: '2000-01-01T00:00:00.000Z' } as RevisionDto));
-  assert.equal(activePosterRequest(requests)?.id, 'request-3', 'trust the server status rather than the browser clock');
-  assert.equal(activePosterRequest(requests.slice(0, 3)), null);
-  const detail = { requests, row: { canNotify: false, currentUpload: { id: 'v1', version: 1 } }, uploads: [{ id: 'v1', revisionRequestId: null }, { id: 'v2', revisionRequestId: 'request-2' }] } as PosterDetailDto;
-  const job = { kind: 'revision', state: 'failed', requestId: 'request-3' } as PosterDetailDto['emailJobs'][number];
-  assert.equal(canResendPosterJob(job, detail), true);
-  for (const request of requests.slice(0, 3)) assert.equal(canResendPosterJob({ ...job, requestId: request.id }, detail), false);
-  for (const state of ['pending', 'sending'] as const) assert.equal(canResendPosterJob({ ...job, state }, detail), false);
-  assert.equal(canResendPosterJob({ ...job, kind: 'receipt', uploadId: 'v1' }, detail), true, 'historical receipt remains resendable');
-  assert.equal(canResendPosterJob({ ...job, kind: 'receipt', uploadId: 'missing' }, detail), false);
-  assert.equal(canResendPosterJob({ ...job, kind: 'initial' }, detail), false);
+  assert.equal(activePresentationRequest(requests)?.id, 'request-3', 'trust the server status rather than the browser clock');
+  assert.equal(activePresentationRequest(requests.slice(0, 3)), null);
+  const detail = { requests, row: { canNotify: false, currentUpload: { id: 'v1', version: 1 } }, uploads: [{ id: 'v1', revisionRequestId: null }, { id: 'v2', revisionRequestId: 'request-2' }] } as PresentationDetailDto;
+  const job = { kind: 'revision', state: 'failed', requestId: 'request-3' } as PresentationDetailDto['emailJobs'][number];
+  assert.equal(canResendPresentationJob(job, detail), true);
+  for (const request of requests.slice(0, 3)) assert.equal(canResendPresentationJob({ ...job, requestId: request.id }, detail), false);
+  for (const state of ['pending', 'sending'] as const) assert.equal(canResendPresentationJob({ ...job, state }, detail), false);
+  assert.equal(canResendPresentationJob({ ...job, kind: 'receipt', uploadId: 'v1' }, detail), true, 'historical receipt remains resendable');
+  assert.equal(canResendPresentationJob({ ...job, kind: 'receipt', uploadId: 'missing' }, detail), false);
+  assert.equal(canResendPresentationJob({ ...job, kind: 'initial' }, detail), false);
   assert.equal(detail.row.currentUpload?.id, 'v1', 'open revision does not erase the old accepted current file');
   assert.deepEqual(detail.uploads.filter(file => file.revisionRequestId === 'request-2').map(file => file.id), ['v2']);
 });
 
 test('stored email uses recorded HTML for readers without requesting an Admin preview or exposing send', () => {
   let previews = 0;
-  const harness = emailHarness({ posters: { preview: () => { previews++; throw new Error('Reader must not preview'); } } });
+  const harness = emailHarness({ presentations: { preview: () => { previews++; throw new Error('Reader must not preview'); } } });
   const props = { eventId: 42, abstractId: 501, token: 'viewer', kind: 'stored', job: { id: 'job', recipient: 'owner@example.invalid', subject: 'Original subject', html: '<p>Recorded body</p>' }, onClose: () => {} };
   harness.render(props); harness.effects.shift()!();
   const rendered = harness.render(props), frame = rendered.find(node => node.type === 'iframe')!;
@@ -356,7 +356,7 @@ test('stored email uses recorded HTML for readers without requesting an Admin pr
 test('unknown mail resend shows an intentional warning and ambiguous retry preserves exact job/fingerprint/key', async () => {
   const calls: Array<{ jobId: string; fingerprint: string; key: string }> = [];
   const previews: unknown[] = [];
-  const harness = emailHarness({ posters: {
+  const harness = emailHarness({ presentations: {
     preview: async (_event: number, input: unknown) => { previews.push(input); return { data: { fingerprint: 'b'.repeat(64), messages: [{ abstractId: 501, recipient: 'new-owner@example.invalid', subject: 'Fresh payload', html: '<p>Fresh</p>' }] } }; },
     resend: async (_event: number, jobId: string, fingerprint: string, key: string) => { calls.push({ jobId, fingerprint, key }); if (calls.length === 1) throw new ApiError('Unknown outcome', 503); return { data: { jobId: 'new-job' } }; },
   } });
@@ -371,10 +371,10 @@ test('unknown mail resend shows an intentional warning and ambiguous retry prese
   assert.deepEqual(JSON.parse(JSON.stringify(previews)), [{ kind: 'resend', jobId: 'old-job' }]);
 });
 
-function revisionHarness(posters: unknown) {
-  return posterHarness('src/components/posters/PosterRevisionDialog.tsx', 'PosterRevisionDialog', {
-    '@/lib/api': { api: { posters }, ApiError }, '@/lib/posterUi': { deadlineInputToClose },
-    './PosterDialog': { PosterDialog: 'dialog' }, './PosterTable': { thaiTime: (value: string) => value },
+function revisionHarness(presentations: unknown) {
+  return presentationHarness('src/components/presentations/PresentationRevisionDialog.tsx', 'PresentationRevisionDialog', {
+    '@/lib/api': { api: { presentations }, ApiError }, '@/lib/presentationUi': { deadlineInputToClose },
+    './PresentationDialog': { PresentationDialog: 'dialog' }, './PresentationTable': { thaiTime: (value: string) => value },
   });
 }
 
@@ -407,7 +407,7 @@ test('revision edits invalidate preview and creation binds the proposed server r
 test('stale revision preview refetches proposed request and requires explicit second confirmation with a new key', async () => {
   let previews = 0; const calls: Array<{ input: unknown; key: string }> = [];
   const harness = revisionHarness({ preview: async () => ({ data: { fingerprint: 'd'.repeat(64), requestId: `request-${++previews}`, closesAt: '2026-10-20T17:00:00.000Z', messages: [] } }),
-    createRevision: async (_event: number, _abstract: number, input: unknown, key: string) => { calls.push({ input, key }); if (calls.length === 1) throw new ApiError('Stale', 409, 'POSTER_PREVIEW_STALE'); return { data: { request: { status: 'open' } } }; },
+    createRevision: async (_event: number, _abstract: number, input: unknown, key: string) => { calls.push({ input, key }); if (calls.length === 1) throw new ApiError('Stale', 409, 'PRESENTATION_PREVIEW_STALE'); return { data: { request: { status: 'open' } } }; },
   });
   const props = { eventId: 42, abstractId: 501, token: 'admin', onClose: () => {}, onCreated: () => {}, onConflict: () => {} };
   let rendered = harness.render(props); changeNode(rendered, 'textarea', 'Fix caption'); changeNode(rendered, 'input', '2026-10-20T23:59:59'); rendered = harness.render(props);
@@ -431,24 +431,24 @@ test('cancel requires a reason and freezes that reason and key after an ambiguou
 });
 
 function detailHarness(auth: unknown, route: { abstractId: string; eventId: string }, detail: (eventId: number, abstractId: number) => Promise<unknown>) {
-  return posterHarness('src/app/posters/[abstractId]/page.tsx', 'default', {
+  return presentationHarness('src/app/presentations/[abstractId]/page.tsx', 'default', {
     'next/navigation': { useParams: () => ({ abstractId: route.abstractId }), useSearchParams: () => new URLSearchParams({ eventId: route.eventId }) },
     'next/link': { default: 'a' }, '@/components/layout/AdminLayout': { AdminLayout: 'main' },
-    '@/lib/api': { api: { posters: { detail } } }, '@/lib/posterUi': { activePosterRequest, canResendPosterJob, isPosterActionAudit, posterAuditSummary, posterRouteId },
-    '@/components/posters/PosterDialog': { PosterDialog: 'dialog' },
-    '@/components/posters/PosterHistoryViews': { PosterComparison, PosterEmailAttempts, posterProblemLabel },
-    '@/components/posters/PosterEmailDialog': { PosterEmailDialog: 'email-dialog' },
-    '@/components/posters/PosterRevisionDialog': { PosterRevisionDialog: 'revision-dialog' },
-    '@/components/posters/PosterTable': { progressLabels: { revision_pending: 'Revision pending' }, progressColors: { revision_pending: 'bg-amber-100 text-amber-800' }, matchLabels: { ready: 'Ready' }, mailLabels: { failed: 'Failed', unknown: 'Unknown' }, thaiTime: (value: string) => value },
+    '@/lib/api': { api: { presentations: { detail } } }, '@/lib/presentationUi': { activePresentationRequest, canResendPresentationJob, isPresentationActionAudit, presentationAuditSummary, presentationRouteId },
+    '@/components/presentations/PresentationDialog': { PresentationDialog: 'dialog' },
+    '@/components/presentations/PresentationHistoryViews': { PresentationComparison, PresentationEmailAttempts, presentationProblemLabel },
+    '@/components/presentations/PresentationEmailDialog': { PresentationEmailDialog: 'email-dialog' },
+    '@/components/presentations/PresentationRevisionDialog': { PresentationRevisionDialog: 'revision-dialog' },
+    '@/components/presentations/PresentationTable': { progressLabels: { revision_pending: 'Revision pending' }, progressColors: { revision_pending: 'bg-amber-100 text-amber-800' }, matchLabels: { ready: 'Ready' }, mailLabels: { failed: 'Failed', unknown: 'Unknown' }, thaiTime: (value: string) => value },
   }, auth, true);
 }
 
-function detailFixture(title = 'Synthetic detail'): PosterDetailDto {
+function detailFixture(title = 'Synthetic detail'): PresentationDetailDto {
   const upload = { id: 'v1', version: 1, fileName: 'original.pdf', mimeType: 'application/pdf', sizeBytes: 100, publicUrl: 'http://127.0.0.1:53018/fixture.pdf', receivedAt: '2026-10-07T00:00:00.000Z', revisionRequestId: null } as const;
   const request = { id: 'request-open', status: 'open', requestedBy: 1, details: 'Fix legend', closesAt: '2026-10-20T17:00:00.000Z', createdAt: '2026-10-07T00:00:00.000Z', submittedAt: null, cancelledAt: null, cancelledBy: null, cancellationReason: null } as const;
   return { row: { abstractId: 501, announcement: { title, trackingId: 'PRIS-501', round: 1, presentationType: 'poster', submitterName: 'Owner' }, problems: [], snapshot: {}, matchState: 'ready', progress: 'revision_pending', currentUpload: upload, canNotify: false, submitterEmail: 'owner@example.invalid', verifiedBy: null, verifiedAt: null, verificationReason: null },
     uploads: [upload], requests: [request], emailJobs: [{ id: 'job-1', kind: 'revision', state: 'unknown', recipient: 'owner@example.invalid', subject: 'Stored', html: '<p>Body</p>', createdAt: '2026-10-07T00:00:00.000Z', finishedAt: null, triggeredBy: 1, parentJobId: null, requestId: request.id, uploadId: null, errorCode: null, attempts: [] }], audit: [], capabilities: { read: true, manage: true },
-  } as unknown as PosterDetailDto;
+  } as unknown as PresentationDetailDto;
 }
 
 test('real detail page restricts viewer controls, invalid IDs and unassigned event reads', async () => {
@@ -494,8 +494,8 @@ test('real detail late responses cannot replace a new scoped work', async () => 
 
 test('audit summaries keep work actions readable without recursive technical snapshots', async () => {
   const audit = { action: 'revision_cancelled', actor_id: 9, created_at: '2026-10-07T04:00:00Z', reason: 'แก้ไขคำขอใหม่', before_state: { status: 'open' }, after_state: { status: 'cancelled', nested: { candidates: Array(100).fill({ secretTechnicalField: 'raw snapshot' }) } } };
-  const { changes: auditChanges, ...summary } = posterAuditSummary(audit); assert.equal(auditChanges.length, 1); assert.deepEqual(summary, { action: 'ยกเลิกคำขอแก้ไข', actor: 'ผู้ดูแล #9', createdAt: audit.created_at, reason: audit.reason, change: 'เปิดรับฉบับแก้ไข → ยกเลิกแล้ว', closesAt: null });
-  assert.equal(posterAuditSummary({ action: 'match_changed', after_state: { match: { state: 'ready' } } }).actor, 'ระบบ');
+  const { changes: auditChanges, ...summary } = presentationAuditSummary(audit); assert.equal(auditChanges.length, 1); assert.deepEqual(summary, { action: 'ยกเลิกคำขอแก้ไข', actor: 'ผู้ดูแล #9', createdAt: audit.created_at, reason: audit.reason, change: 'เปิดรับฉบับแก้ไข → ยกเลิกแล้ว', closesAt: null });
+  assert.equal(presentationAuditSummary({ action: 'match_changed', after_state: { match: { state: 'ready' } } }).actor, 'ระบบ');
   const detail = detailFixture(); detail.audit = [audit];
   const harness = detailHarness({ user: { role: 'admin' }, token: 'synthetic', isAdmin: true, isLoading: false }, { abstractId: '501', eventId: '42' }, async () => ({ data: detail }));
   harness.render({}); harness.effects.shift()!(); await new Promise(resolve => setImmediate(resolve));
@@ -505,24 +505,24 @@ test('audit summaries keep work actions readable without recursive technical sna
   assert.equal(changes.props.open, undefined, 'technical details are collapsed by default');
   assert.ok(nodes(changes).some(node => node.type === 'div' && String(node.props.className).includes('max-h-80 space-y-4 overflow-auto')));
   assert.equal(nodes(changes).some(node => node.type === 'dl'), false); assert.equal(JSON.stringify(rendered).includes('secretTechnicalField'), false);
-  const sameState = posterAuditSummary({ action: 'match_changed', before_state: { match: { state: 'ready' } }, after_state: { match: { state: 'ready' } } });
+  const sameState = presentationAuditSummary({ action: 'match_changed', before_state: { match: { state: 'ready' } }, after_state: { match: { state: 'ready' } } });
   assert.equal(sameState.change, null, 'same-status field changes remain available in the disclosure');
-  const titleChange = posterAuditSummary({ action: 'match_changed', before_state: { match: { state: 'conflict' }, candidates: [{ title: 'เดิม', firstName: 'ชื่อเดิม', lastName: 'นามสกุล', email: 'private@example.invalid', abstractId: 123 }] }, after_state: { match: { state: 'conflict' }, candidates: [{ title: 'ใหม่', firstName: 'ชื่อใหม่', lastName: 'นามสกุล', email: 'private@example.invalid', abstractId: 123 }] } });
+  const titleChange = presentationAuditSummary({ action: 'match_changed', before_state: { match: { state: 'conflict' }, candidates: [{ title: 'เดิม', firstName: 'ชื่อเดิม', lastName: 'นามสกุล', email: 'private@example.invalid', abstractId: 123 }] }, after_state: { match: { state: 'conflict' }, candidates: [{ title: 'ใหม่', firstName: 'ชื่อใหม่', lastName: 'นามสกุล', email: 'private@example.invalid', abstractId: 123 }] } });
   assert.deepEqual(titleChange.changes.map(field => field.label), ['ชื่อผลงานในฐานข้อมูล', 'ผู้ส่งในฐานข้อมูล']);
   assert.equal(JSON.stringify(titleChange).includes('private@example.invalid'), false);
-  assert.equal(posterAuditSummary({ action: 'unknown', after_state: { fingerprint: 'technical' } }).changes.length, 0);
+  assert.equal(presentationAuditSummary({ action: 'unknown', after_state: { fingerprint: 'technical' } }).changes.length, 0);
 });
 
 test('shared reconciliation, attempt and deadline views expose business fields without raw snapshot keys', () => {
-  assert.deepEqual(['SOURCE_DUPLICATE_ABSTRACT', 'SOURCE_REMAP'].map(posterProblemLabel), ['หลายรายการประกาศอ้างถึงผลงานเดียวกัน', 'รายการประกาศเปลี่ยนไปอ้างถึงผลงานอื่น ต้องตรวจสอบข้อมูล']);
+  assert.deepEqual(['SOURCE_DUPLICATE_ABSTRACT', 'SOURCE_REMAP'].map(presentationProblemLabel), ['หลายรายการประกาศอ้างถึงผลงานเดียวกัน', 'รายการประกาศเปลี่ยนไปอ้างถึงผลงานอื่น ต้องตรวจสอบข้อมูล']);
   const snapshot = { announcement: { trackingId: 'ANN-1', title: 'ชื่อประกาศ', submitterName: 'ผู้ส่ง', presentationType: 'poster', categoryName: 'หมวด' }, candidates: [{ canonicalTrackingId: 'DB-1', title: 'ชื่อฐานข้อมูล', firstName: 'ชื่อ', lastName: 'สกุล', aliases: ['ANN-1'], userId: 99, email: 'private@example.invalid' }, { canonicalTrackingId: 'DB-2', title: 'อีกผลงาน' }], match: { state: 'alias_pending', via: 'alias', fingerprint: 'secret-fingerprint', problems: ['TITLE_MISMATCH'] } };
-  const rendered = nodes(PosterComparison({ value: snapshot }));
+  const rendered = nodes(PresentationComparison({ value: snapshot }));
   const output = JSON.stringify(rendered);
   assert.ok(output.includes('ข้อมูลในประกาศ') && output.includes('ชื่อฐานข้อมูล') && output.includes('รหัสเดิมของผลงาน'));
   assert.ok(output.includes('ชื่อผลงานไม่ตรงกัน') && output.includes('DB-2'));
   for (const technical of ['canonicalTrackingId', 'fingerprint', 'private@example.invalid', 'userId']) assert.equal(output.includes(technical), false);
-  const attempts = JSON.stringify(nodes(PosterEmailAttempts({ value: [{ id: 'internal-id', claim_token: 'internal-token', result: 'sent', started_at: '2026-10-07T00:00:00Z' }] })));
+  const attempts = JSON.stringify(nodes(PresentationEmailAttempts({ value: [{ id: 'internal-id', claim_token: 'internal-token', result: 'sent', started_at: '2026-10-07T00:00:00Z' }] })));
   assert.ok(attempts.includes('ผู้ให้บริการรับอีเมลแล้ว')); assert.equal(attempts.includes('internal-token'), false);
-  assert.ok(JSON.stringify(nodes(PosterDeadlineHistory({ value: { closesAt: '2026-10-15T17:00:00Z', version: 2, manifestDigest: 'internal-digest' } }))).includes('รุ่น 2'));
-  for (const path of ['src/app/posters/[abstractId]/page.tsx', 'src/components/posters/PosterTable.tsx', 'src/components/posters/PosterManagementDialog.tsx', 'src/app/posters/page.tsx']) assert.equal(readFileSync(path, 'utf8').includes('PosterSnapshot'), false, path);
+  assert.ok(JSON.stringify(nodes(PresentationDeadlineHistory({ value: { closesAt: '2026-10-15T17:00:00Z', version: 2, manifestDigest: 'internal-digest' } }))).includes('รุ่น 2'));
+  for (const path of ['src/app/presentations/[abstractId]/page.tsx', 'src/components/presentations/PresentationTable.tsx', 'src/components/presentations/PresentationManagementDialog.tsx', 'src/app/presentations/page.tsx']) assert.equal(readFileSync(path, 'utf8').includes('PresentationSnapshot'), false, path);
 });

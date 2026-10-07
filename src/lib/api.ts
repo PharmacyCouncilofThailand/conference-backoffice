@@ -54,9 +54,9 @@ import type {
 } from "@/types/lucky-wheel";
 
 import type {
-  PosterSettingsHistoryDto, PosterReconciliationDto, PosterListDto, PosterDetailDto,
-  PosterPreviewInput, PosterPreviewDto, PosterBatchDto, RevisionDto,
-} from "@/types/posters";
+  PresentationSettingsHistoryDto, PresentationReconciliationDto, PresentationListDto, PresentationDetailDto,
+  PresentationPreviewInput, PresentationPreviewDto, PresentationBatchDto, RevisionDto,
+} from "@/types/presentations";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL;
 const AUTH_UNAUTHORIZED_EVENT = "accp-backoffice-auth:unauthorized";
@@ -205,45 +205,45 @@ export async function fetchAPI<T>(
 
 // API Functions with Proper Types
 export const api = {
-  posters: {
+  presentations: {
     getSettings: (eventId: number, token: string) =>
-      fetchAPI<{ success: true; data: PosterSettingsHistoryDto }>(`/api/backoffice/events/${eventId}/poster-settings`, { token }),
+      fetchAPI<{ success: true; data: PresentationSettingsHistoryDto }>(`/api/backoffice/events/${eventId}/presentation-settings`, { token }),
     recheck: (eventId: number, key: string, token: string) =>
-      fetchAPI<{ success: true; data: PosterReconciliationDto }>(`/api/backoffice/events/${eventId}/poster-reconciliations`, {
+      fetchAPI<{ success: true; data: PresentationReconciliationDto }>(`/api/backoffice/events/${eventId}/presentation-reconciliations`, {
         token, method: "POST", headers: { "Idempotency-Key": key }, body: JSON.stringify({}),
       }),
     list: (eventId: number, query: URLSearchParams, token: string) =>
-      fetchAPI<{ success: true; data: PosterListDto }>(`/api/backoffice/events/${eventId}/poster-targets?${query}`, { token }),
+      fetchAPI<{ success: true; data: PresentationListDto }>(`/api/backoffice/events/${eventId}/presentation-targets?${query}`, { token }),
     detail: (eventId: number, abstractId: number, token: string) =>
-      fetchAPI<{ success: true; data: PosterDetailDto }>(`/api/backoffice/events/${eventId}/poster-targets/${abstractId}`, { token }),
-    preview: (eventId: number, input: PosterPreviewInput, token: string) =>
-      fetchAPI<{ success: true; data: PosterPreviewDto }>(`/api/backoffice/events/${eventId}/poster-email-previews`, {
+      fetchAPI<{ success: true; data: PresentationDetailDto }>(`/api/backoffice/events/${eventId}/presentation-targets/${abstractId}`, { token }),
+    preview: (eventId: number, input: PresentationPreviewInput, token: string) =>
+      fetchAPI<{ success: true; data: PresentationPreviewDto }>(`/api/backoffice/events/${eventId}/presentation-email-previews`, {
         token, method: "POST", body: JSON.stringify(input),
       }),
     batch: (eventId: number, input: { kind: "initial" | "reminder"; abstractIds: number[]; previewFingerprint: string }, key: string, token: string) =>
-      fetchAPI<{ success: true; data: { batchId: string; queued: number; jobIds: string[] } }>(`/api/backoffice/events/${eventId}/poster-notification-batches`, {
+      fetchAPI<{ success: true; data: { batchId: string; queued: number; jobIds: string[] } }>(`/api/backoffice/events/${eventId}/presentation-notification-batches`, {
         token, method: "POST", headers: { "Idempotency-Key": key }, body: JSON.stringify(input),
       }),
     batchResult: (eventId: number, batchId: string, token: string) =>
-      fetchAPI<{ success: true; data: PosterBatchDto }>(`/api/backoffice/events/${eventId}/poster-notification-batches/${batchId}`, { token }),
+      fetchAPI<{ success: true; data: PresentationBatchDto }>(`/api/backoffice/events/${eventId}/presentation-notification-batches/${batchId}`, { token }),
     verify: (eventId: number, input: { sourceKey: string; fingerprint: string; reason: string }, key: string, token: string) =>
-      fetchAPI<{ success: true; data: { abstractId: number; state: "ready" } }>(`/api/backoffice/events/${eventId}/poster-verifications`, {
+      fetchAPI<{ success: true; data: { abstractId: number; state: "ready" } }>(`/api/backoffice/events/${eventId}/presentation-verifications`, {
         token, method: "POST", headers: { "Idempotency-Key": key }, body: JSON.stringify(input),
       }),
     settings: (eventId: number, input: { closesAt: string; version: number; reason: string }, key: string, token: string) =>
-      fetchAPI<{ success: true; data: { closesAt: string; version: number } }>(`/api/backoffice/events/${eventId}/poster-settings`, {
+      fetchAPI<{ success: true; data: { closesAt: string; version: number } }>(`/api/backoffice/events/${eventId}/presentation-settings`, {
         token, method: "PATCH", headers: { "Idempotency-Key": key }, body: JSON.stringify(input),
       }),
     createRevision: (eventId: number, abstractId: number, input: { requestId: string; details: string; closesAt: string; previewFingerprint: string }, key: string, token: string) =>
-      fetchAPI<{ success: true; data: { request: RevisionDto; emailJobId: string } }>(`/api/backoffice/events/${eventId}/poster-targets/${abstractId}/revision-requests`, {
+      fetchAPI<{ success: true; data: { request: RevisionDto; emailJobId: string } }>(`/api/backoffice/events/${eventId}/presentation-targets/${abstractId}/revision-requests`, {
         token, method: "POST", headers: { "Idempotency-Key": key }, body: JSON.stringify(input),
       }),
     cancelRevision: (eventId: number, requestId: string, reason: string, key: string, token: string) =>
-      fetchAPI<{ success: true; data: RevisionDto }>(`/api/backoffice/events/${eventId}/poster-revision-requests/${requestId}/cancellations`, {
+      fetchAPI<{ success: true; data: RevisionDto }>(`/api/backoffice/events/${eventId}/presentation-revision-requests/${requestId}/cancellations`, {
         token, method: "POST", headers: { "Idempotency-Key": key }, body: JSON.stringify({ reason }),
       }),
     resend: (eventId: number, jobId: string, previewFingerprint: string, key: string, token: string) =>
-      fetchAPI<{ success: true; data: { jobId: string } }>(`/api/backoffice/events/${eventId}/poster-email-jobs/${jobId}/resends`, {
+      fetchAPI<{ success: true; data: { jobId: string } }>(`/api/backoffice/events/${eventId}/presentation-email-jobs/${jobId}/resends`, {
         token, method: "POST", headers: { "Idempotency-Key": key }, body: JSON.stringify({ previewFingerprint }),
       }),
   },

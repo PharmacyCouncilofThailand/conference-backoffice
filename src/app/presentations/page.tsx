@@ -6,20 +6,20 @@ import { Pagination } from '@/components/common';
 import { AdminLayout } from '@/components/layout/AdminLayout';
 import { useAuth, type AssignedEvent } from '@/contexts/AuthContext';
 import { api } from '@/lib/api';
-import { selectablePosterIds } from '@/lib/posterUi';
-import type { PosterBatchDto, PosterListDto, PosterListRow, PosterSettingsHistoryDto } from '@/types/posters';
-import { PosterTable, progressLabels, matchLabels, mailLabels, thaiTime } from '@/components/posters/PosterTable';
-import { PosterEmailDialog } from '@/components/posters/PosterEmailDialog';
-import { PosterManagementDialog } from '@/components/posters/PosterManagementDialog';
-import { PosterDeadlineHistory } from '@/components/posters/PosterHistoryViews';
+import { selectablePresentationIds } from '@/lib/presentationUi';
+import type { PresentationBatchDto, PresentationListDto, PresentationListRow, PresentationSettingsHistoryDto } from '@/types/presentations';
+import { PresentationTable, progressLabels, matchLabels, mailLabels, thaiTime } from '@/components/presentations/PresentationTable';
+import { PresentationEmailDialog } from '@/components/presentations/PresentationEmailDialog';
+import { PresentationManagementDialog } from '@/components/presentations/PresentationManagementDialog';
+import { PresentationDeadlineHistory } from '@/components/presentations/PresentationHistoryViews';
 
-export default function PostersPage() {
+export default function PresentationsPage() {
   const { user, token, isAdmin, currentEvent, isLoading } = useAuth();
   const [events, setEvents] = useState<AssignedEvent[]>([]);
   const [eventError, setEventError] = useState<string | null>(null);
   const [eventChoice, setEventChoice] = useState<number | null>(null);
-  const [loaded, setLoaded] = useState<{ scope: string; data: PosterListDto } | null>(null);
-  const [history, setHistory] = useState<PosterSettingsHistoryDto | null>(null);
+  const [loaded, setLoaded] = useState<{ scope: string; data: PresentationListDto } | null>(null);
+  const [history, setHistory] = useState<PresentationSettingsHistoryDto | null>(null);
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [page, setPage] = useState(1);
   const [adminTab, setTab] = useState<'verify' | 'notifications' | 'received'>('verify');
@@ -31,10 +31,10 @@ export default function PostersPage() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [refresh, setRefresh] = useState(0);
-  const [verifyRow, setVerifyRow] = useState<PosterListRow | null>(null);
+  const [verifyRow, setVerifyRow] = useState<PresentationListRow | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [emailKind, setEmailKind] = useState<'initial' | 'reminder' | null>(null);
-  const [batch, setBatch] = useState<{ eventId: number; id: string; queued: number; result?: PosterBatchDto } | null>(null);
+  const [batch, setBatch] = useState<{ eventId: number; id: string; queued: number; result?: PresentationBatchDto } | null>(null);
   const [batchBusy, setBatchBusy] = useState(false);
   const [rechecking, setRechecking] = useState(false);
   const recheckKey = useRef<string | null>(null);
@@ -68,8 +68,8 @@ export default function PostersPage() {
     const query = new URLSearchParams({ page: String(page), pageSize: '25', search });
     if (tab === 'received') query.set('received', 'true');
     for (const [key, value] of Object.entries({ round, presentationType, status, matchState: isAdmin ? matchState : '' })) if (value) query.set(key, value);
-    api.posters.list(eventId, query, token).then(result => { if (current) setLoaded({ scope, data: result.data }); }).catch(error => { if (current) setError(error instanceof Error ? error.message : 'โหลดรายชื่อไม่สำเร็จ'); });
-    if (isAdmin) api.posters.getSettings(eventId, token).then(result => { if (current) setHistory(result.data); }).catch(error => { if (current) setError(error instanceof Error ? error.message : 'โหลดประวัติไม่สำเร็จ'); });
+    api.presentations.list(eventId, query, token).then(result => { if (current) setLoaded({ scope, data: result.data }); }).catch(error => { if (current) setError(error instanceof Error ? error.message : 'โหลดรายชื่อไม่สำเร็จ'); });
+    if (isAdmin) api.presentations.getSettings(eventId, token).then(result => { if (current) setHistory(result.data); }).catch(error => { if (current) setError(error instanceof Error ? error.message : 'โหลดประวัติไม่สำเร็จ'); });
     return () => { current = false; };
   }, [eventId, token, readable, isAdmin, tab, page, search, round, presentationType, status, matchState, refresh, scope]);
   const manage = isAdmin && data?.capabilities.manage === true;
@@ -82,14 +82,14 @@ export default function PostersPage() {
     if (!manage || !eventId || !token || recheckLock.current) return;
     recheckLock.current = true; setRechecking(true);
     recheckKey.current ??= crypto.randomUUID();
-    try { await api.posters.recheck(eventId, recheckKey.current, token); recheckKey.current = null; reload(); }
+    try { await api.presentations.recheck(eventId, recheckKey.current, token); recheckKey.current = null; reload(); }
     catch (error) { setError(error instanceof Error ? error.message : 'ตรวจซ้ำไม่สำเร็จ'); }
     finally { recheckLock.current = false; setRechecking(false); }
   };
   const refreshBatch = async () => {
     if (!isAdmin || !batch || !token || batchBusy) return;
     const requested = batch; setBatchBusy(true);
-    try { const result = await api.posters.batchResult(requested.eventId, requested.id, token); setBatch(current => current?.id === requested.id && current.eventId === requested.eventId ? { ...current, result: result.data } : current); }
+    try { const result = await api.presentations.batchResult(requested.eventId, requested.id, token); setBatch(current => current?.id === requested.id && current.eventId === requested.eventId ? { ...current, result: result.data } : current); }
     catch (error) { setError(error instanceof Error ? error.message : 'โหลดผลส่งไม่สำเร็จ'); }
     finally { setBatchBusy(false); }
   };
@@ -127,17 +127,17 @@ export default function PostersPage() {
         {notice && <p role="status" className="rounded-lg bg-amber-50 p-4 text-amber-800">{notice}</p>}
         {data ? <>
           {manage && tab === 'verify' && <button className="btn-secondary mb-4" disabled={rechecking} onClick={recheck}>{rechecking ? 'กำลังตรวจ…' : 'ตรวจรายชื่อซ้ำ'}</button>}
-          {manage && tab === 'notifications' && <div className="mb-4 flex flex-wrap items-center gap-3 rounded-xl border border-zinc-200 bg-zinc-50 p-4"><button className="btn-secondary" onClick={() => setSelected(new Set(selectablePosterIds(data.items)))}>เลือกที่แจ้งได้ในหน้านี้</button><button className="btn-secondary" onClick={() => setSelected(new Set())}>ล้างที่เลือก</button><span>{abstractIds.length} ผลงาน / {abstractIds.length} อีเมล</span><button className="btn-primary" disabled={!abstractIds.length} onClick={() => setEmailKind('initial')}>ตัวอย่างแจ้งส่ง</button><button className="btn-secondary" disabled={!abstractIds.length} onClick={() => setEmailKind('reminder')}>ตัวอย่างเตือนส่ง</button></div>}
+          {manage && tab === 'notifications' && <div className="mb-4 flex flex-wrap items-center gap-3 rounded-xl border border-zinc-200 bg-zinc-50 p-4"><button className="btn-secondary" onClick={() => setSelected(new Set(selectablePresentationIds(data.items)))}>เลือกที่แจ้งได้ในหน้านี้</button><button className="btn-secondary" onClick={() => setSelected(new Set())}>ล้างที่เลือก</button><span>{abstractIds.length} ผลงาน / {abstractIds.length} อีเมล</span><button className="btn-primary" disabled={!abstractIds.length} onClick={() => setEmailKind('initial')}>ตัวอย่างแจ้งส่ง</button><button className="btn-secondary" disabled={!abstractIds.length} onClick={() => setEmailKind('reminder')}>ตัวอย่างเตือนส่ง</button></div>}
           <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm">
-            <PosterTable rows={data.items} manage={manage} showAdminDetails={isAdmin} selected={visibleSelected} onSelect={toggle} onVerify={setVerifyRow} eventId={eventId!} view={tab} closesAt={data.settings.closesAt} />
+            <PresentationTable rows={data.items} manage={manage} showAdminDetails={isAdmin} selected={visibleSelected} onSelect={toggle} onVerify={setVerifyRow} eventId={eventId!} view={tab} closesAt={data.settings.closesAt} />
             <Pagination currentPage={page} totalPages={Math.max(1, Math.ceil(data.total / data.pageSize))} totalCount={data.total} pageSize={data.pageSize} onPageChange={setPage} itemName="posters" hideIfSinglePage={false} className="flex-wrap gap-3" />
           </div>
         </> : <div role="status" className="flex items-center justify-center gap-3 py-16 text-zinc-400"><IconLoader2 size={32} className="animate-spin text-emerald-600" /><span>กำลังโหลดรายชื่อ…</span></div>}
         </section>
         {isAdmin && batch && <section className="card"><h2 className="font-semibold">สร้างงานอีเมลแล้ว {batch.queued} งาน</h2><p className="my-2 text-sm text-zinc-500">รอผู้ให้บริการรับงาน ไม่ใช่การยืนยันว่าอีเมลถึงผู้รับ · {batch.id}</p><button className="btn-secondary" disabled={batchBusy} onClick={refreshBatch}>โหลดผลส่งล่าสุด</button><ul className="mt-3 space-y-2">{batch.result?.jobs.map(job => <li key={job.id}>{job.abstractId} · {job.recipient} · {mailLabels[job.state]} {job.errorCode}</li>)}</ul></section>}
-        {isAdmin && history && <section className="card space-y-4"><div className="flex flex-wrap items-center justify-between gap-3"><h2 className="font-semibold">กำหนดส่งและประวัติ (Asia/Bangkok)</h2>{manage && history.capabilities.manage && <button className="btn-secondary" onClick={() => setSettingsOpen(true)}>เปลี่ยนกำหนดส่ง</button>}</div><p>วันสุดท้าย: {thaiTime(new Date(Date.parse(history.settings.closesAt) - 1000).toISOString())} · รุ่น {history.settings.version}</p><details><summary className="cursor-pointer text-emerald-700">ประวัติการเปลี่ยนกำหนดส่ง ({history.history.length})</summary><ul className="mt-4 space-y-4">{history.history.map(item => <li key={item.id} className="border-t border-zinc-200 pt-3"><p>{thaiTime(item.createdAt)} · ผู้เปลี่ยน {item.actorId ?? 'ระบบ'} · {item.reason ?? '—'}</p><div className="mt-3 grid gap-4 sm:grid-cols-2"><div><h3>เดิม</h3><PosterDeadlineHistory value={item.before} /></div><div><h3>ใหม่</h3><PosterDeadlineHistory value={item.after} /></div></div></li>)}</ul></details></section>}
-        {manage && eventId && token && emailKind && <PosterEmailDialog eventId={eventId} token={token} kind={emailKind} abstractIds={abstractIds} onClose={() => setEmailKind(null)} onQueued={(id, queued) => { setBatch({ eventId, id, queued }); reload(); }} />}
-        {manage && eventId && token && data && (verifyRow || settingsOpen) && <PosterManagementDialog eventId={eventId} token={token} row={verifyRow ?? undefined} settings={history?.settings ?? data.settings} onClose={() => { setVerifyRow(null); setSettingsOpen(false); }} onSaved={stale => { if (stale) setNotice('ข้อมูลเปลี่ยนแล้ว โหลดข้อมูลล่าสุด กรุณาตรวจและเปิดแบบฟอร์มใหม่'); reload(); }} />}
+        {isAdmin && history && <section className="card space-y-4"><div className="flex flex-wrap items-center justify-between gap-3"><h2 className="font-semibold">กำหนดส่งและประวัติ (Asia/Bangkok)</h2>{manage && history.capabilities.manage && <button className="btn-secondary" onClick={() => setSettingsOpen(true)}>เปลี่ยนกำหนดส่ง</button>}</div><p>วันสุดท้าย: {thaiTime(new Date(Date.parse(history.settings.closesAt) - 1000).toISOString())} · รุ่น {history.settings.version}</p><details><summary className="cursor-pointer text-emerald-700">ประวัติการเปลี่ยนกำหนดส่ง ({history.history.length})</summary><ul className="mt-4 space-y-4">{history.history.map(item => <li key={item.id} className="border-t border-zinc-200 pt-3"><p>{thaiTime(item.createdAt)} · ผู้เปลี่ยน {item.actorId ?? 'ระบบ'} · {item.reason ?? '—'}</p><div className="mt-3 grid gap-4 sm:grid-cols-2"><div><h3>เดิม</h3><PresentationDeadlineHistory value={item.before} /></div><div><h3>ใหม่</h3><PresentationDeadlineHistory value={item.after} /></div></div></li>)}</ul></details></section>}
+        {manage && eventId && token && emailKind && <PresentationEmailDialog eventId={eventId} token={token} kind={emailKind} abstractIds={abstractIds} onClose={() => setEmailKind(null)} onQueued={(id, queued) => { setBatch({ eventId, id, queued }); reload(); }} />}
+        {manage && eventId && token && data && (verifyRow || settingsOpen) && <PresentationManagementDialog eventId={eventId} token={token} row={verifyRow ?? undefined} settings={history?.settings ?? data.settings} onClose={() => { setVerifyRow(null); setSettingsOpen(false); }} onSaved={stale => { if (stale) setNotice('ข้อมูลเปลี่ยนแล้ว โหลดข้อมูลล่าสุด กรุณาตรวจและเปิดแบบฟอร์มใหม่'); reload(); }} />}
       </>}
     </>}
   </div></AdminLayout>;
