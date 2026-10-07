@@ -2,6 +2,13 @@ import type { PresentationDetailDto, PresentationListRow, RevisionDto } from '..
 
 export const canManagePresentations = (role: string): boolean => role === 'admin';
 
+export function presentationUserAssignments(role: string, types: string[], categories: string[]) {
+  return {
+    ...(role === 'reviewer' && { assignedCategories: categories }),
+    ...(['organizer', 'reviewer'].includes(role) && { assignedPresentationTypes: types }),
+  };
+}
+
 // Inputs show the last permitted Thai second; the API stores an exclusive close.
 export function thaiDeadlineInput(close: string): string {
   const date = new Date(Date.parse(close) - 1000);
@@ -75,7 +82,7 @@ export function presentationAuditSummary(value: unknown) {
   const changes = (Object.keys(newFields) as Array<keyof typeof newFields>).filter(label => oldFields[label] !== newFields[label]).map(label => ({ label, before: oldFields[label], after: newFields[label], date: label === 'ปิดรับฉบับแก้ไข' }));
   const createdAt = text(audit.created_at);
   return {
-    action: actions[text(audit.action) ?? ''] ?? 'อัปเดตข้อมูล Poster',
+    action: actions[text(audit.action) ?? ''] ?? 'อัปเดตข้อมูลไฟล์นำเสนอ',
     createdAt: createdAt && Number.isFinite(Date.parse(createdAt)) ? createdAt : null,
     actor: typeof audit.actor_id === 'number' ? `ผู้ดูแล #${audit.actor_id}` : 'ระบบ',
     reason: text(audit.reason),

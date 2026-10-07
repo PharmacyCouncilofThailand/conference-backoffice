@@ -60,7 +60,7 @@ export function PresentationRevisionDialog({ eventId, abstractId, token, request
       }
     } finally { lock.current = false; setBusy(false); }
   };
-  return <PresentationDialog title={request ? 'ยกเลิกคำขอแก้ไข' : 'ขอแก้ไข Poster'} busy={busy || attempted} onClose={onClose}>
+  return <PresentationDialog title={request ? 'ยกเลิกคำขอแก้ไข' : 'ขอแก้ไขไฟล์นำเสนอ'} busy={busy || attempted} onClose={onClose}>
     <p className="mb-4">ผลงาน abstractId {abstractId}</p>
     {request && <section className="mb-5 rounded-lg bg-zinc-50 p-4"><p>คำขอ {request.id} · {request.status}</p><p className="my-2 whitespace-pre-wrap">{request.details}</p><p>วันสุดท้ายเวลาไทย {thaiTime(new Date(Date.parse(request.closesAt) - 1000).toISOString())}</p><p className="mt-2 text-sm text-zinc-500">ยกเลิกสิทธิ์เดิม เก็บประวัติและไฟล์ที่รับสำเร็จไว้</p></section>}
     <form onSubmit={request ? confirm : review} className="space-y-4">

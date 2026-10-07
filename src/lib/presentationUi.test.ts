@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import type { PresentationDetailDto, PresentationListRow, RevisionDto } from '../types/presentations';
-import { activePresentationRequest, canResendPresentationJob, isPresentationActionAudit, canManagePresentations, presentationAuditSummary, presentationRouteId, thaiDeadlineInput, deadlineInputToClose, selectablePresentationIds } from './presentationUi';
+import { presentationUserAssignments, activePresentationRequest, canResendPresentationJob, isPresentationActionAudit, canManagePresentations, presentationAuditSummary, presentationRouteId, thaiDeadlineInput, deadlineInputToClose, selectablePresentationIds } from './presentationUi';
 import { api, ApiError } from './api';
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
@@ -17,6 +17,13 @@ test('only admins manage posters', () => {
     assert.equal(canManagePresentations(role), false);
   }
   assert.equal(canManagePresentations('admin'), true);
+});
+
+test('Organizer and Reviewer share type grants; categories remain Reviewer-only', () => {
+  assert.deepEqual(presentationUserAssignments('organizer', ['oral'], ['clinical']), { assignedPresentationTypes: ['oral'] });
+  assert.deepEqual(presentationUserAssignments('reviewer', ['poster'], ['clinical']), { assignedCategories: ['clinical'], assignedPresentationTypes: ['poster'] });
+  assert.deepEqual(presentationUserAssignments('organizer', [], []), { assignedPresentationTypes: [] });
+  assert.deepEqual(presentationUserAssignments('admin', ['oral'], ['clinical']), {});
 });
 
 test('Thai inclusive seconds map to the exclusive UTC close independently of host timezone', () => {
@@ -247,7 +254,7 @@ test('viewer list has only received navigation and never requests admin settings
     const rendered = harness.render({});
     const navigation = rendered.find(node => node.type === 'nav')!;
     assert.equal(nodes(navigation).filter(node => node.type === 'button').length, 1);
-    assert.ok(JSON.stringify(navigation).includes('Poster ที่ได้รับ'));
+    assert.ok(JSON.stringify(navigation).includes('ไฟล์นำเสนอที่ได้รับ'));
     assert.equal(JSON.stringify(rendered).includes('ผลตรวจ'), false);
     assert.equal(settingsReads, 0); assert.equal(reads, 1);
     const table = rendered.find(node => node.type === 'presentation-table')!;
@@ -444,7 +451,7 @@ function detailHarness(auth: unknown, route: { abstractId: string; eventId: stri
 }
 
 function detailFixture(title = 'Synthetic detail'): PresentationDetailDto {
-  const upload = { id: 'v1', version: 1, fileName: 'original.pdf', mimeType: 'application/pdf', sizeBytes: 100, publicUrl: 'http://127.0.0.1:53018/fixture.pdf', receivedAt: '2026-10-07T00:00:00.000Z', revisionRequestId: null } as const;
+  const upload = { id: 'v1', version: 1, fileName: 'original.pdf', mimeType: 'application/pdf', sizeBytes: 100, storedFileName: 'original.pdf', storageProvider: 'r2', driveFileId: null, fileUrl: 'http://127.0.0.1:53018/fixture.pdf', receivedAt: '2026-10-07T00:00:00.000Z', revisionRequestId: null } as const;
   const request = { id: 'request-open', status: 'open', requestedBy: 1, details: 'Fix legend', closesAt: '2026-10-20T17:00:00.000Z', createdAt: '2026-10-07T00:00:00.000Z', submittedAt: null, cancelledAt: null, cancelledBy: null, cancellationReason: null } as const;
   return { row: { abstractId: 501, announcement: { title, trackingId: 'PRIS-501', round: 1, presentationType: 'poster', submitterName: 'Owner' }, problems: [], snapshot: {}, matchState: 'ready', progress: 'revision_pending', currentUpload: upload, canNotify: false, submitterEmail: 'owner@example.invalid', verifiedBy: null, verifiedAt: null, verificationReason: null },
     uploads: [upload], requests: [request], emailJobs: [{ id: 'job-1', kind: 'revision', state: 'unknown', recipient: 'owner@example.invalid', subject: 'Stored', html: '<p>Body</p>', createdAt: '2026-10-07T00:00:00.000Z', finishedAt: null, triggeredBy: 1, parentJobId: null, requestId: request.id, uploadId: null, errorCode: null, attempts: [] }], audit: [], capabilities: { read: true, manage: true },
@@ -477,6 +484,23 @@ test('real detail page restricts viewer controls, invalid IDs and unassigned eve
     const rendered = harness.render({}); harness.effects.shift()!();
     assert.equal(reads, 0); assert.ok(rendered.some(node => node.props.role === 'alert'));
   }
+});
+
+test('accepted Oral opens its Drive URL without an iframe and retains original history names', async () => {
+  const detail = detailFixture();
+  detail.row.announcement.presentationType = 'oral';
+  const upload = { ...detail.uploads[0], storageProvider: 'drive' as const, driveFileId: 'file-new',
+    storedFileName: 'PRIS-O001_original.pdf', fileUrl: 'https://drive.google.com/file/d/file-new/view' };
+  detail.row.currentUpload = upload;
+  detail.uploads = [upload, { ...upload, id: 'v0', version: 0, driveFileId: 'file-old', fileUrl: 'https://drive.google.com/file/d/file-old/view' }];
+  const harness = detailHarness({ user: { role: 'organizer', assignedEvents: [{ id: 42, code: 'PRIS-2026' }] }, token: 'synthetic', isAdmin: false, isLoading: false }, { abstractId: '501', eventId: '42' }, async () => ({ data: detail }));
+  harness.render({}); harness.effects.shift()!(); await new Promise(resolve => setImmediate(resolve));
+  const rendered = harness.render({});
+  assert.equal(rendered.filter(node => node.type === 'iframe').length, 0);
+  assert.ok(rendered.some(node => node.type === 'a' && node.props.href === upload.fileUrl && node.props.children === 'เปิดไฟล์ Oral ใน Google Drive'));
+  assert.ok(rendered.some(node => node.type === 'a' && node.props.href === detail.uploads[1].fileUrl));
+  assert.equal(JSON.stringify(rendered).includes(upload.storedFileName), false);
+  assert.ok(JSON.stringify(rendered).includes('original.pdf'));
 });
 
 test('real detail late responses cannot replace a new scoped work', async () => {

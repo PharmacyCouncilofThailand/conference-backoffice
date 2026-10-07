@@ -35,7 +35,7 @@ export function PresentationManagementDialog({ eventId, token, row, settings, on
       }
     } finally { lock.current = false; setBusy(false); }
   };
-  return <PresentationDialog title={row ? 'ตรวจและรับรองรหัสเดิม' : 'เปลี่ยนกำหนดส่ง Poster'} busy={busy} onClose={onClose}>
+  return <PresentationDialog title={row ? 'ตรวจและรับรองรหัสเดิม' : 'เปลี่ยนกำหนดส่งไฟล์นำเสนอ'} busy={busy} onClose={onClose}>
     {row ? <><p className="mb-4">รับรองเฉพาะรหัสเดิมที่ข้อมูลอื่นตรงกัน: {row.announcement.trackingId} · abstractId {row.abstractId}</p><PresentationComparison value={row.snapshot} /></> : <p className="mb-4">วันสุดท้ายเดิม (เวลาไทย): {thaiTime(new Date(Date.parse(settings.closesAt) - 1000).toISOString())}</p>}
     <form onSubmit={save} className="mt-5 space-y-4">
       {!row && <><label className="block">วันสุดท้ายเวลาไทย (Asia/Bangkok)<input className="input-field mt-2" type="datetime-local" step="1" required value={deadline} disabled={busy || attempted} onChange={event => setDeadline(event.target.value)} /></label><p>วันสุดท้ายใหม่ (เวลาไทย): {deadline.replace('T', ' ')} · ค่าปิดรับเดิม UTC: {settings.closesAt}</p></>}

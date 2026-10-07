@@ -62,7 +62,7 @@ export function PresentationEmailDialog(props: Props) {
       }
     } finally { lock.current = false; setBusy(false); }
   };
-  return <PresentationDialog title={kind === 'stored' ? 'อีเมลที่บันทึกไว้' : kind === 'resend' ? 'ตรวจอีเมลก่อนส่งซ้ำ' : kind === 'initial' ? 'ตรวจอีเมลแจ้งส่ง Poster' : 'ตรวจอีเมลเตือนส่ง Poster'} busy={busy || pendingResend} onClose={onClose}>
+  return <PresentationDialog title={kind === 'stored' ? 'อีเมลที่บันทึกไว้' : kind === 'resend' ? 'ตรวจอีเมลก่อนส่งซ้ำ' : kind === 'initial' ? 'ตรวจอีเมลแจ้งส่งไฟล์นำเสนอ' : 'ตรวจอีเมลเตือนส่งไฟล์นำเสนอ'} busy={busy || pendingResend} onClose={onClose}>
     <p className="mb-4 text-zinc-600">{kind === 'stored' ? 'เนื้อหาที่บันทึกในประวัติ ไม่ใช่ร่างสำหรับส่งซ้ำ' : `${kind === 'resend' ? 1 : abstractIds.length} ผลงาน · หนึ่งผลงานหนึ่งอีเมล แม้ใช้อีเมลผู้ส่งเดียวกัน`}</p>
     {kind === 'resend' && job?.state === 'unknown' && <p role="alert" className="mb-4 rounded-lg bg-amber-50 p-3 text-amber-800">ผลส่งไม่แน่ชัด การส่งซ้ำอาจได้รับอีเมลซ้ำ</p>}
     {pendingResend && !busy && <p className="mb-4 text-sm text-amber-800">ยังไม่ทราบผลคำขอ กรุณากดยืนยันอีกครั้งเพื่อตรวจคำขอเดิมก่อนปิด</p>}
