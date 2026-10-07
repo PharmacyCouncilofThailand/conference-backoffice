@@ -132,7 +132,7 @@ test('page access, real sidebar links and assigned-event scope agree for every r
       useEffect: () => {}, useState: (() => [states[stateIndex++], () => {}]) as typeof React.useState,
     });
     const context = Provider({ children: null }).props.value;
-    const readable = ['admin', 'organizer', 'reviewer'].includes(role);
+    const readable = role === 'admin';
     assert.equal(context.hasAccess('/presentations'), readable, role);
     assert.equal(context.hasAccess('/presentations/501'), readable, role);
     assert.equal(context.canAccessEvent(42), true, role);
@@ -153,6 +153,14 @@ test('page access, real sidebar links and assigned-event scope agree for every r
     if (role === 'organizer' || role === 'reviewer') {
       assert.equal(hrefs.includes('/abstracts'), true, role);
       assert.equal(hrefs.includes('/abstract-categories'), false, role);
+    }
+    if (role === 'admin' || role === 'organizer' || role === 'reviewer') {
+      const redirects: string[] = [];
+      const { AuthGuard: Guard } = componentModule<{ AuthGuard: (props: { children: React.ReactNode }) => React.ReactElement | null }>('src/components/auth/AuthGuard.tsx', {
+        useEffect: ((effect: () => unknown) => { effect(); }) as typeof React.useEffect,
+      }, context, { 'next/navigation': { usePathname: () => '/presentations/501', useRouter: () => ({ replace: (path: string) => redirects.push(path) }) } });
+      assert.equal(Guard({ children: React.createElement('div') }) === null, role !== 'admin', role);
+      assert.deepEqual(redirects, role === 'admin' ? [] : [role === 'organizer' ? '/members' : '/abstracts']);
     }
   }
 });
@@ -212,7 +220,7 @@ function emailHarness(mockApi: unknown) {
   });
 }
 
-test('viewer list has only received navigation and never requests admin settings history', async () => {
+test('Organizer and Reviewer cannot read the Presentation page or trigger its API reads', async () => {
   for (const role of ['organizer', 'reviewer']) {
     let reads = 0, settingsReads = 0;
     const auth = { user: { role, assignedEvents: [{ id: 42, code: 'PRIS-2026', name: 'PRIS' }] }, token: 'synthetic', isAdmin: false, isLoading: false };
@@ -236,13 +244,9 @@ test('viewer list has only received navigation and never requests admin settings
     harness.render({}); while (harness.effects.length) harness.effects.shift()!();
     await new Promise(resolve => setImmediate(resolve));
     const rendered = harness.render({});
-    const navigation = rendered.find(node => node.type === 'nav')!;
-    assert.equal(nodes(navigation).filter(node => node.type === 'button').length, 1);
-    assert.ok(JSON.stringify(navigation).includes('ไฟล์นำเสนอที่ได้รับ'));
-    assert.equal(JSON.stringify(rendered).includes('ผลตรวจ'), false);
-    assert.equal(settingsReads, 0); assert.equal(reads, 1);
-    const table = rendered.find(node => node.type === 'presentation-table')!;
-    assert.equal(table.props.view, 'received'); assert.equal(table.props.manage, false); assert.equal(table.props.showAdminDetails, false);
+    assert.ok(JSON.stringify(rendered).includes('ไม่มีสิทธิ์เข้าถึงไฟล์นำเสนอ'));
+    assert.equal(settingsReads, 0); assert.equal(reads, 0);
+    assert.equal(rendered.some(node => node.type === 'presentation-table' || node.type === 'nav'), false);
   }
 });
 
@@ -457,10 +461,14 @@ test('real detail page restricts viewer controls, invalid IDs and unassigned eve
     assert.equal(JSON.stringify(rendered).includes('ประวัติอีเมล'), role === 'admin');
     assert.equal(JSON.stringify(rendered).includes('ตรวจข้อมูลประกาศ'), role === 'admin');
     assert.equal(JSON.stringify(rendered).includes('รับรองรหัสเดิม'), role === 'admin');
-    assert.ok(JSON.stringify(rendered).includes('สร้างคำขอแก้ไข'));
-    assert.ok(JSON.stringify(rendered).includes('ยกเลิกคำขอแก้ไข'));
-    assert.equal(reads, 1);
-    assert.equal(rendered.find(node => node.type === 'iframe')!.props.src, 'http://127.0.0.1:53018/fixture.pdf');
+    assert.equal(JSON.stringify(rendered).includes('สร้างคำขอแก้ไข'), role === 'admin');
+    assert.equal(JSON.stringify(rendered).includes('ยกเลิกคำขอแก้ไข'), role === 'admin');
+    assert.equal(reads, role === 'admin' ? 1 : 0);
+    if (role === 'admin') assert.equal(rendered.find(node => node.type === 'iframe')!.props.src, 'http://127.0.0.1:53018/fixture.pdf');
+    else {
+      assert.equal(rendered.some(node => node.type === 'iframe'), false);
+      assert.ok(JSON.stringify(rendered).includes('ไม่มีสิทธิ์ดูไฟล์นำเสนอ'));
+    }
   }
   for (const route of [{ abstractId: '-1', eventId: '42' }, { abstractId: '501', eventId: '1e2' }, { abstractId: '501', eventId: '99' }]) {
     let reads = 0;
@@ -477,7 +485,7 @@ test('accepted Oral opens its Drive URL without an iframe and retains original h
     storedFileName: 'PRIS-O001_original.pdf', fileUrl: 'https://drive.google.com/file/d/file-new/view' };
   detail.row.currentUpload = upload;
   detail.uploads = [upload, { ...upload, id: 'v0', version: 0, driveFileId: 'file-old', fileUrl: 'https://drive.google.com/file/d/file-old/view' }];
-  const harness = detailHarness({ user: { role: 'organizer', assignedEvents: [{ id: 42, code: 'PRIS-2026' }] }, token: 'synthetic', isAdmin: false, isLoading: false }, { abstractId: '501', eventId: '42' }, async () => ({ data: detail }));
+  const harness = detailHarness({ user: { role: 'admin', assignedEvents: [{ id: 42, code: 'PRIS-2026' }] }, token: 'synthetic', isAdmin: true, isLoading: false }, { abstractId: '501', eventId: '42' }, async () => ({ data: detail }));
   harness.render({}); harness.effects.shift()!(); await new Promise(resolve => setImmediate(resolve));
   const rendered = harness.render({});
   assert.equal(rendered.filter(node => node.type === 'iframe').length, 0);

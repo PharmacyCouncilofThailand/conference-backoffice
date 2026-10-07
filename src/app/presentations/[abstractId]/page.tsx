@@ -22,7 +22,7 @@ function PresentationDetailContent() {
   const { user, token, isAdmin, isLoading } = useAuth();
   const abstractId = presentationRouteId(params.abstractId);
   const eventId = query.getAll('eventId').length === 1 ? presentationRouteId(query.get('eventId')) : null;
-  const readable = !!user && ['admin', 'organizer', 'reviewer'].includes(user.role);
+  const readable = isAdmin;
   const allowed = readable && !!eventId && (isAdmin || !!user?.assignedEvents.some(event => event.id === eventId && event.code === 'PRIS-2026'));
   const scope = `${isAdmin}:${eventId}:${abstractId}:${token}`;
   const [loaded, setLoaded] = useState<{ scope: string; detail: PresentationDetailDto } | null>(null);

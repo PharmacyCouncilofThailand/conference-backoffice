@@ -254,7 +254,7 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
         if (item.label === "Abstracts" && item.children) {
           return {
             ...item,
-            children: item.children.filter((child) => ["/abstracts", "/presentations"].includes(child.href)),
+            children: item.children.filter((child) => child.href === "/abstracts"),
           };
         }
         return null;
@@ -266,7 +266,7 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
         if (item.label === "Abstracts" && item.children) {
           return {
             ...item,
-            children: item.children.filter((child) => ["/abstracts", "/presentations"].includes(child.href)),
+            children: item.children.filter((child) => child.href === "/abstracts"),
           };
         }
         return null;

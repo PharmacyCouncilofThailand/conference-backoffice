@@ -39,7 +39,7 @@ export default function PresentationsPage() {
   const [rechecking, setRechecking] = useState(false);
   const recheckKey = useRef<string | null>(null);
   const recheckLock = useRef(false);
-  const readable = !!user && ['admin', 'organizer', 'reviewer'].includes(user.role);
+  const readable = isAdmin;
   useEffect(() => {
     let current = true;
     setEvents([]); setEventError(null);
