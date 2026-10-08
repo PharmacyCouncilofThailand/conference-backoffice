@@ -116,6 +116,8 @@ const roleOptions = [
   { value: "medical_professional", label: "Medical Professional" },
   { value: "student", label: "Student" },
   { value: "general", label: "General" },
+  { value: "healthhack", label: "HealthHack" },
+  { value: "booth", label: "Booth" },
 ];
 
 // Helper to convert ISO date (UTC) to datetime-local string in local browser timezone
@@ -1817,7 +1819,7 @@ export default function EditEventPage() {
                                         "bg-zinc-100 text-zinc-800"
                                   }`}
                               >
-                                {role === "pharmacist" ? "PHARMACIST" : role === "medical_professional" ? "MED. PROF." : role === "student" ? "STUDENT" : role === "general" ? "GENERAL" : role.toUpperCase()}
+                                {role === "pharmacist" ? "PHARMACIST" : role === "medical_professional" ? "MED. PROF." : role === "student" ? "STUDENT" : role === "general" ? "GENERAL" : role === "healthhack" ? "HealthHack" : role === "booth" ? "Booth" : role.toUpperCase()}
                               </span>
                             ))
                           ) : (
@@ -2260,6 +2262,8 @@ export default function EditEventPage() {
                       { value: "medical_professional", label: "Medical Professional" },
                       { value: "student", label: "Student" },
                       { value: "general", label: "General" },
+                      { value: "healthhack", label: "HealthHack" },
+                      { value: "booth", label: "Booth" },
                     ].map((role) => (
                       <label
                         key={role.value}

@@ -28,11 +28,13 @@ interface Member {
   email: string;
   firstName: string;
   lastName: string;
-  role: "pharmacist" | "medical_professional" | "student" | "general";
+  role: "pharmacist" | "medical_professional" | "student" | "general" | "healthhack" | "booth";
   status: "pending_approval" | "active" | "rejected";
   phone: string | null;
   country: string | null;
   institution: string | null;
+  healthHackLevel: string | null;
+  boothName: string | null;
   createdAt: string;
 }
 
@@ -45,6 +47,8 @@ interface Pagination {
 
 // Role labels
 const roleLabels: Record<string, { label: string; className: string }> = {
+  healthhack: { label: "HealthHack", className: "bg-sky-100 text-sky-800" },
+  booth: { label: "Booth", className: "bg-amber-100 text-amber-800" },
   pharmacist: { label: "Pharmacist", className: "bg-green-100 text-green-800" },
   medical_professional: {
     label: "Medical Professional",
@@ -63,6 +67,10 @@ const roleLabels: Record<string, { label: string; className: string }> = {
     label: "Admin",
     className: "bg-red-100 text-red-800",
   },
+};
+
+const healthHackLevelLabels: Record<string, string> = {
+  m1: "ม.1", m2: "ม.2", m3: "ม.3", m4: "ม.4", m5: "ม.5", m6: "ม.6", undergraduate: "ปริญญาตรี",
 };
 
 // Status labels
@@ -322,6 +330,8 @@ export default function MembersPage() {
             <option value="medical_professional">Medical Professional</option>
             <option value="student">Student</option>
             <option value="general">General</option>
+            <option value="healthhack">HealthHack</option>
+            <option value="booth">Booth</option>
           </select>
 
           <select
@@ -464,6 +474,24 @@ export default function MembersPage() {
                                 {member.institution}
                               </div>
                             )}
+                            {(member.role === "healthhack" || member.role === "booth") && (
+                              <details className="text-sm text-zinc-500">
+                                <summary className="cursor-pointer">
+                                  {member.role === "healthhack"
+                                    ? `HealthHack: ${healthHackLevelLabels[member.healthHackLevel || ""] || "—"}`
+                                    : `Booth: ${member.boothName || "—"}`}
+                                </summary>
+                                <dl className="mt-2 space-y-1">
+                                  <div><dt className="font-medium">Role</dt><dd>{roleLabels[member.role].label}</dd></div>
+                                  {member.role === "healthhack" && <>
+                                    <div><dt className="font-medium">โรงเรียน / มหาวิทยาลัย / สถาบัน</dt><dd>{member.institution || "—"}</dd></div>
+                                    <div><dt className="font-medium">ระดับการศึกษา</dt><dd>{healthHackLevelLabels[member.healthHackLevel || ""] || "—"}</dd></div>
+                                  </>}
+                                  {member.role === "booth" && <div><dt className="font-medium">ชื่อบูธในงาน</dt><dd>{member.boothName || "—"}</dd></div>}
+                                </dl>
+                              </details>
+                            )}
+
                             {member.country && (
                               <div className="flex items-center gap-2 text-sm text-zinc-400">
                                 <IconWorld size={14} />
