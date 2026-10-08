@@ -16,6 +16,7 @@ import {
   IconChevronRight,
 } from "@tabler/icons-react";
 import { api } from "@/lib/api";
+import { presentationUserAssignments } from "@/lib/presentationUi";
 import { useAuth } from "@/contexts/AuthContext";
 import { Pagination } from "@/components/common";
 import toast from "react-hot-toast";
@@ -86,7 +87,7 @@ interface User {
   assignedEventIds: number[];
   assignments?: { eventId: number; sessionIds: number[] }[]; // Session-level assignments
   assignedCategories?: string[]; // For reviewers: abstract categories they can review
-  assignedPresentationTypes?: string[]; // For reviewers: presentation types they can review
+  assignedPresentationTypes?: string[]; // For organizers/reviewers: assigned presentation types
 }
 
 interface SessionInfo {
@@ -393,11 +394,7 @@ export default function UsersPage() {
         role: formData.role,
         firstName,
         lastName,
-        // Include assignedCategories and assignedPresentationTypes for reviewers
-        ...(formData.role === "reviewer" && {
-          assignedCategories: formData.assignedCategories,
-          assignedPresentationTypes: formData.assignedPresentationTypes,
-        }),
+        ...presentationUserAssignments(formData.role, formData.assignedPresentationTypes, formData.assignedCategories),
       });
 
       // 2. Assign events/sessions if not admin and user was created
@@ -444,11 +441,7 @@ export default function UsersPage() {
         role: formData.role,
         email: formData.email,
         isActive: formData.isActive,
-        // Include assignedCategories and assignedPresentationTypes for reviewers
-        ...(formData.role === "reviewer" && {
-          assignedCategories: formData.assignedCategories,
-          assignedPresentationTypes: formData.assignedPresentationTypes,
-        }),
+        ...presentationUserAssignments(formData.role, formData.assignedPresentationTypes, formData.assignedCategories),
       };
       if (formData.password) {
         updates.password = formData.password;
@@ -975,14 +968,14 @@ export default function UsersPage() {
                 </div>
               )}
 
-              {/* 2️⃣ Presentation Type Assignment (only for reviewer) */}
-              {formData.role === "reviewer" && (
+              {/* 2️⃣ Presentation Type Assignment (organizer/reviewer) */}
+              {["organizer", "reviewer"].includes(formData.role) && (
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-zinc-600 mb-2">
                     2. Assign Presentation Types *
                   </label>
                   <p className="text-xs text-zinc-400 mb-2">
-                    Select which presentation types this reviewer can review
+                    เลือกประเภทที่เจ้าหน้าที่ได้รับมอบหมาย หากไม่เลือกจะไม่เห็นไฟล์นำเสนอ
                   </p>
                   <div className="border border-zinc-200 rounded-xl p-3 space-y-2">
                     {presentationTypes.map((type) => (
@@ -1328,14 +1321,14 @@ export default function UsersPage() {
                 </div>
               )}
 
-              {/* 2️⃣ Presentation Type Assignment (only for reviewer) */}
-              {formData.role === "reviewer" && (
+              {/* 2️⃣ Presentation Type Assignment (organizer/reviewer) */}
+              {["organizer", "reviewer"].includes(formData.role) && (
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-zinc-600 mb-2">
                     2. Assigned Presentation Types
                   </label>
                   <p className="text-xs text-zinc-400 mb-2">
-                    Select which presentation types this reviewer can review
+                    เลือกประเภทที่เจ้าหน้าที่ได้รับมอบหมาย หากไม่เลือกจะไม่เห็นไฟล์นำเสนอ
                   </p>
                   <div className="border border-zinc-200 rounded-xl p-3 space-y-2">
                     {presentationTypes.map((type) => (

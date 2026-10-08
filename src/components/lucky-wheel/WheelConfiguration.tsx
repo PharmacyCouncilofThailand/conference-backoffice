@@ -294,7 +294,7 @@ export function WheelConfiguration({ eventId, token, state, onReload }: Props) {
                       />
                     </label>
                     <span className="text-xs text-zinc-500">
-                      {segment.imageId ? `Trusted image ID: ${segment.imageId}` : "JPEG/PNG/WebP สูงสุด 5 MiB"}
+                      {segment.imageId ? `Trusted image ID: ${segment.imageId}` : "JPEG/PNG/WebP สูงสุด 5 MB"}
                     </span>
                     </div>
                   </div>

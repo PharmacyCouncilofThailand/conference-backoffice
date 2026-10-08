@@ -71,5 +71,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
     return null;
   }
 
+  if (user && !publicPaths.includes(pathname) && !hasAccess(pathname)) return null;
+
   return <>{children}</>;
 }

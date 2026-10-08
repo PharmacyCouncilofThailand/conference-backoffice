@@ -60,6 +60,7 @@ const menuStructure = [
     icon: IconFileText,
     children: [
       { href: "/abstracts", label: "All Abstracts" },
+      { href: "/presentations", label: "Presentation submissions" },
       { href: "/abstract-categories", label: "Categories" },
     ],
   },
