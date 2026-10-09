@@ -7,7 +7,7 @@ export type MailState = 'pending' | 'sending' | 'sent' | 'failed' | 'unknown' | 
 export type Announcement = { id: number; sequence?: number; trackingId: string | null;
   title: string; presentationType: AnnouncementType; categoryId: number; categoryName: string;
   submitterName: string | null; affiliation: string | null; round: 1 | 2 };
-export type UploadDto = { id: string; version: number; fileName: string; storedFileName: string; mimeType: 'application/pdf';
+export type UploadDto = { id: string; version: number; fileName: string; storedFileName: string; mimeType: 'application/pdf' | 'image/png';
   sizeBytes: number; fileUrl: string; storageProvider: 'drive' | 'r2'; driveFileId: string | null;
   receivedAt: string; revisionRequestId: string | null };
 export type RevisionDto = { id: string; details: string; closesAt: string; status: RevisionStatus;
