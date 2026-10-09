@@ -93,6 +93,7 @@ const menuStructure = [
     icon: IconUsers,
     children: [
       { href: "/registrations", label: "All Registrations" },
+      { href: '/session-grants', label: 'ติดตามสิทธิ์ Session' },
       { href: "/promo-code-abstracts", label: "Promo Code & Abstracts" },
       { href: "/verification", label: "Student Verification" },
       { href: "/student-eligibility", label: "Postgrad Eligibility" },
@@ -212,6 +213,7 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
     .map((item) => {
       // Admin sees everything
       if (isAdmin) return item;
+      if (item.children) item = { ...item, children: item.children.filter(child => child.href !== '/session-grants') };
 
       // Sponsor Hub is admin-only.
       if (item.href === "/sponsors") return null;

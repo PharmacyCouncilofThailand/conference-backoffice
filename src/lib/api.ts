@@ -25,6 +25,7 @@ import type {
 } from "@/types/api";
 import type {
   GrantBatchDto,
+  GrantTrackingDto,
   GrantSessionChoiceDto,
   InvitationCapacity,
   SessionGrantCreateInput,
@@ -672,6 +673,12 @@ export const api = {
   },
 
   sessionGrants: {
+    tracking: (token: string, query: string) =>
+      fetchAPI<GrantTrackingDto>(
+        `/api/backoffice/session-grants/tracking${query ? `?${query}` : ''}`,
+        { token },
+      ),
+
     status: (token: string) =>
       fetchAPI<{ enabled: boolean }>("/api/backoffice/session-grants/status", { token }),
     create: (

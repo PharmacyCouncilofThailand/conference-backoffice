@@ -153,3 +153,26 @@ export interface GrantSessionChoiceDto {
     | "SESSION_RESPONSE_CLOSED"
     | null;
 }
+
+export interface GrantTrackingItemDto extends Omit<SessionGrantItemDto, 'registrationSessionId'> {
+  batchId: string;
+  eventId: number;
+  sessionId: number;
+  sessionName: string;
+  actorName: string;
+  createdAt: string;
+  recipientEmail: string | null;
+  sentAt: string | null;
+  lastAttemptAt: string | null;
+}
+
+export interface GrantTrackingDto {
+  items: GrantTrackingItemDto[];
+  pagination: SessionGrantPagination;
+  summary: {
+    total: number;
+    outcomeCounts: Record<GrantOutcome, number>;
+    invitationCounts: Record<InvitationStatus, number>;
+    emailCounts: Record<SessionGrantEmailStatus, number>;
+  };
+}
