@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { AdminLayout } from "@/components/layout";
-import { api } from "@/lib/api";
-import toast from "react-hot-toast";
+import { useState, useEffect } from 'react';
+import { AdminLayout } from '@/components/layout';
+import { api } from '@/lib/api';
+import toast from 'react-hot-toast';
 import {
   IconCategory,
   IconPlus,
@@ -17,7 +17,7 @@ import {
   IconAlertTriangle,
   IconToggleLeft,
   IconToggleRight,
-} from "@tabler/icons-react";
+} from '@tabler/icons-react';
 
 interface Category {
   id: number;
@@ -36,17 +36,17 @@ interface EventOption {
 }
 
 const getBackofficeToken = () =>
-  localStorage.getItem("backoffice_token") ||
-  sessionStorage.getItem("backoffice_token") ||
-  "";
+  localStorage.getItem('backoffice_token') ||
+  sessionStorage.getItem('backoffice_token') ||
+  '';
 
 export default function AbstractCategoriesPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [events, setEvents] = useState<EventOption[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [eventFilter, setEventFilter] = useState<number | "">("");
+  const [searchTerm, setSearchTerm] = useState('');
+  const [eventFilter, setEventFilter] = useState<number | ''>('');
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -57,7 +57,7 @@ export default function AbstractCategoriesPage() {
 
   const [formData, setFormData] = useState({
     eventId: null as number | null,
-    name: "",
+    name: '',
     isActive: true,
   });
 
@@ -78,7 +78,7 @@ export default function AbstractCategoriesPage() {
         })),
       );
     } catch (error) {
-      console.error("Failed to fetch events:", error);
+      console.error('Failed to fetch events:', error);
     }
   };
 
@@ -86,12 +86,12 @@ export default function AbstractCategoriesPage() {
     setIsLoading(true);
     try {
       const token = getBackofficeToken();
-      const query = eventFilter ? `eventId=${eventFilter}` : "";
+      const query = eventFilter ? `eventId=${eventFilter}` : '';
       const res = await api.abstractCategories.list(token, query);
       setCategories((res.categories || []) as unknown as Category[]);
     } catch (error) {
-      console.error("Failed to fetch categories:", error);
-      toast.error("Failed to load categories");
+      console.error('Failed to fetch categories:', error);
+      toast.error('Failed to load categories');
     } finally {
       setIsLoading(false);
     }
@@ -100,7 +100,7 @@ export default function AbstractCategoriesPage() {
   const resetForm = () => {
     setFormData({
       eventId: null,
-      name: "",
+      name: '',
       isActive: true,
     });
   };
@@ -131,19 +131,19 @@ export default function AbstractCategoriesPage() {
 
   const handleCreate = async () => {
     if (!formData.eventId || !formData.name) {
-      toast.error("Event and name are required");
+      toast.error('Event and name are required');
       return;
     }
     setIsSubmitting(true);
     try {
       const token = getBackofficeToken();
       await api.abstractCategories.create(token, formData);
-      toast.success("Category created successfully");
+      toast.success('Category created successfully');
       setShowCreateModal(false);
       fetchCategories();
     } catch (error: unknown) {
       toast.error(
-        error instanceof Error ? error.message : "Failed to create category",
+        error instanceof Error ? error.message : 'Failed to create category',
       );
     } finally {
       setIsSubmitting(false);
@@ -159,12 +159,12 @@ export default function AbstractCategoriesPage() {
         name: formData.name,
         isActive: formData.isActive,
       });
-      toast.success("Category updated successfully");
+      toast.success('Category updated successfully');
       setShowEditModal(false);
       fetchCategories();
     } catch (error: unknown) {
       toast.error(
-        error instanceof Error ? error.message : "Failed to update category",
+        error instanceof Error ? error.message : 'Failed to update category',
       );
     } finally {
       setIsSubmitting(false);
@@ -177,12 +177,12 @@ export default function AbstractCategoriesPage() {
     try {
       const token = getBackofficeToken();
       await api.abstractCategories.delete(token, selectedCategory.id);
-      toast.success("Category deleted");
+      toast.success('Category deleted');
       setShowDeleteModal(false);
       fetchCategories();
     } catch (error: unknown) {
       toast.error(
-        error instanceof Error ? error.message : "Failed to delete category",
+        error instanceof Error ? error.message : 'Failed to delete category',
       );
     } finally {
       setIsSubmitting(false);
@@ -194,12 +194,12 @@ export default function AbstractCategoriesPage() {
       const token = getBackofficeToken();
       await api.abstractCategories.toggle(token, cat.id);
       toast.success(
-        cat.isActive ? "Category deactivated" : "Category activated",
+        cat.isActive ? 'Category deactivated' : 'Category activated',
       );
       fetchCategories();
     } catch (error: unknown) {
       toast.error(
-        error instanceof Error ? error.message : "Failed to toggle category",
+        error instanceof Error ? error.message : 'Failed to toggle category',
       );
     }
   };
@@ -212,7 +212,7 @@ export default function AbstractCategoriesPage() {
   const filteredCategories = categories.filter(
     (cat) =>
       cat.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (cat.eventCode || "").toLowerCase().includes(searchTerm.toLowerCase()),
+      (cat.eventCode || '').toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   // Compute stats
@@ -243,7 +243,9 @@ export default function AbstractCategoriesPage() {
               <IconCheck size={24} stroke={1.5} />
             </div>
             <div>
-              <p className="text-2xl font-bold text-green-600">{stats.active}</p>
+              <p className="text-2xl font-bold text-green-600">
+                {stats.active}
+              </p>
               <p className="text-sm text-zinc-400">Active</p>
             </div>
           </div>
@@ -254,7 +256,9 @@ export default function AbstractCategoriesPage() {
               <IconX size={24} stroke={1.5} />
             </div>
             <div>
-              <p className="text-2xl font-bold text-zinc-400">{stats.inactive}</p>
+              <p className="text-2xl font-bold text-zinc-400">
+                {stats.inactive}
+              </p>
               <p className="text-sm text-zinc-400">Inactive</p>
             </div>
           </div>
@@ -264,7 +268,9 @@ export default function AbstractCategoriesPage() {
       {/* Main Content */}
       <div className="card">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-semibold text-zinc-800">All Categories</h2>
+          <h2 className="text-lg font-semibold text-zinc-800">
+            All Categories
+          </h2>
           <button
             onClick={openCreateModal}
             className="btn-primary flex items-center gap-2"
@@ -278,9 +284,7 @@ export default function AbstractCategoriesPage() {
           <select
             value={eventFilter}
             onChange={(e) =>
-              setEventFilter(
-                e.target.value ? parseInt(e.target.value, 10) : "",
-              )
+              setEventFilter(e.target.value ? parseInt(e.target.value, 10) : '')
             }
             className="input-field w-auto"
           >
@@ -315,7 +319,7 @@ export default function AbstractCategoriesPage() {
           </div>
         ) : filteredCategories.length === 0 ? (
           <div className="text-center py-12 text-zinc-400">
-            No categories found.{" "}
+            No categories found.{' '}
             <button
               onClick={openCreateModal}
               className="text-emerald-600 hover:underline"
@@ -328,100 +332,108 @@ export default function AbstractCategoriesPage() {
           <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm">
             <div className="overflow-x-auto">
               <table className="w-full table-sticky-actions">
-              <thead>
-                <tr className="bg-zinc-50 border-b border-zinc-200">
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider w-16">
-                    #
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-500 uppercase tracking-wider">
-                    Category
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-500 uppercase tracking-wider">
-                    Event
-                  </th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider w-[120px]">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {filteredCategories.map((cat, idx) => (
-                  <tr
-                    key={cat.id}
-                    className="hover:bg-zinc-50 transition-colors"
-                  >
-                    <td className="px-4 py-4 text-center">
-                      <span className="font-mono text-sm text-zinc-400 bg-zinc-100 px-2 py-1 rounded">
-                        {idx + 1}
-                      </span>
-                    </td>
-                    <td className="px-4 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-emerald-50 rounded-lg flex items-center justify-center text-emerald-600">
-                          <IconCategory size={20} stroke={1.5} />
-                        </div>
-                        <div>
-                          <p className="font-medium text-zinc-900">{cat.name}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-4 py-4">
-                      <div className="flex items-center gap-2">
-                        <IconCalendarEvent size={16} className="text-zinc-400" stroke={1.5} />
-                        <div>
-                          <p className="text-sm font-medium text-zinc-600">
-                            {cat.eventCode || `ID: ${cat.eventId}`}
-                          </p>
-                          {cat.eventName && (
-                            <p className="text-xs text-zinc-400">{cat.eventName}</p>
-                          )}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-4 py-4 text-center">
-                      <button
-                        onClick={() => handleToggle(cat)}
-                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium cursor-pointer transition-colors ${
-                          cat.isActive
-                            ? "bg-green-100 text-green-700 hover:bg-green-200"
-                            : "bg-zinc-100 text-zinc-400 hover:bg-zinc-200"
-                        }`}
-                      >
-                        {cat.isActive ? (
-                          <>
-                            <IconToggleRight size={14} /> Active
-                          </>
-                        ) : (
-                          <>
-                            <IconToggleLeft size={14} /> Inactive
-                          </>
-                        )}
-                      </button>
-                    </td>
-                    <td className="px-4 py-4 text-center">
-                      <div className="flex gap-1 justify-center items-center">
-                        <button
-                          className="p-2 hover:bg-yellow-50 rounded-lg text-zinc-400 hover:text-yellow-600 transition-colors"
-                          title="Edit"
-                          onClick={() => openEditModal(cat)}
-                        >
-                          <IconPencil size={18} />
-                        </button>
-                        <button
-                          className="p-2 hover:bg-red-50 rounded-lg text-zinc-400 hover:text-red-600 transition-colors"
-                          title="Delete"
-                          onClick={() => openDeleteModal(cat)}
-                        >
-                          <IconTrash size={18} />
-                        </button>
-                      </div>
-                    </td>
+                <thead>
+                  <tr className="bg-zinc-50 border-b border-zinc-200">
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider w-16">
+                      #
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+                      Category
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+                      Event
+                    </th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider w-[120px]">
+                      Actions
+                    </th>
                   </tr>
-                ))}
-              </tbody>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {filteredCategories.map((cat, idx) => (
+                    <tr
+                      key={cat.id}
+                      className="hover:bg-zinc-50 transition-colors"
+                    >
+                      <td className="px-4 py-4 text-center">
+                        <span className="font-mono text-sm text-zinc-400 bg-zinc-100 px-2 py-1 rounded">
+                          {idx + 1}
+                        </span>
+                      </td>
+                      <td className="px-4 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-emerald-50 rounded-lg flex items-center justify-center text-emerald-600">
+                            <IconCategory size={20} stroke={1.5} />
+                          </div>
+                          <div>
+                            <p className="font-medium text-zinc-900">
+                              {cat.name}
+                            </p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-4">
+                        <div className="flex items-center gap-2">
+                          <IconCalendarEvent
+                            size={16}
+                            className="text-zinc-400"
+                            stroke={1.5}
+                          />
+                          <div>
+                            <p className="text-sm font-medium text-zinc-600">
+                              {cat.eventCode || `ID: ${cat.eventId}`}
+                            </p>
+                            {cat.eventName && (
+                              <p className="text-xs text-zinc-400">
+                                {cat.eventName}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-4 text-center">
+                        <button
+                          onClick={() => handleToggle(cat)}
+                          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium cursor-pointer transition-colors ${
+                            cat.isActive
+                              ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                              : 'bg-zinc-100 text-zinc-400 hover:bg-zinc-200'
+                          }`}
+                        >
+                          {cat.isActive ? (
+                            <>
+                              <IconToggleRight size={14} /> Active
+                            </>
+                          ) : (
+                            <>
+                              <IconToggleLeft size={14} /> Inactive
+                            </>
+                          )}
+                        </button>
+                      </td>
+                      <td className="px-4 py-4 text-center">
+                        <div className="flex gap-1 justify-center items-center">
+                          <button
+                            className="p-2 hover:bg-yellow-50 rounded-lg text-zinc-400 hover:text-yellow-600 transition-colors"
+                            title="Edit"
+                            onClick={() => openEditModal(cat)}
+                          >
+                            <IconPencil size={18} />
+                          </button>
+                          <button
+                            className="p-2 hover:bg-red-50 rounded-lg text-zinc-400 hover:text-red-600 transition-colors"
+                            title="Delete"
+                            onClick={() => openDeleteModal(cat)}
+                          >
+                            <IconTrash size={18} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
               </table>
             </div>
           </div>
@@ -458,7 +470,7 @@ export default function AbstractCategoriesPage() {
                   Event <span className="text-red-500">*</span>
                 </label>
                 <select
-                  value={formData.eventId || ""}
+                  value={formData.eventId || ''}
                   onChange={(e) =>
                     setFormData((prev) => ({
                       ...prev,
@@ -496,11 +508,11 @@ export default function AbstractCategoriesPage() {
                   Status
                 </label>
                 <select
-                  value={formData.isActive ? "active" : "inactive"}
+                  value={formData.isActive ? 'active' : 'inactive'}
                   onChange={(e) =>
                     setFormData((prev) => ({
                       ...prev,
-                      isActive: e.target.value === "active",
+                      isActive: e.target.value === 'active',
                     }))
                   }
                   className="input-field w-full"
@@ -537,10 +549,7 @@ export default function AbstractCategoriesPage() {
 
       {/* ─── Edit Modal ──────────────────────────────────────────────────── */}
       {showEditModal && selectedCategory && (
-        <div
-          className="modal-overlay"
-          onClick={() => setShowEditModal(false)}
-        >
+        <div className="modal-overlay" onClick={() => setShowEditModal(false)}>
           <div
             className="bg-white rounded-2xl max-w-lg w-full"
             onClick={(e) => e.stopPropagation()}
@@ -566,7 +575,7 @@ export default function AbstractCategoriesPage() {
                 </label>
                 <input
                   type="text"
-                  value={`${selectedCategory.eventCode || ""} — ${selectedCategory.eventName || ""}`}
+                  value={`${selectedCategory.eventCode || ''} — ${selectedCategory.eventName || ''}`}
                   disabled
                   className="input-field w-full bg-zinc-50 text-zinc-400"
                 />
@@ -589,11 +598,11 @@ export default function AbstractCategoriesPage() {
                   Status
                 </label>
                 <select
-                  value={formData.isActive ? "active" : "inactive"}
+                  value={formData.isActive ? 'active' : 'inactive'}
                   onChange={(e) =>
                     setFormData((prev) => ({
                       ...prev,
-                      isActive: e.target.value === "active",
+                      isActive: e.target.value === 'active',
                     }))
                   }
                   className="input-field w-full"

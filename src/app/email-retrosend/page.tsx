@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useState, useEffect, useRef } from "react";
-import { AdminLayout } from "@/components/layout";
+import { useState, useEffect, useRef } from 'react';
+import { AdminLayout } from '@/components/layout';
 import {
   IconMailForward,
   IconSend,
@@ -16,19 +16,19 @@ import {
   IconFileText,
   IconTrash,
   IconMail,
-} from "@tabler/icons-react";
-import toast from "react-hot-toast";
+} from '@tabler/icons-react';
+import toast from 'react-hot-toast';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
 // ─────────────────────────────────────────────────────────────────────────────
 
 type RetrosendType =
-  | "payment"
-  | "signup"
-  | "abstract-submission"
-  | "abstract-status"
-  | "free-registration";
+  | 'payment'
+  | 'signup'
+  | 'abstract-submission'
+  | 'abstract-status'
+  | 'free-registration';
 
 interface EmailPreviewField {
   label: string;
@@ -40,7 +40,7 @@ interface RetrosendResult {
   email: string;
   name: string;
   type: string;
-  status: "sent" | "skipped" | "failed" | "pending";
+  status: 'sent' | 'skipped' | 'failed' | 'pending';
   reason?: string;
   preview?: {
     subject: string;
@@ -102,15 +102,18 @@ const PATTERNS: Record<string, RegExp> = {
   pendingApproval:
     /Error sending pending approval email.*NipaMail|Failed to send pending approval email/,
   abstractSubmission: /Error sending abstract submission email.*NipaMail/,
-  acceptedPoster: /Error sending abstract accepted poster email.*NipaMail|Error sending abstract accepted \(poster\) email/,
-  acceptedOral: /Error sending abstract accepted oral email.*NipaMail|Error sending abstract accepted \(oral\) email/,
+  acceptedPoster:
+    /Error sending abstract accepted poster email.*NipaMail|Error sending abstract accepted \(poster\) email/,
+  acceptedOral:
+    /Error sending abstract accepted oral email.*NipaMail|Error sending abstract accepted \(oral\) email/,
   rejected: /Error sending abstract rejected email.*NipaMail/,
-  freeRegistration: /\[Generic\] Error sending registration email|\[FREE-REG\] Failed to send confirmation email/,
+  freeRegistration:
+    /\[Generic\] Error sending registration email|\[FREE-REG\] Failed to send confirmation email/,
 };
 
 function toLocalDatetime(iso: string, addMinutes = 0): string {
   const d = new Date(new Date(iso).getTime() + addMinutes * 60_000);
-  const pad = (n: number) => String(n).padStart(2, "0");
+  const pad = (n: number) => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
@@ -134,18 +137,29 @@ function parseLogEntries(entries: LogEntry[]): ParsedLog | null {
   const freeRegFailedTimestamps: Date[] = [];
 
   for (const entry of entries) {
-    const url = entry.attributes?.req?.url ?? "";
-    const method = entry.attributes?.req?.method ?? "";
-    if (method === "PATCH" || (entry.message === "incoming request" && url)) {
+    const url = entry.attributes?.req?.url ?? '';
+    const method = entry.attributes?.req?.method ?? '';
+    if (method === 'PATCH' || (entry.message === 'incoming request' && url)) {
       const m = url.match(/\/api\/backoffice\/abstracts\/(\d+)\/status/);
-      if (m) abstractStatusRequests.push({ id: parseInt(m[1]), ts: new Date(entry.timestamp) });
+      if (m)
+        abstractStatusRequests.push({
+          id: parseInt(m[1]),
+          ts: new Date(entry.timestamp),
+        });
     }
     if (entry.message) {
-      const created = entry.message.match(/\[FREE-REG\] Created registration (\d+)/);
+      const created = entry.message.match(
+        /\[FREE-REG\] Created registration (\d+)/,
+      );
       if (created) {
-        freeRegCreated.push({ id: parseInt(created[1]), ts: new Date(entry.timestamp) });
+        freeRegCreated.push({
+          id: parseInt(created[1]),
+          ts: new Date(entry.timestamp),
+        });
       }
-      if (/\[FREE-REG\] Failed to send confirmation email/.test(entry.message)) {
+      if (
+        /\[FREE-REG\] Failed to send confirmation email/.test(entry.message)
+      ) {
         freeRegFailedTimestamps.push(new Date(entry.timestamp));
       }
     }
@@ -160,7 +174,9 @@ function parseLogEntries(entries: LogEntry[]): ParsedLog | null {
     }
   }
 
-  const errorEntries = entries.filter((e) => e.severity === "error" && e.message);
+  const errorEntries = entries.filter(
+    (e) => e.severity === 'error' && e.message,
+  );
 
   let signupCount = 0;
   let pendingApprovalCount = 0;
@@ -179,16 +195,44 @@ function parseLogEntries(entries: LogEntry[]): ParsedLog | null {
       timestamps.push(ts);
       continue;
     }
-    if (PATTERNS.signup.test(msg)) { signupCount++; timestamps.push(ts); continue; }
-    if (PATTERNS.pendingApproval.test(msg)) { pendingApprovalCount++; timestamps.push(ts); continue; }
-    if (PATTERNS.abstractSubmission.test(msg)) { abstractSubmissionCount++; timestamps.push(ts); continue; }
-    if (PATTERNS.acceptedPoster.test(msg)) { acceptedPosterCount++; timestamps.push(ts); continue; }
-    if (PATTERNS.acceptedOral.test(msg)) { acceptedOralCount++; timestamps.push(ts); continue; }
-    if (PATTERNS.rejected.test(msg)) { rejectedCount++; timestamps.push(ts); continue; }
-    if (PATTERNS.freeRegistration.test(msg)) { freeRegistrationCount++; timestamps.push(ts); }
+    if (PATTERNS.signup.test(msg)) {
+      signupCount++;
+      timestamps.push(ts);
+      continue;
+    }
+    if (PATTERNS.pendingApproval.test(msg)) {
+      pendingApprovalCount++;
+      timestamps.push(ts);
+      continue;
+    }
+    if (PATTERNS.abstractSubmission.test(msg)) {
+      abstractSubmissionCount++;
+      timestamps.push(ts);
+      continue;
+    }
+    if (PATTERNS.acceptedPoster.test(msg)) {
+      acceptedPosterCount++;
+      timestamps.push(ts);
+      continue;
+    }
+    if (PATTERNS.acceptedOral.test(msg)) {
+      acceptedOralCount++;
+      timestamps.push(ts);
+      continue;
+    }
+    if (PATTERNS.rejected.test(msg)) {
+      rejectedCount++;
+      timestamps.push(ts);
+      continue;
+    }
+    if (PATTERNS.freeRegistration.test(msg)) {
+      freeRegistrationCount++;
+      timestamps.push(ts);
+    }
   }
 
-  const paymentCount = orderIdSet.size > 0 ? orderIdSet.size : paymentErrorTimestamps.length;
+  const paymentCount =
+    orderIdSet.size > 0 ? orderIdSet.size : paymentErrorTimestamps.length;
 
   const abstractStatusErrorTimestamps: Date[] = [];
   for (const entry of errorEntries) {
@@ -201,10 +245,16 @@ function parseLogEntries(entries: LogEntry[]): ParsedLog | null {
     }
   }
   for (const entry of entries) {
-    if (/Failed to send abstract status email/.test(entry.message ?? "")) {
+    if (/Failed to send abstract status email/.test(entry.message ?? '')) {
       abstractStatusErrorTimestamps.push(new Date(entry.timestamp));
-      const m = entry.message.match(/Failed to send abstract status email for abstract (\d+)/);
-      if (m) abstractStatusRequests.push({ id: parseInt(m[1]), ts: new Date(entry.timestamp) });
+      const m = entry.message.match(
+        /Failed to send abstract status email for abstract (\d+)/,
+      );
+      if (m)
+        abstractStatusRequests.push({
+          id: parseInt(m[1]),
+          ts: new Date(entry.timestamp),
+        });
     }
   }
 
@@ -215,7 +265,10 @@ function parseLogEntries(entries: LogEntry[]): ParsedLog | null {
     let bestDiff = Infinity;
     for (const req of abstractStatusRequests) {
       const diff = Math.abs(req.ts.getTime() - errTs.getTime());
-      if (diff < bestDiff && diff <= 10_000) { best = req; bestDiff = diff; }
+      if (diff < bestDiff && diff <= 10_000) {
+        best = req;
+        bestDiff = diff;
+      }
     }
     if (best) abstractIdSet.add(best.id);
   }
@@ -243,26 +296,30 @@ function parseLogEntries(entries: LogEntry[]): ParsedLog | null {
   const windowFrom = toLocalDatetime(timestamps[0].toISOString());
   // +1 minute buffer to compensate for the seconds dropped by datetime-local input precision.
   // Without this buffer, an event happening at HH:MM:SS would be cut off by toDate=HH:MM:00.
-  const windowTo = toLocalDatetime(timestamps[timestamps.length - 1].toISOString(), 1);
+  const windowTo = toLocalDatetime(
+    timestamps[timestamps.length - 1].toISOString(),
+    1,
+  );
 
   // Use the correlation count when available (more accurate); fall back to the regex count.
   const accurateFreeRegCount =
     freeRegIdSet.size > 0 ? freeRegIdSet.size : freeRegistrationCount;
 
   return {
-    fileName: "",
+    fileName: '',
     totalEntries: entries.length,
     windowFrom,
     windowTo,
-    orderIds: [...orderIdSet].sort((a, b) => a - b).join(", "),
-    abstractIds: [...abstractIdSet].sort((a, b) => a - b).join(", "),
-    registrationIds: [...freeRegIdSet].sort((a, b) => a - b).join(", "),
+    orderIds: [...orderIdSet].sort((a, b) => a - b).join(', '),
+    abstractIds: [...abstractIdSet].sort((a, b) => a - b).join(', '),
+    registrationIds: [...freeRegIdSet].sort((a, b) => a - b).join(', '),
     counts: {
       payment: paymentCount,
       signup: signupCount + pendingApprovalCount,
-      "abstract-submission": abstractSubmissionCount,
-      "abstract-status": acceptedPosterCount + acceptedOralCount + rejectedCount,
-      "free-registration": accurateFreeRegCount,
+      'abstract-submission': abstractSubmissionCount,
+      'abstract-status':
+        acceptedPosterCount + acceptedOralCount + rejectedCount,
+      'free-registration': accurateFreeRegCount,
     },
     abstractStatusBreakdown: {
       acceptedPoster: acceptedPosterCount,
@@ -280,22 +337,22 @@ function parseLogEntries(entries: LogEntry[]): ParsedLog | null {
 const EMPTY_COUNTS: Record<RetrosendType, number> = {
   payment: 0,
   signup: 0,
-  "abstract-submission": 0,
-  "abstract-status": 0,
-  "free-registration": 0,
+  'abstract-submission': 0,
+  'abstract-status': 0,
+  'free-registration': 0,
 };
 
 const TYPE_DESC: Record<RetrosendType, string> = {
   payment:
-    "ส่ง receipt email ให้ผู้ชำระเงินที่ระบบยืนยันการชำระแล้ว แต่ email ไม่ถูกส่ง",
+    'ส่ง receipt email ให้ผู้ชำระเงินที่ระบบยืนยันการชำระแล้ว แต่ email ไม่ถูกส่ง',
   signup:
-    "ส่ง welcome email หรือ pending-approval email ให้ user ที่สมัครในช่วงเวลา token หมดอายุ",
-  "abstract-submission":
-    "ส่ง email ยืนยันการ submit abstract ให้ผู้เขียนที่ส่ง abstract ในช่วงเวลาดังกล่าว",
-  "abstract-status":
-    "ส่ง email แจ้งผลการพิจารณา (accepted/rejected) — ต้องระบุ Abstract IDs เอง เนื่องจากตาราง abstracts ไม่มี updatedAt",
-  "free-registration":
-    "ส่ง email ยืนยันการลงทะเบียน (regCode + QR) ให้ผู้ลงทะเบียนงานฟรีที่ระบบสร้าง registration แล้วแต่ email ไม่ถูกส่ง",
+    'ส่ง welcome email หรือ pending-approval email ให้ user ที่สมัครในช่วงเวลา token หมดอายุ',
+  'abstract-submission':
+    'ส่ง email ยืนยันการ submit abstract ให้ผู้เขียนที่ส่ง abstract ในช่วงเวลาดังกล่าว',
+  'abstract-status':
+    'ส่ง email แจ้งผลการพิจารณา (accepted/rejected) — ต้องระบุ Abstract IDs เอง เนื่องจากตาราง abstracts ไม่มี updatedAt',
+  'free-registration':
+    'ส่ง email ยืนยันการลงทะเบียน (regCode + QR) ให้ผู้ลงทะเบียนงานฟรีที่ระบบสร้าง registration แล้วแต่ email ไม่ถูกส่ง',
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -312,39 +369,43 @@ function EmailPreviewModal({
   onClose: () => void;
 }) {
   const [html, setHtml] = useState<string | null>(null);
-  const [subject, setSubject] = useState<string>("");
-  const [to, setTo] = useState<string>("");
+  const [subject, setSubject] = useState<string>('');
+  const [to, setTo] = useState<string>('');
   const [loadErr, setLoadErr] = useState<string | null>(null);
 
   // Determine the type string the render endpoint expects
   const renderType =
-    result.type.startsWith("abstract-accepted") || result.type === "abstract-rejected"
-      ? "abstract-status"
+    result.type.startsWith('abstract-accepted') ||
+    result.type === 'abstract-rejected'
+      ? 'abstract-status'
       : result.type;
 
   useEffect(() => {
     if (!apiBase) return;
     const token =
-      localStorage.getItem("backoffice_token") ||
-      sessionStorage.getItem("backoffice_token") ||
-      "";
+      localStorage.getItem('backoffice_token') ||
+      sessionStorage.getItem('backoffice_token') ||
+      '';
     const url = `${apiBase}/api/backoffice/email-retrosend/render?type=${encodeURIComponent(renderType)}&id=${encodeURIComponent(String(result.id))}`;
     fetch(url, { headers: token ? { Authorization: `Bearer ${token}` } : {} })
       .then((r) => r.json())
       .then((data) => {
         if (data.success) {
           setHtml(data.html);
-          setSubject(data.subject ?? "");
+          setSubject(data.subject ?? '');
           setTo(data.to ?? result.email);
         } else {
-          setLoadErr(data.error ?? "Failed to load preview");
+          setLoadErr(data.error ?? 'Failed to load preview');
         }
       })
-      .catch(() => setLoadErr("Network error"));
+      .catch(() => setLoadErr('Network error'));
   }, [apiBase, renderType, result.id, result.email]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      onClick={onClose}
+    >
       <div className="absolute inset-0 bg-black/40" />
       <div
         className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl h-[88vh] flex flex-col"
@@ -425,16 +486,34 @@ function EmailPreviewModal({
 // Status badge
 // ─────────────────────────────────────────────────────────────────────────────
 
-function StatusBadge({ status }: { status: RetrosendResult["status"] }) {
+function StatusBadge({ status }: { status: RetrosendResult['status'] }) {
   const map = {
-    sent: { icon: <IconCheck size={12} />, label: "ส่งแล้ว", cls: "bg-green-100 text-green-700" },
-    failed: { icon: <IconX size={12} />, label: "ล้มเหลว", cls: "bg-red-100 text-red-700" },
-    skipped: { icon: <IconAlertTriangle size={12} />, label: "ข้าม", cls: "bg-yellow-100 text-yellow-700" },
-    pending: { icon: <IconClock size={12} />, label: "จะส่ง", cls: "bg-emerald-50 text-emerald-700" },
+    sent: {
+      icon: <IconCheck size={12} />,
+      label: 'ส่งแล้ว',
+      cls: 'bg-green-100 text-green-700',
+    },
+    failed: {
+      icon: <IconX size={12} />,
+      label: 'ล้มเหลว',
+      cls: 'bg-red-100 text-red-700',
+    },
+    skipped: {
+      icon: <IconAlertTriangle size={12} />,
+      label: 'ข้าม',
+      cls: 'bg-yellow-100 text-yellow-700',
+    },
+    pending: {
+      icon: <IconClock size={12} />,
+      label: 'จะส่ง',
+      cls: 'bg-emerald-50 text-emerald-700',
+    },
   };
   const { icon, label, cls } = map[status];
   return (
-    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${cls}`}>
+    <span
+      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${cls}`}
+    >
       {icon} {label}
     </span>
   );
@@ -445,7 +524,7 @@ function StatusBadge({ status }: { status: RetrosendResult["status"] }) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function EmailRetrosendPage() {
-  const [selectedType, setSelectedType] = useState<RetrosendType>("payment");
+  const [selectedType, setSelectedType] = useState<RetrosendType>('payment');
 
   // log file state
   const [parsedLog, setParsedLog] = useState<ParsedLog | null>(null);
@@ -453,11 +532,11 @@ export default function EmailRetrosendPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // form inputs (populated from log or editable manually)
-  const [orderIds, setOrderIds] = useState("");
-  const [fromDate, setFromDate] = useState("");
-  const [toDate, setToDate] = useState("");
-  const [abstractIds, setAbstractIds] = useState("");
-  const [registrationIds, setRegistrationIds] = useState("");
+  const [orderIds, setOrderIds] = useState('');
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
+  const [abstractIds, setAbstractIds] = useState('');
+  const [registrationIds, setRegistrationIds] = useState('');
 
   // results state
   const [loading, setLoading] = useState(false);
@@ -476,8 +555,8 @@ export default function EmailRetrosendPage() {
   // ── log parsing ───────────────────────────────────────────────────────────
 
   async function handleFile(file: File) {
-    if (!file.name.endsWith(".json")) {
-      toast.error("กรุณาเลือกไฟล์ .json");
+    if (!file.name.endsWith('.json')) {
+      toast.error('กรุณาเลือกไฟล์ .json');
       return;
     }
     try {
@@ -485,15 +564,15 @@ export default function EmailRetrosendPage() {
       const data = JSON.parse(text);
       const entries: LogEntry[] = Array.isArray(data)
         ? data
-        : data.logs ?? data.entries ?? [];
+        : (data.logs ?? data.entries ?? []);
       if (entries.length === 0) {
-        toast.error("ไม่พบ log entries ในไฟล์นี้");
+        toast.error('ไม่พบ log entries ในไฟล์นี้');
         return;
       }
 
       const parsed = parseLogEntries(entries);
       if (!parsed) {
-        toast.error("ไม่พบ email failure ใดๆ ในไฟล์นี้");
+        toast.error('ไม่พบ email failure ใดๆ ในไฟล์นี้');
         return;
       }
 
@@ -512,7 +591,7 @@ export default function EmailRetrosendPage() {
         `วิเคราะห์ log สำเร็จ — พบ email ล้มเหลว ${Object.values(parsed.counts).reduce((a, b) => a + b, 0)} รายการ`,
       );
     } catch {
-      toast.error("ไม่สามารถอ่านไฟล์ได้ — ตรวจสอบว่าเป็น JSON ที่ถูกต้อง");
+      toast.error('ไม่สามารถอ่านไฟล์ได้ — ตรวจสอบว่าเป็น JSON ที่ถูกต้อง');
     }
   }
 
@@ -525,33 +604,37 @@ export default function EmailRetrosendPage() {
 
   function clearLog() {
     setParsedLog(null);
-    setOrderIds("");
-    setFromDate("");
-    setToDate("");
-    setRegistrationIds("");
+    setOrderIds('');
+    setFromDate('');
+    setToDate('');
+    setRegistrationIds('');
     setResults(null);
     setSummary(null);
     setIsPreviewed(false);
     setSelected(new Set());
-    if (fileInputRef.current) fileInputRef.current.value = "";
+    if (fileInputRef.current) fileInputRef.current.value = '';
   }
 
   // ── tab data ──────────────────────────────────────────────────────────────
 
   const counts = parsedLog?.counts ?? EMPTY_COUNTS;
   const TABS: { type: RetrosendType; label: string }[] = [
-    { type: "payment", label: "Payment Receipts" },
-    { type: "signup", label: "Signup / Pending" },
-    { type: "abstract-submission", label: "Abstract Submission" },
-    { type: "abstract-status", label: "Abstract Accepted/Rejected" },
-    { type: "free-registration", label: "Free Registration" },
+    { type: 'payment', label: 'Payment Receipts' },
+    { type: 'signup', label: 'Signup / Pending' },
+    { type: 'abstract-submission', label: 'Abstract Submission' },
+    { type: 'abstract-status', label: 'Abstract Accepted/Rejected' },
+    { type: 'free-registration', label: 'Free Registration' },
   ];
 
   // ── selection helpers ─────────────────────────────────────────────────────
 
   const selectableIndices =
-    results?.map((r, i) => (r.status === "pending" ? i : -1)).filter((i) => i >= 0) ?? [];
-  const allSelected = selectableIndices.length > 0 && selectableIndices.every((i) => selected.has(i));
+    results
+      ?.map((r, i) => (r.status === 'pending' ? i : -1))
+      .filter((i) => i >= 0) ?? [];
+  const allSelected =
+    selectableIndices.length > 0 &&
+    selectableIndices.every((i) => selected.has(i));
   const someSelected = selected.size > 0;
 
   function toggleAll() {
@@ -574,16 +657,18 @@ export default function EmailRetrosendPage() {
 
   function parseIds(str: string) {
     return str
-      .split(",")
+      .split(',')
       .map((s) => parseInt(s.trim()))
       .filter((n) => !isNaN(n) && n > 0);
   }
 
   function buildPreviewPayload() {
     const base = { type: selectedType, dryRun: true };
-    if (selectedType === "payment") return { ...base, orderIds: parseIds(orderIds) };
-    if (selectedType === "abstract-status") return { ...base, abstractIds: parseIds(abstractIds) };
-    if (selectedType === "free-registration") {
+    if (selectedType === 'payment')
+      return { ...base, orderIds: parseIds(orderIds) };
+    if (selectedType === 'abstract-status')
+      return { ...base, abstractIds: parseIds(abstractIds) };
+    if (selectedType === 'free-registration') {
       const ids = parseIds(registrationIds);
       return ids.length > 0
         ? { ...base, registrationIds: ids }
@@ -603,37 +688,50 @@ export default function EmailRetrosendPage() {
   function buildSendPayload(selectedResults: RetrosendResult[]) {
     const base = { type: selectedType, dryRun: false };
     const ids = selectedResults.map((r) => Number(r.id));
-    if (selectedType === "payment") return { ...base, orderIds: ids };
-    if (selectedType === "abstract-status") return { ...base, abstractIds: ids };
-    if (selectedType === "abstract-submission") return { ...base, abstractIds: ids };
-    if (selectedType === "free-registration") return { ...base, registrationIds: ids };
+    if (selectedType === 'payment') return { ...base, orderIds: ids };
+    if (selectedType === 'abstract-status')
+      return { ...base, abstractIds: ids };
+    if (selectedType === 'abstract-submission')
+      return { ...base, abstractIds: ids };
+    if (selectedType === 'free-registration')
+      return { ...base, registrationIds: ids };
     return { ...base, userIds: ids };
   }
 
   async function callAPI(payload: object): Promise<RetrosendResponse | null> {
     const token =
-      localStorage.getItem("backoffice_token") ||
-      sessionStorage.getItem("backoffice_token") ||
-      "";
+      localStorage.getItem('backoffice_token') ||
+      sessionStorage.getItem('backoffice_token') ||
+      '';
     const res = await fetch(`${API_BASE}/api/backoffice/email-retrosend`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
       body: JSON.stringify(payload),
     });
     return res.json();
   }
 
   async function handlePreview() {
-    if (selectedType === "abstract-status" && !abstractIds.trim()) {
-      toast.error("กรุณากรอก Abstract IDs ก่อน");
+    if (selectedType === 'abstract-status' && !abstractIds.trim()) {
+      toast.error('กรุณากรอก Abstract IDs ก่อน');
       return;
     }
-    if ((selectedType === "signup" || selectedType === "abstract-submission") && (!fromDate || !toDate)) {
-      toast.error("กรุณาระบุช่วงเวลา หรือ upload log file ก่อน");
+    if (
+      (selectedType === 'signup' || selectedType === 'abstract-submission') &&
+      (!fromDate || !toDate)
+    ) {
+      toast.error('กรุณาระบุช่วงเวลา หรือ upload log file ก่อน');
       return;
     }
-    if (selectedType === "free-registration" && !registrationIds.trim() && (!fromDate || !toDate)) {
-      toast.error("กรุณาระบุ Registration IDs หรือช่วงเวลาก่อน");
+    if (
+      selectedType === 'free-registration' &&
+      !registrationIds.trim() &&
+      (!fromDate || !toDate)
+    ) {
+      toast.error('กรุณาระบุ Registration IDs หรือช่วงเวลาก่อน');
       return;
     }
     setLoading(true);
@@ -644,19 +742,21 @@ export default function EmailRetrosendPage() {
     try {
       const data = await callAPI(buildPreviewPayload());
       if (!data?.success) {
-        toast.error(data?.error || "เกิดข้อผิดพลาด");
+        toast.error(data?.error || 'เกิดข้อผิดพลาด');
         return;
       }
       setResults(data.results);
       setSummary(data.summary);
       setIsPreviewed(true);
       const indices = data.results
-        .map((r: RetrosendResult, i: number) => (r.status === "pending" ? i : -1))
+        .map((r: RetrosendResult, i: number) =>
+          r.status === 'pending' ? i : -1,
+        )
         .filter((i: number) => i >= 0);
       setSelected(new Set(indices));
       toast.success(`Preview: พบ ${data.summary.pending} รายการที่จะส่ง`);
     } catch {
-      toast.error("เชื่อมต่อ API ไม่ได้");
+      toast.error('เชื่อมต่อ API ไม่ได้');
     } finally {
       setLoading(false);
     }
@@ -664,20 +764,23 @@ export default function EmailRetrosendPage() {
 
   async function handleSendSelected() {
     if (!isPreviewed || !results) {
-      toast.error("กรุณา Preview ก่อน");
+      toast.error('กรุณา Preview ก่อน');
       return;
     }
-    const selectedResults = [...selected].map((i) => results[i]).filter(Boolean);
+    const selectedResults = [...selected]
+      .map((i) => results[i])
+      .filter(Boolean);
     if (selectedResults.length === 0) {
-      toast.error("ยังไม่ได้เลือกรายการ");
+      toast.error('ยังไม่ได้เลือกรายการ');
       return;
     }
-    if (!confirm(`ยืนยันส่ง email จริง ${selectedResults.length} รายการ?`)) return;
+    if (!confirm(`ยืนยันส่ง email จริง ${selectedResults.length} รายการ?`))
+      return;
     setLoading(true);
     try {
       const data = await callAPI(buildSendPayload(selectedResults));
       if (!data?.success) {
-        toast.error(data?.error || "เกิดข้อผิดพลาด");
+        toast.error(data?.error || 'เกิดข้อผิดพลาด');
         return;
       }
       setResults(data.results);
@@ -691,7 +794,7 @@ export default function EmailRetrosendPage() {
         toast.success(`ส่งสำเร็จทั้งหมด ${sent} รายการ`);
       }
     } catch {
-      toast.error("เชื่อมต่อ API ไม่ได้");
+      toast.error('เชื่อมต่อ API ไม่ได้');
     } finally {
       setLoading(false);
     }
@@ -708,9 +811,12 @@ export default function EmailRetrosendPage() {
             <IconMailForward size={22} className="text-emerald-600" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-slate-800">Email Retrosend</h1>
+            <h1 className="text-xl font-bold text-slate-800">
+              Email Retrosend
+            </h1>
             <p className="text-xs text-slate-500">
-              Upload log file เพื่อ auto-detect email ที่ส่งไม่สำเร็จ แล้วส่งย้อนหลัง
+              Upload log file เพื่อ auto-detect email ที่ส่งไม่สำเร็จ
+              แล้วส่งย้อนหลัง
             </p>
           </div>
         </div>
@@ -727,8 +833,8 @@ export default function EmailRetrosendPage() {
             onClick={() => fileInputRef.current?.click()}
             className={`border-2 border-dashed rounded-xl p-10 text-center cursor-pointer transition-colors ${
               isDragging
-                ? "border-blue-400 bg-emerald-50"
-                : "border-slate-300 hover:border-blue-400 hover:bg-slate-50"
+                ? 'border-blue-400 bg-emerald-50'
+                : 'border-slate-300 hover:border-blue-400 hover:bg-slate-50'
             }`}
           >
             <input
@@ -758,13 +864,20 @@ export default function EmailRetrosendPage() {
                   <IconFileText size={20} className="text-green-600" />
                 </div>
                 <div>
-                  <p className="font-semibold text-slate-800">{parsedLog.fileName}</p>
+                  <p className="font-semibold text-slate-800">
+                    {parsedLog.fileName}
+                  </p>
                   <p className="text-xs text-slate-500 mt-0.5">
-                    {parsedLog.totalEntries.toLocaleString()} log entries · failure window{" "}
-                    <span className="font-mono">{parsedLog.windowFrom.replace("T", " ")}</span>
-                    {" → "}
-                    <span className="font-mono">{parsedLog.windowTo.replace("T", " ")}</span>
-                    {" (UTC+local)"}
+                    {parsedLog.totalEntries.toLocaleString()} log entries ·
+                    failure window{' '}
+                    <span className="font-mono">
+                      {parsedLog.windowFrom.replace('T', ' ')}
+                    </span>
+                    {' → '}
+                    <span className="font-mono">
+                      {parsedLog.windowTo.replace('T', ' ')}
+                    </span>
+                    {' (UTC+local)'}
                   </p>
                 </div>
               </div>
@@ -783,13 +896,13 @@ export default function EmailRetrosendPage() {
                   key={tab.type}
                   className={`rounded-lg px-3 py-2 text-center border ${
                     counts[tab.type] > 0
-                      ? "bg-red-50 border-red-200"
-                      : "bg-slate-50 border-slate-200"
+                      ? 'bg-red-50 border-red-200'
+                      : 'bg-slate-50 border-slate-200'
                   }`}
                 >
                   <p
                     className={`text-2xl font-bold ${
-                      counts[tab.type] > 0 ? "text-red-600" : "text-slate-400"
+                      counts[tab.type] > 0 ? 'text-red-600' : 'text-slate-400'
                     }`}
                   >
                     {counts[tab.type]}
@@ -805,13 +918,23 @@ export default function EmailRetrosendPage() {
               parsedLog.abstractStatusBreakdown.rejected >
               0 && (
               <div className="mt-3 p-2 bg-orange-50 border border-orange-200 rounded-lg flex items-start gap-2">
-                <IconInfoCircle size={14} className="text-orange-500 shrink-0 mt-0.5" />
+                <IconInfoCircle
+                  size={14}
+                  className="text-orange-500 shrink-0 mt-0.5"
+                />
                 <p className="text-xs text-orange-700">
-                  Abstract status breakdown — accepted poster:{" "}
-                  <strong>{parsedLog.abstractStatusBreakdown.acceptedPoster}</strong> · accepted
-                  oral: <strong>{parsedLog.abstractStatusBreakdown.acceptedOral}</strong> ·
-                  rejected: <strong>{parsedLog.abstractStatusBreakdown.rejected}</strong>{" "}
-                  · ต้องระบุ Abstract IDs เองเนื่องจากตาราง abstracts ไม่มี updatedAt
+                  Abstract status breakdown — accepted poster:{' '}
+                  <strong>
+                    {parsedLog.abstractStatusBreakdown.acceptedPoster}
+                  </strong>{' '}
+                  · accepted oral:{' '}
+                  <strong>
+                    {parsedLog.abstractStatusBreakdown.acceptedOral}
+                  </strong>{' '}
+                  · rejected:{' '}
+                  <strong>{parsedLog.abstractStatusBreakdown.rejected}</strong>{' '}
+                  · ต้องระบุ Abstract IDs เองเนื่องจากตาราง abstracts ไม่มี
+                  updatedAt
                 </p>
               </div>
             )}
@@ -832,15 +955,17 @@ export default function EmailRetrosendPage() {
               }}
               className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
                 selectedType === tab.type
-                  ? "bg-emerald-700 text-white shadow-sm"
-                  : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"
+                  ? 'bg-emerald-700 text-white shadow-sm'
+                  : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
               }`}
             >
               {tab.label}
               {counts[tab.type] > 0 && (
                 <span
                   className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${
-                    selectedType === tab.type ? "bg-emerald-600 text-white" : "bg-red-100 text-red-600"
+                    selectedType === tab.type
+                      ? 'bg-emerald-600 text-white'
+                      : 'bg-red-100 text-red-600'
                   }`}
                 >
                   {counts[tab.type]}
@@ -858,12 +983,14 @@ export default function EmailRetrosendPage() {
             </p>
 
             <div className="flex flex-wrap gap-3 items-end">
-              {selectedType === "payment" && (
+              {selectedType === 'payment' && (
                 <div>
                   <label className="block text-xs font-medium text-slate-600 mb-1">
-                    Order IDs{" "}
+                    Order IDs{' '}
                     {parsedLog && (
-                      <span className="text-green-600">(auto-filled จาก log)</span>
+                      <span className="text-green-600">
+                        (auto-filled จาก log)
+                      </span>
                     )}
                   </label>
                   <input
@@ -876,13 +1003,16 @@ export default function EmailRetrosendPage() {
                 </div>
               )}
 
-              {(selectedType === "signup" ||
-                selectedType === "abstract-submission" ||
-                selectedType === "free-registration") && (
+              {(selectedType === 'signup' ||
+                selectedType === 'abstract-submission' ||
+                selectedType === 'free-registration') && (
                 <>
                   <div>
                     <label className="block text-xs font-medium text-slate-600 mb-1">
-                      From {parsedLog && <span className="text-green-600">(auto-filled)</span>}
+                      From{' '}
+                      {parsedLog && (
+                        <span className="text-green-600">(auto-filled)</span>
+                      )}
                     </label>
                     <input
                       type="datetime-local"
@@ -893,7 +1023,10 @@ export default function EmailRetrosendPage() {
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-slate-600 mb-1">
-                      To {parsedLog && <span className="text-green-600">(auto-filled)</span>}
+                      To{' '}
+                      {parsedLog && (
+                        <span className="text-green-600">(auto-filled)</span>
+                      )}
                     </label>
                     <input
                       type="datetime-local"
@@ -905,14 +1038,18 @@ export default function EmailRetrosendPage() {
                 </>
               )}
 
-              {selectedType === "free-registration" && (
+              {selectedType === 'free-registration' && (
                 <div>
                   <label className="block text-xs font-medium text-slate-600 mb-1">
-                    Registration IDs{" "}
+                    Registration IDs{' '}
                     {parsedLog && registrationIds ? (
-                      <span className="text-green-600">(auto-filled จาก log)</span>
+                      <span className="text-green-600">
+                        (auto-filled จาก log)
+                      </span>
                     ) : (
-                      <span className="text-slate-400">(optional, override date)</span>
+                      <span className="text-slate-400">
+                        (optional, override date)
+                      </span>
                     )}
                   </label>
                   <input
@@ -925,12 +1062,14 @@ export default function EmailRetrosendPage() {
                 </div>
               )}
 
-              {selectedType === "abstract-status" && (
+              {selectedType === 'abstract-status' && (
                 <div>
                   <label className="block text-xs font-medium text-slate-600 mb-1">
-                    Abstract IDs{" "}
+                    Abstract IDs{' '}
                     {parsedLog && abstractIds ? (
-                      <span className="text-green-600">(auto-filled จาก log)</span>
+                      <span className="text-green-600">
+                        (auto-filled จาก log)
+                      </span>
                     ) : (
                       <span className="text-slate-400">(ระบุเอง)</span>
                     )}
@@ -971,13 +1110,13 @@ export default function EmailRetrosendPage() {
           <div className="grid grid-cols-4 gap-3">
             {[
               {
-                label: isPreviewed ? "จะส่ง" : "ส่งแล้ว",
+                label: isPreviewed ? 'จะส่ง' : 'ส่งแล้ว',
                 value: isPreviewed ? summary.pending : summary.sent,
-                cls: "text-emerald-700",
+                cls: 'text-emerald-700',
               },
-              { label: "สำเร็จ", value: summary.sent, cls: "text-green-700" },
-              { label: "ข้าม", value: summary.skipped, cls: "text-yellow-700" },
-              { label: "ล้มเหลว", value: summary.failed, cls: "text-red-700" },
+              { label: 'สำเร็จ', value: summary.sent, cls: 'text-green-700' },
+              { label: 'ข้าม', value: summary.skipped, cls: 'text-yellow-700' },
+              { label: 'ล้มเหลว', value: summary.failed, cls: 'text-red-700' },
             ].map((c) => (
               <div
                 key={c.label}
@@ -996,15 +1135,18 @@ export default function EmailRetrosendPage() {
             <IconMailForward size={44} className="mx-auto mb-3 opacity-25" />
             <p className="text-sm">
               {parsedLog
-                ? "กด Preview เพื่อดูรายชื่อผู้รับก่อนส่งจริง"
-                : "Upload log file ก่อน หรือกรอกค่าด้วยตัวเองแล้วกด Preview"}
+                ? 'กด Preview เพื่อดูรายชื่อผู้รับก่อนส่งจริง'
+                : 'Upload log file ก่อน หรือกรอกค่าด้วยตัวเองแล้วกด Preview'}
             </p>
           </div>
         )}
 
         {loading && (
           <div className="bg-white border border-slate-200 rounded-xl py-14 text-center text-slate-400">
-            <IconRefresh size={36} className="mx-auto mb-3 animate-spin opacity-40" />
+            <IconRefresh
+              size={36}
+              className="mx-auto mb-3 animate-spin opacity-40"
+            />
             <p className="text-sm">กำลังประมวลผล...</p>
           </div>
         )}
@@ -1014,10 +1156,14 @@ export default function EmailRetrosendPage() {
           <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
             <div className="px-5 py-3 border-b border-slate-100 flex items-center justify-between">
               <h3 className="font-semibold text-slate-700">
-                {isPreviewed ? "Preview — เลือกรายการที่ต้องการส่ง" : "ผลการส่ง"}
+                {isPreviewed
+                  ? 'Preview — เลือกรายการที่ต้องการส่ง'
+                  : 'ผลการส่ง'}
               </h3>
               <div className="flex items-center gap-3">
-                <span className="text-sm text-slate-400">{results.length} รายการทั้งหมด</span>
+                <span className="text-sm text-slate-400">
+                  {results.length} รายการทั้งหมด
+                </span>
                 {isPreviewed && someSelected && (
                   <button
                     onClick={handleSendSelected}
@@ -1062,18 +1208,23 @@ export default function EmailRetrosendPage() {
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {results.map((row, i) => {
-                      const isSelectable = row.status === "pending";
+                      const isSelectable = row.status === 'pending';
                       const isChecked = selected.has(i);
                       return (
                         <tr
                           key={i}
-                          onClick={() => isPreviewed && isSelectable && toggleRow(i)}
+                          onClick={() =>
+                            isPreviewed && isSelectable && toggleRow(i)
+                          }
                           className={`transition-colors ${
-                            isPreviewed && isSelectable ? "cursor-pointer" : ""
-                          } ${isChecked ? "bg-emerald-50 hover:bg-emerald-50" : "hover:bg-slate-50"}`}
+                            isPreviewed && isSelectable ? 'cursor-pointer' : ''
+                          } ${isChecked ? 'bg-emerald-50 hover:bg-emerald-50' : 'hover:bg-slate-50'}`}
                         >
                           {isPreviewed && (
-                            <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                            <td
+                              className="px-4 py-3"
+                              onClick={(e) => e.stopPropagation()}
+                            >
                               {isSelectable && (
                                 <input
                                   type="checkbox"
@@ -1084,9 +1235,15 @@ export default function EmailRetrosendPage() {
                               )}
                             </td>
                           )}
-                          <td className="px-4 py-3 font-mono text-xs text-slate-400">{row.id}</td>
-                          <td className="px-4 py-3 text-slate-800">{row.email}</td>
-                          <td className="px-4 py-3 text-slate-700 whitespace-nowrap">{row.name}</td>
+                          <td className="px-4 py-3 font-mono text-xs text-slate-400">
+                            {row.id}
+                          </td>
+                          <td className="px-4 py-3 text-slate-800">
+                            {row.email}
+                          </td>
+                          <td className="px-4 py-3 text-slate-700 whitespace-nowrap">
+                            {row.name}
+                          </td>
                           <td className="px-4 py-3">
                             <span className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full whitespace-nowrap">
                               {row.type}
@@ -1095,8 +1252,13 @@ export default function EmailRetrosendPage() {
                           <td className="px-4 py-3">
                             <StatusBadge status={row.status} />
                           </td>
-                          <td className="px-4 py-3 text-xs text-slate-400">{row.reason ?? "—"}</td>
-                          <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                          <td className="px-4 py-3 text-xs text-slate-400">
+                            {row.reason ?? '—'}
+                          </td>
+                          <td
+                            className="px-4 py-3"
+                            onClick={(e) => e.stopPropagation()}
+                          >
                             {row.preview && (
                               <button
                                 onClick={() => setPreviewRow(row)}
@@ -1122,7 +1284,7 @@ export default function EmailRetrosendPage() {
       {previewRow && (
         <EmailPreviewModal
           result={previewRow}
-          apiBase={API_BASE ?? ""}
+          apiBase={API_BASE ?? ''}
           onClose={() => setPreviewRow(null)}
         />
       )}

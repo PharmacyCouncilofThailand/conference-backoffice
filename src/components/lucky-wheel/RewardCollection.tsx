@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useMemo, useRef, useState } from "react";
-import { Scanner } from "@yudiel/react-qr-scanner";
+import { useMemo, useRef, useState } from 'react';
+import { Scanner } from '@yudiel/react-qr-scanner';
 import {
   IconAlertTriangle,
   IconCamera,
@@ -9,10 +9,10 @@ import {
   IconLoader2,
   IconRefresh,
   IconSearch,
-} from "@tabler/icons-react";
-import toast from "react-hot-toast";
-import { api, ApiError } from "@/lib/api";
-import type { RewardLookup } from "@/types/lucky-wheel";
+} from '@tabler/icons-react';
+import toast from 'react-hot-toast';
+import { api, ApiError } from '@/lib/api';
+import type { RewardLookup } from '@/types/lucky-wheel';
 
 type Props = {
   eventId: number;
@@ -22,27 +22,31 @@ type Props = {
 
 const formatBangkok = (value: string | null) =>
   value
-    ? new Date(value).toLocaleString("th-TH", {
-        timeZone: "Asia/Bangkok",
-        dateStyle: "medium",
-        timeStyle: "short",
+    ? new Date(value).toLocaleString('th-TH', {
+        timeZone: 'Asia/Bangkok',
+        dateStyle: 'medium',
+        timeStyle: 'short',
       })
-    : "-";
+    : '-';
 
 export function RewardCollection({ eventId, token, canCorrect }: Props) {
-  const [mode, setMode] = useState<"manual" | "camera">("manual");
-  const [credential, setCredential] = useState("");
+  const [mode, setMode] = useState<'manual' | 'camera'>('manual');
+  const [credential, setCredential] = useState('');
   const [lookup, setLookup] = useState<RewardLookup | null>(null);
   const [loading, setLoading] = useState(false);
   const [identityChecked, setIdentityChecked] = useState(false);
-  const [confirmationKey, setConfirmationKey] = useState("");
+  const [confirmationKey, setConfirmationKey] = useState('');
   const [uncertain, setUncertain] = useState(false);
   const [correctionOpen, setCorrectionOpen] = useState(false);
-  const [correctionReason, setCorrectionReason] = useState("");
-  const lastScannedRef = useRef("");
+  const [correctionReason, setCorrectionReason] = useState('');
+  const lastScannedRef = useRef('');
 
   const deadlinePassed = useMemo(
-    () => Boolean(lookup?.collectionDeadline && Date.now() >= new Date(lookup.collectionDeadline).getTime()),
+    () =>
+      Boolean(
+        lookup?.collectionDeadline &&
+        Date.now() >= new Date(lookup.collectionDeadline).getTime(),
+      ),
     [lookup?.collectionDeadline],
   );
 
@@ -52,12 +56,16 @@ export function RewardCollection({ eventId, token, canCorrect }: Props) {
     setIdentityChecked(false);
     setConfirmationKey(crypto.randomUUID());
     setCorrectionOpen(false);
-    setCorrectionReason("");
+    setCorrectionReason('');
   };
 
   const refreshLookup = async (raw: string) => {
     const normalized = raw.trim();
-    const result = await api.luckyWheel.lookupReward(token, eventId, normalized);
+    const result = await api.luckyWheel.lookupReward(
+      token,
+      eventId,
+      normalized,
+    );
     applyLookup(result, normalized);
   };
 
@@ -70,15 +78,21 @@ export function RewardCollection({ eventId, token, canCorrect }: Props) {
       await refreshLookup(normalized);
     } catch (error) {
       setLookup(null);
-      lastScannedRef.current = "";
-      toast.error(error instanceof Error ? error.message : "ไม่พบรางวัล");
+      lastScannedRef.current = '';
+      toast.error(error instanceof Error ? error.message : 'ไม่พบรางวัล');
     } finally {
       setLoading(false);
     }
   };
 
   const confirm = async () => {
-    if (!lookup || !identityChecked || (deadlinePassed && !uncertain) || loading) return;
+    if (
+      !lookup ||
+      !identityChecked ||
+      (deadlinePassed && !uncertain) ||
+      loading
+    )
+      return;
     setLoading(true);
     setUncertain(false);
     try {
@@ -89,17 +103,19 @@ export function RewardCollection({ eventId, token, canCorrect }: Props) {
         idempotencyKey: confirmationKey,
         identityChecked: true,
       });
-      toast.success("ยืนยันส่งมอบของรางวัลแล้ว");
+      toast.success('ยืนยันส่งมอบของรางวัลแล้ว');
       await refreshLookup(credential);
     } catch (error) {
       if (
         !(error instanceof ApiError) ||
         error.status >= 500 ||
-        error.name === "TypeError"
+        error.name === 'TypeError'
       ) {
         setUncertain(true);
       }
-      toast.error(error instanceof Error ? error.message : "ยืนยันรับของไม่สำเร็จ");
+      toast.error(
+        error instanceof Error ? error.message : 'ยืนยันรับของไม่สำเร็จ',
+      );
     } finally {
       setLoading(false);
     }
@@ -117,10 +133,12 @@ export function RewardCollection({ eventId, token, canCorrect }: Props) {
         reopen: true,
         idempotencyKey: crypto.randomUUID(),
       });
-      toast.success("เปิด claim รุ่นใหม่แล้ว พร้อมเก็บเหตุผลการแก้ไข");
+      toast.success('เปิด claim รุ่นใหม่แล้ว พร้อมเก็บเหตุผลการแก้ไข');
       await refreshLookup(credential);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "แก้ไขสถานะรับของไม่สำเร็จ");
+      toast.error(
+        error instanceof Error ? error.message : 'แก้ไขสถานะรับของไม่สำเร็จ',
+      );
     } finally {
       setLoading(false);
     }
@@ -129,24 +147,48 @@ export function RewardCollection({ eventId, token, canCorrect }: Props) {
   return (
     <section className="space-y-5" aria-labelledby="reward-collection-title">
       <div className="border-b border-zinc-100 pb-5">
-        <p className="text-xs font-bold uppercase tracking-[0.16em] text-emerald-700">Collection desk</p>
-        <h2 id="reward-collection-title" className="mt-2 text-xl font-semibold tracking-tight text-zinc-950 sm:text-2xl">ตรวจและส่งมอบของรางวัล</h2>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-600">ค้นหารายการ → ตรวจชื่อและรางวัลกับผู้มารับ → ยืนยันในระบบ → ส่งมอบของ</p>
-        <p className="mt-1 text-xs text-zinc-500">การสแกนเป็นเพียงการค้นหา ไม่เปลี่ยนสถานะรับของอัตโนมัติ</p>
+        <p className="text-xs font-bold uppercase tracking-[0.16em] text-emerald-700">
+          Collection desk
+        </p>
+        <h2
+          id="reward-collection-title"
+          className="mt-2 text-xl font-semibold tracking-tight text-zinc-950 sm:text-2xl"
+        >
+          ตรวจและส่งมอบของรางวัล
+        </h2>
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-600">
+          ค้นหารายการ → ตรวจชื่อและรางวัลกับผู้มารับ → ยืนยันในระบบ → ส่งมอบของ
+        </p>
+        <p className="mt-1 text-xs text-zinc-500">
+          การสแกนเป็นเพียงการค้นหา ไม่เปลี่ยนสถานะรับของอัตโนมัติ
+        </p>
       </div>
 
       {!lookup && (
         <>
-          <div className="grid grid-cols-2 gap-2 rounded-xl bg-zinc-100 p-1 sm:inline-grid" aria-label="วิธีค้นหารางวัล">
-            <button type="button" aria-pressed={mode === "manual"} className={`${mode === "manual" ? "btn-primary" : "btn-secondary"} min-h-11 gap-2`} onClick={() => setMode("manual")}>
+          <div
+            className="grid grid-cols-2 gap-2 rounded-xl bg-zinc-100 p-1 sm:inline-grid"
+            aria-label="วิธีค้นหารางวัล"
+          >
+            <button
+              type="button"
+              aria-pressed={mode === 'manual'}
+              className={`${mode === 'manual' ? 'btn-primary' : 'btn-secondary'} min-h-11 gap-2`}
+              onClick={() => setMode('manual')}
+            >
               <IconSearch size={17} /> รหัส
             </button>
-            <button type="button" aria-pressed={mode === "camera"} className={`${mode === "camera" ? "btn-primary" : "btn-secondary"} min-h-11 gap-2`} onClick={() => setMode("camera")}>
+            <button
+              type="button"
+              aria-pressed={mode === 'camera'}
+              className={`${mode === 'camera' ? 'btn-primary' : 'btn-secondary'} min-h-11 gap-2`}
+              onClick={() => setMode('camera')}
+            >
               <IconCamera size={17} /> กล้อง
             </button>
           </div>
 
-          {mode === "camera" && (
+          {mode === 'camera' && (
             <div className="mx-auto max-w-sm overflow-hidden rounded-xl border border-zinc-200 bg-black">
               <Scanner
                 paused={loading}
@@ -157,28 +199,38 @@ export function RewardCollection({ eventId, token, canCorrect }: Props) {
                   setCredential(raw);
                   void runLookup(raw);
                 }}
-                onError={() => toast.error("ไม่สามารถเปิดกล้องได้")}
+                onError={() => toast.error('ไม่สามารถเปิดกล้องได้')}
               />
             </div>
           )}
 
           <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
-            <label className="min-w-0 flex-1 text-sm font-medium text-zinc-700">QR หรือรหัสรับรางวัล
+            <label className="min-w-0 flex-1 text-sm font-medium text-zinc-700">
+              QR หรือรหัสรับรางวัล
               <input
                 className="input-field mt-1"
                 value={credential}
                 onChange={(event) => {
                   setCredential(event.target.value);
-                  lastScannedRef.current = "";
+                  lastScannedRef.current = '';
                 }}
                 placeholder="PRIS-REWARD:... หรือรหัสตัวอักษร"
                 onKeyDown={(event) => {
-                  if (event.key === "Enter") void runLookup();
+                  if (event.key === 'Enter') void runLookup();
                 }}
               />
             </label>
-            <button type="button" className="btn-primary min-h-11 gap-2" disabled={loading || !credential.trim()} onClick={() => void runLookup()}>
-              {loading ? <IconLoader2 size={17} className="animate-spin" /> : <IconSearch size={17} />}
+            <button
+              type="button"
+              className="btn-primary min-h-11 gap-2"
+              disabled={loading || !credential.trim()}
+              onClick={() => void runLookup()}
+            >
+              {loading ? (
+                <IconLoader2 size={17} className="animate-spin" />
+              ) : (
+                <IconSearch size={17} />
+              )}
               ค้นหา
             </button>
           </div>
@@ -186,24 +238,39 @@ export function RewardCollection({ eventId, token, canCorrect }: Props) {
       )}
 
       {lookup && (
-        <button type="button" className="btn-secondary min-h-11 gap-2" disabled={loading || uncertain} onClick={() => {
-          setLookup(null);
-          setCredential("");
-          setIdentityChecked(false);
-          lastScannedRef.current = "";
-        }}>
-          {mode === "camera" ? <IconCamera size={17} /> : <IconSearch size={17} />}
+        <button
+          type="button"
+          className="btn-secondary min-h-11 gap-2"
+          disabled={loading || uncertain}
+          onClick={() => {
+            setLookup(null);
+            setCredential('');
+            setIdentityChecked(false);
+            lastScannedRef.current = '';
+          }}
+        >
+          {mode === 'camera' ? (
+            <IconCamera size={17} />
+          ) : (
+            <IconSearch size={17} />
+          )}
           ค้นหารายการถัดไป
         </button>
       )}
 
       {uncertain && (
-        <div className="rounded-xl bg-amber-50 p-4 text-sm text-amber-900" role="alert">
+        <div
+          className="rounded-xl bg-amber-50 p-4 text-sm text-amber-900"
+          role="alert"
+        >
           <div className="flex gap-2">
             <IconAlertTriangle size={18} className="mt-0.5 shrink-0" />
             <div>
               <p className="font-semibold">สถานะการยืนยันยังไม่แน่นอน</p>
-              <p className="mt-1">อย่าส่งมอบซ้ำ ให้กดยืนยันคำขอเดิมอีกครั้ง ระบบจะใช้ request เดิมเพื่อตรวจ/replay ผลที่ commit แล้ว</p>
+              <p className="mt-1">
+                อย่าส่งมอบซ้ำ ให้กดยืนยันคำขอเดิมอีกครั้ง ระบบจะใช้ request
+                เดิมเพื่อตรวจ/replay ผลที่ commit แล้ว
+              </p>
             </div>
           </div>
         </div>
@@ -213,20 +280,39 @@ export function RewardCollection({ eventId, token, canCorrect }: Props) {
         <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white">
           <div className="grid gap-4 border-b border-zinc-100 p-5 md:grid-cols-2">
             <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">ผู้ได้รับรางวัล</p>
-              <p className="mt-1 text-lg font-semibold text-zinc-900">{lookup.owner.firstName} {lookup.owner.lastName}</p>
-              <p className="text-sm text-zinc-500">{lookup.owner.email} · User #{lookup.owner.id}</p>
-              <p className="mt-3 text-sm font-medium text-amber-800">ตรวจตัวตนกับผู้มารับของก่อนกดยืนยันทุกครั้ง</p>
+              <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+                ผู้ได้รับรางวัล
+              </p>
+              <p className="mt-1 text-lg font-semibold text-zinc-900">
+                {lookup.owner.firstName} {lookup.owner.lastName}
+              </p>
+              <p className="text-sm text-zinc-500">
+                {lookup.owner.email} · User #{lookup.owner.id}
+              </p>
+              <p className="mt-3 text-sm font-medium text-amber-800">
+                ตรวจตัวตนกับผู้มารับของก่อนกดยืนยันทุกครั้ง
+              </p>
             </div>
             <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">รางวัล</p>
-              <p className="mt-1 text-lg font-semibold text-zinc-900">{lookup.prize.name.th}</p>
-              <p className="text-sm text-zinc-500">{lookup.prize.name.en} · ได้เมื่อ {formatBangkok(lookup.prize.awardedAt)}</p>
+              <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+                รางวัล
+              </p>
+              <p className="mt-1 text-lg font-semibold text-zinc-900">
+                {lookup.prize.name.th}
+              </p>
+              <p className="text-sm text-zinc-500">
+                {lookup.prize.name.en} · ได้เมื่อ{' '}
+                {formatBangkok(lookup.prize.awardedAt)}
+              </p>
               <div className="mt-3 flex flex-wrap gap-2 text-xs">
-                <span className={`rounded-full px-2.5 py-1 font-medium ${lookup.status === "redeemed" ? "bg-zinc-100 text-zinc-700" : "bg-emerald-50 text-emerald-700"}`}>
-                  {lookup.status === "redeemed" ? "รับของแล้ว" : "ยังไม่รับของ"}
+                <span
+                  className={`rounded-full px-2.5 py-1 font-medium ${lookup.status === 'redeemed' ? 'bg-zinc-100 text-zinc-700' : 'bg-emerald-50 text-emerald-700'}`}
+                >
+                  {lookup.status === 'redeemed' ? 'รับของแล้ว' : 'ยังไม่รับของ'}
                 </span>
-                <span className="rounded-full bg-sky-50 px-2.5 py-1 font-medium text-sky-700">Claim #{lookup.claimGeneration}</span>
+                <span className="rounded-full bg-sky-50 px-2.5 py-1 font-medium text-sky-700">
+                  Claim #{lookup.claimGeneration}
+                </span>
               </div>
             </div>
           </div>
@@ -235,23 +321,32 @@ export function RewardCollection({ eventId, token, canCorrect }: Props) {
             <div className="grid gap-3 md:grid-cols-2">
               <div className="rounded-lg bg-zinc-50 p-3 text-sm">
                 <p className="font-medium text-zinc-700">กำหนดรับของ</p>
-                <p className={deadlinePassed ? "mt-1 text-rose-700" : "mt-1 text-zinc-600"}>{lookup.collectionDeadline ? formatBangkok(lookup.collectionDeadline) : "ไม่กำหนดวันสิ้นสุด"}</p>
+                <p
+                  className={
+                    deadlinePassed ? 'mt-1 text-rose-700' : 'mt-1 text-zinc-600'
+                  }
+                >
+                  {lookup.collectionDeadline
+                    ? formatBangkok(lookup.collectionDeadline)
+                    : 'ไม่กำหนดวันสิ้นสุด'}
+                </p>
               </div>
               <div className="rounded-lg bg-zinc-50 p-3 text-sm">
                 <p className="font-medium text-zinc-700">สถานะเดิม</p>
                 <p className="mt-1 text-zinc-600">
-                  {lookup.status === "redeemed"
-                    ? `ยืนยันโดย ${lookup.redeemedByName || `เจ้าหน้าที่ #${lookup.redeemedBy ?? "-"}`} เมื่อ ${formatBangkok(lookup.redeemedAt)}`
-                    : "ยังไม่มีการยืนยันส่งมอบ"}
+                  {lookup.status === 'redeemed'
+                    ? `ยืนยันโดย ${lookup.redeemedByName || `เจ้าหน้าที่ #${lookup.redeemedBy ?? '-'}`} เมื่อ ${formatBangkok(lookup.redeemedAt)}`
+                    : 'ยังไม่มีการยืนยันส่งมอบ'}
                 </p>
               </div>
             </div>
 
-            {lookup.status === "open" ? (
+            {lookup.status === 'open' ? (
               <>
                 {deadlinePassed && (
                   <p className="rounded-lg bg-rose-50 p-3 text-sm text-rose-700">
-                    เลยกำหนดรับของแล้ว ให้ admin แก้กำหนดรับของในแท็บตั้งค่าวงล้อก่อนยืนยัน
+                    เลยกำหนดรับของแล้ว ให้ admin
+                    แก้กำหนดรับของในแท็บตั้งค่าวงล้อก่อนยืนยัน
                   </p>
                 )}
                 <label className="flex items-start gap-3 rounded-lg border border-zinc-200 p-3 text-sm">
@@ -259,36 +354,67 @@ export function RewardCollection({ eventId, token, canCorrect }: Props) {
                     className="mt-1"
                     type="checkbox"
                     checked={identityChecked}
-                    onChange={(event) => setIdentityChecked(event.target.checked)}
+                    onChange={(event) =>
+                      setIdentityChecked(event.target.checked)
+                    }
                   />
-                  <span><strong>ตรวจสอบผู้รับแล้ว</strong><br /><span className="text-zinc-500">ชื่อและบัญชีตรงกับผู้ที่มารับของ</span></span>
+                  <span>
+                    <strong>ตรวจสอบผู้รับแล้ว</strong>
+                    <br />
+                    <span className="text-zinc-500">
+                      ชื่อและบัญชีตรงกับผู้ที่มารับของ
+                    </span>
+                  </span>
                 </label>
                 <button
                   type="button"
                   className="btn-primary min-h-11"
-                  disabled={!identityChecked || (deadlinePassed && !uncertain) || loading}
+                  disabled={
+                    !identityChecked ||
+                    (deadlinePassed && !uncertain) ||
+                    loading
+                  }
                   onClick={() => void confirm()}
                 >
-                  {loading ? <IconLoader2 size={17} className="animate-spin" /> : uncertain ? <IconRefresh size={17} /> : <IconCheck size={17} />}
-                  {uncertain ? "ตรวจ/ยืนยันคำขอเดิม" : "ยืนยันส่งมอบของรางวัล"}
+                  {loading ? (
+                    <IconLoader2 size={17} className="animate-spin" />
+                  ) : uncertain ? (
+                    <IconRefresh size={17} />
+                  ) : (
+                    <IconCheck size={17} />
+                  )}
+                  {uncertain ? 'ตรวจ/ยืนยันคำขอเดิม' : 'ยืนยันส่งมอบของรางวัล'}
                 </button>
               </>
             ) : canCorrect ? (
               <div className="space-y-3">
-                <button type="button" className="text-sm font-semibold text-amber-700 underline underline-offset-4" onClick={() => setCorrectionOpen((value) => !value)}>
+                <button
+                  type="button"
+                  className="text-sm font-semibold text-amber-700 underline underline-offset-4"
+                  onClick={() => setCorrectionOpen((value) => !value)}
+                >
                   ต้องแก้ไขการรับของ?
                 </button>
                 {correctionOpen && (
                   <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
-                    <p className="text-sm font-semibold text-amber-900">Correction เป็น action แยกและเก็บประวัติเดิมไว้</p>
+                    <p className="text-sm font-semibold text-amber-900">
+                      Correction เป็น action แยกและเก็บประวัติเดิมไว้
+                    </p>
                     <textarea
                       className="input-field mt-3 min-h-20 resize-y"
                       value={correctionReason}
                       maxLength={500}
-                      onChange={(event) => setCorrectionReason(event.target.value)}
+                      onChange={(event) =>
+                        setCorrectionReason(event.target.value)
+                      }
                       placeholder="เหตุผลที่ต้องเปิด claim ใหม่"
                     />
-                    <button type="button" className="btn-secondary disabled:cursor-not-allowed disabled:opacity-50 mt-3" disabled={!correctionReason.trim() || loading} onClick={() => void correct()}>
+                    <button
+                      type="button"
+                      className="btn-secondary disabled:cursor-not-allowed disabled:opacity-50 mt-3"
+                      disabled={!correctionReason.trim() || loading}
+                      onClick={() => void correct()}
+                    >
                       เปิด claim รุ่นใหม่พร้อม audit
                     </button>
                   </div>

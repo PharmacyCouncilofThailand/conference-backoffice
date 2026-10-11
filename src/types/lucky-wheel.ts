@@ -11,7 +11,7 @@ export type WheelDayWindow = {
 export type WheelDayChange = {
   id: number;
   actorId: number;
-  operation: "day_window_create" | "day_window_edit";
+  operation: 'day_window_create' | 'day_window_edit';
   reason: string | null;
   before: WheelDayWindow | null;
   after: WheelDayWindow;
@@ -23,7 +23,7 @@ export type WheelQrCode = {
   eventId: number;
   date: string;
   name: string;
-  status: "closed" | "open";
+  status: 'closed' | 'open';
   createdBy: number;
   createdAt: string;
   openedBy: number | null;
@@ -71,12 +71,17 @@ export type WheelCreditRevocation = {
 
 export type WheelPage<T> = {
   items: T[];
-  pagination: { page: number; pageSize: number; total: number; totalPages: number };
+  pagination: {
+    page: number;
+    pageSize: number;
+    total: number;
+    totalPages: number;
+  };
 };
 
 export type WheelConfigurationSegment = {
   id: string;
-  kind: "prize" | "no_prize";
+  kind: 'prize' | 'no_prize';
   name: LocalizedText;
   imageId: string | null;
   enabled: boolean;
@@ -92,7 +97,7 @@ export type WheelConfiguration = {
 
 export type WheelSegmentState = {
   id: string;
-  kind: "prize" | "no_prize";
+  kind: 'prize' | 'no_prize';
   name: LocalizedText;
   imageId: string | null;
   imageKey: string | null;
@@ -135,18 +140,52 @@ export type AdminWheelState = {
   requestId: string;
 };
 
-export type AttendanceSetupBlocker = "SCHEMA_REQUIRED" | "INVALID_MAIN_SESSION" | "MISSING_ENTITLEMENTS" |
-  "UNLINKED_ACCOUNTS" | "LEGACY_SCANNER_MISSING" | "LEGACY_TIME_INVALID" | "LEGACY_DAILY_CONFLICT" | "CANCELLATION_CONFLICT";
+export type AttendanceSetupBlocker =
+  | 'SCHEMA_REQUIRED'
+  | 'INVALID_MAIN_SESSION'
+  | 'MISSING_ENTITLEMENTS'
+  | 'UNLINKED_ACCOUNTS'
+  | 'LEGACY_SCANNER_MISSING'
+  | 'LEGACY_TIME_INVALID'
+  | 'LEGACY_DAILY_CONFLICT'
+  | 'CANCELLATION_CONFLICT';
 export type AttendanceReadiness = {
-  eventId: number; mainSessionId: number; serverDate: string; policyEnabled: boolean; runtimeReady: boolean;
-  setupComplete: boolean; revision: string;
-  counts: { confirmedRegistrations: number; confirmedEntitlements: number; missingEntitlements: number;
-    unlinkedAccounts: number; legacySources: number; pendingLegacyImports: number; alreadyImported: number; alreadyCovered: number; conflicts: number };
+  eventId: number;
+  mainSessionId: number;
+  serverDate: string;
+  policyEnabled: boolean;
+  runtimeReady: boolean;
+  setupComplete: boolean;
+  revision: string;
+  counts: {
+    confirmedRegistrations: number;
+    confirmedEntitlements: number;
+    missingEntitlements: number;
+    unlinkedAccounts: number;
+    legacySources: number;
+    pendingLegacyImports: number;
+    alreadyImported: number;
+    alreadyCovered: number;
+    conflicts: number;
+  };
   blockers: Array<{ code: AttendanceSetupBlocker; count: number }>;
 };
-export type AttendanceSetupInput = { mainSessionId: number; expectedReadinessRevision: string; reason: string; idempotencyKey: string };
-export type AttendanceSetupResult = { eventId: number; mainSessionId: number; policyEnabled: true; importedCount: number;
-  alreadyImportedCount: number; alreadyCoveredCount: number; auditId: string; replayed: boolean };
+export type AttendanceSetupInput = {
+  mainSessionId: number;
+  expectedReadinessRevision: string;
+  reason: string;
+  idempotencyKey: string;
+};
+export type AttendanceSetupResult = {
+  eventId: number;
+  mainSessionId: number;
+  policyEnabled: true;
+  importedCount: number;
+  alreadyImportedCount: number;
+  alreadyCoveredCount: number;
+  auditId: string;
+  replayed: boolean;
+};
 
 export type AdminWheelSpin = {
   id: string;
@@ -156,7 +195,7 @@ export type AdminWheelSpin = {
   attendanceId: string;
   attendanceCheckedInAt: string;
   segmentId: string;
-  outcomeKind: "prize" | "no_prize";
+  outcomeKind: 'prize' | 'no_prize';
   awardedName: LocalizedText;
   awardedImageKey: string | null;
   configurationVersion: number;
@@ -166,7 +205,7 @@ export type AdminWheelSpin = {
   outcomeSnapshot: unknown;
   claim: null | {
     generation: number;
-    status: "open" | "redeemed";
+    status: 'open' | 'redeemed';
     redeemedAt: string | null;
     redeemedBy: number | null;
     collectionPoint: string | null;
@@ -211,7 +250,7 @@ export type RewardLookup = {
     awardedAt: string;
   };
   claimGeneration: number;
-  status: "open" | "redeemed";
+  status: 'open' | 'redeemed';
   redeemedAt: string | null;
   redeemedBy: number | null;
   redeemedByName: string | null;
@@ -219,7 +258,7 @@ export type RewardLookup = {
   deliveredDetails: string | null;
   collectionInstructions: LocalizedText | null;
   collectionDeadline: string | null;
-  lookedUpBy: "token" | "code";
+  lookedUpBy: 'token' | 'code';
   actorId: number;
   requestId: string;
 };

@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import { useState, useEffect, useCallback } from "react";
-import { AdminLayout } from "@/components/layout";
-import { api } from "@/lib/api";
-import { useAuth } from "@/contexts/AuthContext";
-import { Pagination } from "@/components/common";
-import toast from "react-hot-toast";
+import { useState, useEffect, useCallback } from 'react';
+import { AdminLayout } from '@/components/layout';
+import { api } from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
+import { Pagination } from '@/components/common';
+import toast from 'react-hot-toast';
 import {
   IconSearch,
   IconRefresh,
@@ -20,7 +20,7 @@ import {
   IconTicket,
   IconTicketOff,
   IconTrash,
-} from "@tabler/icons-react";
+} from '@tabler/icons-react';
 
 // Types
 interface Member {
@@ -28,8 +28,14 @@ interface Member {
   email: string;
   firstName: string;
   lastName: string;
-  role: "pharmacist" | "medical_professional" | "student" | "general" | "healthhack" | "booth";
-  status: "pending_approval" | "active" | "rejected";
+  role:
+    | 'pharmacist'
+    | 'medical_professional'
+    | 'student'
+    | 'general'
+    | 'healthhack'
+    | 'booth';
+  status: 'pending_approval' | 'active' | 'rejected';
   phone: string | null;
   country: string | null;
   institution: string | null;
@@ -47,45 +53,51 @@ interface Pagination {
 
 // Role labels
 const roleLabels: Record<string, { label: string; className: string }> = {
-  healthhack: { label: "HealthHack", className: "bg-sky-100 text-sky-800" },
-  booth: { label: "Booth", className: "bg-amber-100 text-amber-800" },
-  pharmacist: { label: "Pharmacist", className: "bg-green-100 text-green-800" },
+  healthhack: { label: 'HealthHack', className: 'bg-sky-100 text-sky-800' },
+  booth: { label: 'Booth', className: 'bg-amber-100 text-amber-800' },
+  pharmacist: { label: 'Pharmacist', className: 'bg-green-100 text-green-800' },
   medical_professional: {
-    label: "Medical Professional",
-    className: "bg-indigo-100 text-indigo-800",
+    label: 'Medical Professional',
+    className: 'bg-indigo-100 text-indigo-800',
   },
-  student: { label: "Student", className: "bg-emerald-50 text-teal-900" },
+  student: { label: 'Student', className: 'bg-emerald-50 text-teal-900' },
   guest: {
-    label: "Guest",
-    className: "bg-emerald-50 text-emerald-700",
+    label: 'Guest',
+    className: 'bg-emerald-50 text-emerald-700',
   },
   general: {
-    label: "General",
-    className: "bg-zinc-100 text-zinc-800",
+    label: 'General',
+    className: 'bg-zinc-100 text-zinc-800',
   },
   admin: {
-    label: "Admin",
-    className: "bg-red-100 text-red-800",
+    label: 'Admin',
+    className: 'bg-red-100 text-red-800',
   },
 };
 
 const healthHackLevelLabels: Record<string, string> = {
-  m1: "ม.1", m2: "ม.2", m3: "ม.3", m4: "ม.4", m5: "ม.5", m6: "ม.6", undergraduate: "ปริญญาตรี",
+  m1: 'ม.1',
+  m2: 'ม.2',
+  m3: 'ม.3',
+  m4: 'ม.4',
+  m5: 'ม.5',
+  m6: 'ม.6',
+  undergraduate: 'ปริญญาตรี',
 };
 
 // Status labels
 const statusLabels: Record<string, { label: string; className: string }> = {
   pending_approval: {
-    label: "Pending",
-    className: "bg-yellow-50 text-yellow-700 border-yellow-200",
+    label: 'Pending',
+    className: 'bg-yellow-50 text-yellow-700 border-yellow-200',
   },
   active: {
-    label: "Active",
-    className: "bg-green-50 text-green-700 border-green-200",
+    label: 'Active',
+    className: 'bg-green-50 text-green-700 border-green-200',
   },
   rejected: {
-    label: "Rejected",
-    className: "bg-red-50 text-red-700 border-red-200",
+    label: 'Rejected',
+    className: 'bg-red-50 text-red-700 border-red-200',
   },
 };
 
@@ -94,11 +106,13 @@ export default function MembersPage() {
   const [members, setMembers] = useState<Member[]>([]);
   const [pagination, setPagination] = useState<Pagination | null>(null);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const [roleFilter, setRoleFilter] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
-  const [eventFilter, setEventFilter] = useState("");
-  const [eventOptions, setEventOptions] = useState<{ id: number; name: string }[]>([]);
+  const [search, setSearch] = useState('');
+  const [roleFilter, setRoleFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [eventFilter, setEventFilter] = useState('');
+  const [eventOptions, setEventOptions] = useState<
+    { id: number; name: string }[]
+  >([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [limit, setLimit] = useState(10);
   const [deletingId, setDeletingId] = useState<number | null>(null);
@@ -117,20 +131,22 @@ export default function MembersPage() {
   const fetchStats = useCallback(async () => {
     if (!token) return;
     try {
-      const query = eventFilter ? `eventId=${encodeURIComponent(eventFilter)}` : undefined;
+      const query = eventFilter
+        ? `eventId=${encodeURIComponent(eventFilter)}`
+        : undefined;
       const data = await api.members.stats(token, query);
       const getCount = (status: string) =>
         data.byStatus.find((s: any) => s.status === status)?.count || 0;
       setStats({
         total: data.total,
-        active: getCount("active"),
-        pending: getCount("pending_approval"),
-        rejected: getCount("rejected"),
+        active: getCount('active'),
+        pending: getCount('pending_approval'),
+        rejected: getCount('rejected'),
         purchased: data.purchased,
         notPurchased: data.notPurchased,
       });
     } catch (error) {
-      console.error("Failed to fetch stats:", error);
+      console.error('Failed to fetch stats:', error);
     }
   }, [token, eventFilter]);
 
@@ -141,9 +157,17 @@ export default function MembersPage() {
   // Fetch events for filter dropdown
   useEffect(() => {
     if (!token) return;
-    api.backofficeEvents.list(token, 'limit=100').then((res) => {
-      setEventOptions((res.events as any[]).map((e) => ({ id: e.id as number, name: e.eventName as string })));
-    }).catch(() => {});
+    api.backofficeEvents
+      .list(token, 'limit=100')
+      .then((res) => {
+        setEventOptions(
+          (res.events as any[]).map((e) => ({
+            id: e.id as number,
+            name: e.eventName as string,
+          })),
+        );
+      })
+      .catch(() => {});
   }, [token]);
 
   useEffect(() => {
@@ -158,32 +182,40 @@ export default function MembersPage() {
     setLoading(true);
     try {
       const params = new URLSearchParams();
-      params.append("page", currentPage.toString());
-      params.append("limit", limit.toString());
-      if (search) params.append("search", search);
-      if (roleFilter) params.append("role", roleFilter);
-      if (statusFilter) params.append("status", statusFilter);
-      if (eventFilter) params.append("eventId", eventFilter);
+      params.append('page', currentPage.toString());
+      params.append('limit', limit.toString());
+      if (search) params.append('search', search);
+      if (roleFilter) params.append('role', roleFilter);
+      if (statusFilter) params.append('status', statusFilter);
+      if (eventFilter) params.append('eventId', eventFilter);
 
       const response = await api.members.list(token, params.toString());
       setMembers(response.members as unknown as Member[]);
       setPagination(response.pagination);
     } catch (error) {
-      console.error("Failed to fetch members:", error);
+      console.error('Failed to fetch members:', error);
     } finally {
       setLoading(false);
     }
-  }, [token, currentPage, limit, search, roleFilter, statusFilter, eventFilter]);
+  }, [
+    token,
+    currentPage,
+    limit,
+    search,
+    roleFilter,
+    statusFilter,
+    eventFilter,
+  ]);
 
   useEffect(() => {
     fetchMembers();
   }, [fetchMembers]);
 
   const handleReset = () => {
-    setSearch("");
-    setRoleFilter("");
-    setStatusFilter("");
-    setEventFilter("");
+    setSearch('');
+    setRoleFilter('');
+    setStatusFilter('');
+    setEventFilter('');
     setCurrentPage(1);
   };
 
@@ -196,8 +228,10 @@ export default function MembersPage() {
       fetchMembers();
       fetchStats();
     } catch (error) {
-      console.error("Failed to delete member:", error);
-      toast.error(error instanceof Error ? error.message : "Failed to delete member");
+      console.error('Failed to delete member:', error);
+      toast.error(
+        error instanceof Error ? error.message : 'Failed to delete member',
+      );
     } finally {
       setDeletingId(null);
     }
@@ -308,12 +342,17 @@ export default function MembersPage() {
         <div className="flex flex-col md:flex-row gap-4 mb-6">
           <select
             value={eventFilter}
-            onChange={(e) => { setEventFilter(e.target.value); setCurrentPage(1); }}
+            onChange={(e) => {
+              setEventFilter(e.target.value);
+              setCurrentPage(1);
+            }}
             className="input-field w-auto"
           >
             <option value="">-- เลือก Event --</option>
             {eventOptions.map((e) => (
-              <option key={e.id} value={e.id}>{e.name}</option>
+              <option key={e.id} value={e.id}>
+                {e.name}
+              </option>
             ))}
           </select>
 
@@ -456,12 +495,13 @@ export default function MembersPage() {
                             className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${statusLabels[member.status]?.className}`}
                           >
                             <span
-                              className={`w-1.5 h-1.5 rounded-full ${member.status === "active"
-                                  ? "bg-green-500"
-                                  : member.status === "pending_approval"
-                                    ? "bg-yellow-500"
-                                    : "bg-red-500"
-                                }`}
+                              className={`w-1.5 h-1.5 rounded-full ${
+                                member.status === 'active'
+                                  ? 'bg-green-500'
+                                  : member.status === 'pending_approval'
+                                    ? 'bg-yellow-500'
+                                    : 'bg-red-500'
+                              }`}
                             ></span>
                             {statusLabels[member.status]?.label}
                           </span>
@@ -474,20 +514,47 @@ export default function MembersPage() {
                                 {member.institution}
                               </div>
                             )}
-                            {(member.role === "healthhack" || member.role === "booth") && (
+                            {(member.role === 'healthhack' ||
+                              member.role === 'booth') && (
                               <details className="text-sm text-zinc-500">
                                 <summary className="cursor-pointer">
-                                  {member.role === "healthhack"
-                                    ? `HealthHack: ${healthHackLevelLabels[member.healthHackLevel || ""] || "—"}`
-                                    : `Booth: ${member.boothName || "—"}`}
+                                  {member.role === 'healthhack'
+                                    ? `HealthHack: ${healthHackLevelLabels[member.healthHackLevel || ''] || '—'}`
+                                    : `Booth: ${member.boothName || '—'}`}
                                 </summary>
                                 <dl className="mt-2 space-y-1">
-                                  <div><dt className="font-medium">Role</dt><dd>{roleLabels[member.role].label}</dd></div>
-                                  {member.role === "healthhack" && <>
-                                    <div><dt className="font-medium">โรงเรียน / มหาวิทยาลัย / สถาบัน</dt><dd>{member.institution || "—"}</dd></div>
-                                    <div><dt className="font-medium">ระดับการศึกษา</dt><dd>{healthHackLevelLabels[member.healthHackLevel || ""] || "—"}</dd></div>
-                                  </>}
-                                  {member.role === "booth" && <div><dt className="font-medium">ชื่อบูธในงาน</dt><dd>{member.boothName || "—"}</dd></div>}
+                                  <div>
+                                    <dt className="font-medium">Role</dt>
+                                    <dd>{roleLabels[member.role].label}</dd>
+                                  </div>
+                                  {member.role === 'healthhack' && (
+                                    <>
+                                      <div>
+                                        <dt className="font-medium">
+                                          โรงเรียน / มหาวิทยาลัย / สถาบัน
+                                        </dt>
+                                        <dd>{member.institution || '—'}</dd>
+                                      </div>
+                                      <div>
+                                        <dt className="font-medium">
+                                          ระดับการศึกษา
+                                        </dt>
+                                        <dd>
+                                          {healthHackLevelLabels[
+                                            member.healthHackLevel || ''
+                                          ] || '—'}
+                                        </dd>
+                                      </div>
+                                    </>
+                                  )}
+                                  {member.role === 'booth' && (
+                                    <div>
+                                      <dt className="font-medium">
+                                        ชื่อบูธในงาน
+                                      </dt>
+                                      <dd>{member.boothName || '—'}</dd>
+                                    </div>
+                                  )}
                                 </dl>
                               </details>
                             )}
@@ -503,11 +570,11 @@ export default function MembersPage() {
                         <td className="px-4 py-4 text-center">
                           <span className="text-sm text-zinc-500">
                             {new Date(member.createdAt).toLocaleDateString(
-                              "th-TH",
+                              'th-TH',
                               {
-                                year: "numeric",
-                                month: "short",
-                                day: "numeric",
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric',
                               },
                             )}
                           </span>
@@ -563,7 +630,7 @@ export default function MembersPage() {
               </h3>
             </div>
             <p className="text-zinc-500 mb-2">
-              Are you sure you want to delete{" "}
+              Are you sure you want to delete{' '}
               <span className="font-medium text-zinc-900">
                 {deleteConfirm.firstName} {deleteConfirm.lastName}
               </span>
@@ -588,7 +655,7 @@ export default function MembersPage() {
                 disabled={deletingId !== null}
                 className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
               >
-                {deletingId !== null ? "Deleting..." : "Confirm Delete"}
+                {deletingId !== null ? 'Deleting...' : 'Confirm Delete'}
               </button>
             </div>
           </div>

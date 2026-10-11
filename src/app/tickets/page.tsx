@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { AdminLayout } from "@/components/layout";
-import DatePicker from "react-datepicker";
-import "react-datepicker/dist/react-datepicker.css";
-import { api } from "@/lib/api";
-import { Pagination } from "@/components/common";
+import { useState, useEffect } from 'react';
+import { AdminLayout } from '@/components/layout';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
+import { api } from '@/lib/api';
+import { Pagination } from '@/components/common';
 import {
   IconTicket,
   IconPlus,
@@ -18,70 +18,70 @@ import {
   IconLoader2,
   IconCalendarEvent,
   IconStar,
-} from "@tabler/icons-react";
-import toast from "react-hot-toast";
+} from '@tabler/icons-react';
+import toast from 'react-hot-toast';
 
 const categoryColors: { [key: string]: { bg: string; text: string } } = {
-  primary: { bg: "bg-emerald-50", text: "text-teal-900" },
-  addon: { bg: "bg-purple-100", text: "text-purple-800" },
+  primary: { bg: 'bg-emerald-50', text: 'text-teal-900' },
+  addon: { bg: 'bg-purple-100', text: 'text-purple-800' },
 };
 
 const roleOptions = [
-  { value: "pharmacist", label: "Pharmacist" },
-  { value: "medical_professional", label: "Medical Professional" },
-  { value: "student", label: "Student" },
-  { value: "general", label: "General" },
-  { value: "healthhack", label: "HealthHack" },
-  { value: "booth", label: "Booth" },
+  { value: 'pharmacist', label: 'Pharmacist' },
+  { value: 'medical_professional', label: 'Medical Professional' },
+  { value: 'student', label: 'Student' },
+  { value: 'general', label: 'General' },
+  { value: 'healthhack', label: 'HealthHack' },
+  { value: 'booth', label: 'Booth' },
 ];
 
 const studentLevelOptions = [
-  { value: "postgraduate", label: "Postgraduate" },
-  { value: "undergraduate", label: "Undergraduate" },
+  { value: 'postgraduate', label: 'Postgraduate' },
+  { value: 'undergraduate', label: 'Undergraduate' },
 ];
 
 const typeColors: { [key: string]: string } = {
-  pharmacist: "bg-green-100 text-green-800",
-  medical_professional: "bg-indigo-100 text-indigo-800",
-  student: "bg-emerald-50 text-teal-900",
-  general: "bg-zinc-100 text-zinc-800",
-  healthhack: "bg-sky-100 text-sky-800",
-  booth: "bg-amber-100 text-amber-800",
-  thstd: "bg-green-100 text-green-800",
-  thpro: "bg-emerald-50 text-teal-900",
-  interstd: "bg-yellow-100 text-yellow-800",
-  interpro: "bg-purple-100 text-purple-800",
-  guest: "bg-emerald-50 text-emerald-700",
+  pharmacist: 'bg-green-100 text-green-800',
+  medical_professional: 'bg-indigo-100 text-indigo-800',
+  student: 'bg-emerald-50 text-teal-900',
+  general: 'bg-zinc-100 text-zinc-800',
+  healthhack: 'bg-sky-100 text-sky-800',
+  booth: 'bg-amber-100 text-amber-800',
+  thstd: 'bg-green-100 text-green-800',
+  thpro: 'bg-emerald-50 text-teal-900',
+  interstd: 'bg-yellow-100 text-yellow-800',
+  interpro: 'bg-purple-100 text-purple-800',
+  guest: 'bg-emerald-50 text-emerald-700',
 };
 
 const roleLabels: Record<string, string> = {
-  pharmacist: "Pharmacist",
-  medical_professional: "Med. Prof.",
-  student: "Student",
-  general: "General",
-  healthhack: "HealthHack",
-  booth: "Booth",
-  thstd: "Thai Student",
-  thpro: "Thai Professional",
-  interstd: "International Student",
-  interpro: "International Professional",
-  guest: "Guest",
+  pharmacist: 'Pharmacist',
+  medical_professional: 'Med. Prof.',
+  student: 'Student',
+  general: 'General',
+  healthhack: 'HealthHack',
+  booth: 'Booth',
+  thstd: 'Thai Student',
+  thpro: 'Thai Professional',
+  interstd: 'International Student',
+  interpro: 'International Professional',
+  guest: 'Guest',
 };
 
 const studentLevelLabels: Record<string, string> = {
-  postgraduate: "Postgraduate",
-  undergraduate: "Undergraduate",
+  postgraduate: 'Postgraduate',
+  undergraduate: 'Undergraduate',
 };
 
 const parseAllowedList = (raw: unknown): string[] => {
   if (!raw) return [];
   if (Array.isArray(raw)) return raw.map(String).filter(Boolean);
-  if (typeof raw !== "string") return [];
+  if (typeof raw !== 'string') return [];
 
   const value = raw.trim();
   if (!value) return [];
 
-  if (value.startsWith("[")) {
+  if (value.startsWith('[')) {
     try {
       const parsed = JSON.parse(value);
       return Array.isArray(parsed) ? parsed.map(String).filter(Boolean) : [];
@@ -91,7 +91,7 @@ const parseAllowedList = (raw: unknown): string[] => {
   }
 
   return value
-    .split(",")
+    .split(',')
     .map((item) => item.trim())
     .filter(Boolean);
 };
@@ -101,15 +101,15 @@ const getAllowedStudentLevelsPayload = (
   levels: string[],
   forceClear = false,
 ) => {
-  const selectedLevels = roles.includes("student") ? levels : [];
+  const selectedLevels = roles.includes('student') ? levels : [];
   if (selectedLevels.length > 0) return JSON.stringify(selectedLevels);
-  return forceClear ? "[]" : undefined;
+  return forceClear ? '[]' : undefined;
 };
 
 const getBackofficeToken = () =>
-  localStorage.getItem("backoffice_token") ||
-  sessionStorage.getItem("backoffice_token") ||
-  "";
+  localStorage.getItem('backoffice_token') ||
+  sessionStorage.getItem('backoffice_token') ||
+  '';
 
 interface Ticket {
   id: number;
@@ -159,13 +159,13 @@ export default function TicketsPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Filters & Pagination
-  const [searchTerm, setSearchTerm] = useState("");
-  const [eventFilter, setEventFilter] = useState<number | "">("");
+  const [searchTerm, setSearchTerm] = useState('');
+  const [eventFilter, setEventFilter] = useState<number | ''>('');
   const [categoryFilter, setCategoryFilter] = useState<
-    "primary" | "addon" | ""
-  >("");
-  const [roleFilter, setRoleFilter] = useState<string>("");
-  const [studentLevelFilter, setStudentLevelFilter] = useState<string>("");
+    'primary' | 'addon' | ''
+  >('');
+  const [roleFilter, setRoleFilter] = useState<string>('');
+  const [studentLevelFilter, setStudentLevelFilter] = useState<string>('');
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
@@ -180,25 +180,25 @@ export default function TicketsPage() {
   // Form state
   const [formData, setFormData] = useState({
     eventId: 0,
-    name: "",
-    category: "primary",
-    groupName: "",
+    name: '',
+    category: 'primary',
+    groupName: '',
     price: 0,
-    currency: "THB",
-    originalPrice: "" as string | number,
-    description: "",
+    currency: 'THB',
+    originalPrice: '' as string | number,
+    description: '',
     features: [] as string[],
-    badgeText: "",
+    badgeText: '',
     quota: 100,
-    saleStartDate: "",
-    saleEndDate: "",
-    allowedRoles: ["general"], // Default
+    saleStartDate: '',
+    saleEndDate: '',
+    allowedRoles: ['general'], // Default
     allowedStudentLevels: [] as string[],
-    priority: "regular",
+    priority: 'regular',
     isActive: true,
     sessionIds: [] as number[],
   });
-  const [featureInput, setFeatureInput] = useState("");
+  const [featureInput, setFeatureInput] = useState('');
 
   useEffect(() => {
     fetchEvents();
@@ -214,12 +214,19 @@ export default function TicketsPage() {
 
   useEffect(() => {
     fetchTickets();
-  }, [page, searchTerm, eventFilter, categoryFilter, roleFilter, studentLevelFilter]);
+  }, [
+    page,
+    searchTerm,
+    eventFilter,
+    categoryFilter,
+    roleFilter,
+    studentLevelFilter,
+  ]);
 
   const fetchEvents = async () => {
     try {
       const token = getBackofficeToken();
-      const res = await api.backofficeEvents.list(token, "limit=100"); // Get enough for dropdown
+      const res = await api.backofficeEvents.list(token, 'limit=100'); // Get enough for dropdown
       const mappedEvents = res.events.map((e: Record<string, unknown>) => ({
         id: e.id as number,
         code: e.eventCode as string,
@@ -230,7 +237,7 @@ export default function TicketsPage() {
         setFormData((prev) => ({ ...prev, eventId: mappedEvents[0].id }));
       }
     } catch (error) {
-      console.error("Failed to fetch events:", error);
+      console.error('Failed to fetch events:', error);
     }
   };
 
@@ -247,7 +254,7 @@ export default function TicketsPage() {
       setSessions(mappedSessions);
 
       setFormData((prev) => {
-        if (showCreateModal && prev.category === "primary") {
+        if (showCreateModal && prev.category === 'primary') {
           const mainSessionIds = mappedSessions
             .filter((s: EventSession) => s.isMainSession)
             .map((s: EventSession) => s.id);
@@ -261,20 +268,20 @@ export default function TicketsPage() {
         return prev;
       });
     } catch (error) {
-      console.error("Failed to fetch sessions:", error);
+      console.error('Failed to fetch sessions:', error);
       setSessions([]);
     }
   };
 
   const formatDateTimeLocal = (dateStr: string | null | undefined) => {
-    if (!dateStr) return "";
+    if (!dateStr) return '';
     const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return "";
+    if (isNaN(d.getTime())) return '';
     const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, "0");
-    const day = String(d.getDate()).padStart(2, "0");
-    const hours = String(d.getHours()).padStart(2, "0");
-    const minutes = String(d.getMinutes()).padStart(2, "0");
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    const hours = String(d.getHours()).padStart(2, '0');
+    const minutes = String(d.getMinutes()).padStart(2, '0');
     return `${year}-${month}-${day}T${hours}:${minutes}`;
   };
 
@@ -302,10 +309,10 @@ export default function TicketsPage() {
           eventId: t.eventId,
           name: t.name,
           category: t.category,
-          priority: t.priority || "regular",
+          priority: t.priority || 'regular',
           groupName: t.groupName || null,
           price: parseFloat(t.price),
-          currency: t.currency || "THB",
+          currency: t.currency || 'THB',
           originalPrice: t.originalPrice ? parseFloat(t.originalPrice) : null,
           description: t.description || null,
           features: t.features || [],
@@ -314,7 +321,7 @@ export default function TicketsPage() {
           sold: t.sold,
           startDate: t.startDate,
           endDate: t.endDate,
-          type: roles.length > 0 ? roles[0] : "general",
+          type: roles.length > 0 ? roles[0] : 'general',
           allowedRoles: roles,
           allowedStudentLevels: studentLevels,
           displayOrder: t.displayOrder ?? 0,
@@ -328,7 +335,7 @@ export default function TicketsPage() {
       setTotalCount(res.pagination.total);
       setTotalPages(res.pagination.totalPages);
     } catch (error) {
-      console.error("Failed to fetch tickets:", error);
+      console.error('Failed to fetch tickets:', error);
     } finally {
       setIsLoading(false);
     }
@@ -336,11 +343,11 @@ export default function TicketsPage() {
 
   const handleCreate = async () => {
     if (!formData.eventId) {
-      toast.error("Please select an event");
+      toast.error('Please select an event');
       return;
     }
     if (formData.quota < 0) {
-      toast.error("Quota must be 0 (unlimited) or greater");
+      toast.error('Quota must be 0 (unlimited) or greater');
       return;
     }
     setIsSubmitting(true);
@@ -357,7 +364,7 @@ export default function TicketsPage() {
         price: String(formData.price),
         currency: formData.currency,
         originalPrice:
-          formData.originalPrice !== ""
+          formData.originalPrice !== ''
             ? Number(formData.originalPrice)
             : undefined,
         description: formData.description || undefined,
@@ -381,12 +388,12 @@ export default function TicketsPage() {
         payload.saleEndDate = new Date(formData.saleEndDate).toISOString();
       }
       await api.backofficeEvents.createTicket(token, formData.eventId, payload);
-      toast.success("Ticket created successfully!");
+      toast.success('Ticket created successfully!');
       setShowCreateModal(false);
       fetchTickets();
     } catch (error) {
       console.error(error);
-      toast.error("Failed to create ticket");
+      toast.error('Failed to create ticket');
     } finally {
       setIsSubmitting(false);
     }
@@ -395,7 +402,7 @@ export default function TicketsPage() {
   const handleEdit = async () => {
     if (!selectedTicket || !formData.eventId) return;
     if (formData.quota < 0) {
-      toast.error("Quota must be 0 (unlimited) or greater");
+      toast.error('Quota must be 0 (unlimited) or greater');
       return;
     }
     setIsSubmitting(true);
@@ -412,7 +419,7 @@ export default function TicketsPage() {
         price: String(formData.price),
         currency: formData.currency,
         originalPrice:
-          formData.originalPrice !== ""
+          formData.originalPrice !== ''
             ? Number(formData.originalPrice)
             : undefined,
         description: formData.description || undefined,
@@ -437,19 +444,20 @@ export default function TicketsPage() {
         payload.saleEndDate = new Date(formData.saleEndDate).toISOString();
       }
       // Use API update
-      console.log("[handleEdit] payload:", JSON.stringify(payload, null, 2));
+      console.log('[handleEdit] payload:', JSON.stringify(payload, null, 2));
       await api.backofficeEvents.updateTicket(
         token,
         formData.eventId,
         selectedTicket.id,
         payload,
       );
-      toast.success("Ticket updated successfully!");
+      toast.success('Ticket updated successfully!');
       setShowEditModal(false);
       fetchTickets();
     } catch (error) {
       console.error(error);
-      const msg = error instanceof Error ? error.message : "Failed to update ticket";
+      const msg =
+        error instanceof Error ? error.message : 'Failed to update ticket';
       toast.error(msg);
     } finally {
       setIsSubmitting(false);
@@ -466,12 +474,12 @@ export default function TicketsPage() {
         selectedTicket.eventId,
         selectedTicket.id,
       );
-      toast.success("Ticket deleted successfully!");
+      toast.success('Ticket deleted successfully!');
       setShowDeleteModal(false);
       fetchTickets();
     } catch (error) {
       console.error(error);
-      toast.error("Failed to delete ticket");
+      toast.error('Failed to delete ticket');
     } finally {
       setIsSubmitting(false);
     }
@@ -480,21 +488,21 @@ export default function TicketsPage() {
   const handleDuplicate = (ticket: Ticket) => {
     setFormData({
       eventId: ticket.eventId,
-      name: ticket.name + " (Copy)",
+      name: ticket.name + ' (Copy)',
       category: ticket.category,
-      groupName: ticket.groupName || "",
+      groupName: ticket.groupName || '',
       price: ticket.price,
       currency: ticket.currency,
-      originalPrice: ticket.originalPrice ?? "",
-      description: ticket.description || "",
+      originalPrice: ticket.originalPrice ?? '',
+      description: ticket.description || '',
       features: ticket.features || [],
-      badgeText: ticket.badgeText || "",
+      badgeText: ticket.badgeText || '',
       quota: ticket.quota,
       saleStartDate: formatDateTimeLocal(ticket.startDate),
       saleEndDate: formatDateTimeLocal(ticket.endDate),
       allowedRoles: ticket.allowedRoles,
       allowedStudentLevels: ticket.allowedStudentLevels || [],
-      priority: ticket.priority || "regular",
+      priority: ticket.priority || 'regular',
       isActive: true,
       sessionIds: ticket.sessionIds || [],
     });
@@ -507,22 +515,22 @@ export default function TicketsPage() {
       eventId: ticket.eventId,
       name: ticket.name,
       category: ticket.category,
-      groupName: ticket.groupName || "",
+      groupName: ticket.groupName || '',
       price: ticket.price,
       currency: ticket.currency,
-      originalPrice: ticket.originalPrice ?? "",
-      description: ticket.description || "",
+      originalPrice: ticket.originalPrice ?? '',
+      description: ticket.description || '',
       features: ticket.features || [],
-      badgeText: ticket.badgeText || "",
+      badgeText: ticket.badgeText || '',
       quota: ticket.quota,
       saleStartDate: formatDateTimeLocal(ticket.startDate),
       saleEndDate: formatDateTimeLocal(ticket.endDate),
       allowedRoles:
         ticket.allowedRoles && ticket.allowedRoles.length > 0
           ? ticket.allowedRoles
-          : ["general"],
+          : ['general'],
       allowedStudentLevels: ticket.allowedStudentLevels || [],
-      priority: ticket.priority || "regular",
+      priority: ticket.priority || 'regular',
       isActive: ticket.isActive ?? true,
       sessionIds: ticket.sessionIds || [],
     });
@@ -532,25 +540,25 @@ export default function TicketsPage() {
   const resetForm = () => {
     setFormData({
       eventId: events[0]?.id || 1,
-      name: "",
-      category: "primary",
-      groupName: "",
+      name: '',
+      category: 'primary',
+      groupName: '',
       price: 0,
-      currency: "THB",
-      originalPrice: "",
-      description: "",
+      currency: 'THB',
+      originalPrice: '',
+      description: '',
       features: [],
-      badgeText: "",
+      badgeText: '',
       quota: 100,
-      saleStartDate: "",
-      saleEndDate: "",
-      allowedRoles: ["general"],
+      saleStartDate: '',
+      saleEndDate: '',
+      allowedRoles: ['general'],
       allowedStudentLevels: [],
-      priority: "regular",
+      priority: 'regular',
       isActive: true,
       sessionIds: [],
     });
-    setFeatureInput("");
+    setFeatureInput('');
   };
 
   // Calculate stats from loaded tickets (approximate since paginated, but real API would need stat endpoint)
@@ -571,7 +579,7 @@ export default function TicketsPage() {
         <select
           value={eventFilter}
           onChange={(e) => {
-            setEventFilter(e.target.value ? Number(e.target.value) : "");
+            setEventFilter(e.target.value ? Number(e.target.value) : '');
             setPage(1);
           }}
           className="input-field w-auto font-semibold"
@@ -594,7 +602,7 @@ export default function TicketsPage() {
             </div>
             <div>
               <p className="text-2xl font-bold text-zinc-800">
-                {isLoading ? "-" : stats.total}
+                {isLoading ? '-' : stats.total}
               </p>
               <p className="text-sm text-zinc-400">Total Tickets</p>
             </div>
@@ -607,8 +615,8 @@ export default function TicketsPage() {
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-lg font-semibold text-zinc-800">
             {eventFilter
-              ? `Tickets for ${events.find((e) => e.id === eventFilter)?.name || "Event"}`
-              : "All Tickets"}
+              ? `Tickets for ${events.find((e) => e.id === eventFilter)?.name || 'Event'}`
+              : 'All Tickets'}
           </h2>
           <button
             onClick={() => {
@@ -643,7 +651,7 @@ export default function TicketsPage() {
           <select
             value={categoryFilter}
             onChange={(e) => {
-              setCategoryFilter(e.target.value as "primary" | "addon" | "");
+              setCategoryFilter(e.target.value as 'primary' | 'addon' | '');
               setPage(1);
             }}
             className="input-field min-w-[150px]"
@@ -657,7 +665,7 @@ export default function TicketsPage() {
             onChange={(e) => {
               const nextRole = e.target.value;
               setRoleFilter(nextRole);
-              if (nextRole !== "student") setStudentLevelFilter("");
+              if (nextRole !== 'student') setStudentLevelFilter('');
               setPage(1);
             }}
             className="input-field min-w-[180px]"
@@ -675,7 +683,7 @@ export default function TicketsPage() {
               setStudentLevelFilter(e.target.value);
               setPage(1);
             }}
-            disabled={roleFilter !== "student"}
+            disabled={roleFilter !== 'student'}
             className="input-field min-w-[190px] disabled:bg-zinc-100 disabled:text-zinc-400"
           >
             <option value="">All Student Levels</option>
@@ -700,217 +708,225 @@ export default function TicketsPage() {
           <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm">
             <div className="overflow-x-auto">
               <table className="w-full table-sticky-actions">
-              <thead>
-                <tr className="bg-zinc-50 border-b border-zinc-200">
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-500 uppercase tracking-wider">
-                    Ticket
-                  </th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">
-                    Event
-                  </th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">
-                    Category
-                  </th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">
-                    Price
-                  </th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">
-                    Quota
-                  </th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">
-                    Priority
-                  </th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">
-                    Sales Period
-                  </th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider w-[120px]">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {tickets.map((ticket) => {
-                  const soldPercentage =
-                    ticket.quota > 0 ? (ticket.sold / ticket.quota) * 100 : 0;
-                  return (
-                    <tr
-                      key={ticket.id}
-                      className="hover:bg-zinc-50 transition-colors"
-                    >
-                      <td className="px-4 py-4">
-                        <p className="font-medium text-zinc-900">
-                          {ticket.name}
-                        </p>
-                      </td>
-                      <td className="px-4 py-4 text-center">
-                        <span className="inline-flex px-2.5 py-1 rounded-full text-xs font-medium bg-zinc-100 text-zinc-600">
-                          {ticket.eventCode ||
-                            events.find((e) => e.id === ticket.eventId)?.code ||
-                            "Unknown"}
-                        </span>
-                      </td>
-                      <td className="px-4 py-4 text-center">
-                        <div className="flex flex-col items-center gap-1">
-                          <span
-                            className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${categoryColors[ticket.category]?.bg || "bg-zinc-100"} ${categoryColors[ticket.category]?.text || "text-zinc-800"}`}
-                          >
-                            {ticket.category === "primary"
-                              ? "Primary"
-                              : "Add-on"}
+                <thead>
+                  <tr className="bg-zinc-50 border-b border-zinc-200">
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+                      Ticket
+                    </th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+                      Event
+                    </th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+                      Category
+                    </th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+                      Price
+                    </th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+                      Quota
+                    </th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+                      Priority
+                    </th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+                      Sales Period
+                    </th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider w-[120px]">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {tickets.map((ticket) => {
+                    const soldPercentage =
+                      ticket.quota > 0 ? (ticket.sold / ticket.quota) * 100 : 0;
+                    return (
+                      <tr
+                        key={ticket.id}
+                        className="hover:bg-zinc-50 transition-colors"
+                      >
+                        <td className="px-4 py-4">
+                          <p className="font-medium text-zinc-900">
+                            {ticket.name}
+                          </p>
+                        </td>
+                        <td className="px-4 py-4 text-center">
+                          <span className="inline-flex px-2.5 py-1 rounded-full text-xs font-medium bg-zinc-100 text-zinc-600">
+                            {ticket.eventCode ||
+                              events.find((e) => e.id === ticket.eventId)
+                                ?.code ||
+                              'Unknown'}
                           </span>
-                          {ticket.allowedRoles && ticket.allowedRoles.length > 0 ? (
-                            ticket.allowedRoles.map((role) => (
-                              <span
-                                key={role}
-                                className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${typeColors[role] || "bg-zinc-100 text-zinc-500"}`}
-                              >
-                                {roleLabels[role] || role}
-                              </span>
-                            ))
-                          ) : (
-                            <span className="inline-flex px-2.5 py-1 rounded-full text-xs font-medium bg-zinc-100 text-zinc-500">
-                              General
+                        </td>
+                        <td className="px-4 py-4 text-center">
+                          <div className="flex flex-col items-center gap-1">
+                            <span
+                              className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${categoryColors[ticket.category]?.bg || 'bg-zinc-100'} ${categoryColors[ticket.category]?.text || 'text-zinc-800'}`}
+                            >
+                              {ticket.category === 'primary'
+                                ? 'Primary'
+                                : 'Add-on'}
                             </span>
-                          )}
-                          {ticket.allowedRoles.includes("student") && (
-                            <div className="flex flex-wrap justify-center gap-1">
-                              {ticket.allowedStudentLevels.length > 0 ? (
-                                ticket.allowedStudentLevels.map((level) => (
-                                  <span
-                                    key={level}
-                                    className="inline-flex px-2 py-0.5 rounded-full text-[11px] font-medium bg-cyan-50 text-cyan-700"
-                                  >
-                                    {studentLevelLabels[level] || level}
-                                  </span>
-                                ))
-                              ) : (
-                                <span className="inline-flex px-2 py-0.5 rounded-full text-[11px] font-medium bg-cyan-50 text-cyan-700">
-                                  All student levels
+                            {ticket.allowedRoles &&
+                            ticket.allowedRoles.length > 0 ? (
+                              ticket.allowedRoles.map((role) => (
+                                <span
+                                  key={role}
+                                  className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${typeColors[role] || 'bg-zinc-100 text-zinc-500'}`}
+                                >
+                                  {roleLabels[role] || role}
                                 </span>
-                              )}
-                            </div>
-                          )}
-                          {ticket.sessionIds &&
-                            ticket.sessionIds.length > 0 && (
-                              <span
-                                className={`text-xs mt-1 ${ticket.category === "primary"
-                                  ? "text-emerald-600"
-                                  : "text-purple-600"
-                                  }`}
-                              >
-                                → {ticket.sessionIds.length} sessions linked
+                              ))
+                            ) : (
+                              <span className="inline-flex px-2.5 py-1 rounded-full text-xs font-medium bg-zinc-100 text-zinc-500">
+                                General
                               </span>
                             )}
-                        </div>
-                      </td>
-                      <td className="px-4 py-4 text-center">
-                        <p className="font-semibold text-zinc-900">
-                          {ticket.currency === "USD" ? "$" : "฿"}
-                          {ticket.price.toLocaleString()}
-                        </p>
-                      </td>
-                      <td className="px-4 py-4 text-center">
-                        {ticket.quota === 0 ? (
-                          <div className="w-24 mx-auto text-center">
-                            <span className="text-xs font-medium text-emerald-600">{ticket.sold} sold</span>
-                            <span className="block text-[10px] text-zinc-400">Unlimited</span>
+                            {ticket.allowedRoles.includes('student') && (
+                              <div className="flex flex-wrap justify-center gap-1">
+                                {ticket.allowedStudentLevels.length > 0 ? (
+                                  ticket.allowedStudentLevels.map((level) => (
+                                    <span
+                                      key={level}
+                                      className="inline-flex px-2 py-0.5 rounded-full text-[11px] font-medium bg-cyan-50 text-cyan-700"
+                                    >
+                                      {studentLevelLabels[level] || level}
+                                    </span>
+                                  ))
+                                ) : (
+                                  <span className="inline-flex px-2 py-0.5 rounded-full text-[11px] font-medium bg-cyan-50 text-cyan-700">
+                                    All student levels
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                            {ticket.sessionIds &&
+                              ticket.sessionIds.length > 0 && (
+                                <span
+                                  className={`text-xs mt-1 ${
+                                    ticket.category === 'primary'
+                                      ? 'text-emerald-600'
+                                      : 'text-purple-600'
+                                  }`}
+                                >
+                                  → {ticket.sessionIds.length} sessions linked
+                                </span>
+                              )}
                           </div>
-                        ) : (
-                          <div className="w-24 mx-auto">
-                            <div className="flex justify-between text-xs mb-1">
-                              <span className="text-zinc-500">
-                                {ticket.sold}/{ticket.quota}
+                        </td>
+                        <td className="px-4 py-4 text-center">
+                          <p className="font-semibold text-zinc-900">
+                            {ticket.currency === 'USD' ? '$' : '฿'}
+                            {ticket.price.toLocaleString()}
+                          </p>
+                        </td>
+                        <td className="px-4 py-4 text-center">
+                          {ticket.quota === 0 ? (
+                            <div className="w-24 mx-auto text-center">
+                              <span className="text-xs font-medium text-emerald-600">
+                                {ticket.sold} sold
                               </span>
-                              <span
-                                className={
-                                  soldPercentage >= 90
-                                    ? "text-red-600"
-                                    : soldPercentage >= 70
-                                      ? "text-yellow-600"
-                                      : "text-green-600"
-                                }
-                              >
-                                {Math.round(soldPercentage)}%
+                              <span className="block text-[10px] text-zinc-400">
+                                Unlimited
                               </span>
                             </div>
-                            <div className="w-full h-2 bg-zinc-200 rounded-full overflow-hidden">
-                              <div
-                                className={`h-full rounded-full ${soldPercentage >= 90 ? "bg-red-500" : soldPercentage >= 70 ? "bg-yellow-500" : "bg-green-500"}`}
-                                style={{
-                                  width: `${Math.min(soldPercentage, 100)}%`,
-                                }}
-                              />
+                          ) : (
+                            <div className="w-24 mx-auto">
+                              <div className="flex justify-between text-xs mb-1">
+                                <span className="text-zinc-500">
+                                  {ticket.sold}/{ticket.quota}
+                                </span>
+                                <span
+                                  className={
+                                    soldPercentage >= 90
+                                      ? 'text-red-600'
+                                      : soldPercentage >= 70
+                                        ? 'text-yellow-600'
+                                        : 'text-green-600'
+                                  }
+                                >
+                                  {Math.round(soldPercentage)}%
+                                </span>
+                              </div>
+                              <div className="w-full h-2 bg-zinc-200 rounded-full overflow-hidden">
+                                <div
+                                  className={`h-full rounded-full ${soldPercentage >= 90 ? 'bg-red-500' : soldPercentage >= 70 ? 'bg-yellow-500' : 'bg-green-500'}`}
+                                  style={{
+                                    width: `${Math.min(soldPercentage, 100)}%`,
+                                  }}
+                                />
+                              </div>
                             </div>
-                          </div>
-                        )}
-                      </td>
-                      <td className="px-4 py-4 text-center">
-                        <span
-                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${ticket.priority === "early_bird"
-                            ? "bg-orange-100 text-orange-800"
-                            : ticket.priority === "regular"
-                              ? "bg-zinc-100 text-zinc-800"
-                              : "bg-zinc-100 text-zinc-800"
+                          )}
+                        </td>
+                        <td className="px-4 py-4 text-center">
+                          <span
+                            className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                              ticket.priority === 'early_bird'
+                                ? 'bg-orange-100 text-orange-800'
+                                : ticket.priority === 'regular'
+                                  ? 'bg-zinc-100 text-zinc-800'
+                                  : 'bg-zinc-100 text-zinc-800'
                             }`}
-                        >
-                          {ticket.priority === "early_bird"
-                            ? "Early Bird"
-                            : ticket.priority === "regular"
-                              ? "Regular"
-                              : "Regular"}
-                        </span>
-                      </td>
-                      <td className="px-4 py-4 text-center">
-                        <p className="text-sm text-zinc-500">
-                          {ticket.startDate
-                            ? new Date(ticket.startDate).toLocaleDateString(
-                              "en-US",
-                              { timeZone: "Asia/Bangkok" },
-                            )
-                            : "N/A"}
-                        </p>
-                        <p className="text-xs text-zinc-400">
-                          to{" "}
-                          {ticket.endDate
-                            ? new Date(ticket.endDate).toLocaleDateString(
-                              "en-US",
-                              { timeZone: "Asia/Bangkok" },
-                            )
-                            : "N/A"}
-                        </p>
-                      </td>
-                      <td className="px-4 py-4 text-center">
-                        <div className="flex gap-1 justify-center items-center">
-                          <button
-                            className="p-2 hover:bg-emerald-50 rounded-lg text-zinc-400 hover:text-emerald-600 transition-colors"
-                            title="Duplicate"
-                            onClick={() => handleDuplicate(ticket)}
                           >
-                            <IconCopy size={18} />
-                          </button>
-                          <button
-                            className="p-2 hover:bg-yellow-50 rounded-lg text-zinc-400 hover:text-yellow-600 transition-colors"
-                            title="Edit"
-                            onClick={() => openEditModal(ticket)}
-                          >
-                            <IconPencil size={18} />
-                          </button>
-                          <button
-                            className="p-2 hover:bg-red-50 rounded-lg text-zinc-400 hover:text-red-600 transition-colors"
-                            title="Delete"
-                            onClick={() => {
-                              setSelectedTicket(ticket);
-                              setShowDeleteModal(true);
-                            }}
-                          >
-                            <IconTrash size={18} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
+                            {ticket.priority === 'early_bird'
+                              ? 'Early Bird'
+                              : ticket.priority === 'regular'
+                                ? 'Regular'
+                                : 'Regular'}
+                          </span>
+                        </td>
+                        <td className="px-4 py-4 text-center">
+                          <p className="text-sm text-zinc-500">
+                            {ticket.startDate
+                              ? new Date(ticket.startDate).toLocaleDateString(
+                                  'en-US',
+                                  { timeZone: 'Asia/Bangkok' },
+                                )
+                              : 'N/A'}
+                          </p>
+                          <p className="text-xs text-zinc-400">
+                            to{' '}
+                            {ticket.endDate
+                              ? new Date(ticket.endDate).toLocaleDateString(
+                                  'en-US',
+                                  { timeZone: 'Asia/Bangkok' },
+                                )
+                              : 'N/A'}
+                          </p>
+                        </td>
+                        <td className="px-4 py-4 text-center">
+                          <div className="flex gap-1 justify-center items-center">
+                            <button
+                              className="p-2 hover:bg-emerald-50 rounded-lg text-zinc-400 hover:text-emerald-600 transition-colors"
+                              title="Duplicate"
+                              onClick={() => handleDuplicate(ticket)}
+                            >
+                              <IconCopy size={18} />
+                            </button>
+                            <button
+                              className="p-2 hover:bg-yellow-50 rounded-lg text-zinc-400 hover:text-yellow-600 transition-colors"
+                              title="Edit"
+                              onClick={() => openEditModal(ticket)}
+                            >
+                              <IconPencil size={18} />
+                            </button>
+                            <button
+                              className="p-2 hover:bg-red-50 rounded-lg text-zinc-400 hover:text-red-600 transition-colors"
+                              title="Delete"
+                              onClick={() => {
+                                setSelectedTicket(ticket);
+                                setShowDeleteModal(true);
+                              }}
+                            >
+                              <IconTrash size={18} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
               </table>
             </div>
 
@@ -935,8 +951,8 @@ export default function TicketsPage() {
             <div className="p-6 border-b border-zinc-100">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold flex items-center gap-2 text-zinc-900">
-                  <IconTicket size={20} />{" "}
-                  {showCreateModal ? "Create Ticket" : "Edit Ticket"}
+                  <IconTicket size={20} />{' '}
+                  {showCreateModal ? 'Create Ticket' : 'Edit Ticket'}
                 </h3>
                 <button
                   onClick={() => {
@@ -984,7 +1000,7 @@ export default function TicketsPage() {
                       const newCategory = e.target.value;
                       setFormData((prev) => {
                         const newData = { ...prev, category: newCategory };
-                        if (newCategory === "primary") {
+                        if (newCategory === 'primary') {
                           const mainSessionIds = sessions
                             .filter((s) => s.isMainSession)
                             .map((s) => s.id);
@@ -1003,7 +1019,7 @@ export default function TicketsPage() {
               </div>
 
               {/* Auto-link Notice for Primary Tickets */}
-              {formData.category === "primary" && (
+              {formData.category === 'primary' && (
                 <div className="mb-4 p-3 bg-emerald-50 border border-teal-100 rounded-lg">
                   <div className="flex items-start gap-2">
                     <div className="mt-0.5 text-emerald-600">
@@ -1105,28 +1121,40 @@ export default function TicketsPage() {
                             if (isChecked) {
                               return currentRoles.includes(role.value)
                                 ? prev
-                                : { ...prev, allowedRoles: [...currentRoles, role.value] };
+                                : {
+                                    ...prev,
+                                    allowedRoles: [...currentRoles, role.value],
+                                  };
                             }
 
-                            const nextRoles = currentRoles.filter(r => r !== role.value);
+                            const nextRoles = currentRoles.filter(
+                              (r) => r !== role.value,
+                            );
                             return {
                               ...prev,
                               allowedRoles: nextRoles,
-                              allowedStudentLevels: role.value === "student" ? [] : prev.allowedStudentLevels,
+                              allowedStudentLevels:
+                                role.value === 'student'
+                                  ? []
+                                  : prev.allowedStudentLevels,
                             };
                           });
                         }}
                       />
-                      <span className="text-sm font-medium text-zinc-600">{role.label}</span>
+                      <span className="text-sm font-medium text-zinc-600">
+                        {role.label}
+                      </span>
                     </label>
                   ))}
                 </div>
                 {formData.allowedRoles.length === 0 && (
-                  <p className="text-xs text-red-500 mt-1">Please select at least one target audience.</p>
+                  <p className="text-xs text-red-500 mt-1">
+                    Please select at least one target audience.
+                  </p>
                 )}
               </div>
 
-              {formData.allowedRoles.includes("student") && (
+              {formData.allowedRoles.includes('student') && (
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-zinc-600 mb-2">
                     Student Level
@@ -1140,30 +1168,44 @@ export default function TicketsPage() {
                         <input
                           type="checkbox"
                           className="mt-1"
-                          checked={formData.allowedStudentLevels.includes(level.value)}
+                          checked={formData.allowedStudentLevels.includes(
+                            level.value,
+                          )}
                           onChange={(e) => {
                             const isChecked = e.target.checked;
                             setFormData((prev) => {
-                              const currentLevels = prev.allowedStudentLevels || [];
+                              const currentLevels =
+                                prev.allowedStudentLevels || [];
                               if (isChecked) {
                                 return currentLevels.includes(level.value)
                                   ? prev
-                                  : { ...prev, allowedStudentLevels: [...currentLevels, level.value] };
+                                  : {
+                                      ...prev,
+                                      allowedStudentLevels: [
+                                        ...currentLevels,
+                                        level.value,
+                                      ],
+                                    };
                               }
 
                               return {
                                 ...prev,
-                                allowedStudentLevels: currentLevels.filter(l => l !== level.value),
+                                allowedStudentLevels: currentLevels.filter(
+                                  (l) => l !== level.value,
+                                ),
                               };
                             });
                           }}
                         />
-                        <span className="text-sm font-medium text-zinc-600">{level.label}</span>
+                        <span className="text-sm font-medium text-zinc-600">
+                          {level.label}
+                        </span>
                       </label>
                     ))}
                   </div>
                   <p className="text-xs text-zinc-400 mt-1">
-                    Leave empty to allow both postgraduate and undergraduate students.
+                    Leave empty to allow both postgraduate and undergraduate
+                    students.
                   </p>
                 </div>
               )}
@@ -1287,7 +1329,7 @@ export default function TicketsPage() {
                       setFormData({
                         ...formData,
                         originalPrice:
-                          e.target.value === "" ? "" : Number(e.target.value),
+                          e.target.value === '' ? '' : Number(e.target.value),
                       })
                     }
                     placeholder="Show as strikethrough price"
@@ -1355,13 +1397,13 @@ export default function TicketsPage() {
                     onChange={(e) => setFeatureInput(e.target.value)}
                     placeholder="Add a feature..."
                     onKeyDown={(e) => {
-                      if (e.key === "Enter" && featureInput.trim()) {
+                      if (e.key === 'Enter' && featureInput.trim()) {
                         e.preventDefault();
                         setFormData({
                           ...formData,
                           features: [...formData.features, featureInput.trim()],
                         });
-                        setFeatureInput("");
+                        setFeatureInput('');
                       }
                     }}
                   />
@@ -1374,7 +1416,7 @@ export default function TicketsPage() {
                           ...formData,
                           features: [...formData.features, featureInput.trim()],
                         });
-                        setFeatureInput("");
+                        setFeatureInput('');
                       }
                     }}
                   >
@@ -1423,7 +1465,7 @@ export default function TicketsPage() {
                     onChange={(date: Date | null) =>
                       setFormData({
                         ...formData,
-                        saleStartDate: date ? date.toISOString() : "",
+                        saleStartDate: date ? date.toISOString() : '',
                       })
                     }
                     showTimeSelect
@@ -1446,7 +1488,7 @@ export default function TicketsPage() {
                     onChange={(date: Date | null) =>
                       setFormData({
                         ...formData,
-                        saleEndDate: date ? date.toISOString() : "",
+                        saleEndDate: date ? date.toISOString() : '',
                       })
                     }
                     showTimeSelect
@@ -1477,7 +1519,7 @@ export default function TicketsPage() {
                 {isSubmitting && (
                   <IconLoader2 size={18} className="animate-spin" />
                 )}
-                {showCreateModal ? "Create Ticket" : "Save Changes"}
+                {showCreateModal ? 'Create Ticket' : 'Save Changes'}
               </button>
             </div>
           </div>
@@ -1522,7 +1564,7 @@ export default function TicketsPage() {
                 {isSubmitting ? (
                   <IconLoader2 size={18} className="animate-spin" />
                 ) : (
-                  "Delete Ticket"
+                  'Delete Ticket'
                 )}
               </button>
             </div>

@@ -6,9 +6,9 @@ export interface SelectedRegistration {
 }
 
 export type SelectionAction =
-  | { type: "add"; rows: SelectedRegistration[] }
-  | { type: "remove"; ids: number[] }
-  | { type: "clear" };
+  | { type: 'add'; rows: SelectedRegistration[] }
+  | { type: 'remove'; ids: number[] }
+  | { type: 'clear' };
 
 export const SESSION_GRANT_SELECTION_LIMIT = 500;
 
@@ -16,10 +16,10 @@ export function updateSelection(
   current: ReadonlyMap<number, SelectedRegistration>,
   action: SelectionAction,
 ): Map<number, SelectedRegistration> {
-  if (action.type === "clear") return new Map();
+  if (action.type === 'clear') return new Map();
 
   const next = new Map(current);
-  if (action.type === "remove") {
+  if (action.type === 'remove') {
     for (const id of action.ids) next.delete(id);
     return next;
   }

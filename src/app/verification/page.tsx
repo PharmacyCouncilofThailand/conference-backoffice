@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { AdminLayout } from "@/components/layout";
-import { api } from "@/lib/api";
-import { exportToExcel } from "@/lib/exportExcel";
-import { useAuth } from "@/contexts/AuthContext";
-import { Pagination } from "@/components/common";
-import toast from "react-hot-toast";
+import { useState, useEffect } from 'react';
+import { AdminLayout } from '@/components/layout';
+import { api } from '@/lib/api';
+import { exportToExcel } from '@/lib/exportExcel';
+import { useAuth } from '@/contexts/AuthContext';
+import { Pagination } from '@/components/common';
+import toast from 'react-hot-toast';
 import {
   IconId,
   IconClock,
@@ -17,24 +17,24 @@ import {
   IconDownload,
   IconFileText,
   IconPhoto,
-} from "@tabler/icons-react";
+} from '@tabler/icons-react';
 
 const roleLabels: { [key: string]: { label: string; className: string } } = {
   pharmacist: {
-    label: "Pharmacist",
-    className: "bg-green-100 text-green-800",
+    label: 'Pharmacist',
+    className: 'bg-green-100 text-green-800',
   },
   medical_professional: {
-    label: "Medical Professional",
-    className: "bg-indigo-100 text-indigo-800",
+    label: 'Medical Professional',
+    className: 'bg-indigo-100 text-indigo-800',
   },
   student: {
-    label: "Student",
-    className: "bg-emerald-50 text-teal-900",
+    label: 'Student',
+    className: 'bg-emerald-50 text-teal-900',
   },
   general: {
-    label: "General",
-    className: "bg-zinc-100 text-zinc-800",
+    label: 'General',
+    className: 'bg-zinc-100 text-zinc-800',
   },
 };
 
@@ -66,18 +66,18 @@ interface RejectionHistory {
 
 // Helper to get viewable URL for uploaded files
 function getProxyUrl(url: string | null | undefined): string {
-  if (!url) return "";
+  if (!url) return '';
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
   // Already a proxied /api/files/ URL — use directly
-  if (url.includes("/api/files/")) {
+  if (url.includes('/api/files/')) {
     // Ensure it has the correct base URL (handle relative or mismatched hosts)
-    const fileId = url.split("/api/files/").pop();
+    const fileId = url.split('/api/files/').pop();
     return `${apiUrl}/api/files/${fileId}`;
   }
 
   // Google Drive URL — proxy through upload/proxy
-  if (url.includes("drive.google.com")) {
+  if (url.includes('drive.google.com')) {
     return `${apiUrl}/api/upload/proxy?url=${encodeURIComponent(url)}`;
   }
 
@@ -88,15 +88,15 @@ function getProxyUrl(url: string | null | undefined): string {
 export default function VerificationPage() {
   const { token } = useAuth();
   const [verifications, setVerifications] = useState<Verification[]>([]);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
   const [selectedVerification, setSelectedVerification] =
     useState<Verification | null>(null);
   const [showViewModal, setShowViewModal] = useState(false);
   const [showApproveModal, setShowApproveModal] = useState(false);
   const [showRejectModal, setShowRejectModal] = useState(false);
-  const [rejectionReason, setRejectionReason] = useState("");
-  const [approveComment, setApproveComment] = useState("");
+  const [rejectionReason, setRejectionReason] = useState('');
+  const [approveComment, setApproveComment] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
   const [rejectionHistory, setRejectionHistory] = useState<RejectionHistory[]>(
@@ -116,18 +116,18 @@ export default function VerificationPage() {
     setIsLoading(true);
     try {
       const params = new URLSearchParams();
-      params.append("page", page.toString());
-      params.append("limit", limit.toString());
-      if (searchTerm) params.append("search", searchTerm);
-      if (statusFilter) params.append("status", statusFilter);
+      params.append('page', page.toString());
+      params.append('limit', limit.toString());
+      if (searchTerm) params.append('search', searchTerm);
+      if (statusFilter) params.append('status', statusFilter);
 
       const data = await api.verifications.list(token, params.toString());
       setVerifications(data.verifications as unknown as Verification[]);
       setTotalCount(data.pagination.total);
       setTotalPages(data.pagination.totalPages);
     } catch (error) {
-      console.error("Failed to fetch verifications:", error);
-      toast.error("Failed to load verification requests.");
+      console.error('Failed to fetch verifications:', error);
+      toast.error('Failed to load verification requests.');
     } finally {
       setIsLoading(false);
     }
@@ -141,7 +141,7 @@ export default function VerificationPage() {
       const data = await api.verifications.getRejectionHistory(token, userId);
       setRejectionHistory(data.history || []);
     } catch (error) {
-      console.error("Failed to fetch rejection history:", error);
+      console.error('Failed to fetch rejection history:', error);
       setRejectionHistory([]);
     } finally {
       setIsLoadingHistory(false);
@@ -153,29 +153,36 @@ export default function VerificationPage() {
     setIsExporting(true);
     try {
       const params = new URLSearchParams();
-      params.append("page", "1");
-      params.append("limit", "1000");
-      if (searchTerm) params.append("search", searchTerm);
-      if (statusFilter) params.append("status", statusFilter);
+      params.append('page', '1');
+      params.append('limit', '1000');
+      if (searchTerm) params.append('search', searchTerm);
+      if (statusFilter) params.append('status', statusFilter);
 
       const data = await api.verifications.list(token, params.toString());
       const rows = (data.verifications as any[]).map((v) => ({
-        'Name': v.name,
-        'Email': v.email,
+        Name: v.name,
+        Email: v.email,
         'University/Institution': v.university || '',
         'Student ID': v.studentId || '',
-        'Role': v.role,
+        Role: v.role,
         'Document Type': v.documentType || '',
-        'Status': v.status,
+        Status: v.status,
         'Registration Code': v.registrationCode || '',
-        'Submitted At': v.submittedAt ? new Date(v.submittedAt).toLocaleString('th-TH') : '',
-        'Verified At': v.verifiedAt ? new Date(v.verifiedAt).toLocaleString('th-TH') : '',
+        'Submitted At': v.submittedAt
+          ? new Date(v.submittedAt).toLocaleString('th-TH')
+          : '',
+        'Verified At': v.verifiedAt
+          ? new Date(v.verifiedAt).toLocaleString('th-TH')
+          : '',
         'Verified By': v.verifiedBy || '',
         'Rejection Reason': v.rejectionReason || '',
         'Resubmission Count': v.resubmissionCount ?? 0,
       }));
 
-      exportToExcel(rows, `verifications_${new Date().toISOString().slice(0,10)}`);
+      exportToExcel(
+        rows,
+        `verifications_${new Date().toISOString().slice(0, 10)}`,
+      );
     } catch (error) {
       console.error('Export failed:', error);
       toast.error('Export failed');
@@ -201,18 +208,18 @@ export default function VerificationPage() {
 
   // Stats (fetch all for stats, or use separate endpoint)
   const [allVerifications, setAllVerifications] = useState<Verification[]>([]);
-  
+
   const fetchStats = async () => {
     if (!token) return;
     try {
       // Fetch all for stats only (max limit=100)
       const params = new URLSearchParams();
-      params.append("page", "1");
-      params.append("limit", "100");
+      params.append('page', '1');
+      params.append('limit', '100');
       const data = await api.verifications.list(token, params.toString());
       setAllVerifications(data.verifications as unknown as Verification[]);
     } catch (error) {
-      console.error("Failed to fetch stats:", error);
+      console.error('Failed to fetch stats:', error);
     }
   };
 
@@ -224,9 +231,9 @@ export default function VerificationPage() {
 
   const stats = {
     total: allVerifications.length,
-    pending: allVerifications.filter((v) => v.status === "pending").length,
-    approved: allVerifications.filter((v) => v.status === "approved").length,
-    rejected: allVerifications.filter((v) => v.status === "rejected").length,
+    pending: allVerifications.filter((v) => v.status === 'pending').length,
+    approved: allVerifications.filter((v) => v.status === 'approved').length,
+    rejected: allVerifications.filter((v) => v.status === 'rejected').length,
   };
 
   const handleApprove = async () => {
@@ -237,14 +244,14 @@ export default function VerificationPage() {
         selectedVerification.id,
         approveComment || undefined,
       );
-      toast.success("Student verification approved!");
+      toast.success('Student verification approved!');
       fetchVerifications(); // Refresh list
       setShowApproveModal(false);
       setSelectedVerification(null);
-      setApproveComment("");
+      setApproveComment('');
     } catch (error) {
-      console.error("Approval failed:", error);
-      toast.error("Failed to approve verification.");
+      console.error('Approval failed:', error);
+      toast.error('Failed to approve verification.');
     }
   };
 
@@ -256,14 +263,14 @@ export default function VerificationPage() {
         selectedVerification.id,
         rejectionReason,
       );
-      toast.success("Verification rejected.");
+      toast.success('Verification rejected.');
       fetchVerifications(); // Refresh list
       setShowRejectModal(false);
       setSelectedVerification(null);
-      setRejectionReason("");
+      setRejectionReason('');
     } catch (error) {
-      console.error("Rejection failed:", error);
-      toast.error("Failed to reject verification.");
+      console.error('Rejection failed:', error);
+      toast.error('Failed to reject verification.');
     }
   };
 
@@ -334,9 +341,11 @@ export default function VerificationPage() {
             disabled={isExporting}
             className="btn-secondary flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            {isExporting
-              ? <span className="animate-spin inline-block w-[18px] h-[18px] border-2 border-current border-t-transparent rounded-full" />
-              : <IconDownload size={18} />}
+            {isExporting ? (
+              <span className="animate-spin inline-block w-[18px] h-[18px] border-2 border-current border-t-transparent rounded-full" />
+            ) : (
+              <IconDownload size={18} />
+            )}
             Export Excel
           </button>
         </div>
@@ -464,20 +473,21 @@ export default function VerificationPage() {
                         </td>
                         <td className="px-4 py-4 text-center">
                           <span
-                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${v.status === "approved"
-                              ? "bg-green-50 text-green-700 border-green-200"
-                              : v.status === "pending"
-                                ? "bg-yellow-50 text-yellow-700 border-yellow-200"
-                                : "bg-red-50 text-red-700 border-red-200"
-                              }`}
+                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${
+                              v.status === 'approved'
+                                ? 'bg-green-50 text-green-700 border-green-200'
+                                : v.status === 'pending'
+                                  ? 'bg-yellow-50 text-yellow-700 border-yellow-200'
+                                  : 'bg-red-50 text-red-700 border-red-200'
+                            }`}
                           >
-                            {v.status === "approved" && (
+                            {v.status === 'approved' && (
                               <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
                             )}
-                            {v.status === "pending" && (
+                            {v.status === 'pending' && (
                               <span className="w-1.5 h-1.5 rounded-full bg-yellow-500"></span>
                             )}
-                            {v.status === "rejected" && (
+                            {v.status === 'rejected' && (
                               <span className="w-1.5 h-1.5 rounded-full bg-red-500"></span>
                             )}
                             {v.status.charAt(0).toUpperCase() +
@@ -487,15 +497,15 @@ export default function VerificationPage() {
                         <td className="px-4 py-4 text-center">
                           <span className="text-sm text-zinc-500">
                             {new Date(v.submittedAt).toLocaleDateString(
-                              "th-TH",
+                              'th-TH',
                               {
-                                year: "numeric",
-                                month: "short",
-                                day: "numeric",
-                                hour: "numeric",
-                                minute: "2-digit",
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric',
+                                hour: 'numeric',
+                                minute: '2-digit',
                                 hour12: true,
-                                timeZone: "Asia/Bangkok",
+                                timeZone: 'Asia/Bangkok',
                               },
                             )}
                           </span>
@@ -513,7 +523,7 @@ export default function VerificationPage() {
                             >
                               <IconEye size={18} />
                             </button>
-                            {v.status === "pending" && (
+                            {v.status === 'pending' && (
                               <>
                                 <button
                                   className="p-2 hover:bg-green-50 rounded-lg text-zinc-400 hover:text-green-600 transition-colors"
@@ -583,20 +593,21 @@ export default function VerificationPage() {
                   {selectedVerification.id}
                 </span>
                 <span
-                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${selectedVerification.status === "approved"
-                    ? "bg-green-50 text-green-700 border-green-200"
-                    : selectedVerification.status === "pending"
-                      ? "bg-yellow-50 text-yellow-700 border-yellow-200"
-                      : "bg-red-50 text-red-700 border-red-200"
-                    }`}
+                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${
+                    selectedVerification.status === 'approved'
+                      ? 'bg-green-50 text-green-700 border-green-200'
+                      : selectedVerification.status === 'pending'
+                        ? 'bg-yellow-50 text-yellow-700 border-yellow-200'
+                        : 'bg-red-50 text-red-700 border-red-200'
+                  }`}
                 >
-                  {selectedVerification.status === "approved" && (
+                  {selectedVerification.status === 'approved' && (
                     <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
                   )}
-                  {selectedVerification.status === "pending" && (
+                  {selectedVerification.status === 'pending' && (
                     <span className="w-1.5 h-1.5 rounded-full bg-yellow-500"></span>
                   )}
-                  {selectedVerification.status === "rejected" && (
+                  {selectedVerification.status === 'rejected' && (
                     <span className="w-1.5 h-1.5 rounded-full bg-red-500"></span>
                   )}
                   {selectedVerification.status.charAt(0).toUpperCase() +
@@ -642,8 +653,8 @@ export default function VerificationPage() {
                   <p className="text-sm text-zinc-400">Submitted</p>
                   <p className="text-zinc-600">
                     {new Date(selectedVerification.submittedAt).toLocaleString(
-                      "th-TH",
-                      { timeZone: "Asia/Bangkok" },
+                      'th-TH',
+                      { timeZone: 'Asia/Bangkok' },
                     )}
                   </p>
                 </div>
@@ -687,7 +698,7 @@ export default function VerificationPage() {
                 )}
               </div>
 
-              {selectedVerification.status === "rejected" &&
+              {selectedVerification.status === 'rejected' &&
                 selectedVerification.rejectionReason && (
                   <div className="mt-4 bg-red-50 p-4 rounded-lg">
                     <p className="text-sm font-semibold text-red-800">
@@ -725,15 +736,15 @@ export default function VerificationPage() {
                             </span>
                             <span className="text-xs text-zinc-400">
                               {new Date(history.rejectedAt).toLocaleString(
-                                "th-TH",
+                                'th-TH',
                                 {
-                                  year: "numeric",
-                                  month: "short",
-                                  day: "numeric",
-                                  hour: "numeric",
-                                  minute: "2-digit",
+                                  year: 'numeric',
+                                  month: 'short',
+                                  day: 'numeric',
+                                  hour: 'numeric',
+                                  minute: '2-digit',
                                   hour12: true,
-                                  timeZone: "Asia/Bangkok",
+                                  timeZone: 'Asia/Bangkok',
                                 },
                               )}
                             </span>
@@ -743,7 +754,7 @@ export default function VerificationPage() {
                           </p>
                           {history.rejectedByName && (
                             <p className="text-xs text-zinc-400 mt-1">
-                              Rejected by:{" "}
+                              Rejected by:{' '}
                               <span className="font-medium">
                                 {history.rejectedByName}
                               </span>
@@ -763,7 +774,7 @@ export default function VerificationPage() {
               >
                 Close
               </button>
-              {selectedVerification.status === "pending" && (
+              {selectedVerification.status === 'pending' && (
                 <>
                   <button
                     onClick={() => {

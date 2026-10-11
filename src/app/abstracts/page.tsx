@@ -1,21 +1,21 @@
-"use client";
+'use client';
 
-import { useState, useEffect, useMemo } from "react";
-import { useRouter } from "next/navigation";
-import { AdminLayout } from "@/components/layout";
-import { api } from "@/lib/api";
-import { exportToExcel } from "@/lib/exportExcel";
+import { useState, useEffect, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
+import { AdminLayout } from '@/components/layout';
+import { api } from '@/lib/api';
+import { exportToExcel } from '@/lib/exportExcel';
 import {
   PRIS_2026_EVENT_CODE,
   PRIS_2026_ABSTRACT_ROUND_OPTIONS,
   getPris2026RoundQuery,
   type Pris2026AbstractRoundFilter,
-} from "@/lib/pris2026AbstractRounds";
-import { useAuth } from "@/contexts/AuthContext";
-import { useDebounce } from "@/hooks/useDebounce";
-import { Pagination } from "@/components/common";
-import { RevisionRequestModal } from "@/components/abstracts/RevisionRequestModal";
-import toast from "react-hot-toast";
+} from '@/lib/pris2026AbstractRounds';
+import { useAuth } from '@/contexts/AuthContext';
+import { useDebounce } from '@/hooks/useDebounce';
+import { Pagination } from '@/components/common';
+import { RevisionRequestModal } from '@/components/abstracts/RevisionRequestModal';
+import toast from 'react-hot-toast';
 import {
   IconFileText,
   IconCheck,
@@ -27,47 +27,56 @@ import {
   IconPencil,
   IconMail,
   IconCircleCheck,
-} from "@tabler/icons-react";
+} from '@tabler/icons-react';
 
 const statusColors: { [key: string]: string } = {
-  pending: "badge-warning",
-  accepted: "badge-success",
-  rejected: "badge-error",
-  revision: "badge-info",
-  under_review: "badge-info",
+  pending: 'badge-warning',
+  accepted: 'badge-success',
+  rejected: 'badge-error',
+  revision: 'badge-info',
+  under_review: 'badge-info',
 };
 
 const statusLabels: Record<string, string> = {
-  pending: "Pending",
-  accepted: "Accepted",
-  rejected: "Rejected",
-  revision: "Revision Requested",
+  pending: 'Pending',
+  accepted: 'Accepted',
+  rejected: 'Rejected',
+  revision: 'Revision Requested',
 };
 
 // Derive a richer status label that distinguishes accepted-and-confirmed from
 // accepted-but-still-awaiting-confirmation (the new approval-confirmation flow).
-function deriveStatusBadge(abs: { status: string; confirmedAt?: string | null }) {
-  if (abs.status === "accepted") {
+function deriveStatusBadge(abs: {
+  status: string;
+  confirmedAt?: string | null;
+}) {
+  if (abs.status === 'accepted') {
     if (abs.confirmedAt) {
-      return { label: "Confirmed", className: "bg-emerald-100 text-emerald-800" };
+      return {
+        label: 'Confirmed',
+        className: 'bg-emerald-100 text-emerald-800',
+      };
     }
-    return { label: "Accepted (awaiting confirmation)", className: "bg-blue-100 text-blue-800" };
+    return {
+      label: 'Accepted (awaiting confirmation)',
+      className: 'bg-blue-100 text-blue-800',
+    };
   }
   return null;
 }
 
 // Map backend categories to colors if needed, or use generic
 const topicColors: { [key: string]: string } = {
-  clinical_pharmacy: "bg-emerald-50 text-teal-900",
-  social_administrative: "bg-green-100 text-green-800",
-  community_pharmacy: "bg-purple-100 text-purple-800",
-  pharmacology_toxicology: "bg-red-100 text-red-800",
-  pharmacy_education: "bg-yellow-100 text-yellow-800",
-  digital_pharmacy: "bg-indigo-100 text-indigo-800",
-  Research: "bg-emerald-50 text-teal-900",
-  "Case Report": "bg-purple-100 text-purple-800",
-  Review: "bg-green-100 text-green-800",
-  Other: "bg-zinc-100 text-zinc-800",
+  clinical_pharmacy: 'bg-emerald-50 text-teal-900',
+  social_administrative: 'bg-green-100 text-green-800',
+  community_pharmacy: 'bg-purple-100 text-purple-800',
+  pharmacology_toxicology: 'bg-red-100 text-red-800',
+  pharmacy_education: 'bg-yellow-100 text-yellow-800',
+  digital_pharmacy: 'bg-indigo-100 text-indigo-800',
+  Research: 'bg-emerald-50 text-teal-900',
+  'Case Report': 'bg-purple-100 text-purple-800',
+  Review: 'bg-green-100 text-green-800',
+  Other: 'bg-zinc-100 text-zinc-800',
 };
 
 // NOTE: Abstract categories are fetched dynamically per-event from
@@ -76,14 +85,14 @@ const topicColors: { [key: string]: string } = {
 
 // Presentation types for filter dropdown
 const presentationTypes = [
-  { id: "poster", label: "Poster" },
-  { id: "oral", label: "Oral Presentation" },
+  { id: 'poster', label: 'Poster' },
+  { id: 'oral', label: 'Oral Presentation' },
 ];
 
 const getBackofficeToken = () =>
-  localStorage.getItem("backoffice_token") ||
-  sessionStorage.getItem("backoffice_token") ||
-  "";
+  localStorage.getItem('backoffice_token') ||
+  sessionStorage.getItem('backoffice_token') ||
+  '';
 
 interface AbstractFile {
   id: number;
@@ -129,7 +138,7 @@ interface Abstract {
   };
 }
 
-const getAttachedFiles = (abs: Pick<Abstract, "files" | "fullPaperUrl">) => {
+const getAttachedFiles = (abs: Pick<Abstract, 'files' | 'fullPaperUrl'>) => {
   const files = Array.isArray(abs.files)
     ? abs.files.filter((file) => file.fileUrl)
     : [];
@@ -140,7 +149,7 @@ const getAttachedFiles = (abs: Pick<Abstract, "files" | "fullPaperUrl">) => {
     ? [
         {
           id: 0,
-          fileName: "Full Paper",
+          fileName: 'Full Paper',
           fileUrl: abs.fullPaperUrl,
           sortOrder: 0,
         },
@@ -153,23 +162,28 @@ export default function AbstractsPage() {
   const { user, isAdmin } = useAuth();
   const [abstracts, setAbstracts] = useState<Abstract[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
   const [confirmationStatusFilter, setConfirmationStatusFilter] = useState<
-    "" | "confirmed" | "awaiting"
-  >("");
-  const [categoryFilter, setCategoryFilter] = useState("");
-  const [presentationTypeFilter, setPresentationTypeFilter] = useState("");
-  const [eventFilter, setEventFilter] = useState("");
-  const [roundFilter, setRoundFilter] = useState<Pris2026AbstractRoundFilter>("");
-  const [eventOptions, setEventOptions] = useState<{
-    id: number;
-    code: string;
-    name: string;
-  }[]>([]);
+    '' | 'confirmed' | 'awaiting'
+  >('');
+  const [categoryFilter, setCategoryFilter] = useState('');
+  const [presentationTypeFilter, setPresentationTypeFilter] = useState('');
+  const [eventFilter, setEventFilter] = useState('');
+  const [roundFilter, setRoundFilter] =
+    useState<Pris2026AbstractRoundFilter>('');
+  const [eventOptions, setEventOptions] = useState<
+    {
+      id: number;
+      code: string;
+      name: string;
+    }[]
+  >([]);
   const [eventSelected, setEventSelected] = useState(false);
   // Dynamic abstract categories for the currently selected event
-  const [eventCategoryList, setEventCategoryList] = useState<{ id: number; name: string }[]>([]);
+  const [eventCategoryList, setEventCategoryList] = useState<
+    { id: number; name: string }[]
+  >([]);
   const [isExporting, setIsExporting] = useState(false);
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
@@ -185,15 +199,18 @@ export default function AbstractsPage() {
   useEffect(() => {
     if (isAdmin) {
       const token = getBackofficeToken();
-      api.backofficeEvents.list(token, "limit=100").then((res) => {
-        setEventOptions(
-          res.events.map((e) => ({
-            id: Number(e.id),
-            code: String(e.eventCode || ""),
-            name: String(e.eventName || ""),
-          })),
-        );
-      }).catch(() => {});
+      api.backofficeEvents
+        .list(token, 'limit=100')
+        .then((res) => {
+          setEventOptions(
+            res.events.map((e) => ({
+              id: Number(e.id),
+              code: String(e.eventCode || ''),
+              name: String(e.eventName || ''),
+            })),
+          );
+        })
+        .catch(() => {});
       return;
     }
     if (user && user.assignedEvents && user.assignedEvents.length > 0) {
@@ -218,14 +235,15 @@ export default function AbstractsPage() {
   }, [eventOptions, eventFilter]);
 
   const selectedEvent = useMemo(
-    () => eventOptions.find((event) => String(event.id) === eventFilter) ?? null,
+    () =>
+      eventOptions.find((event) => String(event.id) === eventFilter) ?? null,
     [eventOptions, eventFilter],
   );
   const isPris2026Event = selectedEvent?.code === PRIS_2026_EVENT_CODE;
 
   useEffect(() => {
     if (!isPris2026Event && roundFilter) {
-      setRoundFilter("");
+      setRoundFilter('');
       setPage(1);
     }
   }, [isPris2026Event, roundFilter]);
@@ -247,7 +265,7 @@ export default function AbstractsPage() {
           })),
         );
         // Reset category filter when event changes (avoid stale value)
-        setCategoryFilter("");
+        setCategoryFilter('');
       })
       .catch(() => setEventCategoryList([]));
   }, [eventFilter]);
@@ -256,7 +274,7 @@ export default function AbstractsPage() {
   // - Admin/other roles see all categories defined for the selected event
   // - Reviewer sees only categories they are assigned to (by name)
   const availableCategories = useMemo(() => {
-    if (isAdmin || !user || user.role !== "reviewer") {
+    if (isAdmin || !user || user.role !== 'reviewer') {
       return eventCategoryList;
     }
     const assignedCats = user.assignedCategories || [];
@@ -267,7 +285,7 @@ export default function AbstractsPage() {
   // Filter presentation types based on user role
   // Admin sees all, Reviewer sees only assigned presentation types
   const availablePresentationTypes = useMemo(() => {
-    if (isAdmin || !user || user.role !== "reviewer") {
+    if (isAdmin || !user || user.role !== 'reviewer') {
       // Admin and other roles see all presentation types
       return presentationTypes;
     }
@@ -285,53 +303,63 @@ export default function AbstractsPage() {
     setIsExporting(true);
     try {
       const token = getBackofficeToken();
-      const params: Record<string, string> = { page: "1", limit: "1000" };
+      const params: Record<string, string> = { page: '1', limit: '1000' };
       if (statusFilter) params.status = statusFilter;
       if (confirmationStatusFilter) {
         params.confirmationStatus = confirmationStatusFilter;
       }
       if (categoryFilter) params.categoryId = categoryFilter;
-      if (presentationTypeFilter) params.presentationType = presentationTypeFilter;
+      if (presentationTypeFilter)
+        params.presentationType = presentationTypeFilter;
       if (eventFilter) params.eventId = eventFilter;
       if (searchTerm) params.search = searchTerm;
       if (isPris2026Event && roundFilter) {
         const roundQuery = getPris2026RoundQuery(roundFilter);
-        if (roundQuery.submittedFrom) params.submittedFrom = roundQuery.submittedFrom;
-        if (roundQuery.submittedBefore) params.submittedBefore = roundQuery.submittedBefore;
+        if (roundQuery.submittedFrom)
+          params.submittedFrom = roundQuery.submittedFrom;
+        if (roundQuery.submittedBefore)
+          params.submittedBefore = roundQuery.submittedBefore;
       }
 
-      const res = await api.abstracts.list(token, new URLSearchParams(params).toString());
-      const eventName = eventOptions.find(e => String(e.id) === eventFilter)?.name || 'event';
+      const res = await api.abstracts.list(
+        token,
+        new URLSearchParams(params).toString(),
+      );
+      const eventName =
+        eventOptions.find((e) => String(e.id) === eventFilter)?.name || 'event';
 
       const rows = (res.abstracts as unknown as Abstract[]).map((a) => {
         const attachedFiles = getAttachedFiles(a);
 
         return {
           'Tracking ID': a.trackingId || '',
-          'Title': a.title,
-          'Category': a.category,
+          Title: a.title,
+          Category: a.category,
           'Presentation Type': a.presentationType || '',
-          'Status': a.status,
+          Status: a.status,
           'Author First Name': a.author?.firstName || '',
           'Author Last Name': a.author?.lastName || '',
           'Author Email': a.author?.email || '',
           'Author Phone': a.author?.phone || '',
           'Author Institution': a.author?.institution || '',
           'Author Country': a.author?.country || '',
-          'Keywords': a.keywords || '',
-          'Background': a.background || '',
-          'Methods': a.methods || '',
-          'Results': a.results || '',
-          'Conclusion': a.conclusion || '',
+          Keywords: a.keywords || '',
+          Background: a.background || '',
+          Methods: a.methods || '',
+          Results: a.results || '',
+          Conclusion: a.conclusion || '',
           'Abstract File Count': attachedFiles.length,
           'Abstract Files': attachedFiles
-            .map((file, index) => `${index + 1}. ${file.fileName}: ${file.fileUrl}`)
+            .map(
+              (file, index) =>
+                `${index + 1}. ${file.fileName}: ${file.fileUrl}`,
+            )
             .join('\n'),
           'Submitted At': new Date(a.createdAt).toLocaleString('th-TH'),
         };
       });
 
-      const roundSuffix = roundFilter ? `_${roundFilter}` : "";
+      const roundSuffix = roundFilter ? `_${roundFilter}` : '';
       exportToExcel(
         rows,
         `abstracts_${eventName.replace(/\s+/g, '_')}${roundSuffix}`,
@@ -351,7 +379,7 @@ export default function AbstractsPage() {
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [showRevisionModal, setShowRevisionModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [reviewComment, setReviewComment] = useState("");
+  const [reviewComment, setReviewComment] = useState('');
 
   useEffect(() => {
     if (!eventSelected) return;
@@ -373,19 +401,25 @@ export default function AbstractsPage() {
     setIsLoading(true);
     try {
       const token = getBackofficeToken();
-      const params: Record<string, string> = { page: String(page), limit: String(limit) };
+      const params: Record<string, string> = {
+        page: String(page),
+        limit: String(limit),
+      };
       if (statusFilter) params.status = statusFilter;
       if (confirmationStatusFilter) {
         params.confirmationStatus = confirmationStatusFilter;
       }
       if (categoryFilter) params.categoryId = categoryFilter;
-      if (presentationTypeFilter) params.presentationType = presentationTypeFilter;
+      if (presentationTypeFilter)
+        params.presentationType = presentationTypeFilter;
       if (eventFilter) params.eventId = eventFilter;
       if (searchTerm) params.search = searchTerm;
       if (isPris2026Event && roundFilter) {
         const roundQuery = getPris2026RoundQuery(roundFilter);
-        if (roundQuery.submittedFrom) params.submittedFrom = roundQuery.submittedFrom;
-        if (roundQuery.submittedBefore) params.submittedBefore = roundQuery.submittedBefore;
+        if (roundQuery.submittedFrom)
+          params.submittedFrom = roundQuery.submittedFrom;
+        if (roundQuery.submittedBefore)
+          params.submittedBefore = roundQuery.submittedBefore;
       }
 
       const res = await api.abstracts.list(
@@ -396,7 +430,7 @@ export default function AbstractsPage() {
       setTotalCount(res.pagination.total);
       setTotalPages(res.pagination.totalPages);
     } catch (error) {
-      console.error("Failed to fetch abstracts:", error);
+      console.error('Failed to fetch abstracts:', error);
     } finally {
       setIsLoading(false);
     }
@@ -421,10 +455,10 @@ export default function AbstractsPage() {
       setShowApproveModal(false);
       setShowRejectModal(false);
       setSelectedAbstract(null);
-      setReviewComment("");
+      setReviewComment('');
 
       toast.success(
-        `Abstract ${status === "accepted" ? "approved" : status} successfully!`,
+        `Abstract ${status === 'accepted' ? 'approved' : status} successfully!`,
       );
     } catch (error) {
       console.error(error);
@@ -436,17 +470,24 @@ export default function AbstractsPage() {
 
   const handleResendConfirmation = async (abs: Abstract) => {
     if (isSubmitting) return;
-    if (!confirm(`Resend approval-confirmation email to ${abs.author?.email ?? "the author"}?\nA new secure link will be issued and any previous link will be invalidated.`)) return;
+    if (
+      !confirm(
+        `Resend approval-confirmation email to ${abs.author?.email ?? 'the author'}?\nA new secure link will be issued and any previous link will be invalidated.`,
+      )
+    )
+      return;
     setIsSubmitting(true);
     try {
       const token = getBackofficeToken();
       const res = await api.abstracts.resendConfirmation(token, abs.id);
-      const deadline = res.deadline ? new Date(res.deadline).toLocaleDateString("th-TH") : `${res.deadlineDays} days`;
+      const deadline = res.deadline
+        ? new Date(res.deadline).toLocaleDateString('th-TH')
+        : `${res.deadlineDays} days`;
       toast.success(`Confirmation email sent. Deadline: ${deadline}`);
       await fetchAbstracts();
     } catch (error) {
       console.error(error);
-      toast.error("Failed to resend confirmation email");
+      toast.error('Failed to resend confirmation email');
     } finally {
       setIsSubmitting(false);
     }
@@ -454,26 +495,35 @@ export default function AbstractsPage() {
 
   const handleManualConfirm = async (abs: Abstract) => {
     if (isSubmitting) return;
-    if (!confirm(`Manually mark this abstract as confirmed (admin override)?\n\n"${abs.title.substring(0, 80)}"`)) return;
+    if (
+      !confirm(
+        `Manually mark this abstract as confirmed (admin override)?\n\n"${abs.title.substring(0, 80)}"`,
+      )
+    )
+      return;
     setIsSubmitting(true);
     try {
       const token = getBackofficeToken();
       const res = await api.abstracts.manualConfirm(token, abs.id);
       if (res.alreadyConfirmed) {
-        toast.success("Already confirmed.");
+        toast.success('Already confirmed.');
       } else {
-        toast.success("Marked as confirmed.");
+        toast.success('Marked as confirmed.');
       }
       await fetchAbstracts();
     } catch (error) {
       console.error(error);
-      toast.error("Failed to mark as confirmed");
+      toast.error('Failed to mark as confirmed');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleRequestRevision = async (payload: { topic: string; comment: string; file: File | null }) => {
+  const handleRequestRevision = async (payload: {
+    topic: string;
+    comment: string;
+    file: File | null;
+  }) => {
     if (!selectedAbstract) return;
     setIsSubmitting(true);
     try {
@@ -484,10 +534,12 @@ export default function AbstractsPage() {
 
       setShowRevisionModal(false);
       setSelectedAbstract(null);
-      toast.success("Revise request sent successfully!");
+      toast.success('Revise request sent successfully!');
     } catch (error) {
       console.error(error);
-      toast.error(error instanceof Error ? error.message : "Failed to request revise");
+      toast.error(
+        error instanceof Error ? error.message : 'Failed to request revise',
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -504,7 +556,7 @@ export default function AbstractsPage() {
             </div>
             <div>
               <p className="text-2xl font-bold text-zinc-800">
-                {isLoading ? "-" : totalCount}
+                {isLoading ? '-' : totalCount}
               </p>
               <p className="text-sm text-zinc-400">Total Submissions</p>
             </div>
@@ -540,7 +592,11 @@ export default function AbstractsPage() {
               disabled={!eventSelected || isExporting}
               className="btn-secondary flex items-center justify-center gap-2 whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              {isExporting ? <IconLoader2 size={18} className="animate-spin" /> : <IconDownload size={18} />}
+              {isExporting ? (
+                <IconLoader2 size={18} className="animate-spin" />
+              ) : (
+                <IconDownload size={18} />
+              )}
               Export Excel
             </button>
           </div>
@@ -550,12 +606,18 @@ export default function AbstractsPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
           <select
             value={eventFilter}
-            onChange={(e) => { setEventFilter(e.target.value); setEventSelected(!!e.target.value); setPage(1); }}
+            onChange={(e) => {
+              setEventFilter(e.target.value);
+              setEventSelected(!!e.target.value);
+              setPage(1);
+            }}
             className="input-field w-full"
           >
             <option value="">-- เลือก Event --</option>
             {eventOptions.map((e) => (
-              <option key={e.id} value={e.id}>{e.name}</option>
+              <option key={e.id} value={e.id}>
+                {e.name}
+              </option>
             ))}
           </select>
 
@@ -584,7 +646,11 @@ export default function AbstractsPage() {
               setPage(1);
             }}
             className="input-field w-full"
-            disabled={!eventFilter || availableCategories.length === 0 || availableCategories.length === 1}
+            disabled={
+              !eventFilter ||
+              availableCategories.length === 0 ||
+              availableCategories.length === 1
+            }
           >
             {!eventFilter ? (
               <option value="">Select an event first</option>
@@ -595,9 +661,10 @@ export default function AbstractsPage() {
             ) : (
               <>
                 <option value="">
-                  {isAdmin || availableCategories.length === eventCategoryList.length
-                    ? "All Categories"
-                    : `All (${availableCategories.map((c) => c.name).join(", ")})`}
+                  {isAdmin ||
+                  availableCategories.length === eventCategoryList.length
+                    ? 'All Categories'
+                    : `All (${availableCategories.map((c) => c.name).join(', ')})`}
                 </option>
                 {availableCategories.map((cat) => (
                   <option key={cat.id} value={String(cat.id)}>
@@ -638,8 +705,8 @@ export default function AbstractsPage() {
             onChange={(e) => {
               const nextStatus = e.target.value;
               setStatusFilter(nextStatus);
-              if (nextStatus !== "accepted") {
-                setConfirmationStatusFilter("");
+              if (nextStatus !== 'accepted') {
+                setConfirmationStatusFilter('');
               }
               setPage(1);
             }}
@@ -657,12 +724,12 @@ export default function AbstractsPage() {
             value={confirmationStatusFilter}
             onChange={(e) => {
               setConfirmationStatusFilter(
-                e.target.value as "" | "confirmed" | "awaiting",
+                e.target.value as '' | 'confirmed' | 'awaiting',
               );
               setPage(1);
             }}
             className="input-field w-full"
-            disabled={statusFilter !== "accepted"}
+            disabled={statusFilter !== 'accepted'}
           >
             <option value="">All Confirmation Statuses</option>
             <option value="confirmed">Confirmed</option>
@@ -688,194 +755,197 @@ export default function AbstractsPage() {
           <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm">
             <div className="overflow-x-auto">
               <table className="w-full table-sticky-actions">
-              <thead>
-                <tr className="bg-zinc-50 border-b border-zinc-200">
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">
-                    Tracking ID
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-500 uppercase tracking-wider min-w-[300px]">
-                    Title & Author
-                  </th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">
-                    Presentation
-                  </th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">
-                    Category
-                  </th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">
-                    Files
-                  </th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">
-                    Submitted
-                  </th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider w-[120px]">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {abstracts.map((abs) => (
-                  <tr
-                    key={abs.id}
-                    className="hover:bg-zinc-50 transition-colors"
-                  >
-                    <td className="px-4 py-4 text-center">
-                      <span className="font-mono text-sm text-zinc-400 bg-zinc-100 px-2 py-1 rounded">
-                        {abs.trackingId || abs.id}
-                      </span>
-                    </td>
-                    <td className="px-4 py-4">
-                      <h5 className="font-medium text-zinc-900 mb-1 line-clamp-2">
-                        {abs.title}
-                      </h5>
-                      <p className="text-sm text-zinc-400">
-                        {abs.author?.firstName} {abs.author?.lastName}
-                      </p>
-                      {abs.author?.institution && (
-                        <p className="text-xs text-zinc-400">
-                          {abs.author.institution}
+                <thead>
+                  <tr className="bg-zinc-50 border-b border-zinc-200">
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+                      Tracking ID
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-500 uppercase tracking-wider min-w-[300px]">
+                      Title & Author
+                    </th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+                      Presentation
+                    </th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+                      Category
+                    </th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+                      Files
+                    </th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+                      Submitted
+                    </th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider w-[120px]">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {abstracts.map((abs) => (
+                    <tr
+                      key={abs.id}
+                      className="hover:bg-zinc-50 transition-colors"
+                    >
+                      <td className="px-4 py-4 text-center">
+                        <span className="font-mono text-sm text-zinc-400 bg-zinc-100 px-2 py-1 rounded">
+                          {abs.trackingId || abs.id}
+                        </span>
+                      </td>
+                      <td className="px-4 py-4">
+                        <h5 className="font-medium text-zinc-900 mb-1 line-clamp-2">
+                          {abs.title}
+                        </h5>
+                        <p className="text-sm text-zinc-400">
+                          {abs.author?.firstName} {abs.author?.lastName}
                         </p>
-                      )}
-                    </td>
-                    <td className="px-4 py-4 text-center">
-                      <span
-                        className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${abs.presentationType === "oral" ? "bg-orange-100 text-orange-800" : "bg-cyan-100 text-cyan-800"}`}
-                      >
-                        {abs.presentationType === "oral" ? "Oral" : "Poster"}
-                      </span>
-                    </td>
-                    <td className="px-4 py-4 text-center">
-                      <span
-                        className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${topicColors[abs.category] || "bg-zinc-100 text-zinc-600"}`}
-                      >
-                        {abs.category.replace(/_/g, " ")}
-                      </span>
-                    </td>
-                    <td className="px-4 py-4 text-center">
-                      {(() => {
-                        const derived = deriveStatusBadge(abs);
-                        if (derived) {
+                        {abs.author?.institution && (
+                          <p className="text-xs text-zinc-400">
+                            {abs.author.institution}
+                          </p>
+                        )}
+                      </td>
+                      <td className="px-4 py-4 text-center">
+                        <span
+                          className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${abs.presentationType === 'oral' ? 'bg-orange-100 text-orange-800' : 'bg-cyan-100 text-cyan-800'}`}
+                        >
+                          {abs.presentationType === 'oral' ? 'Oral' : 'Poster'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-4 text-center">
+                        <span
+                          className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${topicColors[abs.category] || 'bg-zinc-100 text-zinc-600'}`}
+                        >
+                          {abs.category.replace(/_/g, ' ')}
+                        </span>
+                      </td>
+                      <td className="px-4 py-4 text-center">
+                        {(() => {
+                          const derived = deriveStatusBadge(abs);
+                          if (derived) {
+                            return (
+                              <span
+                                className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${derived.className}`}
+                                title={
+                                  abs.confirmedAt
+                                    ? `Confirmed at ${new Date(abs.confirmedAt).toLocaleString('th-TH')}`
+                                    : abs.approvedAt
+                                      ? `Approved at ${new Date(abs.approvedAt).toLocaleString('th-TH')}`
+                                      : undefined
+                                }
+                              >
+                                {derived.label}
+                              </span>
+                            );
+                          }
                           return (
                             <span
-                              className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${derived.className}`}
-                              title={
-                                abs.confirmedAt
-                                  ? `Confirmed at ${new Date(abs.confirmedAt).toLocaleString("th-TH")}`
-                                  : abs.approvedAt
-                                    ? `Approved at ${new Date(abs.approvedAt).toLocaleString("th-TH")}`
-                                    : undefined
-                              }
+                              className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${statusColors[abs.status] || 'bg-zinc-100 text-zinc-600'}`}
                             >
-                              {derived.label}
+                              {statusLabels[abs.status] ||
+                                abs.status.charAt(0).toUpperCase() +
+                                  abs.status.slice(1)}
                             </span>
                           );
-                        }
-                        return (
-                          <span
-                            className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${statusColors[abs.status] || "bg-zinc-100 text-zinc-600"}`}
+                        })()}
+                      </td>
+                      <td className="px-4 py-4 text-center">
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-100 text-xs font-medium text-slate-700">
+                          <IconFileText size={14} />
+                          {getAttachedFiles(abs).length}
+                        </span>
+                      </td>
+                      <td className="px-4 py-4 text-center">
+                        <span className="text-sm text-zinc-500">
+                          {new Date(abs.createdAt).toLocaleDateString('th-TH', {
+                            day: '2-digit',
+                            month: 'short',
+                            year: 'numeric',
+                          })}
+                        </span>
+                      </td>
+                      <td className="px-4 py-4 text-center">
+                        <div className="flex gap-1 justify-center items-center">
+                          <button
+                            className="p-2 hover:bg-emerald-50 rounded-lg text-zinc-400 hover:text-emerald-600 transition-colors"
+                            title="View Details"
+                            onClick={() => router.push(`/abstracts/${abs.id}`)}
                           >
-                            {statusLabels[abs.status] ||
-                              abs.status.charAt(0).toUpperCase() +
-                                abs.status.slice(1)}
-                          </span>
-                        );
-                      })()}
-                    </td>
-                    <td className="px-4 py-4 text-center">
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-100 text-xs font-medium text-slate-700">
-                        <IconFileText size={14} />
-                        {getAttachedFiles(abs).length}
-                      </span>
-                    </td>
-                    <td className="px-4 py-4 text-center">
-                      <span className="text-sm text-zinc-500">
-                        {new Date(abs.createdAt).toLocaleDateString("th-TH", {
-                          day: "2-digit",
-                          month: "short",
-                          year: "numeric",
-                        })}
-                      </span>
-                    </td>
-                    <td className="px-4 py-4 text-center">
-                      <div className="flex gap-1 justify-center items-center">
-                        <button
-                          className="p-2 hover:bg-emerald-50 rounded-lg text-zinc-400 hover:text-emerald-600 transition-colors"
-                          title="View Details"
-                          onClick={() => router.push(`/abstracts/${abs.id}`)}
-                        >
-                          <IconEye size={18} />
-                        </button>
-                        {(
-                          <>
-                            <button
-                              className={`p-2 rounded-lg transition-colors ${abs.status === "pending" ? "hover:bg-amber-50 text-zinc-400 hover:text-amber-600" : "text-gray-200 cursor-not-allowed"}`}
-                              title="Request Revise"
-                              onClick={() => {
-                                if (abs.status === "pending") {
-                                  setSelectedAbstract(abs);
-                                  setShowRevisionModal(true);
-                                }
-                              }}
-                              disabled={abs.status !== "pending"}
-                            >
-                              <IconPencil size={18} />
-                            </button>
-                            <button
-                              className={`p-2 rounded-lg transition-colors ${abs.status === "pending" ? "hover:bg-green-50 text-zinc-400 hover:text-green-600" : "text-gray-200 cursor-not-allowed"}`}
-                              title="Approve"
-                              onClick={() => {
-                                if (abs.status === "pending") {
-                                  setSelectedAbstract(abs);
-                                  setShowApproveModal(true);
-                                }
-                              }}
-                              disabled={abs.status !== "pending"}
-                            >
-                              <IconCheck size={18} />
-                            </button>
-                            <button
-                              className={`p-2 rounded-lg transition-colors ${abs.status === "pending" ? "hover:bg-red-50 text-zinc-400 hover:text-red-600" : "text-gray-200 cursor-not-allowed"}`}
-                              title="Reject"
-                              onClick={() => {
-                                if (abs.status === "pending") {
-                                  setSelectedAbstract(abs);
-                                  setShowRejectModal(true);
-                                }
-                              }}
-                              disabled={abs.status !== "pending"}
-                            >
-                              <IconX size={18} />
-                            </button>
-                            {abs.status === "accepted" && !abs.confirmedAt && (
-                              <>
-                                <button
-                                  className="p-2 rounded-lg transition-colors hover:bg-blue-50 text-zinc-400 hover:text-blue-600"
-                                  title="Resend confirmation email"
-                                  onClick={() => handleResendConfirmation(abs)}
-                                  disabled={isSubmitting}
-                                >
-                                  <IconMail size={18} />
-                                </button>
-                                <button
-                                  className="p-2 rounded-lg transition-colors hover:bg-emerald-50 text-zinc-400 hover:text-emerald-600"
-                                  title="Manually confirm (admin override)"
-                                  onClick={() => handleManualConfirm(abs)}
-                                  disabled={isSubmitting}
-                                >
-                                  <IconCircleCheck size={18} />
-                                </button>
-                              </>
-                            )}
-                          </>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
+                            <IconEye size={18} />
+                          </button>
+                          {
+                            <>
+                              <button
+                                className={`p-2 rounded-lg transition-colors ${abs.status === 'pending' ? 'hover:bg-amber-50 text-zinc-400 hover:text-amber-600' : 'text-gray-200 cursor-not-allowed'}`}
+                                title="Request Revise"
+                                onClick={() => {
+                                  if (abs.status === 'pending') {
+                                    setSelectedAbstract(abs);
+                                    setShowRevisionModal(true);
+                                  }
+                                }}
+                                disabled={abs.status !== 'pending'}
+                              >
+                                <IconPencil size={18} />
+                              </button>
+                              <button
+                                className={`p-2 rounded-lg transition-colors ${abs.status === 'pending' ? 'hover:bg-green-50 text-zinc-400 hover:text-green-600' : 'text-gray-200 cursor-not-allowed'}`}
+                                title="Approve"
+                                onClick={() => {
+                                  if (abs.status === 'pending') {
+                                    setSelectedAbstract(abs);
+                                    setShowApproveModal(true);
+                                  }
+                                }}
+                                disabled={abs.status !== 'pending'}
+                              >
+                                <IconCheck size={18} />
+                              </button>
+                              <button
+                                className={`p-2 rounded-lg transition-colors ${abs.status === 'pending' ? 'hover:bg-red-50 text-zinc-400 hover:text-red-600' : 'text-gray-200 cursor-not-allowed'}`}
+                                title="Reject"
+                                onClick={() => {
+                                  if (abs.status === 'pending') {
+                                    setSelectedAbstract(abs);
+                                    setShowRejectModal(true);
+                                  }
+                                }}
+                                disabled={abs.status !== 'pending'}
+                              >
+                                <IconX size={18} />
+                              </button>
+                              {abs.status === 'accepted' &&
+                                !abs.confirmedAt && (
+                                  <>
+                                    <button
+                                      className="p-2 rounded-lg transition-colors hover:bg-blue-50 text-zinc-400 hover:text-blue-600"
+                                      title="Resend confirmation email"
+                                      onClick={() =>
+                                        handleResendConfirmation(abs)
+                                      }
+                                      disabled={isSubmitting}
+                                    >
+                                      <IconMail size={18} />
+                                    </button>
+                                    <button
+                                      className="p-2 rounded-lg transition-colors hover:bg-emerald-50 text-zinc-400 hover:text-emerald-600"
+                                      title="Manually confirm (admin override)"
+                                      onClick={() => handleManualConfirm(abs)}
+                                      disabled={isSubmitting}
+                                    >
+                                      <IconCircleCheck size={18} />
+                                    </button>
+                                  </>
+                                )}
+                            </>
+                          }
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
               </table>
             </div>
 
@@ -929,7 +999,7 @@ export default function AbstractsPage() {
                 Cancel
               </button>
               <button
-                onClick={() => handleUpdateStatus("accepted", reviewComment)}
+                onClick={() => handleUpdateStatus('accepted', reviewComment)}
                 className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center gap-2"
                 disabled={isSubmitting}
               >
@@ -979,7 +1049,7 @@ export default function AbstractsPage() {
                 Cancel
               </button>
               <button
-                onClick={() => handleUpdateStatus("rejected", reviewComment)}
+                onClick={() => handleUpdateStatus('rejected', reviewComment)}
                 className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 flex items-center gap-2"
                 disabled={isSubmitting}
               >

@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useEffect, useMemo, useState } from "react";
-import { AdminLayout } from "@/components/layout";
+import { useEffect, useMemo, useState } from 'react';
+import { AdminLayout } from '@/components/layout';
 import {
   IconAlertTriangle,
   IconCheck,
@@ -13,8 +13,8 @@ import {
   IconSearch,
   IconSend,
   IconX,
-} from "@tabler/icons-react";
-import toast from "react-hot-toast";
+} from '@tabler/icons-react';
+import toast from 'react-hot-toast';
 
 interface EventOption {
   id: number;
@@ -26,7 +26,7 @@ interface EventOption {
 interface TemplateInfo {
   id: string;
   label: string;
-  recipientType: "user" | "order" | "abstract" | "registration";
+  recipientType: 'user' | 'order' | 'abstract' | 'registration';
   requiresComment: boolean;
   description: string;
 }
@@ -44,7 +44,7 @@ interface ManualEmailResult {
   email: string;
   name: string;
   type: string;
-  status: "pending" | "sent" | "failed" | "skipped";
+  status: 'pending' | 'sent' | 'failed' | 'skipped';
   reason?: string;
 }
 
@@ -60,44 +60,49 @@ interface ManualEmailResponse {
   error?: string;
 }
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || '';
 
 const TEMPLATE_GROUPS = [
-  { category: "Account", templates: ["signup-notification", "pending-approval"] },
-  { category: "Payment", templates: ["payment-receipt"] },
   {
-    category: "Abstract",
+    category: 'Account',
+    templates: ['signup-notification', 'pending-approval'],
+  },
+  { category: 'Payment', templates: ['payment-receipt'] },
+  {
+    category: 'Abstract',
     templates: [
-      "abstract-submission",
-      "abstract-accepted-poster",
-      "abstract-accepted-oral",
-      "abstract-rejected",
+      'abstract-submission',
+      'abstract-accepted-poster',
+      'abstract-accepted-oral',
+      'abstract-rejected',
     ],
   },
   {
-    category: "Registration",
+    category: 'Registration',
     templates: [
-      "pris-early-bird-reminder",
-      "manual-registration",
-      "event-reminder",
+      'pris-early-bird-reminder',
+      'manual-registration',
+      'event-reminder',
     ],
   },
 ];
 
 function getBackofficeToken(): string {
-  if (typeof window === "undefined") return "";
+  if (typeof window === 'undefined') return '';
   return (
-    localStorage.getItem("backoffice_token") ||
-    sessionStorage.getItem("backoffice_token") ||
-    ""
+    localStorage.getItem('backoffice_token') ||
+    sessionStorage.getItem('backoffice_token') ||
+    ''
   );
 }
 
-function statusTone(status: ManualEmailResult["status"]) {
-  if (status === "sent") return "bg-emerald-50 text-emerald-700 border-emerald-200";
-  if (status === "failed") return "bg-red-50 text-red-700 border-red-200";
-  if (status === "skipped") return "bg-amber-50 text-amber-700 border-amber-200";
-  return "bg-sky-50 text-sky-700 border-sky-200";
+function statusTone(status: ManualEmailResult['status']) {
+  if (status === 'sent')
+    return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+  if (status === 'failed') return 'bg-red-50 text-red-700 border-red-200';
+  if (status === 'skipped')
+    return 'bg-amber-50 text-amber-700 border-amber-200';
+  return 'bg-sky-50 text-sky-700 border-sky-200';
 }
 
 function PreviewModal({
@@ -114,8 +119,12 @@ function PreviewModal({
   onClose: () => void;
 }) {
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [data, setData] = useState<{ to: string; subject: string; html: string } | null>(null);
+  const [error, setError] = useState('');
+  const [data, setData] = useState<{
+    to: string;
+    subject: string;
+    html: string;
+  } | null>(null);
 
   useEffect(() => {
     const token = getBackofficeToken();
@@ -124,7 +133,7 @@ function PreviewModal({
       template: templateId,
       id: String(recipient.id),
     });
-    if (comment) params.set("comment", comment);
+    if (comment) params.set('comment', comment);
 
     fetch(`${API_BASE}/api/backoffice/email-manual/render?${params}`, {
       headers: { Authorization: `Bearer ${token}` },
@@ -132,11 +141,13 @@ function PreviewModal({
       .then(async (res) => {
         const json = await res.json();
         if (!res.ok || !json.success) {
-          throw new Error(json.error || "Preview failed");
+          throw new Error(json.error || 'Preview failed');
         }
         setData(json);
       })
-      .catch((err) => setError(err instanceof Error ? err.message : "Preview failed"))
+      .catch((err) =>
+        setError(err instanceof Error ? err.message : 'Preview failed'),
+      )
       .finally(() => setLoading(false));
   }, [eventId, templateId, recipient.id, comment]);
 
@@ -197,13 +208,13 @@ function PreviewModal({
 
 export default function EmailManualPage() {
   const [events, setEvents] = useState<EventOption[]>([]);
-  const [eventId, setEventId] = useState<number | "">("");
+  const [eventId, setEventId] = useState<number | ''>('');
   const [templates, setTemplates] = useState<TemplateInfo[]>([]);
-  const [selectedTemplateId, setSelectedTemplateId] = useState("");
+  const [selectedTemplateId, setSelectedTemplateId] = useState('');
   const [recipients, setRecipients] = useState<RecipientRow[]>([]);
   const [selected, setSelected] = useState<Set<number>>(new Set());
-  const [search, setSearch] = useState("");
-  const [comment, setComment] = useState("");
+  const [search, setSearch] = useState('');
+  const [comment, setComment] = useState('');
   const [loadingEvents, setLoadingEvents] = useState(true);
   const [loadingTemplates, setLoadingTemplates] = useState(true);
   const [loadingRecipients, setLoadingRecipients] = useState(false);
@@ -212,7 +223,8 @@ export default function EmailManualPage() {
   const [results, setResults] = useState<ManualEmailResult[] | null>(null);
 
   const selectedTemplate = useMemo(
-    () => templates.find((template) => template.id === selectedTemplateId) || null,
+    () =>
+      templates.find((template) => template.id === selectedTemplateId) || null,
     [templates, selectedTemplateId],
   );
 
@@ -222,7 +234,8 @@ export default function EmailManualPage() {
   );
 
   const allVisibleSelected =
-    recipients.length > 0 && recipients.every((recipient) => selected.has(recipient.id));
+    recipients.length > 0 &&
+    recipients.every((recipient) => selected.has(recipient.id));
 
   useEffect(() => {
     const token = getBackofficeToken();
@@ -232,17 +245,23 @@ export default function EmailManualPage() {
     })
       .then(async (res) => {
         const json = await res.json();
-        if (!res.ok) throw new Error(json.error || "Failed to load events");
-        const rows = (json.events || []).map((event: Record<string, unknown>) => ({
-          id: Number(event.id),
-          eventCode: String(event.eventCode || ""),
-          eventName: String(event.eventName || ""),
-          status: event.status ? String(event.status) : undefined,
-        }));
+        if (!res.ok) throw new Error(json.error || 'Failed to load events');
+        const rows = (json.events || []).map(
+          (event: Record<string, unknown>) => ({
+            id: Number(event.id),
+            eventCode: String(event.eventCode || ''),
+            eventName: String(event.eventName || ''),
+            status: event.status ? String(event.status) : undefined,
+          }),
+        );
         setEvents(rows);
         if (rows.length === 1) setEventId(rows[0].id);
       })
-      .catch((err) => toast.error(err instanceof Error ? err.message : "Failed to load events"))
+      .catch((err) =>
+        toast.error(
+          err instanceof Error ? err.message : 'Failed to load events',
+        ),
+      )
       .finally(() => setLoadingEvents(false));
   }, []);
 
@@ -254,10 +273,15 @@ export default function EmailManualPage() {
     })
       .then(async (res) => {
         const json = await res.json();
-        if (!res.ok || !json.success) throw new Error(json.error || "Failed to load templates");
+        if (!res.ok || !json.success)
+          throw new Error(json.error || 'Failed to load templates');
         setTemplates(json.templates || []);
       })
-      .catch((err) => toast.error(err instanceof Error ? err.message : "Failed to load templates"))
+      .catch((err) =>
+        toast.error(
+          err instanceof Error ? err.message : 'Failed to load templates',
+        ),
+      )
       .finally(() => setLoadingTemplates(false));
   }, []);
 
@@ -275,7 +299,7 @@ export default function EmailManualPage() {
         eventId: String(eventId),
         template: selectedTemplateId,
       });
-      if (search.trim()) params.set("q", search.trim());
+      if (search.trim()) params.set('q', search.trim());
 
       setLoadingRecipients(true);
       fetch(`${API_BASE}/api/backoffice/email-manual/recipients?${params}`, {
@@ -284,14 +308,17 @@ export default function EmailManualPage() {
       })
         .then(async (res) => {
           const json = await res.json();
-          if (!res.ok || !json.success) throw new Error(json.error || "Failed to load recipients");
+          if (!res.ok || !json.success)
+            throw new Error(json.error || 'Failed to load recipients');
           setRecipients(json.recipients || []);
           setSelected(new Set());
           setResults(null);
         })
         .catch((err) => {
-          if (err instanceof DOMException && err.name === "AbortError") return;
-          toast.error(err instanceof Error ? err.message : "Failed to load recipients");
+          if (err instanceof DOMException && err.name === 'AbortError') return;
+          toast.error(
+            err instanceof Error ? err.message : 'Failed to load recipients',
+          );
         })
         .finally(() => setLoadingRecipients(false));
     }, 250);
@@ -325,19 +352,26 @@ export default function EmailManualPage() {
 
   async function submitManualEmail(dryRun: boolean) {
     if (!eventId || !selectedTemplate || selectedCount === 0) return;
-    if (!dryRun && !confirm(`Send "${selectedTemplate.label}" to ${selectedCount} recipients?`)) {
+    if (
+      !dryRun &&
+      !confirm(
+        `Send "${selectedTemplate.label}" to ${selectedCount} recipients?`,
+      )
+    ) {
       return;
     }
 
     const token = getBackofficeToken();
-    const recipientIds = recipients.filter((recipient) => selected.has(recipient.id)).map((r) => r.id);
+    const recipientIds = recipients
+      .filter((recipient) => selected.has(recipient.id))
+      .map((r) => r.id);
     setSending(true);
 
     try {
       const res = await fetch(`${API_BASE}/api/backoffice/email-manual`, {
-        method: "POST",
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
@@ -349,16 +383,21 @@ export default function EmailManualPage() {
         }),
       });
       const json: ManualEmailResponse = await res.json();
-      if (!res.ok || !json.success) throw new Error(json.error || "Manual email request failed");
+      if (!res.ok || !json.success)
+        throw new Error(json.error || 'Manual email request failed');
 
       setResults(json.results || []);
       if (dryRun) {
-        toast.success(`Validated ${json.summary.pending + json.summary.skipped} recipients`);
+        toast.success(
+          `Validated ${json.summary.pending + json.summary.skipped} recipients`,
+        );
       } else {
         toast.success(`Sent ${json.summary.sent} emails`);
       }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Manual email request failed");
+      toast.error(
+        err instanceof Error ? err.message : 'Manual email request failed',
+      );
     } finally {
       setSending(false);
     }
@@ -375,14 +414,15 @@ export default function EmailManualPage() {
             <div>
               <h1 className="text-xl font-bold text-slate-800">Manual Email</h1>
               <p className="text-xs text-slate-500">
-                Event-scoped email sender for registrations, payments, abstracts, and account notices.
+                Event-scoped email sender for registrations, payments,
+                abstracts, and account notices.
               </p>
             </div>
           </div>
 
           <button
             onClick={() => {
-              setSearch("");
+              setSearch('');
               setSelected(new Set());
               setResults(null);
             }}
@@ -396,12 +436,14 @@ export default function EmailManualPage() {
         <div className="bg-white border border-slate-200 rounded-xl p-4">
           <div className="grid grid-cols-1 lg:grid-cols-[minmax(260px,360px)_1fr] gap-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">Event</label>
+              <label className="block text-xs font-semibold text-slate-600 mb-1">
+                Event
+              </label>
               <select
                 value={eventId}
                 onChange={(e) => {
-                  setEventId(e.target.value ? Number(e.target.value) : "");
-                  setSelectedTemplateId("");
+                  setEventId(e.target.value ? Number(e.target.value) : '');
+                  setSelectedTemplateId('');
                   setRecipients([]);
                   setSelected(new Set());
                   setResults(null);
@@ -419,15 +461,22 @@ export default function EmailManualPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">Template</label>
+              <label className="block text-xs font-semibold text-slate-600 mb-1">
+                Template
+              </label>
               <div className="flex flex-wrap gap-2">
                 {TEMPLATE_GROUPS.map((group) => (
-                  <div key={group.category} className="flex flex-wrap gap-2 items-center">
+                  <div
+                    key={group.category}
+                    className="flex flex-wrap gap-2 items-center"
+                  >
                     <span className="text-[11px] uppercase tracking-wide text-slate-400 px-1">
                       {group.category}
                     </span>
                     {group.templates.map((templateId) => {
-                      const template = templates.find((item) => item.id === templateId);
+                      const template = templates.find(
+                        (item) => item.id === templateId,
+                      );
                       if (!template) return null;
                       const active = selectedTemplateId === template.id;
                       return (
@@ -435,14 +484,14 @@ export default function EmailManualPage() {
                           key={template.id}
                           onClick={() => {
                             setSelectedTemplateId(template.id);
-                            setComment("");
+                            setComment('');
                             setResults(null);
                           }}
                           disabled={!eventId || loadingTemplates}
                           className={`px-3 py-2 rounded-lg text-sm border transition-colors ${
                             active
-                              ? "bg-sky-600 border-sky-600 text-white"
-                              : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+                              ? 'bg-sky-600 border-sky-600 text-white'
+                              : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-50'
                           }`}
                         >
                           {template.label}
@@ -457,20 +506,27 @@ export default function EmailManualPage() {
 
           {selectedTemplate && (
             <div className="mt-4 p-3 rounded-lg bg-slate-50 border border-slate-200">
-              <p className="text-sm font-medium text-slate-700">{selectedTemplate.description}</p>
+              <p className="text-sm font-medium text-slate-700">
+                {selectedTemplate.description}
+              </p>
               <p className="text-xs text-slate-500 mt-1">
-                Recipient type: {selectedTemplate.recipientType}. Results are limited to the selected event.
+                Recipient type: {selectedTemplate.recipientType}. Results are
+                limited to the selected event.
               </p>
             </div>
           )}
 
-          {selectedTemplateId === "pris-early-bird-reminder" && (
+          {selectedTemplateId === 'pris-early-bird-reminder' && (
             <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
               <p>
-                รายชื่อด้านล่างถูกคัดจาก API แล้ว: บัญชีสร้างก่อน cutoff, มี PRIS 2026 abstract ก่อน cutoff และยังไม่มี confirmed primary registration. ระบบจะตรวจสิทธิ์ซ้ำตอน Preview / Validate / Send.
+                รายชื่อด้านล่างถูกคัดจาก API แล้ว: บัญชีสร้างก่อน cutoff, มี
+                PRIS 2026 abstract ก่อน cutoff และยังไม่มี confirmed primary
+                registration. ระบบจะตรวจสิทธิ์ซ้ำตอน Preview / Validate / Send.
               </p>
               <p className="mt-1 font-medium">
-                กำหนดชำระ Early Bird: 15 Sep 2026 23:59 Bangkok. Select All หมายถึงรายการที่ API ส่งกลับมาและกำลังแสดงเท่านั้น ไม่ได้หมายถึงผู้มีสิทธิ์ทั้งหมดในฐานข้อมูล.
+                กำหนดชำระ Early Bird: 15 Sep 2026 23:59 Bangkok. Select All
+                หมายถึงรายการที่ API ส่งกลับมาและกำลังแสดงเท่านั้น
+                ไม่ได้หมายถึงผู้มีสิทธิ์ทั้งหมดในฐานข้อมูล.
               </p>
             </div>
           )}
@@ -480,7 +536,10 @@ export default function EmailManualPage() {
           <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
             <div className="px-4 py-3 border-b border-slate-200 flex flex-wrap items-end gap-3 justify-between">
               <div className="relative flex-1 min-w-[260px]">
-                <IconSearch size={17} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <IconSearch
+                  size={17}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                />
                 <input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
@@ -512,7 +571,11 @@ export default function EmailManualPage() {
                   disabled={sending || selectedCount === 0}
                   className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-sky-600 text-white text-sm font-semibold hover:bg-sky-700 disabled:opacity-50"
                 >
-                  {sending ? <IconLoader2 size={16} className="animate-spin" /> : <IconSend size={16} />}
+                  {sending ? (
+                    <IconLoader2 size={16} className="animate-spin" />
+                  ) : (
+                    <IconSend size={16} />
+                  )}
                   Send ({selectedCount})
                 </button>
               </div>
@@ -526,7 +589,9 @@ export default function EmailManualPage() {
             ) : recipients.length === 0 ? (
               <div className="h-72 flex flex-col items-center justify-center text-slate-400">
                 <IconMail size={36} stroke={1.5} />
-                <p className="mt-2 text-sm">No recipients for this template and event.</p>
+                <p className="mt-2 text-sm">
+                  No recipients for this template and event.
+                </p>
               </div>
             ) : (
               <div className="overflow-x-auto">
@@ -560,11 +625,19 @@ export default function EmailManualPage() {
                           />
                         </td>
                         <td className="px-4 py-3">
-                          <p className="font-medium text-slate-800">{recipient.label}</p>
-                          <p className="text-xs text-slate-400">ID: {recipient.id}</p>
+                          <p className="font-medium text-slate-800">
+                            {recipient.label}
+                          </p>
+                          <p className="text-xs text-slate-400">
+                            ID: {recipient.id}
+                          </p>
                         </td>
-                        <td className="px-4 py-3 text-slate-600">{recipient.email}</td>
-                        <td className="px-4 py-3 text-slate-500 max-w-md truncate">{recipient.detail}</td>
+                        <td className="px-4 py-3 text-slate-600">
+                          {recipient.email}
+                        </td>
+                        <td className="px-4 py-3 text-slate-500 max-w-md truncate">
+                          {recipient.detail}
+                        </td>
                         <td className="px-4 py-3">
                           <span className="px-2 py-1 rounded-md bg-slate-100 text-slate-600 text-xs">
                             {recipient.tag}
@@ -617,13 +690,17 @@ export default function EmailManualPage() {
                   {results.map((row) => (
                     <tr key={`${row.id}-${row.status}-${row.email}`}>
                       <td className="px-4 py-3">
-                        <span className={`inline-flex px-2 py-1 rounded-md border text-xs ${statusTone(row.status)}`}>
+                        <span
+                          className={`inline-flex px-2 py-1 rounded-md border text-xs ${statusTone(row.status)}`}
+                        >
                           {row.status}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-slate-700">{row.name}</td>
                       <td className="px-4 py-3 text-slate-600">{row.email}</td>
-                      <td className="px-4 py-3 text-slate-500">{row.reason || "-"}</td>
+                      <td className="px-4 py-3 text-slate-500">
+                        {row.reason || '-'}
+                      </td>
                     </tr>
                   ))}
                 </tbody>

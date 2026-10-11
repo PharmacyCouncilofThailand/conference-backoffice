@@ -1,15 +1,15 @@
-"use client";
+'use client';
 
-import { useEffect } from "react";
-import { useRouter, usePathname } from "next/navigation";
-import { useAuth } from "@/contexts/AuthContext";
+import { useEffect } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface AuthGuardProps {
   children: React.ReactNode;
 }
 
 // Pages that don't require authentication
-const publicPaths = ["/login"];
+const publicPaths = ['/login'];
 
 export function AuthGuard({ children }: AuthGuardProps) {
   const { user, isLoading, hasAccess } = useAuth();
@@ -22,36 +22,36 @@ export function AuthGuard({ children }: AuthGuardProps) {
 
       if (!user && !isPublicPath) {
         // Not logged in and trying to access protected page
-        router.replace("/login");
+        router.replace('/login');
       } else if (user && isPublicPath) {
         // Already logged in but on login page
-        if (user.role === "team_registration_viewer") {
-          router.replace("/team-registrations");
-        } else if (user.role === "verifier") {
-          router.replace("/verification");
-        } else if (user.role === "reviewer") {
-          router.replace("/abstracts");
-        } else if (user.role === "organizer") {
-          router.replace("/members");
-        } else if (user.role === "staff") {
-          router.replace("/checkin");
+        if (user.role === 'team_registration_viewer') {
+          router.replace('/team-registrations');
+        } else if (user.role === 'verifier') {
+          router.replace('/verification');
+        } else if (user.role === 'reviewer') {
+          router.replace('/abstracts');
+        } else if (user.role === 'organizer') {
+          router.replace('/members');
+        } else if (user.role === 'staff') {
+          router.replace('/checkin');
         } else {
-          router.replace("/");
+          router.replace('/');
         }
       } else if (user && !hasAccess(pathname)) {
         // Logged in but no access to this page
-        if (user.role === "team_registration_viewer") {
-          router.replace("/team-registrations");
-        } else if (user.role === "verifier") {
-          router.replace("/verification");
-        } else if (user.role === "reviewer") {
-          router.replace("/abstracts");
-        } else if (user.role === "organizer") {
-          router.replace("/members");
-        } else if (user.role === "staff") {
-          router.replace("/checkin");
+        if (user.role === 'team_registration_viewer') {
+          router.replace('/team-registrations');
+        } else if (user.role === 'verifier') {
+          router.replace('/verification');
+        } else if (user.role === 'reviewer') {
+          router.replace('/abstracts');
+        } else if (user.role === 'organizer') {
+          router.replace('/members');
+        } else if (user.role === 'staff') {
+          router.replace('/checkin');
         } else {
-          router.replace("/"); // Or 403 page
+          router.replace('/'); // Or 403 page
         }
       }
     }
@@ -60,7 +60,10 @@ export function AuthGuard({ children }: AuthGuardProps) {
   // Show loading state
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg)' }}>
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{ background: 'var(--bg)' }}
+      >
         <div className="animate-spin rounded-full h-8 w-8 border-2 border-zinc-200 border-t-emerald-600"></div>
       </div>
     );
@@ -71,7 +74,8 @@ export function AuthGuard({ children }: AuthGuardProps) {
     return null;
   }
 
-  if (user && !publicPaths.includes(pathname) && !hasAccess(pathname)) return null;
+  if (user && !publicPaths.includes(pathname) && !hasAccess(pathname))
+    return null;
 
   return <>{children}</>;
 }

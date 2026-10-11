@@ -1,12 +1,15 @@
-"use client";
+'use client';
 
-import { useEffect, useMemo, useState } from "react";
-import { AdminLayout } from "@/components/layout";
-import { Pagination } from "@/components/common";
-import { api } from "@/lib/api";
-import { useAuth } from "@/contexts/AuthContext";
-import type { StudentEligibilityRequest, StudentEligibilityStatus } from "@/types/api";
-import toast from "react-hot-toast";
+import { useEffect, useMemo, useState } from 'react';
+import { AdminLayout } from '@/components/layout';
+import { Pagination } from '@/components/common';
+import { api } from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
+import type {
+  StudentEligibilityRequest,
+  StudentEligibilityStatus,
+} from '@/types/api';
+import toast from 'react-hot-toast';
 import {
   IconCheck,
   IconClock,
@@ -16,7 +19,7 @@ import {
   IconRefresh,
   IconSearch,
   IconX,
-} from "@tabler/icons-react";
+} from '@tabler/icons-react';
 
 type EventOption = {
   id: number;
@@ -25,27 +28,27 @@ type EventOption = {
 };
 
 const statusStyles: Record<StudentEligibilityStatus, string> = {
-  pending: "bg-amber-50 text-amber-700 border-amber-200",
-  approved: "bg-emerald-50 text-emerald-700 border-emerald-200",
-  rejected: "bg-rose-50 text-rose-700 border-rose-200",
-  cancelled: "bg-slate-50 text-slate-600 border-slate-200",
+  pending: 'bg-amber-50 text-amber-700 border-amber-200',
+  approved: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  rejected: 'bg-rose-50 text-rose-700 border-rose-200',
+  cancelled: 'bg-slate-50 text-slate-600 border-slate-200',
 };
 
 function getProxyUrl(url: string | null | undefined): string {
-  if (!url) return "";
+  if (!url) return '';
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-  if (url.includes("/api/files/")) {
-    const fileId = url.split("/api/files/").pop();
+  if (url.includes('/api/files/')) {
+    const fileId = url.split('/api/files/').pop();
     return `${apiUrl}/api/files/${fileId}`;
   }
-  if (url.includes("drive.google.com")) {
+  if (url.includes('drive.google.com')) {
     return `${apiUrl}/api/upload/proxy?url=${encodeURIComponent(url)}`;
   }
   return url;
 }
 
 function formatFileSize(size?: number | null): string {
-  if (!size) return "-";
+  if (!size) return '-';
   if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
   return `${(size / (1024 * 1024)).toFixed(2)} MB`;
 }
@@ -54,13 +57,16 @@ export default function StudentEligibilityPage() {
   const { token } = useAuth();
   const [requests, setRequests] = useState<StudentEligibilityRequest[]>([]);
   const [events, setEvents] = useState<EventOption[]>([]);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
-  const [eventFilter, setEventFilter] = useState("");
-  const [selectedRequest, setSelectedRequest] = useState<StudentEligibilityRequest | null>(null);
-  const [reviewMode, setReviewMode] = useState<"approve" | "reject" | null>(null);
-  const [reviewNote, setReviewNote] = useState("");
-  const [rejectionReason, setRejectionReason] = useState("");
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [eventFilter, setEventFilter] = useState('');
+  const [selectedRequest, setSelectedRequest] =
+    useState<StudentEligibilityRequest | null>(null);
+  const [reviewMode, setReviewMode] = useState<'approve' | 'reject' | null>(
+    null,
+  );
+  const [reviewNote, setReviewNote] = useState('');
+  const [rejectionReason, setRejectionReason] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [page, setPage] = useState(1);
@@ -76,16 +82,16 @@ export default function StudentEligibilityPage() {
   const fetchEvents = async () => {
     if (!token) return;
     try {
-      const data = await api.backofficeEvents.list(token, "limit=100");
+      const data = await api.backofficeEvents.list(token, 'limit=100');
       setEvents(
         (data.events || []).map((event) => ({
           id: Number(event.id),
-          eventCode: String(event.eventCode || ""),
-          eventName: String(event.eventName || ""),
+          eventCode: String(event.eventCode || ''),
+          eventName: String(event.eventName || ''),
         })),
       );
     } catch {
-      toast.error("Failed to load events.");
+      toast.error('Failed to load events.');
     }
   };
 
@@ -94,19 +100,22 @@ export default function StudentEligibilityPage() {
     setIsLoading(true);
     try {
       const params = new URLSearchParams();
-      params.append("page", page.toString());
-      params.append("limit", limit.toString());
-      if (searchTerm) params.append("search", searchTerm);
-      if (statusFilter) params.append("status", statusFilter);
-      if (eventFilter) params.append("eventId", eventFilter);
+      params.append('page', page.toString());
+      params.append('limit', limit.toString());
+      if (searchTerm) params.append('search', searchTerm);
+      if (statusFilter) params.append('status', statusFilter);
+      if (eventFilter) params.append('eventId', eventFilter);
 
-      const data = await api.studentEligibilityRequests.list(token, params.toString());
+      const data = await api.studentEligibilityRequests.list(
+        token,
+        params.toString(),
+      );
       setRequests(data.requests);
       setTotalCount(data.pagination.total);
       setTotalPages(data.pagination.totalPages);
     } catch (error) {
-      console.error("Failed to fetch student eligibility requests:", error);
-      toast.error("Failed to load postgraduate eligibility requests.");
+      console.error('Failed to fetch student eligibility requests:', error);
+      toast.error('Failed to load postgraduate eligibility requests.');
     } finally {
       setIsLoading(false);
     }
@@ -123,39 +132,39 @@ export default function StudentEligibilityPage() {
   const resetReviewState = () => {
     setReviewMode(null);
     setSelectedRequest(null);
-    setReviewNote("");
-    setRejectionReason("");
+    setReviewNote('');
+    setRejectionReason('');
   };
 
   const submitReview = async () => {
     if (!token || !selectedRequest || !reviewMode) return;
-    if (reviewMode === "reject" && !rejectionReason.trim()) {
-      toast.error("Please provide a rejection reason.");
+    if (reviewMode === 'reject' && !rejectionReason.trim()) {
+      toast.error('Please provide a rejection reason.');
       return;
     }
 
     setIsSubmitting(true);
     try {
-      if (reviewMode === "approve") {
+      if (reviewMode === 'approve') {
         await api.studentEligibilityRequests.review(token, selectedRequest.id, {
-          status: "approved",
+          status: 'approved',
           reviewNote: reviewNote || undefined,
         });
-        toast.success("Postgraduate eligibility approved.");
+        toast.success('Postgraduate eligibility approved.');
       } else {
         await api.studentEligibilityRequests.review(token, selectedRequest.id, {
-          status: "rejected",
+          status: 'rejected',
           rejectionReason,
           reviewNote: reviewNote || undefined,
         });
-        toast.success("Postgraduate eligibility rejected.");
+        toast.success('Postgraduate eligibility rejected.');
       }
 
       resetReviewState();
       fetchRequests();
     } catch (error) {
-      console.error("Failed to submit review:", error);
-      toast.error("Failed to submit review.");
+      console.error('Failed to submit review:', error);
+      toast.error('Failed to submit review.');
     } finally {
       setIsSubmitting(false);
     }
@@ -168,8 +177,12 @@ export default function StudentEligibilityPage() {
           <div className="bg-white rounded-xl border border-zinc-200 p-5 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">Total Requests</p>
-                <p className="text-3xl font-bold text-zinc-900 mt-1">{totalCount}</p>
+                <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">
+                  Total Requests
+                </p>
+                <p className="text-3xl font-bold text-zinc-900 mt-1">
+                  {totalCount}
+                </p>
               </div>
               <IconFileCertificate className="text-emerald-600" size={32} />
             </div>
@@ -177,9 +190,11 @@ export default function StudentEligibilityPage() {
           <div className="bg-white rounded-xl border border-zinc-200 p-5 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">Pending Review</p>
+                <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">
+                  Pending Review
+                </p>
                 <p className="text-3xl font-bold text-amber-600 mt-1">
-                  {requests.filter((item) => item.status === "pending").length}
+                  {requests.filter((item) => item.status === 'pending').length}
                 </p>
               </div>
               <IconClock className="text-amber-500" size={32} />
@@ -188,8 +203,12 @@ export default function StudentEligibilityPage() {
           <div className="bg-white rounded-xl border border-zinc-200 p-5 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">Fixed Level</p>
-                <p className="text-2xl font-bold text-zinc-900 mt-1">Postgraduate</p>
+                <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">
+                  Fixed Level
+                </p>
+                <p className="text-2xl font-bold text-zinc-900 mt-1">
+                  Postgraduate
+                </p>
               </div>
               <IconFileText className="text-emerald-600" size={32} />
             </div>
@@ -200,9 +219,12 @@ export default function StudentEligibilityPage() {
           <div className="p-5 border-b border-zinc-100">
             <div className="flex flex-col lg:flex-row gap-3 lg:items-center lg:justify-between">
               <div>
-                <h2 className="text-lg font-bold text-zinc-900">Pharmacist Postgraduate Requests</h2>
+                <h2 className="text-lg font-bold text-zinc-900">
+                  Pharmacist Postgraduate Requests
+                </h2>
                 <p className="text-sm text-zinc-400 mt-1">
-                  Approval applies only to the selected event and unlocks postgraduate student-rate tickets.
+                  Approval applies only to the selected event and unlocks
+                  postgraduate student-rate tickets.
                 </p>
               </div>
               <button
@@ -231,7 +253,10 @@ export default function StudentEligibilityPage() {
                 ))}
               </select>
               <div className="relative">
-                <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" size={18} />
+                <IconSearch
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400"
+                  size={18}
+                />
                 <input
                   value={searchTerm}
                   onChange={(event) => {
@@ -262,23 +287,39 @@ export default function StudentEligibilityPage() {
             <table className="w-full table-sticky-actions">
               <thead className="bg-zinc-50 border-b border-zinc-200">
                 <tr>
-                  <th className="px-5 py-3 text-left text-xs font-semibold text-zinc-500 uppercase">Applicant</th>
-                  <th className="px-5 py-3 text-left text-xs font-semibold text-zinc-500 uppercase">Event</th>
-                  <th className="px-5 py-3 text-left text-xs font-semibold text-zinc-500 uppercase">Document</th>
-                  <th className="px-5 py-3 text-left text-xs font-semibold text-zinc-500 uppercase">Status</th>
-                  <th className="px-5 py-3 text-right text-xs font-semibold text-zinc-500 uppercase">Actions</th>
+                  <th className="px-5 py-3 text-left text-xs font-semibold text-zinc-500 uppercase">
+                    Applicant
+                  </th>
+                  <th className="px-5 py-3 text-left text-xs font-semibold text-zinc-500 uppercase">
+                    Event
+                  </th>
+                  <th className="px-5 py-3 text-left text-xs font-semibold text-zinc-500 uppercase">
+                    Document
+                  </th>
+                  <th className="px-5 py-3 text-left text-xs font-semibold text-zinc-500 uppercase">
+                    Status
+                  </th>
+                  <th className="px-5 py-3 text-right text-xs font-semibold text-zinc-500 uppercase">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {isLoading ? (
                   <tr>
-                    <td colSpan={5} className="px-5 py-12 text-center text-zinc-400">
+                    <td
+                      colSpan={5}
+                      className="px-5 py-12 text-center text-zinc-400"
+                    >
                       Loading requests...
                     </td>
                   </tr>
                 ) : requests.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-5 py-12 text-center text-zinc-400">
+                    <td
+                      colSpan={5}
+                      className="px-5 py-12 text-center text-zinc-400"
+                    >
                       No postgraduate eligibility requests found.
                     </td>
                   </tr>
@@ -286,25 +327,37 @@ export default function StudentEligibilityPage() {
                   requests.map((request) => (
                     <tr key={request.id} className="hover:bg-zinc-50">
                       <td className="px-5 py-4">
-                        <p className="font-semibold text-zinc-900">{request.name}</p>
+                        <p className="font-semibold text-zinc-900">
+                          {request.name}
+                        </p>
                         <p className="text-sm text-zinc-400">{request.email}</p>
                         <p className="text-xs text-zinc-400 mt-1">
-                          License: {request.pharmacyLicenseId || "-"}
+                          License: {request.pharmacyLicenseId || '-'}
                         </p>
                       </td>
                       <td className="px-5 py-4">
-                        <p className="font-semibold text-zinc-900">{request.eventCode}</p>
-                        <p className="text-sm text-zinc-400">{request.eventName}</p>
-                        <p className="text-xs text-emerald-600 font-semibold mt-1">Postgraduate only</p>
+                        <p className="font-semibold text-zinc-900">
+                          {request.eventCode}
+                        </p>
+                        <p className="text-sm text-zinc-400">
+                          {request.eventName}
+                        </p>
+                        <p className="text-xs text-emerald-600 font-semibold mt-1">
+                          Postgraduate only
+                        </p>
                       </td>
                       <td className="px-5 py-4">
                         <p className="text-sm font-medium text-zinc-900 max-w-[220px] truncate">
                           {request.documentFileName}
                         </p>
-                        <p className="text-xs text-zinc-400">{formatFileSize(request.documentFileSize)}</p>
+                        <p className="text-xs text-zinc-400">
+                          {formatFileSize(request.documentFileSize)}
+                        </p>
                       </td>
                       <td className="px-5 py-4">
-                        <span className={`inline-flex px-2.5 py-1 rounded-full border text-xs font-semibold capitalize ${statusStyles[request.status]}`}>
+                        <span
+                          className={`inline-flex px-2.5 py-1 rounded-full border text-xs font-semibold capitalize ${statusStyles[request.status]}`}
+                        >
                           {request.status}
                         </span>
                         <p className="text-xs text-zinc-400 mt-2">
@@ -320,12 +373,12 @@ export default function StudentEligibilityPage() {
                           >
                             <IconEye size={18} />
                           </button>
-                          {request.status === "pending" && (
+                          {request.status === 'pending' && (
                             <>
                               <button
                                 onClick={() => {
                                   setSelectedRequest(request);
-                                  setReviewMode("approve");
+                                  setReviewMode('approve');
                                 }}
                                 className="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700"
                                 title="Approve"
@@ -335,7 +388,7 @@ export default function StudentEligibilityPage() {
                               <button
                                 onClick={() => {
                                   setSelectedRequest(request);
-                                  setReviewMode("reject");
+                                  setReviewMode('reject');
                                 }}
                                 className="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-rose-600 text-white hover:bg-rose-700"
                                 title="Reject"
@@ -374,45 +427,76 @@ export default function StudentEligibilityPage() {
           <div className="bg-white rounded-2xl shadow-lg w-full max-w-3xl overflow-hidden">
             <div className="p-6 border-b border-zinc-100 flex items-start justify-between">
               <div>
-                <h3 className="text-xl font-bold text-zinc-900">Eligibility Request</h3>
-                <p className="text-sm text-zinc-400 mt-1">{selectedRequest.eventName}</p>
+                <h3 className="text-xl font-bold text-zinc-900">
+                  Eligibility Request
+                </h3>
+                <p className="text-sm text-zinc-400 mt-1">
+                  {selectedRequest.eventName}
+                </p>
               </div>
-              <button onClick={resetReviewState} className="p-2 rounded-lg hover:bg-zinc-100">
+              <button
+                onClick={resetReviewState}
+                className="p-2 rounded-lg hover:bg-zinc-100"
+              >
                 <IconX size={20} />
               </button>
             </div>
             <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-5">
               <div>
-                <p className="text-xs font-semibold text-zinc-400 uppercase">Applicant</p>
-                <p className="font-bold text-zinc-900 mt-1">{selectedRequest.name}</p>
+                <p className="text-xs font-semibold text-zinc-400 uppercase">
+                  Applicant
+                </p>
+                <p className="font-bold text-zinc-900 mt-1">
+                  {selectedRequest.name}
+                </p>
                 <p className="text-sm text-zinc-500">{selectedRequest.email}</p>
               </div>
               <div>
-                <p className="text-xs font-semibold text-zinc-400 uppercase">Pharmacy License</p>
-                <p className="font-bold text-zinc-900 mt-1">{selectedRequest.pharmacyLicenseId || "-"}</p>
+                <p className="text-xs font-semibold text-zinc-400 uppercase">
+                  Pharmacy License
+                </p>
+                <p className="font-bold text-zinc-900 mt-1">
+                  {selectedRequest.pharmacyLicenseId || '-'}
+                </p>
               </div>
               <div>
-                <p className="text-xs font-semibold text-zinc-400 uppercase">Requested Level</p>
+                <p className="text-xs font-semibold text-zinc-400 uppercase">
+                  Requested Level
+                </p>
                 <p className="font-bold text-zinc-900 mt-1">Postgraduate</p>
               </div>
               <div>
-                <p className="text-xs font-semibold text-zinc-400 uppercase">Status</p>
-                <span className={`mt-1 inline-flex px-2.5 py-1 rounded-full border text-xs font-semibold capitalize ${statusStyles[selectedRequest.status]}`}>
+                <p className="text-xs font-semibold text-zinc-400 uppercase">
+                  Status
+                </p>
+                <span
+                  className={`mt-1 inline-flex px-2.5 py-1 rounded-full border text-xs font-semibold capitalize ${statusStyles[selectedRequest.status]}`}
+                >
                   {selectedRequest.status}
                 </span>
               </div>
               {selectedRequest.rejectionReason && (
                 <div className="md:col-span-2 rounded-xl bg-rose-50 border border-rose-100 p-4">
-                  <p className="text-xs font-semibold text-rose-700 uppercase">Rejection Reason</p>
-                  <p className="text-sm text-rose-900 mt-1">{selectedRequest.rejectionReason}</p>
+                  <p className="text-xs font-semibold text-rose-700 uppercase">
+                    Rejection Reason
+                  </p>
+                  <p className="text-sm text-rose-900 mt-1">
+                    {selectedRequest.rejectionReason}
+                  </p>
                 </div>
               )}
               <div className="md:col-span-2 rounded-xl border border-zinc-200 p-4">
-                <p className="text-xs font-semibold text-zinc-400 uppercase">Document</p>
+                <p className="text-xs font-semibold text-zinc-400 uppercase">
+                  Document
+                </p>
                 <div className="mt-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <div>
-                    <p className="font-semibold text-zinc-900">{selectedRequest.documentFileName}</p>
-                    <p className="text-sm text-zinc-400">{formatFileSize(selectedRequest.documentFileSize)}</p>
+                    <p className="font-semibold text-zinc-900">
+                      {selectedRequest.documentFileName}
+                    </p>
+                    <p className="text-sm text-zinc-400">
+                      {formatFileSize(selectedRequest.documentFileSize)}
+                    </p>
                   </div>
                   <a
                     href={selectedDocumentUrl || selectedRequest.documentUrl}
@@ -426,16 +510,16 @@ export default function StudentEligibilityPage() {
                 </div>
               </div>
             </div>
-            {selectedRequest.status === "pending" && (
+            {selectedRequest.status === 'pending' && (
               <div className="p-6 border-t border-zinc-100 flex flex-col sm:flex-row justify-end gap-3">
                 <button
-                  onClick={() => setReviewMode("reject")}
+                  onClick={() => setReviewMode('reject')}
                   className="px-5 py-3 rounded-lg bg-rose-600 text-white font-semibold hover:bg-rose-700"
                 >
                   Reject
                 </button>
                 <button
-                  onClick={() => setReviewMode("approve")}
+                  onClick={() => setReviewMode('approve')}
                   className="px-5 py-3 rounded-lg bg-emerald-600 text-white font-semibold hover:bg-emerald-700"
                 >
                   Approve
@@ -449,14 +533,20 @@ export default function StudentEligibilityPage() {
       {selectedRequest && reviewMode && (
         <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-lg w-full max-w-lg overflow-hidden">
-            <div className={`p-6 text-white ${reviewMode === "approve" ? "bg-emerald-600" : "bg-rose-600"}`}>
+            <div
+              className={`p-6 text-white ${reviewMode === 'approve' ? 'bg-emerald-600' : 'bg-rose-600'}`}
+            >
               <h3 className="text-xl font-bold">
-                {reviewMode === "approve" ? "Approve Eligibility" : "Reject Eligibility"}
+                {reviewMode === 'approve'
+                  ? 'Approve Eligibility'
+                  : 'Reject Eligibility'}
               </h3>
-              <p className="text-sm text-white/80 mt-1">{selectedRequest.name}</p>
+              <p className="text-sm text-white/80 mt-1">
+                {selectedRequest.name}
+              </p>
             </div>
             <div className="p-6 space-y-4">
-              {reviewMode === "reject" && (
+              {reviewMode === 'reject' && (
                 <div>
                   <label className="block text-sm font-semibold text-zinc-600 mb-2">
                     Rejection Reason <span className="text-rose-500">*</span>
@@ -472,7 +562,8 @@ export default function StudentEligibilityPage() {
               )}
               <div>
                 <label className="block text-sm font-semibold text-zinc-600 mb-2">
-                  Email Comment <span className="text-zinc-400 font-normal">(optional)</span>
+                  Email Comment{' '}
+                  <span className="text-zinc-400 font-normal">(optional)</span>
                 </label>
                 <textarea
                   value={reviewNote}
@@ -493,12 +584,21 @@ export default function StudentEligibilityPage() {
               </button>
               <button
                 onClick={submitReview}
-                disabled={isSubmitting || (reviewMode === "reject" && !rejectionReason.trim())}
+                disabled={
+                  isSubmitting ||
+                  (reviewMode === 'reject' && !rejectionReason.trim())
+                }
                 className={`px-5 py-3 rounded-lg text-white font-semibold disabled:opacity-60 ${
-                  reviewMode === "approve" ? "bg-emerald-600 hover:bg-emerald-700" : "bg-rose-600 hover:bg-rose-700"
+                  reviewMode === 'approve'
+                    ? 'bg-emerald-600 hover:bg-emerald-700'
+                    : 'bg-rose-600 hover:bg-rose-700'
                 }`}
               >
-                {isSubmitting ? "Saving..." : reviewMode === "approve" ? "Approve" : "Reject"}
+                {isSubmitting
+                  ? 'Saving...'
+                  : reviewMode === 'approve'
+                    ? 'Approve'
+                    : 'Reject'}
               </button>
             </div>
           </div>

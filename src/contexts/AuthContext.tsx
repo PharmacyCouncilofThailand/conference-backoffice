@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 /* eslint-disable react-hooks/set-state-in-effect */
 
@@ -8,17 +8,17 @@ import {
   useState,
   useEffect,
   ReactNode,
-} from "react";
-import { isTokenExpired } from "@/lib/jwt";
+} from 'react';
+import { isTokenExpired } from '@/lib/jwt';
 
 // User roles
 export type UserRole =
-  | "admin"
-  | "organizer"
-  | "reviewer"
-  | "staff"
-  | "verifier"
-  | "team_registration_viewer";
+  | 'admin'
+  | 'organizer'
+  | 'reviewer'
+  | 'staff'
+  | 'verifier'
+  | 'team_registration_viewer';
 
 // Event assignment
 export interface AssignedEvent {
@@ -68,23 +68,30 @@ interface AuthContextType {
 
 // Role-based page access
 const rolePageAccess: Record<UserRole, string[]> = {
-  admin: ["*"], // All pages
-  organizer: ["/reports", "/members", "/verification", "/registrations", "/promo-code-abstracts", "/abstracts"],
-  reviewer: ["/abstracts"],
-  staff: ["/checkin", "/reward-collection"],
-  verifier: ["/verification", "/student-eligibility"],
-  team_registration_viewer: ["/team-registrations"],
+  admin: ['*'], // All pages
+  organizer: [
+    '/reports',
+    '/members',
+    '/verification',
+    '/registrations',
+    '/promo-code-abstracts',
+    '/abstracts',
+  ],
+  reviewer: ['/abstracts'],
+  staff: ['/checkin', '/reward-collection'],
+  verifier: ['/verification', '/student-eligibility'],
+  team_registration_viewer: ['/team-registrations'],
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const AUTH_UNAUTHORIZED_EVENT = "accp-backoffice-auth:unauthorized";
+const AUTH_UNAUTHORIZED_EVENT = 'accp-backoffice-auth:unauthorized';
 
 function clearStoredAuth() {
-  localStorage.removeItem("backoffice_token");
-  localStorage.removeItem("backoffice_user");
-  sessionStorage.removeItem("backoffice_token");
-  sessionStorage.removeItem("backoffice_user");
+  localStorage.removeItem('backoffice_token');
+  localStorage.removeItem('backoffice_user');
+  sessionStorage.removeItem('backoffice_token');
+  sessionStorage.removeItem('backoffice_user');
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -102,10 +109,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Load user from storage on mount (check both localStorage and sessionStorage)
   useEffect(() => {
-    const localToken = localStorage.getItem("backoffice_token");
-    const localUser = localStorage.getItem("backoffice_user");
-    const sessionToken = sessionStorage.getItem("backoffice_token");
-    const sessionUser = sessionStorage.getItem("backoffice_user");
+    const localToken = localStorage.getItem('backoffice_token');
+    const localUser = localStorage.getItem('backoffice_user');
+    const sessionToken = sessionStorage.getItem('backoffice_token');
+    const sessionUser = sessionStorage.getItem('backoffice_user');
 
     let storedToken: string | null = null;
     let storedUser: string | null = null;
@@ -144,7 +151,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         // Auto-select first event for non-admin
         if (
-          parsedUser.role !== "admin" &&
+          parsedUser.role !== 'admin' &&
           parsedUser.assignedEvents?.length > 0
         ) {
           setCurrentEvent(parsedUser.assignedEvents[0]);
@@ -181,7 +188,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const isAdmin = user?.role === "admin";
+  const isAdmin = user?.role === 'admin';
 
   const canAccessEvent = (eventId: number): boolean => {
     if (!user) return false;
@@ -197,11 +204,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const hasAccess = (page: string): boolean => {
     if (!user) return false;
-    if (user.role === "organizer" && page.startsWith("/registrations/add")) {
+    if (user.role === 'organizer' && page.startsWith('/registrations/add')) {
       return false;
     }
     const allowedPages = rolePageAccess[user.role];
-    if (allowedPages.includes("*")) return true;
+    if (allowedPages.includes('*')) return true;
     return allowedPages.some((p) => page.startsWith(p));
   };
 
@@ -215,15 +222,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Use localStorage for "remember me", sessionStorage otherwise
     const storage = rememberMe ? localStorage : sessionStorage;
-    storage.setItem("backoffice_token", newToken);
-    storage.setItem("backoffice_user", JSON.stringify(newUser));
+    storage.setItem('backoffice_token', newToken);
+    storage.setItem('backoffice_user', JSON.stringify(newUser));
 
     // Clear the other storage to avoid conflicts
     const otherStorage = rememberMe ? sessionStorage : localStorage;
-    otherStorage.removeItem("backoffice_token");
-    otherStorage.removeItem("backoffice_user");
+    otherStorage.removeItem('backoffice_token');
+    otherStorage.removeItem('backoffice_user');
 
-    if (newUser.role !== "admin" && newUser.assignedEvents.length > 0) {
+    if (newUser.role !== 'admin' && newUser.assignedEvents.length > 0) {
       setCurrentEvent(newUser.assignedEvents[0]);
     } else {
       setCurrentEvent(null);
@@ -258,7 +265,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider");
+    throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
 }

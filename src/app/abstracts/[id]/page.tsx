@@ -1,14 +1,14 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { AdminLayout } from "@/components/layout";
-import { api } from "@/lib/api";
+import { useState, useEffect } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import { AdminLayout } from '@/components/layout';
+import { api } from '@/lib/api';
 import {
   RevisionRequestModal,
   RevisionTopicLabel,
-} from "@/components/abstracts/RevisionRequestModal";
-import toast from "react-hot-toast";
+} from '@/components/abstracts/RevisionRequestModal';
+import toast from 'react-hot-toast';
 import {
   IconArrowLeft,
   IconCheck,
@@ -26,35 +26,35 @@ import {
   IconPresentation,
   IconDownload,
   IconPencil,
-} from "@tabler/icons-react";
+} from '@tabler/icons-react';
 
 const statusColors: { [key: string]: string } = {
-  pending: "bg-yellow-100 text-yellow-800 border-yellow-300",
-  accepted: "bg-green-100 text-green-800 border-green-300",
-  rejected: "bg-red-100 text-red-800 border-red-300",
-  revision: "bg-amber-100 text-amber-800 border-amber-300",
+  pending: 'bg-yellow-100 text-yellow-800 border-yellow-300',
+  accepted: 'bg-green-100 text-green-800 border-green-300',
+  rejected: 'bg-red-100 text-red-800 border-red-300',
+  revision: 'bg-amber-100 text-amber-800 border-amber-300',
 };
 
 const statusLabels: Record<string, string> = {
-  pending: "Pending",
-  accepted: "Accepted",
-  rejected: "Rejected",
-  revision: "Revision Requested",
+  pending: 'Pending',
+  accepted: 'Accepted',
+  rejected: 'Rejected',
+  revision: 'Revision Requested',
 };
 
 const categoryLabels: { [key: string]: string } = {
-  clinical_pharmacy: "Clinical Pharmacy",
-  social_administrative: "Social and Administrative Pharmacy",
-  community_pharmacy: "Community Pharmacy",
-  pharmacology_toxicology: "Pharmacology and Toxicology",
-  pharmacy_education: "Pharmacy Education",
-  digital_pharmacy: "Digital Pharmacy and Innovation",
+  clinical_pharmacy: 'Clinical Pharmacy',
+  social_administrative: 'Social and Administrative Pharmacy',
+  community_pharmacy: 'Community Pharmacy',
+  pharmacology_toxicology: 'Pharmacology and Toxicology',
+  pharmacy_education: 'Pharmacy Education',
+  digital_pharmacy: 'Digital Pharmacy and Innovation',
 };
 
 const getBackofficeToken = () =>
-  localStorage.getItem("backoffice_token") ||
-  sessionStorage.getItem("backoffice_token") ||
-  "";
+  localStorage.getItem('backoffice_token') ||
+  sessionStorage.getItem('backoffice_token') ||
+  '';
 
 interface CoAuthor {
   id: number;
@@ -132,11 +132,13 @@ interface AbstractDetail {
 }
 
 const formatFileSize = (size?: number | null) => {
-  if (!size) return "";
+  if (!size) return '';
   return `${(size / 1024 / 1024).toFixed(2)} MB`;
 };
 
-const getAttachedFiles = (abstract: Pick<AbstractDetail, "files" | "fullPaperUrl">) => {
+const getAttachedFiles = (
+  abstract: Pick<AbstractDetail, 'files' | 'fullPaperUrl'>,
+) => {
   const files = Array.isArray(abstract.files)
     ? abstract.files.filter((file) => file.fileUrl)
     : [];
@@ -147,7 +149,7 @@ const getAttachedFiles = (abstract: Pick<AbstractDetail, "files" | "fullPaperUrl
     ? [
         {
           id: 0,
-          fileName: "Full Paper",
+          fileName: 'Full Paper',
           fileUrl: abstract.fullPaperUrl,
           sortOrder: 0,
         },
@@ -164,7 +166,7 @@ export default function AbstractDetailPage() {
   const [showApproveModal, setShowApproveModal] = useState(false);
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [showRevisionModal, setShowRevisionModal] = useState(false);
-  const [reviewComment, setReviewComment] = useState("");
+  const [reviewComment, setReviewComment] = useState('');
 
   const abstractId = params.id as string;
 
@@ -179,7 +181,7 @@ export default function AbstractDetailPage() {
       const res = await api.abstracts.get(token, parseInt(abstractId));
       setAbstract(res.abstract as unknown as AbstractDetail);
     } catch (error) {
-      console.error("Failed to fetch abstract:", error);
+      console.error('Failed to fetch abstract:', error);
     } finally {
       setIsLoading(false);
     }
@@ -198,10 +200,10 @@ export default function AbstractDetailPage() {
       setShowApproveModal(false);
       setShowRejectModal(false);
       setShowRevisionModal(false);
-      setReviewComment("");
+      setReviewComment('');
 
       toast.success(
-        `Abstract ${status === "accepted" ? "approved" : status} successfully!`,
+        `Abstract ${status === 'accepted' ? 'approved' : status} successfully!`,
       );
     } catch (error) {
       console.error(error);
@@ -211,7 +213,11 @@ export default function AbstractDetailPage() {
     }
   };
 
-  const handleRequestRevision = async (payload: { topic: string; comment: string; file: File | null }) => {
+  const handleRequestRevision = async (payload: {
+    topic: string;
+    comment: string;
+    file: File | null;
+  }) => {
     if (!abstract) return;
     setIsSubmitting(true);
     try {
@@ -221,10 +227,12 @@ export default function AbstractDetailPage() {
       await fetchAbstract();
 
       setShowRevisionModal(false);
-      toast.success("Revise request sent successfully!");
+      toast.success('Revise request sent successfully!');
     } catch (error) {
       console.error(error);
-      toast.error(error instanceof Error ? error.message : "Failed to request revise");
+      toast.error(
+        error instanceof Error ? error.message : 'Failed to request revise',
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -259,7 +267,7 @@ export default function AbstractDetailPage() {
   const revisionRequests = abstract.revisionRequests || [];
 
   return (
-    <AdminLayout title={`Abstract ${abstract.trackingId || "#" + abstract.id}`}>
+    <AdminLayout title={`Abstract ${abstract.trackingId || '#' + abstract.id}`}>
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <button
@@ -415,11 +423,12 @@ export default function AbstractDetailPage() {
                           <RevisionTopicLabel topic={request.topic} />
                         </p>
                         <p className="text-xs text-zinc-400 mt-1">
-                          Requested {new Date(request.createdAt).toLocaleString()}
+                          Requested{' '}
+                          {new Date(request.createdAt).toLocaleString()}
                         </p>
                       </div>
                       <span className="self-start rounded-full bg-white px-2.5 py-1 text-xs font-semibold capitalize text-amber-700 border border-amber-200">
-                        {request.status.replace(/_/g, " ")}
+                        {request.status.replace(/_/g, ' ')}
                       </span>
                     </div>
                     <p className="text-sm text-zinc-600 whitespace-pre-wrap leading-relaxed">
@@ -554,7 +563,7 @@ export default function AbstractDetailPage() {
                   <IconPresentation size={16} /> Presentation
                 </span>
                 <span className="font-medium capitalize text-zinc-800">
-                  {abstract.presentationType || "Not specified"}
+                  {abstract.presentationType || 'Not specified'}
                 </span>
               </div>
               <div className="flex items-center justify-between py-2">
@@ -569,7 +578,7 @@ export default function AbstractDetailPage() {
           </div>
 
           {/* Actions */}
-          {abstract.status === "pending" && (
+          {abstract.status === 'pending' && (
             <div className="space-y-3">
               <button
                 onClick={() => setShowApproveModal(true)}
@@ -591,7 +600,7 @@ export default function AbstractDetailPage() {
               </button>
             </div>
           )}
-          {abstract.status === "revision" && (
+          {abstract.status === 'revision' && (
             <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
               Waiting for the author to resubmit the revised abstract.
             </div>
@@ -633,7 +642,7 @@ export default function AbstractDetailPage() {
                 Cancel
               </button>
               <button
-                onClick={() => handleUpdateStatus("accepted", reviewComment)}
+                onClick={() => handleUpdateStatus('accepted', reviewComment)}
                 className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center gap-2"
                 disabled={isSubmitting}
               >
@@ -681,7 +690,7 @@ export default function AbstractDetailPage() {
                 Cancel
               </button>
               <button
-                onClick={() => handleUpdateStatus("rejected", reviewComment)}
+                onClick={() => handleUpdateStatus('rejected', reviewComment)}
                 className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 flex items-center gap-2"
                 disabled={isSubmitting}
               >

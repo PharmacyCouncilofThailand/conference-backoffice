@@ -1,14 +1,14 @@
-"use client";
+'use client';
 
-import { useState, useEffect, useMemo } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { AdminLayout } from "@/components/layout";
-import { api } from "@/lib/api";
-import { getExternalEventReadiness } from "@/lib/eventReadiness";
-import DatePicker from "react-datepicker";
-import "react-datepicker/dist/react-datepicker.css";
-import toast from "react-hot-toast";
+import { useState, useEffect, useMemo } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { AdminLayout } from '@/components/layout';
+import { api } from '@/lib/api';
+import { getExternalEventReadiness } from '@/lib/eventReadiness';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
+import toast from 'react-hot-toast';
 import {
   IconCalendarEvent,
   IconLayoutGrid,
@@ -28,7 +28,7 @@ import {
   IconFileText,
   IconUpload,
   IconAlertTriangle,
-} from "@tabler/icons-react";
+} from '@tabler/icons-react';
 
 interface Speaker {
   id: number;
@@ -46,12 +46,7 @@ interface SessionData {
   sessionCode: string;
   sessionName: string;
   sessionType:
-  | "workshop"
-  | "gala_dinner"
-  | "lecture"
-  | "ceremony"
-  | "break"
-  | "other";
+    'workshop' | 'gala_dinner' | 'lecture' | 'ceremony' | 'break' | 'other';
   description: string;
   room: string;
   startTime: string;
@@ -65,10 +60,10 @@ interface SessionData {
 interface TicketData {
   id?: number;
   name: string;
-  category: "primary" | "addon";
+  category: 'primary' | 'addon';
   groupName?: string;
   price: string;
-  currency: "THB" | "USD";
+  currency: 'THB' | 'USD';
   originalPrice?: string;
   description?: string;
   features?: string[];
@@ -89,7 +84,7 @@ interface EventFormData {
   eventName: string;
   shortName: string;
   description: string;
-  eventType: "single_room" | "multi_session";
+  eventType: 'single_room' | 'multi_session';
   location: string;
   mapUrl: string;
   websiteUrl: string;
@@ -98,7 +93,7 @@ interface EventFormData {
   maxCapacity: number;
   conferenceCode: string;
   cpeCredits: string;
-  status: "draft" | "published";
+  status: 'draft' | 'published';
   imageUrl: string;
   coverImage: string;
   videoUrl: string;
@@ -107,16 +102,16 @@ interface EventFormData {
 
 // Helper function to format datetime for display
 const formatDateTime = (dateTimeStr: string): string => {
-  if (!dateTimeStr) return "-";
+  if (!dateTimeStr) return '-';
   try {
     const date = new Date(dateTimeStr);
-    return date.toLocaleString("en-US", {
-      month: "short",
-      day: "numeric",
-      hour: "numeric",
-      minute: "2-digit",
+    return date.toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
       hour12: true,
-      timeZone: "Asia/Bangkok",
+      timeZone: 'Asia/Bangkok',
     });
   } catch {
     return dateTimeStr;
@@ -124,25 +119,25 @@ const formatDateTime = (dateTimeStr: string): string => {
 };
 
 const getBackofficeToken = () =>
-  localStorage.getItem("backoffice_token") ||
-  sessionStorage.getItem("backoffice_token") ||
-  "";
+  localStorage.getItem('backoffice_token') ||
+  sessionStorage.getItem('backoffice_token') ||
+  '';
 
 const studentLevelLabels: Record<string, string> = {
-  postgraduate: "Postgraduate",
-  undergraduate: "Undergraduate",
+  postgraduate: 'Postgraduate',
+  undergraduate: 'Undergraduate',
 };
 
 // Helper function to format time only
 const formatTime = (dateTimeStr: string): string => {
-  if (!dateTimeStr) return "-";
+  if (!dateTimeStr) return '-';
   try {
     const date = new Date(dateTimeStr);
-    return date.toLocaleTimeString("en-US", {
-      hour: "numeric",
-      minute: "2-digit",
+    return date.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
       hour12: true,
-      timeZone: "Asia/Bangkok",
+      timeZone: 'Asia/Bangkok',
     });
   } catch {
     return dateTimeStr;
@@ -163,17 +158,32 @@ export default function CreateEventPage() {
   const [uploadingTarget, setUploadingTarget] = useState<string | null>(null);
 
   // Pending file objects (uploaded after event creation)
-  const [pendingThumbnail, setPendingThumbnail] = useState<{ file: File; previewUrl: string } | null>(null);
-  const [pendingCover, setPendingCover] = useState<{ file: File; previewUrl: string } | null>(null);
-  const [pendingVideo, setPendingVideo] = useState<{ file: File; previewUrl: string } | null>(null);
-  const [pendingDocuments, setPendingDocuments] = useState<{ file: File; name: string }[]>([]);
+  const [pendingThumbnail, setPendingThumbnail] = useState<{
+    file: File;
+    previewUrl: string;
+  } | null>(null);
+  const [pendingCover, setPendingCover] = useState<{
+    file: File;
+    previewUrl: string;
+  } | null>(null);
+  const [pendingVideo, setPendingVideo] = useState<{
+    file: File;
+    previewUrl: string;
+  } | null>(null);
+  const [pendingDocuments, setPendingDocuments] = useState<
+    { file: File; name: string }[]
+  >([]);
 
   // Helper: upload file via XHR with progress tracking
-  const uploadFileWithProgress = (file: File, endpoint: string, target: string): Promise<{ url: string; filename: string }> => {
+  const uploadFileWithProgress = (
+    file: File,
+    endpoint: string,
+    target: string,
+  ): Promise<{ url: string; filename: string }> => {
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
       const data = new FormData();
-      data.append("file", file);
+      data.append('file', file);
 
       setUploadProgress(0);
       setUploadingTarget(target);
@@ -190,18 +200,18 @@ export default function CreateEventPage() {
           try {
             resolve(JSON.parse(xhr.responseText));
           } catch {
-            reject(new Error("Invalid server response"));
+            reject(new Error('Invalid server response'));
           }
         } else {
           reject(new Error(`Upload failed (${xhr.status})`));
         }
       };
 
-      xhr.onerror = () => reject(new Error("Network error during upload"));
+      xhr.onerror = () => reject(new Error('Network error during upload'));
 
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3002";
-      xhr.open("POST", `${apiUrl}${endpoint}`);
-      xhr.setRequestHeader("Authorization", `Bearer ${getBackofficeToken()}`);
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002';
+      xhr.open('POST', `${apiUrl}${endpoint}`);
+      xhr.setRequestHeader('Authorization', `Bearer ${getBackofficeToken()}`);
       xhr.send(data);
     });
   };
@@ -213,18 +223,22 @@ export default function CreateEventPage() {
   };
 
   // Handle image selection — store File + preview, upload later on submit
-  const handleImageUpload = (file: File, type: "thumbnail" | "cover") => {
+  const handleImageUpload = (file: File, type: 'thumbnail' | 'cover') => {
     const previewUrl = URL.createObjectURL(file);
-    if (type === "thumbnail") {
-      if (pendingThumbnail?.previewUrl) URL.revokeObjectURL(pendingThumbnail.previewUrl);
+    if (type === 'thumbnail') {
+      if (pendingThumbnail?.previewUrl)
+        URL.revokeObjectURL(pendingThumbnail.previewUrl);
       setPendingThumbnail({ file, previewUrl });
       setFormData((prev) => ({ ...prev, imageUrl: previewUrl }));
     } else {
-      if (pendingCover?.previewUrl) URL.revokeObjectURL(pendingCover.previewUrl);
+      if (pendingCover?.previewUrl)
+        URL.revokeObjectURL(pendingCover.previewUrl);
       setPendingCover({ file, previewUrl });
       setFormData((prev) => ({ ...prev, coverImage: previewUrl }));
     }
-    toast.success(`${type === "thumbnail" ? "Thumbnail" : "Cover"} image selected! It will be uploaded when you save.`);
+    toast.success(
+      `${type === 'thumbnail' ? 'Thumbnail' : 'Cover'} image selected! It will be uploaded when you save.`,
+    );
   };
 
   const handleVideoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -232,7 +246,7 @@ export default function CreateEventPage() {
     if (!file) return;
 
     if (file.size > 50 * 1024 * 1024) {
-      toast.error("Video file too large (max 50MB)");
+      toast.error('Video file too large (max 50MB)');
       return;
     }
 
@@ -240,8 +254,8 @@ export default function CreateEventPage() {
     if (pendingVideo?.previewUrl) URL.revokeObjectURL(pendingVideo.previewUrl);
     setPendingVideo({ file, previewUrl });
     setFormData((prev) => ({ ...prev, videoUrl: previewUrl }));
-    toast.success("Video selected! It will be uploaded when you save.");
-    e.target.value = "";
+    toast.success('Video selected! It will be uploaded when you save.');
+    e.target.value = '';
   };
 
   const handleDocumentUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -249,17 +263,20 @@ export default function CreateEventPage() {
     if (!file) return;
 
     if (file.size > 50 * 1024 * 1024) {
-      toast.error("Document file too large (max 50MB)");
+      toast.error('Document file too large (max 50MB)');
       return;
     }
 
     setPendingDocuments((prev) => [...prev, { file, name: file.name }]);
     setFormData((prev) => ({
       ...prev,
-      documents: [...(prev.documents || []), { name: file.name, url: "pending" }],
+      documents: [
+        ...(prev.documents || []),
+        { name: file.name, url: 'pending' },
+      ],
     }));
-    toast.success("Document selected! It will be uploaded when you save.");
-    e.target.value = "";
+    toast.success('Document selected! It will be uploaded when you save.');
+    e.target.value = '';
   };
 
   // Upload single file to /upload/event-media with progress tracking
@@ -273,83 +290,91 @@ export default function CreateEventPage() {
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
       const data = new FormData();
-      data.append("file", file);
-      data.append("eventCode", eventCode);
-      data.append("eventName", eventName);
-      data.append("mediaType", mediaType);
-      if (sortOrder !== undefined) data.append("sortOrder", String(sortOrder));
+      data.append('file', file);
+      data.append('eventCode', eventCode);
+      data.append('eventName', eventName);
+      data.append('mediaType', mediaType);
+      if (sortOrder !== undefined) data.append('sortOrder', String(sortOrder));
 
       xhr.onload = () => {
         if (xhr.status >= 200 && xhr.status < 300) {
           try {
             resolve(JSON.parse(xhr.responseText));
           } catch {
-            reject(new Error("Invalid server response"));
+            reject(new Error('Invalid server response'));
           }
         } else {
           reject(new Error(`Upload failed (${xhr.status})`));
         }
       };
 
-      xhr.onerror = () => reject(new Error("Network error during upload"));
+      xhr.onerror = () => reject(new Error('Network error during upload'));
 
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3002";
-      xhr.open("POST", `${apiUrl}/api/upload/event-media`);
-      xhr.setRequestHeader("Authorization", `Bearer ${getBackofficeToken()}`);
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002';
+      xhr.open('POST', `${apiUrl}/api/upload/event-media`);
+      xhr.setRequestHeader('Authorization', `Bearer ${getBackofficeToken()}`);
       xhr.send(data);
     });
   };
 
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
   const [validationErrors, setValidationErrors] = useState<
     Record<string, string>
   >({});
   const [draftLoaded, setDraftLoaded] = useState(false);
 
   // Draft storage key
-  const DRAFT_KEY = "event_create_draft";
+  const DRAFT_KEY = 'event_create_draft';
 
   // Event form data
   const [formData, setFormData] = useState<EventFormData>({
-    eventCode: "",
-    eventName: "",
-    shortName: "",
-    description: "",
-    eventType: "single_room",
-    location: "",
-    mapUrl: "",
-    websiteUrl: "",
-    startDate: "",
-    endDate: "",
+    eventCode: '',
+    eventName: '',
+    shortName: '',
+    description: '',
+    eventType: 'single_room',
+    location: '',
+    mapUrl: '',
+    websiteUrl: '',
+    startDate: '',
+    endDate: '',
     maxCapacity: 0,
-    conferenceCode: "",
-    cpeCredits: "",
-    status: "draft",
-    imageUrl: "",
-    coverImage: "",
-    videoUrl: "",
+    conferenceCode: '',
+    cpeCredits: '',
+    status: 'draft',
+    imageUrl: '',
+    coverImage: '',
+    videoUrl: '',
     documents: [],
   });
 
   // Sessions and Tickets
   const [sessions, setSessions] = useState<SessionData[]>([]);
   const [tickets, setTickets] = useState<TicketData[]>([]);
-  const [venueImages, setVenueImages] = useState<{ id?: string, file?: File, previewUrl: string, url?: string, caption?: string }[]>([]);
-  const [imageCaption, setImageCaption] = useState("");
+  const [venueImages, setVenueImages] = useState<
+    {
+      id?: string;
+      file?: File;
+      previewUrl: string;
+      url?: string;
+      caption?: string;
+    }[]
+  >([]);
+  const [imageCaption, setImageCaption] = useState('');
   const [speakers, setSpeakers] = useState<Speaker[]>([]);
 
   // Load draft from localStorage on mount
   useEffect(() => {
     // Check if this is a reload vs fresh navigation
     // We use sessionStorage to flag a reload
-    const isReload = sessionStorage.getItem("event_create_reload");
+    const isReload = sessionStorage.getItem('event_create_reload');
 
     if (!isReload) {
       // Fresh visit: Clear any stale draft
       localStorage.removeItem(DRAFT_KEY);
     } else {
       // Reload: Consume the flag and allow draft to load
-      sessionStorage.removeItem("event_create_reload");
+      sessionStorage.removeItem('event_create_reload');
     }
 
     const saved = localStorage.getItem(DRAFT_KEY);
@@ -360,7 +385,7 @@ export default function CreateEventPage() {
           setFormData((prev) => ({
             ...prev,
             ...draft.formData,
-            shortName: draft.formData.shortName || "",
+            shortName: draft.formData.shortName || '',
           }));
         }
         const hasSessions = draft.sessions && draft.sessions.length > 0;
@@ -370,19 +395,19 @@ export default function CreateEventPage() {
         // Only restore step if we have valid data, otherwise default to 1
         if (draft.currentStep) setCurrentStep(draft.currentStep);
 
-        toast.success("Draft restored from previous session");
+        toast.success('Draft restored from previous session');
       } catch (e) {
-        console.error("Draft save error:", e);
+        console.error('Draft save error:', e);
       }
     }
     setDraftLoaded(true);
 
     // Set up beforeunload handler to flag reloads
     const handleBeforeUnload = () => {
-      sessionStorage.setItem("event_create_reload", "true");
+      sessionStorage.setItem('event_create_reload', 'true');
     };
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, []);
 
   // Save draft to localStorage when state changes
@@ -399,7 +424,7 @@ export default function CreateEventPage() {
         const res = await api.speakers.list(token);
         setSpeakers(res.speakers as unknown as Speaker[]);
       } catch (err) {
-        console.error("Failed to fetch speakers:", err);
+        console.error('Failed to fetch speakers:', err);
       }
     };
     fetchSpeakers();
@@ -407,13 +432,13 @@ export default function CreateEventPage() {
 
   // Session form data
   const [sessionForm, setSessionForm] = useState<SessionData>({
-    sessionCode: "",
-    sessionName: "",
-    sessionType: "other",
-    description: "",
-    room: "",
-    startTime: "",
-    endTime: "",
+    sessionCode: '',
+    sessionName: '',
+    sessionType: 'other',
+    description: '',
+    room: '',
+    startTime: '',
+    endTime: '',
     maxCapacity: 0,
     selectedSpeakerIds: [],
     isMainSession: false,
@@ -422,29 +447,29 @@ export default function CreateEventPage() {
 
   // Ticket form data
   const [ticketForm, setTicketForm] = useState<TicketData>({
-    name: "",
-    category: "primary",
-    groupName: "",
-    price: "",
-    currency: "THB",
-    originalPrice: "",
-    description: "",
+    name: '',
+    category: 'primary',
+    groupName: '',
+    price: '',
+    currency: 'THB',
+    originalPrice: '',
+    description: '',
     features: [],
-    badgeText: "",
-    quota: "0",
-    saleStartDate: "",
-    saleEndDate: "",
-    allowedRoles: ["pharmacist"],
+    badgeText: '',
+    quota: '0',
+    saleStartDate: '',
+    saleEndDate: '',
+    allowedRoles: ['pharmacist'],
     allowedStudentLevels: [],
-    priority: "regular",
+    priority: 'regular',
     isActive: true,
     sessionIds: [],
   });
-  const [ticketFeatureInput, setTicketFeatureInput] = useState("");
+  const [ticketFeatureInput, setTicketFeatureInput] = useState('');
 
   // Generate a unique event code
   const generateEventCode = () => {
-    const prefix = "EVT";
+    const prefix = 'EVT';
     const year = new Date().getFullYear();
     const randomPart = Math.random().toString(36).substring(2, 6).toUpperCase();
     const newCode = `${prefix}${year}-${randomPart}`;
@@ -452,10 +477,10 @@ export default function CreateEventPage() {
   };
 
   const steps = [
-    { id: 1, icon: IconCalendarEvent, label: "Event Details" },
-    { id: 2, icon: IconLayoutGrid, label: "Sessions" },
-    { id: 3, icon: IconTicket, label: "Tickets" },
-    { id: 4, icon: IconPhoto, label: "Venue/Images" },
+    { id: 1, icon: IconCalendarEvent, label: 'Event Details' },
+    { id: 2, icon: IconLayoutGrid, label: 'Sessions' },
+    { id: 3, icon: IconTicket, label: 'Tickets' },
+    { id: 4, icon: IconPhoto, label: 'Venue/Images' },
   ];
 
   // Always show sessions step for all event types
@@ -475,16 +500,16 @@ export default function CreateEventPage() {
   const validateStep1 = (): boolean => {
     const errors: Record<string, string> = {};
 
-    if (!formData.eventCode.trim()) errors.eventCode = "Event Code is required";
-    if (!formData.eventName.trim()) errors.eventName = "Event Name is required";
-    if (!formData.startDate) errors.startDate = "Start Date is required";
-    if (!formData.endDate) errors.endDate = "End Date is required";
+    if (!formData.eventCode.trim()) errors.eventCode = 'Event Code is required';
+    if (!formData.eventName.trim()) errors.eventName = 'Event Name is required';
+    if (!formData.startDate) errors.startDate = 'Start Date is required';
+    if (!formData.endDate) errors.endDate = 'End Date is required';
     if (
       formData.startDate &&
       formData.endDate &&
       formData.startDate > formData.endDate
     ) {
-      errors.endDate = "End Date must be after Start Date";
+      errors.endDate = 'End Date must be after Start Date';
     }
 
     setValidationErrors(errors);
@@ -504,7 +529,7 @@ export default function CreateEventPage() {
   const goToNextStep = () => {
     if (currentStep === 1) {
       if (!validateStep1()) {
-        toast.error("Please fill in all required fields");
+        toast.error('Please fill in all required fields');
         return;
       }
 
@@ -514,17 +539,17 @@ export default function CreateEventPage() {
           id: Date.now(),
           sessionCode: `${formData.eventCode}-MAIN`,
           sessionName: formData.eventName,
-          sessionType: "lecture", // Default for main session
+          sessionType: 'lecture', // Default for main session
           description: formData.description, // Copy event description to learning objectives
-          room: formData.location || "",
-          startTime: formData.startDate || "",
-          endTime: formData.endDate || "",
+          room: formData.location || '',
+          startTime: formData.startDate || '',
+          endTime: formData.endDate || '',
           maxCapacity: formData.maxCapacity,
           isMainSession: true, // Mark as Main Session
           selectedSpeakerIds: [],
         };
         setSessions([defaultSession]);
-        toast.success("Main session created automatically");
+        toast.success('Main session created automatically');
       }
 
       setCurrentStep(2);
@@ -553,19 +578,23 @@ export default function CreateEventPage() {
       <div
         className={`mb-6 rounded-xl border px-4 py-4 ${
           readiness.ready
-            ? "border-emerald-200 bg-emerald-50"
-            : "border-amber-200 bg-amber-50"
+            ? 'border-emerald-200 bg-emerald-50'
+            : 'border-amber-200 bg-amber-50'
         }`}
       >
         <div className="flex items-start gap-3">
           <div
             className={`mt-0.5 flex h-8 w-8 items-center justify-center rounded-full ${
               readiness.ready
-                ? "bg-emerald-100 text-emerald-700"
-                : "bg-amber-100 text-amber-700"
+                ? 'bg-emerald-100 text-emerald-700'
+                : 'bg-amber-100 text-amber-700'
             }`}
           >
-            {readiness.ready ? <IconCheck size={18} /> : <IconAlertTriangle size={18} />}
+            {readiness.ready ? (
+              <IconCheck size={18} />
+            ) : (
+              <IconAlertTriangle size={18} />
+            )}
           </div>
           <div className="flex-1">
             <h4 className="text-sm font-semibold text-zinc-900">
@@ -621,13 +650,13 @@ export default function CreateEventPage() {
     }
 
     setSessionForm({
-      sessionCode: "",
-      sessionName: "",
-      sessionType: "other",
-      description: "",
-      room: "",
-      startTime: "",
-      endTime: "",
+      sessionCode: '',
+      sessionName: '',
+      sessionType: 'other',
+      description: '',
+      room: '',
+      startTime: '',
+      endTime: '',
       maxCapacity: 0,
       selectedSpeakerIds: [],
       isMainSession: false,
@@ -641,9 +670,9 @@ export default function CreateEventPage() {
     setSessionForm({
       sessionCode: session.sessionCode,
       sessionName: session.sessionName,
-      sessionType: (session.sessionType as any) || "other",
-      description: session.description || "",
-      room: session.room || "",
+      sessionType: (session.sessionType as any) || 'other',
+      description: session.description || '',
+      room: session.room || '',
       startTime: session.startTime,
       endTime: session.endTime,
       maxCapacity: session.maxCapacity,
@@ -665,13 +694,13 @@ export default function CreateEventPage() {
     if (!ticketForm.name || !ticketForm.price) return;
     const quotaNum = parseInt(ticketForm.quota) || 0;
     if (quotaNum < 0) {
-      toast.error("Quota cannot be negative");
+      toast.error('Quota cannot be negative');
       return;
     }
 
     const normalizedTicketForm = {
       ...ticketForm,
-      allowedStudentLevels: (ticketForm.allowedRoles || []).includes("student")
+      allowedStudentLevels: (ticketForm.allowedRoles || []).includes('student')
         ? ticketForm.allowedStudentLevels || []
         : [],
     };
@@ -680,35 +709,40 @@ export default function CreateEventPage() {
       // Update existing ticket
       setTickets((prev) =>
         prev.map((t) =>
-          t.id === editingTicketId ? { ...normalizedTicketForm, id: editingTicketId } : t,
+          t.id === editingTicketId
+            ? { ...normalizedTicketForm, id: editingTicketId }
+            : t,
         ),
       );
       setEditingTicketId(null);
     } else {
       // Add new ticket
-      setTickets((prev) => [...prev, { ...normalizedTicketForm, id: Date.now() }]);
+      setTickets((prev) => [
+        ...prev,
+        { ...normalizedTicketForm, id: Date.now() },
+      ]);
     }
 
     setTicketForm({
-      name: "",
-      category: "primary",
-      groupName: "",
-      price: "",
-      currency: "THB",
-      originalPrice: "",
-      description: "",
+      name: '',
+      category: 'primary',
+      groupName: '',
+      price: '',
+      currency: 'THB',
+      originalPrice: '',
+      description: '',
       features: [],
-      badgeText: "",
-      quota: "100",
-      saleStartDate: "",
-      saleEndDate: "",
-      allowedRoles: ["pharmacist"],
+      badgeText: '',
+      quota: '100',
+      saleStartDate: '',
+      saleEndDate: '',
+      allowedRoles: ['pharmacist'],
       allowedStudentLevels: [],
-      priority: "regular",
+      priority: 'regular',
       isActive: true,
       sessionIds: [],
     });
-    setTicketFeatureInput("");
+    setTicketFeatureInput('');
     setShowTicketModal(false);
   };
 
@@ -717,19 +751,19 @@ export default function CreateEventPage() {
     setTicketForm({
       name: ticket.name,
       category: ticket.category,
-      groupName: ticket.groupName || "",
+      groupName: ticket.groupName || '',
       price: ticket.price,
       currency: ticket.currency,
-      originalPrice: ticket.originalPrice || "",
-      description: ticket.description || "",
+      originalPrice: ticket.originalPrice || '',
+      description: ticket.description || '',
       features: ticket.features || [],
-      badgeText: ticket.badgeText || "",
+      badgeText: ticket.badgeText || '',
       quota: ticket.quota,
       saleStartDate: ticket.saleStartDate,
       saleEndDate: ticket.saleEndDate,
       allowedRoles: ticket.allowedRoles,
       allowedStudentLevels: ticket.allowedStudentLevels || [],
-      priority: ticket.priority || "regular",
+      priority: ticket.priority || 'regular',
       isActive: ticket.isActive ?? true,
       sessionIds:
         ticket.sessionIds || (ticket.sessionId ? [ticket.sessionId] : []),
@@ -745,14 +779,14 @@ export default function CreateEventPage() {
 
   // Extract src from iframe string if present
   const extractMapUrl = (html: string) => {
-    if (!html || !html.trim().startsWith("<iframe")) return html;
+    if (!html || !html.trim().startsWith('<iframe')) return html;
     const match = html.match(/src="([^"]+)"/);
     return match ? match[1] : html;
   };
 
   // Submit form
   const handleFinish = async () => {
-    setError("");
+    setError('');
     setIsSubmitting(true);
 
     try {
@@ -775,53 +809,97 @@ export default function CreateEventPage() {
         cpeCredits: formData.cpeCredits || undefined,
         status: formData.status,
         // Don't send blob URLs — real URLs will be set after upload
-        imageUrl: (!formData.imageUrl || formData.imageUrl.startsWith("blob:")) ? undefined : formData.imageUrl,
-        coverImage: (!formData.coverImage || formData.coverImage.startsWith("blob:")) ? undefined : formData.coverImage,
-        videoUrl: (!formData.videoUrl || formData.videoUrl.startsWith("blob:")) ? undefined : formData.videoUrl,
-        documents: formData.documents.filter(d => d.url !== "pending").length > 0
-          ? formData.documents.filter(d => d.url !== "pending")
-          : undefined,
+        imageUrl:
+          !formData.imageUrl || formData.imageUrl.startsWith('blob:')
+            ? undefined
+            : formData.imageUrl,
+        coverImage:
+          !formData.coverImage || formData.coverImage.startsWith('blob:')
+            ? undefined
+            : formData.coverImage,
+        videoUrl:
+          !formData.videoUrl || formData.videoUrl.startsWith('blob:')
+            ? undefined
+            : formData.videoUrl,
+        documents:
+          formData.documents.filter((d) => d.url !== 'pending').length > 0
+            ? formData.documents.filter((d) => d.url !== 'pending')
+            : undefined,
       };
 
       const { event } = await api.backofficeEvents.create(token, eventData);
 
       // ── Upload all pending media files in parallel via /upload/event-media ──
       setIsUploading(true);
-      setUploadingTarget("media");
+      setUploadingTarget('media');
       setUploadProgress(0);
 
       const mediaUploads: Promise<{ type: string; url: string } | null>[] = [];
 
       if (pendingThumbnail) {
         mediaUploads.push(
-          uploadEventMediaFile(pendingThumbnail.file, event.eventCode, event.eventName, "thumbnail")
-            .then(r => ({ type: "thumbnail", url: r.url }))
-            .catch(err => { console.error("Failed to upload thumbnail:", err); return null; })
+          uploadEventMediaFile(
+            pendingThumbnail.file,
+            event.eventCode,
+            event.eventName,
+            'thumbnail',
+          )
+            .then((r) => ({ type: 'thumbnail', url: r.url }))
+            .catch((err) => {
+              console.error('Failed to upload thumbnail:', err);
+              return null;
+            }),
         );
       }
 
       if (pendingCover) {
         mediaUploads.push(
-          uploadEventMediaFile(pendingCover.file, event.eventCode, event.eventName, "cover_img")
-            .then(r => ({ type: "cover_img", url: r.url }))
-            .catch(err => { console.error("Failed to upload cover:", err); return null; })
+          uploadEventMediaFile(
+            pendingCover.file,
+            event.eventCode,
+            event.eventName,
+            'cover_img',
+          )
+            .then((r) => ({ type: 'cover_img', url: r.url }))
+            .catch((err) => {
+              console.error('Failed to upload cover:', err);
+              return null;
+            }),
         );
       }
 
       if (pendingVideo) {
         mediaUploads.push(
-          uploadEventMediaFile(pendingVideo.file, event.eventCode, event.eventName, "cover_vdo")
-            .then(r => ({ type: "cover_vdo", url: r.url }))
-            .catch(err => { console.error("Failed to upload video:", err); return null; })
+          uploadEventMediaFile(
+            pendingVideo.file,
+            event.eventCode,
+            event.eventName,
+            'cover_vdo',
+          )
+            .then((r) => ({ type: 'cover_vdo', url: r.url }))
+            .catch((err) => {
+              console.error('Failed to upload video:', err);
+              return null;
+            }),
         );
       }
 
       // Upload pending documents
       for (const doc of pendingDocuments) {
         mediaUploads.push(
-          uploadEventMediaFile(doc.file, event.eventCode, event.eventName, "document")
-            .then(r => ({ type: "document", url: r.url, name: doc.name } as any))
-            .catch(err => { console.error("Failed to upload document:", err); return null; })
+          uploadEventMediaFile(
+            doc.file,
+            event.eventCode,
+            event.eventName,
+            'document',
+          )
+            .then(
+              (r) => ({ type: 'document', url: r.url, name: doc.name }) as any,
+            )
+            .catch((err) => {
+              console.error('Failed to upload document:', err);
+              return null;
+            }),
         );
       }
 
@@ -830,32 +908,61 @@ export default function CreateEventPage() {
         const img = venueImages[i];
         if (img.file) {
           mediaUploads.push(
-            uploadEventMediaFile(img.file, event.eventCode, event.eventName, "venue", i)
-              .then(r => ({ type: "venue", url: r.url, caption: img.caption } as any))
-              .catch(err => { console.error("Failed to upload venue image:", err); return null; })
+            uploadEventMediaFile(
+              img.file,
+              event.eventCode,
+              event.eventName,
+              'venue',
+              i,
+            )
+              .then(
+                (r) =>
+                  ({ type: 'venue', url: r.url, caption: img.caption }) as any,
+              )
+              .catch((err) => {
+                console.error('Failed to upload venue image:', err);
+                return null;
+              }),
           );
         }
       }
 
       const mediaResults = await Promise.allSettled(mediaUploads);
       const resolved = mediaResults
-        .filter((r): r is PromiseFulfilledResult<{ type: string; url: string } | null> => r.status === "fulfilled")
-        .map(r => r.value)
+        .filter(
+          (
+            r,
+          ): r is PromiseFulfilledResult<{
+            type: string;
+            url: string;
+          } | null> => r.status === 'fulfilled',
+        )
+        .map((r) => r.value)
         .filter((r): r is { type: string; url: string } => r !== null);
 
       // PATCH event with uploaded URLs
       const patchData: Record<string, unknown> = {};
       for (const result of resolved) {
-        if (result.type === "thumbnail") patchData.imageUrl = result.url;
-        if (result.type === "cover_img") patchData.coverImage = result.url;
-        if (result.type === "cover_vdo") patchData.videoUrl = result.url;
+        if (result.type === 'thumbnail') patchData.imageUrl = result.url;
+        if (result.type === 'cover_img') patchData.coverImage = result.url;
+        if (result.type === 'cover_vdo') patchData.videoUrl = result.url;
       }
 
       // Build documents array from uploaded results
-      const uploadedDocs = resolved.filter(r => r.type === "document") as any[];
+      const uploadedDocs = resolved.filter(
+        (r) => r.type === 'document',
+      ) as any[];
       if (uploadedDocs.length > 0) {
-        const existingDocs = (formData.documents || []).filter(d => d.url !== "pending");
-        patchData.documents = [...existingDocs, ...uploadedDocs.map((d: any) => ({ name: d.name || "document", url: d.url }))];
+        const existingDocs = (formData.documents || []).filter(
+          (d) => d.url !== 'pending',
+        );
+        patchData.documents = [
+          ...existingDocs,
+          ...uploadedDocs.map((d: any) => ({
+            name: d.name || 'document',
+            url: d.url,
+          })),
+        ];
       }
 
       if (Object.keys(patchData).length > 0) {
@@ -863,22 +970,25 @@ export default function CreateEventPage() {
       }
 
       // Link venue images to event_images table
-      const venueResults = resolved.filter(r => r.type === "venue") as any[];
+      const venueResults = resolved.filter((r) => r.type === 'venue') as any[];
       for (const vr of venueResults) {
         try {
-          await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3002"}/api/backoffice/events/${event.id}/images`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
+          await fetch(
+            `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002'}/api/backoffice/events/${event.id}/images`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({
+                imageUrl: vr.url,
+                caption: vr.caption || undefined,
+              }),
             },
-            body: JSON.stringify({
-              imageUrl: vr.url,
-              caption: vr.caption || undefined,
-            }),
-          });
+          );
         } catch (err) {
-          console.error("Failed to link venue image:", err);
+          console.error('Failed to link venue image:', err);
         }
       }
 
@@ -892,7 +1002,7 @@ export default function CreateEventPage() {
           const speakerNames = (session.selectedSpeakerIds || [])
             .map((id) => {
               const speaker = speakers.find((s) => s.id === id);
-              return speaker ? `${speaker.firstName} ${speaker.lastName}` : "";
+              return speaker ? `${speaker.firstName} ${speaker.lastName}` : '';
             })
             .filter(Boolean);
 
@@ -910,7 +1020,10 @@ export default function CreateEventPage() {
               maxCapacity: session.maxCapacity,
               isMainSession: session.isMainSession || false,
               sessionType: session.sessionType,
-              agenda: session.agenda && session.agenda.length > 0 ? session.agenda : undefined,
+              agenda:
+                session.agenda && session.agenda.length > 0
+                  ? session.agenda
+                  : undefined,
             },
           );
           // Map local session ID to API session ID
@@ -925,7 +1038,7 @@ export default function CreateEventPage() {
         // Map local sessionIds to API sessionIds
         let apiSessionIds: number[] = [];
 
-        if (ticket.category === "primary") {
+        if (ticket.category === 'primary') {
           // Auto-link Primary tickets to ALL Main Sessions
           const mainSessions = sessions.filter((s) => s.isMainSession);
           for (const mainSession of mainSessions) {
@@ -935,7 +1048,7 @@ export default function CreateEventPage() {
             }
           }
         } else if (
-          ticket.category === "addon" &&
+          ticket.category === 'addon' &&
           ticket.sessionIds &&
           ticket.sessionIds.length > 0
         ) {
@@ -943,7 +1056,7 @@ export default function CreateEventPage() {
           apiSessionIds = ticket.sessionIds
             .map((localId) => sessionIdMap.get(localId))
             .filter((id) => id !== undefined) as number[];
-        } else if (ticket.category === "addon" && ticket.sessionId) {
+        } else if (ticket.category === 'addon' && ticket.sessionId) {
           // Backward compat for local state if needed
           const mapped = sessionIdMap.get(ticket.sessionId);
           if (mapped) apiSessionIds.push(mapped);
@@ -955,16 +1068,24 @@ export default function CreateEventPage() {
           groupName: ticket.groupName || undefined,
           price: ticket.price, // Already a string
           currency: ticket.currency,
-          originalPrice: ticket.originalPrice ? Number(ticket.originalPrice) : undefined,
+          originalPrice: ticket.originalPrice
+            ? Number(ticket.originalPrice)
+            : undefined,
           description: ticket.description || undefined,
-          features: ticket.features && ticket.features.length > 0 ? ticket.features : [],
+          features:
+            ticket.features && ticket.features.length > 0
+              ? ticket.features
+              : [],
           badgeText: ticket.badgeText || undefined,
           quota: parseInt(ticket.quota) || 0,
           allowedRoles: JSON.stringify(ticket.allowedRoles),
-          allowedStudentLevels: ticket.allowedRoles.includes("student") && ticket.allowedStudentLevels && ticket.allowedStudentLevels.length > 0
-            ? JSON.stringify(ticket.allowedStudentLevels)
-            : undefined,
-          priority: ticket.priority || "regular",
+          allowedStudentLevels:
+            ticket.allowedRoles.includes('student') &&
+            ticket.allowedStudentLevels &&
+            ticket.allowedStudentLevels.length > 0
+              ? JSON.stringify(ticket.allowedStudentLevels)
+              : undefined,
+          priority: ticket.priority || 'regular',
           isActive: ticket.isActive ?? true,
           sessionIds: apiSessionIds,
         };
@@ -981,16 +1102,23 @@ export default function CreateEventPage() {
         await api.backofficeEvents.createTicket(token, event.id, ticketPayload);
       }
 
-      toast.success("Event created successfully!");
+      toast.success('Event created successfully!');
       localStorage.removeItem(DRAFT_KEY); // Clear draft on success
-      router.push("/events");
+      router.push('/events');
     } catch (err: any) {
       console.error(err);
-      const errorMessage = err.message || "Failed to create event";
+      const errorMessage = err.message || 'Failed to create event';
 
-      if (errorMessage.includes("Event code already exists") || err.status === 409) {
-        setError(`Event code "${formData.eventCode}" already exists. Please generate a new one.`);
-        toast.error(`Event code "${formData.eventCode}" already exists. Please generate a new one.`);
+      if (
+        errorMessage.includes('Event code already exists') ||
+        err.status === 409
+      ) {
+        setError(
+          `Event code "${formData.eventCode}" already exists. Please generate a new one.`,
+        );
+        toast.error(
+          `Event code "${formData.eventCode}" already exists. Please generate a new one.`,
+        );
         setCurrentStep(1); // Go back to step 1 to fix the code
       } else {
         setError(errorMessage);
@@ -1045,12 +1173,13 @@ export default function CreateEventPage() {
                   >
                     <div
                       className={`w-12 h-12 mx-auto rounded-full flex items-center justify-center mb-2 transition-all
-                      ${isCompleted
-                          ? "bg-green-500 text-white"
+                      ${
+                        isCompleted
+                          ? 'bg-green-500 text-white'
                           : isCurrent
-                            ? "bg-emerald-700 text-white"
-                            : "bg-zinc-200 text-zinc-400"
-                        }`}
+                            ? 'bg-emerald-700 text-white'
+                            : 'bg-zinc-200 text-zinc-400'
+                      }`}
                     >
                       {isCompleted ? (
                         <IconCheck size={24} />
@@ -1059,12 +1188,13 @@ export default function CreateEventPage() {
                       )}
                     </div>
                     <p
-                      className={`text-sm font-medium ${isCurrent
-                        ? "text-emerald-600"
-                        : isCompleted
-                          ? "text-green-600"
-                          : "text-zinc-400"
-                        }`}
+                      className={`text-sm font-medium ${
+                        isCurrent
+                          ? 'text-emerald-600'
+                          : isCompleted
+                            ? 'text-green-600'
+                            : 'text-zinc-400'
+                      }`}
                     >
                       {step.label}
                     </p>
@@ -1099,7 +1229,7 @@ export default function CreateEventPage() {
               <div className="flex gap-2">
                 <input
                   type="text"
-                  className={`input-field flex-1 ${validationErrors.eventCode ? "border-red-500" : ""}`}
+                  className={`input-field flex-1 ${validationErrors.eventCode ? 'border-red-500' : ''}`}
                   placeholder="e.g., EVT2026-ABCD"
                   value={formData.eventCode}
                   onChange={(e) =>
@@ -1134,8 +1264,7 @@ export default function CreateEventPage() {
                   setFormData((prev) => ({
                     ...prev,
                     eventType: e.target.value as
-                      | "single_room"
-                      | "multi_session",
+                      'single_room' | 'multi_session',
                   }))
                 }
               >
@@ -1151,7 +1280,7 @@ export default function CreateEventPage() {
             </label>
             <input
               type="text"
-              className={`input-field ${validationErrors.eventName ? "border-red-500" : ""}`}
+              className={`input-field ${validationErrors.eventName ? 'border-red-500' : ''}`}
               placeholder="Enter event name"
               value={formData.eventName}
               onChange={(e) =>
@@ -1179,7 +1308,8 @@ export default function CreateEventPage() {
               }
             />
             <p className="mt-1 text-xs text-zinc-400">
-              Used in email subject lines. If blank, the full event name will be used.
+              Used in email subject lines. If blank, the full event name will be
+              used.
             </p>
           </div>
 
@@ -1208,21 +1338,33 @@ export default function CreateEventPage() {
               {(formData.documents || []).length > 0 && (
                 <div className="grid gap-2">
                   {(formData.documents || []).map((doc, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-3 border border-zinc-200 rounded-xl bg-zinc-50">
+                    <div
+                      key={idx}
+                      className="flex items-center justify-between p-3 border border-zinc-200 rounded-xl bg-zinc-50"
+                    >
                       <div className="flex items-center gap-3 overflow-hidden">
                         <div className="w-8 h-8 rounded bg-emerald-50 flex items-center justify-center text-emerald-600 flex-shrink-0">
                           <IconFileText size={18} />
                         </div>
-                        <a href={doc.url} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-emerald-600 hover:underline truncate">
+                        <a
+                          href={doc.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm font-medium text-emerald-600 hover:underline truncate"
+                        >
                           {doc.name}
                         </a>
                       </div>
                       <button
                         type="button"
-                        onClick={() => setFormData(prev => ({
-                          ...prev,
-                          documents: prev.documents.filter((_, i) => i !== idx)
-                        }))}
+                        onClick={() =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            documents: prev.documents.filter(
+                              (_, i) => i !== idx,
+                            ),
+                          }))
+                        }
                         className="p-2 text-zinc-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                       >
                         <IconTrash size={18} />
@@ -1243,19 +1385,28 @@ export default function CreateEventPage() {
                 />
                 <label
                   htmlFor="document-upload"
-                  className={`flex flex-col items-center justify-center w-full h-24 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${isUploading ? "bg-zinc-100 border-zinc-200 opacity-70" : "border-zinc-200 bg-zinc-50 hover:bg-zinc-100"
-                    }`}
+                  className={`flex flex-col items-center justify-center w-full h-24 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
+                    isUploading
+                      ? 'bg-zinc-100 border-zinc-200 opacity-70'
+                      : 'border-zinc-200 bg-zinc-50 hover:bg-zinc-100'
+                  }`}
                 >
                   <div className="flex flex-col items-center justify-center pb-6 pt-5">
                     {isUploading ? (
-                      <IconLoader2 size={24} className="text-zinc-400 mb-2 animate-spin" />
+                      <IconLoader2
+                        size={24}
+                        className="text-zinc-400 mb-2 animate-spin"
+                      />
                     ) : (
                       <IconUpload size={24} className="text-zinc-400 mb-2" />
                     )}
                     <p className="mb-2 text-sm text-zinc-400">
-                      <span className="font-semibold">Click to upload</span> a document
+                      <span className="font-semibold">Click to upload</span> a
+                      document
                     </p>
-                    <p className="text-xs text-zinc-400">PDF, DOC, DOCX, XLS or XLSX (Max 50MB)</p>
+                    <p className="text-xs text-zinc-400">
+                      PDF, DOC, DOCX, XLS or XLSX (Max 50MB)
+                    </p>
                   </div>
                 </label>
               </div>
@@ -1274,12 +1425,12 @@ export default function CreateEventPage() {
                 onChange={(date: Date | null) =>
                   setFormData((prev) => ({
                     ...prev,
-                    startDate: date ? date.toISOString() : "",
+                    startDate: date ? date.toISOString() : '',
                   }))
                 }
                 showTimeSelect
                 dateFormat="d MMM yyyy, h:mm aa"
-                className={`input-field w-full ${validationErrors.startDate ? "border-red-500" : ""}`}
+                className={`input-field w-full ${validationErrors.startDate ? 'border-red-500' : ''}`}
                 placeholderText="Select start date"
                 wrapperClassName="w-full"
               />
@@ -1298,12 +1449,12 @@ export default function CreateEventPage() {
                 onChange={(date: Date | null) =>
                   setFormData((prev) => ({
                     ...prev,
-                    endDate: date ? date.toISOString() : "",
+                    endDate: date ? date.toISOString() : '',
                   }))
                 }
                 showTimeSelect
                 dateFormat="d MMM yyyy, h:mm aa"
-                className={`input-field w-full ${validationErrors.endDate ? "border-red-500" : ""}`}
+                className={`input-field w-full ${validationErrors.endDate ? 'border-red-500' : ''}`}
                 placeholderText="Select end date"
                 wrapperClassName="w-full"
               />
@@ -1347,7 +1498,8 @@ export default function CreateEventPage() {
                 }
               />
               <p className="mt-1 text-xs text-zinc-400">
-                Optional metadata for events that are launched from an external site.
+                Optional metadata for events that are launched from an external
+                site.
               </p>
             </div>
           </div>
@@ -1433,7 +1585,7 @@ export default function CreateEventPage() {
               onChange={(e) =>
                 setFormData((prev) => ({
                   ...prev,
-                  status: e.target.value as "draft" | "published",
+                  status: e.target.value as 'draft' | 'published',
                 }))
               }
             >
@@ -1490,26 +1642,29 @@ export default function CreateEventPage() {
                             {session.sessionCode}
                           </span>
                           <span className="bg-purple-100 text-purple-700 text-[10px] px-2 py-0.5 rounded uppercase font-bold border border-purple-200">
-                            {session.sessionType?.replace("_", " ") || "OTHER"}
+                            {session.sessionType?.replace('_', ' ') || 'OTHER'}
                           </span>
                           <h5 className="font-semibold text-zinc-900">
                             {session.sessionName}
                           </h5>
                         </div>
                         <p className="text-sm text-zinc-500 mb-2">
-                          {session.description || "No description"}
+                          {session.description || 'No description'}
                         </p>
                         <div className="flex gap-4 text-sm text-zinc-400">
                           <span className="flex items-center gap-1">
-                            <IconCheck size={14} /> {session.room || "No Room"}
+                            <IconCheck size={14} /> {session.room || 'No Room'}
                           </span>
                           <span className="flex items-center gap-1">
-                            <IconCalendarEvent size={14} />{" "}
-                            {formatDateTime(session.startTime)} -{" "}
+                            <IconCalendarEvent size={14} />{' '}
+                            {formatDateTime(session.startTime)} -{' '}
                             {formatTime(session.endTime)}
                           </span>
                           <span className="flex items-center gap-1">
-                            <IconTarget size={14} /> Cap: {session.maxCapacity === 0 ? "Unlimited" : session.maxCapacity}
+                            <IconTarget size={14} /> Cap:{' '}
+                            {session.maxCapacity === 0
+                              ? 'Unlimited'
+                              : session.maxCapacity}
                           </span>
                         </div>
                       </div>
@@ -1535,13 +1690,13 @@ export default function CreateEventPage() {
               <button
                 onClick={() => {
                   setSessionForm({
-                    sessionCode: "",
-                    sessionName: "",
-                    sessionType: "other",
-                    description: "",
-                    room: "",
-                    startTime: "",
-                    endTime: "",
+                    sessionCode: '',
+                    sessionName: '',
+                    sessionType: 'other',
+                    description: '',
+                    room: '',
+                    startTime: '',
+                    endTime: '',
                     maxCapacity: 0,
                     selectedSpeakerIds: [],
                   });
@@ -1581,8 +1736,8 @@ export default function CreateEventPage() {
                                 {session.sessionName}
                               </p>
                               <span className="bg-zinc-100 text-zinc-500 text-[10px] px-1.5 py-0.5 rounded uppercase font-bold border border-zinc-200">
-                                {session.sessionType?.replace("_", " ") ||
-                                  "OTHER"}
+                                {session.sessionType?.replace('_', ' ') ||
+                                  'OTHER'}
                               </span>
                             </div>
                             <p className="text-sm text-zinc-400">
@@ -1595,13 +1750,24 @@ export default function CreateEventPage() {
                             <br />
                             to {formatTime(session.endTime)}
                           </td>
-                          <td>{session.maxCapacity === 0 ? <span className="text-green-600 font-medium">Unlimited</span> : session.maxCapacity}</td>
+                          <td>
+                            {session.maxCapacity === 0 ? (
+                              <span className="text-green-600 font-medium">
+                                Unlimited
+                              </span>
+                            ) : (
+                              session.maxCapacity
+                            )}
+                          </td>
                           <td className="flex gap-1">
                             <button
                               onClick={() => handleEditSession(session)}
                               className="p-1.5 hover:bg-emerald-50 rounded"
                             >
-                              <IconPencil size={18} className="text-emerald-600" />
+                              <IconPencil
+                                size={18}
+                                className="text-emerald-600"
+                              />
                             </button>
                             <button
                               onClick={() => handleDeleteSession(session.id!)}
@@ -1686,25 +1852,41 @@ export default function CreateEventPage() {
                       </td>
                       <td>
                         <span
-                          className={`badge ${ticket.category === "primary" ? "bg-emerald-50 text-teal-900" : "bg-purple-100 text-purple-800"}`}
+                          className={`badge ${ticket.category === 'primary' ? 'bg-emerald-50 text-teal-900' : 'bg-purple-100 text-purple-800'}`}
                         >
-                          {ticket.category === "primary" ? "Primary" : "Add-on"}
+                          {ticket.category === 'primary' ? 'Primary' : 'Add-on'}
                         </span>
-                        {ticket.allowedRoles && ticket.allowedRoles.length > 0 ? (
+                        {ticket.allowedRoles &&
+                        ticket.allowedRoles.length > 0 ? (
                           ticket.allowedRoles.map((role) => (
                             <span
                               key={role}
                               className="badge ml-1 bg-zinc-100 text-zinc-600"
                             >
-                              {role === "pharmacist" ? "PHARMACIST" : role === "medical_professional" ? "MED. PROF." : role === "student" ? "STUDENT" : role === "general" ? "GENERAL" : role === "healthhack" ? "HealthHack" : role === "booth" ? "Booth" : role.toUpperCase()}
+                              {role === 'pharmacist'
+                                ? 'PHARMACIST'
+                                : role === 'medical_professional'
+                                  ? 'MED. PROF.'
+                                  : role === 'student'
+                                    ? 'STUDENT'
+                                    : role === 'general'
+                                      ? 'GENERAL'
+                                      : role === 'healthhack'
+                                        ? 'HealthHack'
+                                        : role === 'booth'
+                                          ? 'Booth'
+                                          : role.toUpperCase()}
                             </span>
                           ))
                         ) : (
-                          <span className="badge ml-1 bg-zinc-100 text-zinc-600">ALL</span>
+                          <span className="badge ml-1 bg-zinc-100 text-zinc-600">
+                            ALL
+                          </span>
                         )}
-                        {ticket.allowedRoles.includes("student") && (
+                        {ticket.allowedRoles.includes('student') && (
                           <div className="mt-1 flex flex-wrap gap-1">
-                            {ticket.allowedStudentLevels && ticket.allowedStudentLevels.length > 0 ? (
+                            {ticket.allowedStudentLevels &&
+                            ticket.allowedStudentLevels.length > 0 ? (
                               ticket.allowedStudentLevels.map((level) => (
                                 <span
                                   key={level}
@@ -1720,18 +1902,18 @@ export default function CreateEventPage() {
                             )}
                           </div>
                         )}
-                        {ticket.category === "primary" && (
+                        {ticket.category === 'primary' && (
                           <div className="text-xs text-emerald-600 mt-1 flex items-center gap-1">
                             <IconCheck size={12} /> Includes Main Session
                           </div>
                         )}
-                        {ticket.category === "addon" &&
+                        {ticket.category === 'addon' &&
                           ticket.sessionIds &&
                           ticket.sessionIds.length > 0 && (
                             <div className="text-xs text-purple-600 mt-1">
                               {ticket.sessionIds.length === 1 ? (
                                 <>
-                                  →{" "}
+                                  →{' '}
                                   {sessions.find(
                                     (s) => s.id === ticket.sessionIds![0],
                                   )?.sessionName ||
@@ -1746,18 +1928,33 @@ export default function CreateEventPage() {
                           )}
                       </td>
                       <td className="font-semibold">
-                        {ticket.currency === "USD" ? "$" : "฿"}
+                        {ticket.currency === 'USD' ? '$' : '฿'}
                         {ticket.price}
                       </td>
-                      <td>{ticket.quota === "0" || ticket.quota === "" ? <span className="text-green-600 font-medium">Unlimited</span> : ticket.quota}</td>
                       <td>
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${ticket.priority === 'early_bird' ? 'bg-orange-100 text-orange-800' :
-                          ticket.priority === 'regular' ? 'bg-zinc-100 text-zinc-800' :
-                            'bg-zinc-100 text-zinc-800'
-                          }`}>
-                          {ticket.priority === 'early_bird' ? 'Early Bird' :
-                            ticket.priority === 'regular' ? 'Regular' :
-                              'Regular'}
+                        {ticket.quota === '0' || ticket.quota === '' ? (
+                          <span className="text-green-600 font-medium">
+                            Unlimited
+                          </span>
+                        ) : (
+                          ticket.quota
+                        )}
+                      </td>
+                      <td>
+                        <span
+                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                            ticket.priority === 'early_bird'
+                              ? 'bg-orange-100 text-orange-800'
+                              : ticket.priority === 'regular'
+                                ? 'bg-zinc-100 text-zinc-800'
+                                : 'bg-zinc-100 text-zinc-800'
+                          }`}
+                        >
+                          {ticket.priority === 'early_bird'
+                            ? 'Early Bird'
+                            : ticket.priority === 'regular'
+                              ? 'Regular'
+                              : 'Regular'}
                         </span>
                       </td>
                       <td className="text-sm text-zinc-500">
@@ -1771,7 +1968,10 @@ export default function CreateEventPage() {
                             onClick={() => handleEditTicket(ticket)}
                             className="p-1.5 hover:bg-emerald-50 rounded"
                           >
-                            <IconPencil size={18} className="text-emerald-600" />
+                            <IconPencil
+                              size={18}
+                              className="text-emerald-600"
+                            />
                           </button>
                           <button
                             onClick={() => handleDeleteTicket(ticket.id!)}
@@ -1799,10 +1999,10 @@ export default function CreateEventPage() {
               onClick={goToPreviousStep}
               className="btn-secondary flex items-center gap-2"
             >
-              <IconArrowLeft size={18} />{" "}
+              <IconArrowLeft size={18} />{' '}
               {shouldShowSessions
-                ? "Back to Sessions"
-                : "Back to Event Details"}
+                ? 'Back to Sessions'
+                : 'Back to Event Details'}
             </button>
             <button
               onClick={goToNextStep}
@@ -1825,7 +2025,8 @@ export default function CreateEventPage() {
           {renderReadinessPanel()}
 
           <div className="bg-emerald-50 text-emerald-700 p-4 rounded-lg mb-6 flex items-center gap-2">
-            <IconPhoto size={18} /> Upload display images and venue gallery photos. Venue images will be uploaded when you click Finish.
+            <IconPhoto size={18} /> Upload display images and venue gallery
+            photos. Venue images will be uploaded when you click Finish.
           </div>
 
           <div className="space-y-6">
@@ -1840,18 +2041,27 @@ export default function CreateEventPage() {
                     Thumbnail Image
                   </h3>
                   <p className="text-sm text-zinc-400 hidden md:block">
-                    This image is used on event cards and listings on the homepage.
-                    Recommended aspect ratio is 1:1 or 4:3.
+                    This image is used on event cards and listings on the
+                    homepage. Recommended aspect ratio is 1:1 or 4:3.
                   </p>
                 </div>
                 <div className="md:w-2/3">
                   <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-zinc-200 border-dashed rounded-xl relative overflow-hidden group bg-zinc-50/50 hover:bg-zinc-50 transition-colors">
                     {formData.imageUrl ? (
                       <>
-                        <img src={formData.imageUrl} alt="Thumbnail preview" className="max-h-48 object-contain" />
+                        <img
+                          src={formData.imageUrl}
+                          alt="Thumbnail preview"
+                          className="max-h-48 object-contain"
+                        />
                         <button
                           type="button"
-                          onClick={() => { if (pendingThumbnail?.previewUrl) URL.revokeObjectURL(pendingThumbnail.previewUrl); setPendingThumbnail(null); setFormData(prev => ({ ...prev, imageUrl: "" })); }}
+                          onClick={() => {
+                            if (pendingThumbnail?.previewUrl)
+                              URL.revokeObjectURL(pendingThumbnail.previewUrl);
+                            setPendingThumbnail(null);
+                            setFormData((prev) => ({ ...prev, imageUrl: '' }));
+                          }}
                           className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white p-1.5 rounded-full shadow-md z-10 transition-colors"
                           title="Remove thumbnail"
                         >
@@ -1861,7 +2071,18 @@ export default function CreateEventPage() {
                           <label className="cursor-pointer text-white flex items-center gap-2 bg-black/50 px-4 py-2 rounded-full hover:bg-black/70 transition-colors">
                             <IconPlus size={20} />
                             <span>Change Thumbnail</span>
-                            <input type="file" className="hidden" accept="image/*" onChange={(e) => e.target.files?.[0] && handleImageUpload(e.target.files[0], "thumbnail")} />
+                            <input
+                              type="file"
+                              className="hidden"
+                              accept="image/*"
+                              onChange={(e) =>
+                                e.target.files?.[0] &&
+                                handleImageUpload(
+                                  e.target.files[0],
+                                  'thumbnail',
+                                )
+                              }
+                            />
                           </label>
                         </div>
                       </>
@@ -1873,19 +2094,37 @@ export default function CreateEventPage() {
                         <div className="flex text-sm text-zinc-500 justify-center mt-4">
                           <label className="relative cursor-pointer bg-white px-4 py-2 border border-zinc-200 rounded-xl font-medium text-emerald-600 hover:bg-zinc-50 hover:text-emerald-600 transition-colors shadow-sm">
                             <span>Select an image file</span>
-                            <input type="file" className="sr-only" accept="image/*" onChange={(e) => e.target.files?.[0] && handleImageUpload(e.target.files[0], "thumbnail")} />
+                            <input
+                              type="file"
+                              className="sr-only"
+                              accept="image/*"
+                              onChange={(e) =>
+                                e.target.files?.[0] &&
+                                handleImageUpload(
+                                  e.target.files[0],
+                                  'thumbnail',
+                                )
+                              }
+                            />
                           </label>
                         </div>
-                        <p className="text-xs text-zinc-400 mt-2">PNG, JPG, WEBP up to 5MB</p>
+                        <p className="text-xs text-zinc-400 mt-2">
+                          PNG, JPG, WEBP up to 5MB
+                        </p>
                       </div>
                     )}
-                    {isUploading && uploadingTarget === "thumbnail" && (
+                    {isUploading && uploadingTarget === 'thumbnail' && (
                       <div className="absolute inset-0 bg-white/80 flex items-center justify-center backdrop-blur-sm z-20">
                         <div className="bg-white p-5 rounded-xl shadow-lg flex flex-col items-center w-52">
                           <div className="w-full bg-zinc-200 rounded-full h-2.5 mb-3">
-                            <div className="bg-emerald-700 h-2.5 rounded-full transition-all duration-300" style={{ width: `${uploadProgress}%` }} />
+                            <div
+                              className="bg-emerald-700 h-2.5 rounded-full transition-all duration-300"
+                              style={{ width: `${uploadProgress}%` }}
+                            />
                           </div>
-                          <span className="text-sm font-medium text-zinc-600">Uploading... {uploadProgress}%</span>
+                          <span className="text-sm font-medium text-zinc-600">
+                            Uploading... {uploadProgress}%
+                          </span>
                         </div>
                       </div>
                     )}
@@ -1905,18 +2144,31 @@ export default function CreateEventPage() {
                     Cover Image
                   </h3>
                   <p className="text-sm text-zinc-400 hidden md:block">
-                    This image appears as the large banner at the top of the event detail page.
-                    Recommended aspect ratio is 16:9 for best display.
+                    This image appears as the large banner at the top of the
+                    event detail page. Recommended aspect ratio is 16:9 for best
+                    display.
                   </p>
                 </div>
                 <div className="md:w-2/3">
                   <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-zinc-200 border-dashed rounded-xl relative overflow-hidden group bg-zinc-50/50 hover:bg-zinc-50 transition-colors">
                     {formData.coverImage ? (
                       <>
-                        <img src={formData.coverImage} alt="Cover preview" className="max-h-48 object-cover w-full rounded" />
+                        <img
+                          src={formData.coverImage}
+                          alt="Cover preview"
+                          className="max-h-48 object-cover w-full rounded"
+                        />
                         <button
                           type="button"
-                          onClick={() => { if (pendingCover?.previewUrl) URL.revokeObjectURL(pendingCover.previewUrl); setPendingCover(null); setFormData(prev => ({ ...prev, coverImage: "" })); }}
+                          onClick={() => {
+                            if (pendingCover?.previewUrl)
+                              URL.revokeObjectURL(pendingCover.previewUrl);
+                            setPendingCover(null);
+                            setFormData((prev) => ({
+                              ...prev,
+                              coverImage: '',
+                            }));
+                          }}
                           className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white p-1.5 rounded-full shadow-md z-10 transition-colors"
                           title="Remove cover image"
                         >
@@ -1926,7 +2178,15 @@ export default function CreateEventPage() {
                           <label className="cursor-pointer text-white flex items-center gap-2 bg-black/50 px-4 py-2 rounded-full hover:bg-black/70 transition-colors">
                             <IconPlus size={20} />
                             <span>Change Cover</span>
-                            <input type="file" className="hidden" accept="image/*" onChange={(e) => e.target.files?.[0] && handleImageUpload(e.target.files[0], "cover")} />
+                            <input
+                              type="file"
+                              className="hidden"
+                              accept="image/*"
+                              onChange={(e) =>
+                                e.target.files?.[0] &&
+                                handleImageUpload(e.target.files[0], 'cover')
+                              }
+                            />
                           </label>
                         </div>
                       </>
@@ -1938,19 +2198,34 @@ export default function CreateEventPage() {
                         <div className="flex text-sm text-zinc-500 justify-center mt-4">
                           <label className="relative cursor-pointer bg-white px-4 py-2 border border-zinc-200 rounded-xl font-medium text-indigo-600 hover:bg-zinc-50 hover:text-indigo-500 transition-colors shadow-sm">
                             <span>Select an image file</span>
-                            <input type="file" className="sr-only" accept="image/*" onChange={(e) => e.target.files?.[0] && handleImageUpload(e.target.files[0], "cover")} />
+                            <input
+                              type="file"
+                              className="sr-only"
+                              accept="image/*"
+                              onChange={(e) =>
+                                e.target.files?.[0] &&
+                                handleImageUpload(e.target.files[0], 'cover')
+                              }
+                            />
                           </label>
                         </div>
-                        <p className="text-xs text-zinc-400 mt-2">PNG, JPG, WEBP up to 10MB</p>
+                        <p className="text-xs text-zinc-400 mt-2">
+                          PNG, JPG, WEBP up to 10MB
+                        </p>
                       </div>
                     )}
-                    {isUploading && uploadingTarget === "cover" && (
+                    {isUploading && uploadingTarget === 'cover' && (
                       <div className="absolute inset-0 bg-white/80 flex items-center justify-center backdrop-blur-sm z-20">
                         <div className="bg-white p-5 rounded-xl shadow-lg flex flex-col items-center w-52">
                           <div className="w-full bg-zinc-200 rounded-full h-2.5 mb-3">
-                            <div className="bg-indigo-600 h-2.5 rounded-full transition-all duration-300" style={{ width: `${uploadProgress}%` }} />
+                            <div
+                              className="bg-indigo-600 h-2.5 rounded-full transition-all duration-300"
+                              style={{ width: `${uploadProgress}%` }}
+                            />
                           </div>
-                          <span className="text-sm font-medium text-zinc-600">Uploading... {uploadProgress}%</span>
+                          <span className="text-sm font-medium text-zinc-600">
+                            Uploading... {uploadProgress}%
+                          </span>
                         </div>
                       </div>
                     )}
@@ -1964,10 +2239,22 @@ export default function CreateEventPage() {
                     <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-zinc-200 border-dashed rounded-xl relative overflow-hidden group bg-zinc-50/50 hover:bg-zinc-50 transition-colors">
                       {formData.videoUrl ? (
                         <>
-                          <video src={formData.videoUrl} controls className="max-h-48 w-full rounded bg-black" />
+                          <video
+                            src={formData.videoUrl}
+                            controls
+                            className="max-h-48 w-full rounded bg-black"
+                          />
                           <button
                             type="button"
-                            onClick={() => { if (pendingVideo?.previewUrl) URL.revokeObjectURL(pendingVideo.previewUrl); setPendingVideo(null); setFormData(prev => ({ ...prev, videoUrl: "" })); }}
+                            onClick={() => {
+                              if (pendingVideo?.previewUrl)
+                                URL.revokeObjectURL(pendingVideo.previewUrl);
+                              setPendingVideo(null);
+                              setFormData((prev) => ({
+                                ...prev,
+                                videoUrl: '',
+                              }));
+                            }}
                             className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white p-1.5 rounded-full shadow-md z-10 transition-colors"
                             title="Remove video"
                           >
@@ -1977,40 +2264,71 @@ export default function CreateEventPage() {
                             <label className="cursor-pointer text-white flex items-center gap-2 bg-black/50 px-4 py-2 rounded-full hover:bg-black/70 transition-colors">
                               <IconPlus size={20} />
                               <span>Change Video</span>
-                              <input type="file" className="hidden" accept="video/mp4,video/webm" onChange={handleVideoUpload} />
+                              <input
+                                type="file"
+                                className="hidden"
+                                accept="video/mp4,video/webm"
+                                onChange={handleVideoUpload}
+                              />
                             </label>
                           </div>
                         </>
                       ) : (
                         <div className="space-y-2 text-center">
                           <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto shadow-sm border border-zinc-100">
-                            <svg className="w-8 h-8 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                            <svg
+                              className="w-8 h-8 text-indigo-400"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
+                              />
                             </svg>
                           </div>
                           <div className="flex text-sm text-zinc-500 justify-center mt-4">
-                            <label className={`relative cursor-pointer bg-white px-4 py-2 border border-zinc-200 rounded-xl font-medium text-indigo-600 hover:bg-zinc-50 hover:text-indigo-500 transition-colors shadow-sm ${isUploading ? 'opacity-50 pointer-events-none' : ''}`}>
+                            <label
+                              className={`relative cursor-pointer bg-white px-4 py-2 border border-zinc-200 rounded-xl font-medium text-indigo-600 hover:bg-zinc-50 hover:text-indigo-500 transition-colors shadow-sm ${isUploading ? 'opacity-50 pointer-events-none' : ''}`}
+                            >
                               <span>Select a video file</span>
-                              <input type="file" className="sr-only" accept="video/mp4,video/webm" onChange={handleVideoUpload} disabled={isUploading} />
+                              <input
+                                type="file"
+                                className="sr-only"
+                                accept="video/mp4,video/webm"
+                                onChange={handleVideoUpload}
+                                disabled={isUploading}
+                              />
                             </label>
                           </div>
-                          <p className="text-xs text-zinc-400 mt-2">MP4 or WEBM up to 50MB</p>
+                          <p className="text-xs text-zinc-400 mt-2">
+                            MP4 or WEBM up to 50MB
+                          </p>
                         </div>
                       )}
 
-                      {isUploading && uploadingTarget === "video" && (
+                      {isUploading && uploadingTarget === 'video' && (
                         <div className="absolute inset-0 bg-white/80 flex items-center justify-center backdrop-blur-sm z-20">
                           <div className="bg-white p-5 rounded-xl shadow-lg flex flex-col items-center w-52">
                             <div className="w-full bg-zinc-200 rounded-full h-2.5 mb-3">
-                              <div className="bg-indigo-600 h-2.5 rounded-full transition-all duration-300" style={{ width: `${uploadProgress}%` }} />
+                              <div
+                                className="bg-indigo-600 h-2.5 rounded-full transition-all duration-300"
+                                style={{ width: `${uploadProgress}%` }}
+                              />
                             </div>
-                            <span className="text-sm font-medium text-zinc-600">Uploading... {uploadProgress}%</span>
+                            <span className="text-sm font-medium text-zinc-600">
+                              Uploading... {uploadProgress}%
+                            </span>
                           </div>
                         </div>
                       )}
                     </div>
                     <p className="text-xs text-zinc-400 mt-2">
-                      If provided, this video will be played as the background on the event details page.
+                      If provided, this video will be played as the background
+                      on the event details page.
                     </p>
                   </div>
                 </div>
@@ -2028,12 +2346,15 @@ export default function CreateEventPage() {
                     Venue Gallery
                   </h3>
                   <p className="text-sm text-zinc-400 hidden md:block mb-4">
-                    Add multiple photos to showcase the event venue, parking area, or previous events.
+                    Add multiple photos to showcase the event venue, parking
+                    area, or previous events.
                   </p>
                 </div>
                 <div className="md:w-2/3">
                   <div className="bg-zinc-50 p-5 border border-zinc-200 rounded-xl shadow-inner">
-                    <h4 className="font-semibold mb-3 text-zinc-800 text-sm uppercase tracking-wider">Add Gallery Image</h4>
+                    <h4 className="font-semibold mb-3 text-zinc-800 text-sm uppercase tracking-wider">
+                      Add Gallery Image
+                    </h4>
                     <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-end">
                       <div className="flex-1 w-full">
                         <label className="block text-sm font-medium text-zinc-600 mb-1">
@@ -2064,8 +2385,8 @@ export default function CreateEventPage() {
                                 caption: imageCaption, // Apply the same caption (if any) to all photos in the batch
                               }));
                               setVenueImages((prev) => [...prev, ...newImages]);
-                              setImageCaption("");
-                              e.target.value = ""; // Reset to allow re-selection
+                              setImageCaption('');
+                              e.target.value = ''; // Reset to allow re-selection
                             }
                           }}
                         />
@@ -2115,10 +2436,15 @@ export default function CreateEventPage() {
                             )}
                             <button
                               type="button"
-                              onClick={() => setVenueImages(prev => prev.filter((_, i) => i !== idx))}
+                              onClick={() =>
+                                setVenueImages((prev) =>
+                                  prev.filter((_, i) => i !== idx),
+                                )
+                              }
                               className="bg-red-500 hover:bg-red-600 text-white p-2 rounded-lg text-sm flex items-center justify-center gap-1 w-full shadow-lg transition-colors border border-red-400"
                             >
-                              <IconTrash size={16} /> <span className="font-medium">Remove</span>
+                              <IconTrash size={16} />{' '}
+                              <span className="font-medium">Remove</span>
                             </button>
                           </div>
                         </div>
@@ -2130,8 +2456,12 @@ export default function CreateEventPage() {
                     <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto shadow-sm border border-zinc-100 mb-3">
                       <IconPhoto size={28} className="text-green-400" />
                     </div>
-                    <h5 className="text-zinc-600 font-medium">No gallery images</h5>
-                    <p className="text-sm text-zinc-400 mt-1">Add images to display them here.</p>
+                    <h5 className="text-zinc-600 font-medium">
+                      No gallery images
+                    </h5>
+                    <p className="text-sm text-zinc-400 mt-1">
+                      Add images to display them here.
+                    </p>
                   </div>
                 )}
               </div>
@@ -2164,886 +2494,944 @@ export default function CreateEventPage() {
             </button>
           </div>
         </div>
-      )
-      }
+      )}
 
       {/* Add Ticket Modal */}
-      {
-        showTicketModal && (
-          <div className="modal-overlay">
-            <div className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
-              <div className="p-6 border-b border-zinc-100">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold flex items-center gap-2">
-                    <IconTicket size={20} />{" "}
-                    {editingTicketId ? "Edit Ticket" : "Add Ticket Type"}
-                  </h3>
-                  <button
-                    onClick={() => {
-                      setShowTicketModal(false);
-                      setEditingTicketId(null);
-                    }}
-                    className="text-zinc-400 hover:text-zinc-500"
-                  >
-                    <IconX size={20} />
-                  </button>
-                </div>
-              </div>
-              <div className="p-6">
-                <div className="grid grid-cols-2 gap-4 mb-4">
-                  <div>
-                    <label className="block text-sm font-medium text-zinc-600 mb-1">
-                      Category *
-                    </label>
-                    <select
-                      className="input-field"
-                      value={ticketForm.category}
-                      onChange={(e) =>
-                        setTicketForm((prev) => ({
-                          ...prev,
-                          category: e.target.value as "primary" | "addon",
-                        }))
-                      }
-                    >
-                      <option value="primary">Primary</option>
-                      <option value="addon">Add-on</option>
-                    </select>
-                  </div>
-                  <div className="col-span-2">
-                    <label className="block text-sm font-medium text-zinc-600 mb-2">
-                      Target Audience (Role) *
-                    </label>
-                    <div className="border rounded-md p-3 max-h-40 overflow-y-auto space-y-2 bg-zinc-50">
-                      {[
-                        { value: "pharmacist", label: "Pharmacist" },
-                        { value: "medical_professional", label: "Medical Professional" },
-                        { value: "student", label: "Student" },
-                        { value: "general", label: "General" },
-                        { value: "healthhack", label: "HealthHack" },
-                        { value: "booth", label: "Booth" },
-                      ].map((role) => (
-                        <label
-                          key={role.value}
-                          className="flex items-start gap-2 cursor-pointer hover:bg-zinc-100 p-1 rounded"
-                        >
-                          <input
-                            type="checkbox"
-                            className="mt-1"
-                            checked={(ticketForm.allowedRoles || []).includes(role.value)}
-                            onChange={(e) => {
-                              const isChecked = e.target.checked;
-                              setTicketForm((prev) => {
-                                const currentRoles = prev.allowedRoles || [];
-                                if (isChecked) {
-                                  return currentRoles.includes(role.value)
-                                    ? prev
-                                    : { ...prev, allowedRoles: [...currentRoles, role.value] };
-                                }
-
-                                const nextRoles = currentRoles.filter(r => r !== role.value);
-                                return {
-                                  ...prev,
-                                  allowedRoles: nextRoles,
-                                  allowedStudentLevels: role.value === "student" ? [] : prev.allowedStudentLevels,
-                                };
-                              });
-                            }}
-                          />
-                          <span className="text-sm font-medium text-zinc-600">{role.label}</span>
-                        </label>
-                      ))}
-                    </div>
-                    {(ticketForm.allowedRoles || []).length === 0 && (
-                      <p className="text-xs text-red-500 mt-1">Please select at least one target audience.</p>
-                    )}
-                  </div>
-
-                  {/* Student Level Selection - only show when student role is selected */}
-                  {(ticketForm.allowedRoles || []).includes("student") && (
-                    <div className="col-span-2">
-                      <label className="block text-sm font-medium text-zinc-600 mb-2">
-                        Student Level (optional)
-                      </label>
-                      <p className="text-xs text-zinc-400 mb-2">
-                        Leave empty to allow all student levels, or select specific levels.
-                      </p>
-                      <div className="border rounded-md p-3 space-y-2 bg-zinc-50">
-                        {[
-                          { value: "postgraduate", label: "Postgraduate" },
-                          { value: "undergraduate", label: "Undergraduate" },
-                        ].map((level) => (
-                          <label
-                            key={level.value}
-                            className="flex items-start gap-2 cursor-pointer hover:bg-zinc-100 p-1 rounded"
-                          >
-                            <input
-                              type="checkbox"
-                              className="mt-1"
-                              checked={(ticketForm.allowedStudentLevels || []).includes(level.value)}
-                              onChange={(e) => {
-                                const isChecked = e.target.checked;
-                                setTicketForm((prev) => {
-                                  const currentLevels = prev.allowedStudentLevels || [];
-                                  if (isChecked) {
-                                    return { ...prev, allowedStudentLevels: [...currentLevels, level.value] };
-                                  } else {
-                                    return { ...prev, allowedStudentLevels: currentLevels.filter(l => l !== level.value) };
-                                  }
-                                });
-                              }}
-                            />
-                            <span className="text-sm font-medium text-zinc-600">{level.label}</span>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Primary Ticket - Auto-linked Main Sessions */}
-                {ticketForm.category === "primary" &&
-                  sessions.filter((s) => s.isMainSession).length > 0 && (
-                    <div className="mb-4 bg-purple-50 p-3 rounded-md border border-purple-100">
-                      <p className="text-sm font-medium text-purple-700 mb-2 flex items-center gap-1">
-                        <IconCheck size={16} /> Automatically linked to Main
-                        Session(s):
-                      </p>
-                      <div className="space-y-1">
-                        {sessions
-                          .filter((s) => s.isMainSession)
-                          .map((session) => (
-                            <div
-                              key={session.id}
-                              className="text-sm text-purple-600 pl-5"
-                            >
-                              • {session.sessionName}
-                            </div>
-                          ))}
-                      </div>
-                    </div>
-                  )}
-
-                {/* Session Selector - Only for Add-on tickets (Checkboxes) */}
-                {ticketForm.category === "addon" && sessions.length > 0 && (
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium text-zinc-600 mb-2">
-                      Link to Sessions/Workshops *
-                    </label>
-                    <div className="border rounded-md p-3 max-h-40 overflow-y-auto space-y-2">
-                      {sessions
-                        .filter((s) => !s.isMainSession)
-                        .map((session) => (
-                          <label
-                            key={session.id}
-                            className="flex items-start gap-2 cursor-pointer hover:bg-zinc-50 p-1 rounded"
-                          >
-                            <input
-                              type="checkbox"
-                              className="mt-1"
-                              checked={
-                                ticketForm.sessionIds?.includes(session.id!) ||
-                                false
-                              }
-                              onChange={(e) => {
-                                const isChecked = e.target.checked;
-                                setTicketForm((prev) => {
-                                  const currentIds = prev.sessionIds || [];
-                                  if (isChecked) {
-                                    return {
-                                      ...prev,
-                                      sessionIds: [...currentIds, session.id!],
-                                    };
-                                  } else {
-                                    return {
-                                      ...prev,
-                                      sessionIds: currentIds.filter(
-                                        (id) => id !== session.id,
-                                      ),
-                                    };
-                                  }
-                                });
-                              }}
-                            />
-                            <div>
-                              <div className="text-sm font-medium">
-                                {session.sessionCode}
-                              </div>
-                              <div className="text-xs text-zinc-400">
-                                {session.sessionName}
-                              </div>
-                            </div>
-                          </label>
-                        ))}
-                    </div>
-                    <p className="text-xs text-zinc-400 mt-1">
-                      Select one or more sessions for this add-on ticket
-                    </p>
-                  </div>
-                )}
-
-                <div className="grid grid-cols-2 gap-4 mb-4">
-                  <div>
-                    <label className="block text-sm font-medium text-zinc-600 mb-1">
-                      Quota *
-                    </label>
-                    <input
-                      type="number"
-                      className="input-field"
-                      min="0"
-                      value={ticketForm.quota}
-                      onChange={(e) =>
-                        setTicketForm((prev) => ({
-                          ...prev,
-                          quota: e.target.value,
-                        }))
-                      }
-                      placeholder="0"
-                    />
-                    <p className="text-xs text-zinc-400 mt-1">0 = Unlimited</p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-zinc-600 mb-1">
-                      Ticket Priority
-                    </label>
-                    <select
-                      className="input-field"
-                      value={ticketForm.priority}
-                      onChange={(e) =>
-                        setTicketForm((prev) => ({
-                          ...prev,
-                          priority: e.target.value,
-                        }))
-                      }
-                    >
-                      <option value="early_bird">Early Bird</option>
-                      <option value="regular">Regular</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-zinc-600 mb-1">
-                    Ticket Name *
-                  </label>
-                  <input
-                    type="text"
-                    className="input-field"
-                    placeholder="e.g., Early Bird - Member"
-                    value={ticketForm.name}
-                    onChange={(e) =>
-                      setTicketForm((prev) => ({ ...prev, name: e.target.value }))
-                    }
-                    maxLength={255}
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4 mb-4">
-                  <div>
-                    <label className="block text-sm font-medium text-zinc-600 mb-1">
-                      Currency *
-                    </label>
-                    <select
-                      className="input-field"
-                      value={ticketForm.currency}
-                      onChange={(e) =>
-                        setTicketForm((prev) => ({
-                          ...prev,
-                          currency: e.target.value as "THB" | "USD",
-                        }))
-                      }
-                    >
-                      <option value="THB">THB (฿)</option>
-                      <option value="USD">USD ($)</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-zinc-600 mb-1">
-                      Price *
-                    </label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      className="input-field"
-                      placeholder="3500"
-                      value={ticketForm.price}
-                      onChange={(e) =>
-                        setTicketForm((prev) => ({
-                          ...prev,
-                          price: e.target.value,
-                        }))
-                      }
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4 mb-4">
-                  <div>
-                    <label className="block text-sm font-medium text-zinc-600 mb-1">
-                      Original Price
-                    </label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      className="input-field"
-                      placeholder="Show as strikethrough price"
-                      value={ticketForm.originalPrice}
-                      onChange={(e) =>
-                        setTicketForm((prev) => ({
-                          ...prev,
-                          originalPrice: e.target.value,
-                        }))
-                      }
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-zinc-600 mb-1">
-                      Group Name
-                    </label>
-                    <select
-                      className="input-field"
-                      value={ticketForm.groupName}
-                      onChange={(e) =>
-                        setTicketForm((prev) => ({
-                          ...prev,
-                          groupName: e.target.value,
-                        }))
-                      }
-                    >
-                      <option value="">-- None --</option>
-                      <option value="workshop">workshop</option>
-                      <option value="gala">gala</option>
-                      <option value="registration">registration</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-zinc-600 mb-1">
-                    Badge Text
-                  </label>
-                  <input
-                    type="text"
-                    className="input-field"
-                    value={ticketForm.badgeText}
-                    onChange={(e) =>
-                      setTicketForm((prev) => ({
-                        ...prev,
-                        badgeText: e.target.value,
-                      }))
-                    }
-                    placeholder='e.g. "Early Bird", "Best Value"'
-                    maxLength={50}
-                  />
-                </div>
-
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-zinc-600 mb-1">
-                    Description
-                  </label>
-                  <textarea
-                    className="input-field"
-                    rows={2}
-                    value={ticketForm.description}
-                    onChange={(e) =>
-                      setTicketForm((prev) => ({
-                        ...prev,
-                        description: e.target.value,
-                      }))
-                    }
-                    placeholder="Optional ticket description"
-                  />
-                </div>
-
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-zinc-600 mb-1">
-                    Features
-                  </label>
-                  <div className="flex gap-2 mb-2">
-                    <input
-                      type="text"
-                      className="input-field flex-1"
-                      value={ticketFeatureInput}
-                      onChange={(e) => setTicketFeatureInput(e.target.value)}
-                      placeholder="Add a feature..."
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" && ticketFeatureInput.trim()) {
-                          e.preventDefault();
-                          setTicketForm((prev) => ({
-                            ...prev,
-                            features: [...(prev.features || []), ticketFeatureInput.trim()],
-                          }));
-                          setTicketFeatureInput("");
-                        }
-                      }}
-                    />
-                    <button
-                      type="button"
-                      className="btn-secondary text-sm px-3"
-                      onClick={() => {
-                        if (ticketFeatureInput.trim()) {
-                          setTicketForm((prev) => ({
-                            ...prev,
-                            features: [...(prev.features || []), ticketFeatureInput.trim()],
-                          }));
-                          setTicketFeatureInput("");
-                        }
-                      }}
-                    >
-                      Add
-                    </button>
-                  </div>
-                  {(ticketForm.features || []).length > 0 && (
-                    <div className="flex flex-wrap gap-2">
-                      {(ticketForm.features || []).map((f, i) => (
-                        <span
-                          key={i}
-                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-zinc-100 text-zinc-600"
-                        >
-                          {f}
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setTicketForm((prev) => ({
-                                ...prev,
-                                features: (prev.features || []).filter((_, idx) => idx !== i),
-                              }))
-                            }
-                            className="text-zinc-400 hover:text-red-500"
-                          >
-                            &times;
-                          </button>
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                <div className="grid grid-cols-2 gap-4 mb-4">
-                  <div>
-                    <label className="block text-sm font-medium text-zinc-600 mb-1">
-                      Sale Start Date & Time
-                    </label>
-                    <DatePicker
-                      selected={
-                        ticketForm.saleStartDate
-                          ? new Date(ticketForm.saleStartDate)
-                          : null
-                      }
-                      onChange={(date: Date | null) =>
-                        setTicketForm((prev) => ({
-                          ...prev,
-                          saleStartDate: date ? date.toISOString() : "",
-                        }))
-                      }
-                      showTimeSelect
-                      dateFormat="d MMM yyyy, h:mm aa"
-                      className="input-field w-full"
-                      placeholderText="Select start date"
-                      wrapperClassName="w-full"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-zinc-600 mb-1">
-                      Sale End Date & Time
-                    </label>
-                    <DatePicker
-                      selected={
-                        ticketForm.saleEndDate
-                          ? new Date(ticketForm.saleEndDate)
-                          : null
-                      }
-                      onChange={(date: Date | null) =>
-                        setTicketForm((prev) => ({
-                          ...prev,
-                          saleEndDate: date ? date.toISOString() : "",
-                        }))
-                      }
-                      showTimeSelect
-                      dateFormat="d MMM yyyy, h:mm aa"
-                      className="input-field w-full"
-                      placeholderText="Select end date"
-                      wrapperClassName="w-full"
-                    />
-                  </div>
-                </div>
-              </div>
-              <div className="p-6 border-t border-zinc-100 flex gap-3 justify-end">
+      {showTicketModal && (
+        <div className="modal-overlay">
+          <div className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-zinc-100">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold flex items-center gap-2">
+                  <IconTicket size={20} />{' '}
+                  {editingTicketId ? 'Edit Ticket' : 'Add Ticket Type'}
+                </h3>
                 <button
                   onClick={() => {
                     setShowTicketModal(false);
                     setEditingTicketId(null);
                   }}
-                  className="btn-secondary"
+                  className="text-zinc-400 hover:text-zinc-500"
                 >
-                  Cancel
-                </button>
-                <button onClick={handleAddTicket} className="btn-primary">
-                  {editingTicketId ? "Update Ticket" : "Add Ticket"}
+                  <IconX size={20} />
                 </button>
               </div>
             </div>
-          </div>
-        )
-      }
-
-      {/* Add Session Modal */}
-      {
-        showSessionModal && (
-          <div className="modal-overlay">
-            <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="p-6 border-b border-zinc-100">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold">
-                    {editingSessionId ? "Edit Session" : "Create Session"}
-                  </h3>
-                  <button
-                    onClick={() => {
-                      setShowSessionModal(false);
-                      setEditingSessionId(null);
-                    }}
-                    className="text-zinc-400 hover:text-zinc-500"
-                  >
-                    <IconX size={20} />
-                  </button>
-                </div>
-              </div>
-              <div className="p-6">
-                {/* Main Session Checkbox - Logic: Show ONLY if it IS Main, OR if No Main exists */}
-                {(sessionForm.isMainSession ||
-                  !sessions.some(
-                    (s) => s.isMainSession && s.id !== editingSessionId,
-                  )) && (
-                    <div className="mb-4">
-                      <label className="flex items-center gap-2 cursor-pointer p-3 border rounded-lg hover:bg-zinc-50 bg-emerald-50/50 border-teal-100/50">
-                        <input
-                          type="checkbox"
-                          className="w-5 h-5 text-emerald-600 rounded focus:ring-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                          checked={sessionForm.isMainSession || false}
-                          onChange={(e) =>
-                            setSessionForm((prev) => ({
-                              ...prev,
-                              isMainSession: e.target.checked,
-                            }))
-                          }
-                          disabled={sessionForm.isMainSession} // Lock if checked
-                        />
-                        <div>
-                          <div className="font-medium text-zinc-900">
-                            Main session
-                            {sessionForm.isMainSession && (
-                              <span className="ml-2 text-xs text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-teal-100">
-                                Default (Locked)
-                              </span>
-                            )}
-                          </div>
-                          <div className="text-xs text-zinc-400">
-                            Main sessions appear prominently and are auto-linked to
-                            Primary tickets.
-                          </div>
-                        </div>
-                      </label>
-                    </div>
-                  )}
-
-                {/* Session Code & Session Name */}
-                <div className="grid grid-cols-2 gap-4 mb-4">
-                  <div>
-                    <label className="block text-sm font-medium text-zinc-600 mb-1">
-                      Session Code *
-                    </label>
-                    <input
-                      type="text"
-                      className="input-field"
-                      placeholder="S-001"
-                      value={sessionForm.sessionCode}
-                      onChange={(e) =>
-                        setSessionForm((prev) => ({
-                          ...prev,
-                          sessionCode: e.target.value,
-                        }))
-                      }
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-zinc-600 mb-1">
-                      Session Name *
-                    </label>
-                    <input
-                      type="text"
-                      className="input-field"
-                      placeholder="Enter session name"
-                      value={sessionForm.sessionName}
-                      onChange={(e) =>
-                        setSessionForm((prev) => ({
-                          ...prev,
-                          sessionName: e.target.value,
-                        }))
-                      }
-                    />
-                  </div>
-                </div>
-
-                {/* Session Type */}
-                <div className="mb-4">
+            <div className="p-6">
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div>
                   <label className="block text-sm font-medium text-zinc-600 mb-1">
-                    Session Type *
+                    Category *
                   </label>
                   <select
                     className="input-field"
-                    value={sessionForm.sessionType}
+                    value={ticketForm.category}
                     onChange={(e) =>
-                      setSessionForm((prev) => ({
+                      setTicketForm((prev) => ({
                         ...prev,
-                        sessionType: e.target.value as any,
+                        category: e.target.value as 'primary' | 'addon',
                       }))
                     }
                   >
-                    <option value="workshop">Workshop</option>
-                    <option value="gala_dinner">Gala Dinner</option>
-                    <option value="lecture">Lecture</option>
-                    <option value="ceremony">Ceremony</option>
-                    <option value="break">Break</option>
-                    <option value="other">Other</option>
+                    <option value="primary">Primary</option>
+                    <option value="addon">Add-on</option>
                   </select>
                 </div>
-
-                {/* Start Time & End Time */}
-                <div className="grid grid-cols-2 gap-4 mb-4">
-                  <div>
-                    <label className="block text-sm font-medium text-zinc-600 mb-1">
-                      Start Time *
-                    </label>
-                    <DatePicker
-                      selected={
-                        sessionForm.startTime
-                          ? new Date(sessionForm.startTime)
-                          : null
-                      }
-                      onChange={(date: Date | null) =>
-                        setSessionForm((prev) => ({
-                          ...prev,
-                          startTime: date ? date.toISOString() : "",
-                        }))
-                      }
-                      showTimeSelect
-                      dateFormat="d MMM yyyy, h:mm aa"
-                      className="input-field w-full"
-                      placeholderText="Select start time"
-                      wrapperClassName="w-full"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-zinc-600 mb-1">
-                      End Time *
-                    </label>
-                    <DatePicker
-                      selected={
-                        sessionForm.endTime ? new Date(sessionForm.endTime) : null
-                      }
-                      onChange={(date: Date | null) =>
-                        setSessionForm((prev) => ({
-                          ...prev,
-                          endTime: date ? date.toISOString() : "",
-                        }))
-                      }
-                      showTimeSelect
-                      dateFormat="d MMM yyyy, h:mm aa"
-                      className="input-field w-full"
-                      placeholderText="Select end time"
-                      wrapperClassName="w-full"
-                    />
-                  </div>
-                </div>
-
-                {/* Room & Max Capacity */}
-                <div className="grid grid-cols-2 gap-4 mb-4">
-                  <div>
-                    <label className="block text-sm font-medium text-zinc-600 mb-1">
-                      Room
-                    </label>
-                    <input
-                      type="text"
-                      className="input-field"
-                      placeholder="Meeting Room 1"
-                      value={sessionForm.room}
-                      onChange={(e) =>
-                        setSessionForm((prev) => ({
-                          ...prev,
-                          room: e.target.value,
-                        }))
-                      }
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-zinc-600 mb-1">
-                      Max Capacity
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      className="input-field"
-                      placeholder="0"
-                      value={sessionForm.maxCapacity}
-                      onChange={(e) =>
-                        setSessionForm((prev) => ({
-                          ...prev,
-                          maxCapacity: parseInt(e.target.value) || 0,
-                        }))
-                      }
-                    />
-                    <p className="text-xs text-zinc-400 mt-1">0 = Unlimited</p>
-                  </div>
-                </div>
-
-                {/* Instructor(s) */}
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-zinc-600 mb-1 flex items-center gap-2">
-                    <IconMicrophone size={16} /> Instructor(s)
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-zinc-600 mb-2">
+                    Target Audience (Role) *
                   </label>
-                  <div className="border border-zinc-200 rounded-md bg-white">
-                    {speakers.length > 0 ? (
-                      <div className="max-h-32 overflow-y-auto p-2">
-                        {speakers.map((speaker) => (
-                          <label
-                            key={speaker.id}
-                            className="flex items-center gap-2 text-sm p-2 hover:bg-zinc-50 rounded cursor-pointer"
-                          >
-                            <input
-                              type="checkbox"
-                              checked={sessionForm.selectedSpeakerIds?.includes(
-                                speaker.id,
-                              )}
-                              onChange={(e) => {
-                                const id = speaker.id;
-                                setSessionForm((prev) => ({
-                                  ...prev,
-                                  selectedSpeakerIds: e.target.checked
-                                    ? [...(prev.selectedSpeakerIds || []), id]
-                                    : (prev.selectedSpeakerIds || []).filter(
-                                      (sid) => sid !== id,
+                  <div className="border rounded-md p-3 max-h-40 overflow-y-auto space-y-2 bg-zinc-50">
+                    {[
+                      { value: 'pharmacist', label: 'Pharmacist' },
+                      {
+                        value: 'medical_professional',
+                        label: 'Medical Professional',
+                      },
+                      { value: 'student', label: 'Student' },
+                      { value: 'general', label: 'General' },
+                      { value: 'healthhack', label: 'HealthHack' },
+                      { value: 'booth', label: 'Booth' },
+                    ].map((role) => (
+                      <label
+                        key={role.value}
+                        className="flex items-start gap-2 cursor-pointer hover:bg-zinc-100 p-1 rounded"
+                      >
+                        <input
+                          type="checkbox"
+                          className="mt-1"
+                          checked={(ticketForm.allowedRoles || []).includes(
+                            role.value,
+                          )}
+                          onChange={(e) => {
+                            const isChecked = e.target.checked;
+                            setTicketForm((prev) => {
+                              const currentRoles = prev.allowedRoles || [];
+                              if (isChecked) {
+                                return currentRoles.includes(role.value)
+                                  ? prev
+                                  : {
+                                      ...prev,
+                                      allowedRoles: [
+                                        ...currentRoles,
+                                        role.value,
+                                      ],
+                                    };
+                              }
+
+                              const nextRoles = currentRoles.filter(
+                                (r) => r !== role.value,
+                              );
+                              return {
+                                ...prev,
+                                allowedRoles: nextRoles,
+                                allowedStudentLevels:
+                                  role.value === 'student'
+                                    ? []
+                                    : prev.allowedStudentLevels,
+                              };
+                            });
+                          }}
+                        />
+                        <span className="text-sm font-medium text-zinc-600">
+                          {role.label}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                  {(ticketForm.allowedRoles || []).length === 0 && (
+                    <p className="text-xs text-red-500 mt-1">
+                      Please select at least one target audience.
+                    </p>
+                  )}
+                </div>
+
+                {/* Student Level Selection - only show when student role is selected */}
+                {(ticketForm.allowedRoles || []).includes('student') && (
+                  <div className="col-span-2">
+                    <label className="block text-sm font-medium text-zinc-600 mb-2">
+                      Student Level (optional)
+                    </label>
+                    <p className="text-xs text-zinc-400 mb-2">
+                      Leave empty to allow all student levels, or select
+                      specific levels.
+                    </p>
+                    <div className="border rounded-md p-3 space-y-2 bg-zinc-50">
+                      {[
+                        { value: 'postgraduate', label: 'Postgraduate' },
+                        { value: 'undergraduate', label: 'Undergraduate' },
+                      ].map((level) => (
+                        <label
+                          key={level.value}
+                          className="flex items-start gap-2 cursor-pointer hover:bg-zinc-100 p-1 rounded"
+                        >
+                          <input
+                            type="checkbox"
+                            className="mt-1"
+                            checked={(
+                              ticketForm.allowedStudentLevels || []
+                            ).includes(level.value)}
+                            onChange={(e) => {
+                              const isChecked = e.target.checked;
+                              setTicketForm((prev) => {
+                                const currentLevels =
+                                  prev.allowedStudentLevels || [];
+                                if (isChecked) {
+                                  return {
+                                    ...prev,
+                                    allowedStudentLevels: [
+                                      ...currentLevels,
+                                      level.value,
+                                    ],
+                                  };
+                                } else {
+                                  return {
+                                    ...prev,
+                                    allowedStudentLevels: currentLevels.filter(
+                                      (l) => l !== level.value,
                                     ),
-                                }));
-                              }}
-                              className="rounded border-zinc-200 text-emerald-600 focus:ring-emerald-600"
-                            />
-                            <span>
-                              {speaker.firstName} {speaker.lastName}
-                            </span>
-                            {speaker.organization && (
-                              <span className="text-xs text-zinc-400">
-                                ({speaker.organization})
-                              </span>
-                            )}
-                          </label>
+                                  };
+                                }
+                              });
+                            }}
+                          />
+                          <span className="text-sm font-medium text-zinc-600">
+                            {level.label}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Primary Ticket - Auto-linked Main Sessions */}
+              {ticketForm.category === 'primary' &&
+                sessions.filter((s) => s.isMainSession).length > 0 && (
+                  <div className="mb-4 bg-purple-50 p-3 rounded-md border border-purple-100">
+                    <p className="text-sm font-medium text-purple-700 mb-2 flex items-center gap-1">
+                      <IconCheck size={16} /> Automatically linked to Main
+                      Session(s):
+                    </p>
+                    <div className="space-y-1">
+                      {sessions
+                        .filter((s) => s.isMainSession)
+                        .map((session) => (
+                          <div
+                            key={session.id}
+                            className="text-sm text-purple-600 pl-5"
+                          >
+                            • {session.sessionName}
+                          </div>
                         ))}
-                      </div>
-                    ) : (
-                      <div className="p-3 text-sm text-zinc-400">
-                        No instructors available
-                      </div>
-                    )}
+                    </div>
+                  </div>
+                )}
+
+              {/* Session Selector - Only for Add-on tickets (Checkboxes) */}
+              {ticketForm.category === 'addon' && sessions.length > 0 && (
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-zinc-600 mb-2">
+                    Link to Sessions/Workshops *
+                  </label>
+                  <div className="border rounded-md p-3 max-h-40 overflow-y-auto space-y-2">
+                    {sessions
+                      .filter((s) => !s.isMainSession)
+                      .map((session) => (
+                        <label
+                          key={session.id}
+                          className="flex items-start gap-2 cursor-pointer hover:bg-zinc-50 p-1 rounded"
+                        >
+                          <input
+                            type="checkbox"
+                            className="mt-1"
+                            checked={
+                              ticketForm.sessionIds?.includes(session.id!) ||
+                              false
+                            }
+                            onChange={(e) => {
+                              const isChecked = e.target.checked;
+                              setTicketForm((prev) => {
+                                const currentIds = prev.sessionIds || [];
+                                if (isChecked) {
+                                  return {
+                                    ...prev,
+                                    sessionIds: [...currentIds, session.id!],
+                                  };
+                                } else {
+                                  return {
+                                    ...prev,
+                                    sessionIds: currentIds.filter(
+                                      (id) => id !== session.id,
+                                    ),
+                                  };
+                                }
+                              });
+                            }}
+                          />
+                          <div>
+                            <div className="text-sm font-medium">
+                              {session.sessionCode}
+                            </div>
+                            <div className="text-xs text-zinc-400">
+                              {session.sessionName}
+                            </div>
+                          </div>
+                        </label>
+                      ))}
                   </div>
                   <p className="text-xs text-zinc-400 mt-1">
-                    Selected: {sessionForm.selectedSpeakerIds?.length || 0}{" "}
-                    Instructor(s)
+                    Select one or more sessions for this add-on ticket
                   </p>
                 </div>
+              )}
 
-                {/* Learning Objectives */}
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-zinc-600 mb-1 flex items-center gap-2">
-                    <IconTarget size={16} /> Learning Objectives
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-zinc-600 mb-1">
+                    Quota *
                   </label>
-                  <textarea
+                  <input
+                    type="number"
                     className="input-field"
-                    rows={3}
-                    placeholder="Describe the learning objectives for this session..."
-                    value={sessionForm.description}
+                    min="0"
+                    value={ticketForm.quota}
                     onChange={(e) =>
-                      setSessionForm((prev) => ({
+                      setTicketForm((prev) => ({
                         ...prev,
-                        description: e.target.value,
+                        quota: e.target.value,
+                      }))
+                    }
+                    placeholder="0"
+                  />
+                  <p className="text-xs text-zinc-400 mt-1">0 = Unlimited</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-zinc-600 mb-1">
+                    Ticket Priority
+                  </label>
+                  <select
+                    className="input-field"
+                    value={ticketForm.priority}
+                    onChange={(e) =>
+                      setTicketForm((prev) => ({
+                        ...prev,
+                        priority: e.target.value,
+                      }))
+                    }
+                  >
+                    <option value="early_bird">Early Bird</option>
+                    <option value="regular">Regular</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-zinc-600 mb-1">
+                  Ticket Name *
+                </label>
+                <input
+                  type="text"
+                  className="input-field"
+                  placeholder="e.g., Early Bird - Member"
+                  value={ticketForm.name}
+                  onChange={(e) =>
+                    setTicketForm((prev) => ({ ...prev, name: e.target.value }))
+                  }
+                  maxLength={255}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-zinc-600 mb-1">
+                    Currency *
+                  </label>
+                  <select
+                    className="input-field"
+                    value={ticketForm.currency}
+                    onChange={(e) =>
+                      setTicketForm((prev) => ({
+                        ...prev,
+                        currency: e.target.value as 'THB' | 'USD',
+                      }))
+                    }
+                  >
+                    <option value="THB">THB (฿)</option>
+                    <option value="USD">USD ($)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-zinc-600 mb-1">
+                    Price *
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    className="input-field"
+                    placeholder="3500"
+                    value={ticketForm.price}
+                    onChange={(e) =>
+                      setTicketForm((prev) => ({
+                        ...prev,
+                        price: e.target.value,
                       }))
                     }
                   />
                 </div>
+              </div>
 
-                {/* Time & Agenda */}
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-zinc-600 mb-2 flex items-center gap-2">
-                    <IconClock size={16} /> Time & Agenda
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-zinc-600 mb-1">
+                    Original Price
                   </label>
-                  <p className="text-xs text-zinc-400 mb-2">
-                    Add agenda items with time slots (e.g. &quot;1:30 – 2:00 PM&quot; and topic).
-                  </p>
-                  {(sessionForm.agenda || []).map((item, idx) => (
-                    <div key={idx} className="flex items-start gap-2 mb-2">
-                      <input
-                        type="text"
-                        className="input-field w-40"
-                        placeholder="1:30 – 2:00 PM"
-                        value={item.time}
-                        onChange={(e) => {
-                          const updated = [...(sessionForm.agenda || [])];
-                          updated[idx] = { ...updated[idx], time: e.target.value };
-                          setSessionForm((prev) => ({ ...prev, agenda: updated }));
-                        }}
-                      />
-                      <input
-                        type="text"
-                        className="input-field flex-1"
-                        placeholder="Topic description"
-                        value={item.topic}
-                        onChange={(e) => {
-                          const updated = [...(sessionForm.agenda || [])];
-                          updated[idx] = { ...updated[idx], topic: e.target.value };
-                          setSessionForm((prev) => ({ ...prev, agenda: updated }));
-                        }}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const updated = (sessionForm.agenda || []).filter((_, i) => i !== idx);
-                          setSessionForm((prev) => ({ ...prev, agenda: updated }));
-                        }}
-                        className="text-red-400 hover:text-red-600 mt-2"
-                      >
-                        <IconTrash size={16} />
-                      </button>
-                    </div>
-                  ))}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSessionForm((prev) => ({
+                  <input
+                    type="number"
+                    step="0.01"
+                    className="input-field"
+                    placeholder="Show as strikethrough price"
+                    value={ticketForm.originalPrice}
+                    onChange={(e) =>
+                      setTicketForm((prev) => ({
                         ...prev,
-                        agenda: [...(prev.agenda || []), { time: "", topic: "" }],
-                      }));
-                    }}
-                    className="text-sm text-emerald-600 hover:text-teal-900 flex items-center gap-1 mt-1"
+                        originalPrice: e.target.value,
+                      }))
+                    }
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-zinc-600 mb-1">
+                    Group Name
+                  </label>
+                  <select
+                    className="input-field"
+                    value={ticketForm.groupName}
+                    onChange={(e) =>
+                      setTicketForm((prev) => ({
+                        ...prev,
+                        groupName: e.target.value,
+                      }))
+                    }
                   >
-                    <IconPlus size={14} /> Add agenda item
-                  </button>
+                    <option value="">-- None --</option>
+                    <option value="workshop">workshop</option>
+                    <option value="gala">gala</option>
+                    <option value="registration">registration</option>
+                  </select>
                 </div>
               </div>
-              <div className="p-6 border-t border-zinc-100 flex gap-3 justify-end">
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-zinc-600 mb-1">
+                  Badge Text
+                </label>
+                <input
+                  type="text"
+                  className="input-field"
+                  value={ticketForm.badgeText}
+                  onChange={(e) =>
+                    setTicketForm((prev) => ({
+                      ...prev,
+                      badgeText: e.target.value,
+                    }))
+                  }
+                  placeholder='e.g. "Early Bird", "Best Value"'
+                  maxLength={50}
+                />
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-zinc-600 mb-1">
+                  Description
+                </label>
+                <textarea
+                  className="input-field"
+                  rows={2}
+                  value={ticketForm.description}
+                  onChange={(e) =>
+                    setTicketForm((prev) => ({
+                      ...prev,
+                      description: e.target.value,
+                    }))
+                  }
+                  placeholder="Optional ticket description"
+                />
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-zinc-600 mb-1">
+                  Features
+                </label>
+                <div className="flex gap-2 mb-2">
+                  <input
+                    type="text"
+                    className="input-field flex-1"
+                    value={ticketFeatureInput}
+                    onChange={(e) => setTicketFeatureInput(e.target.value)}
+                    placeholder="Add a feature..."
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && ticketFeatureInput.trim()) {
+                        e.preventDefault();
+                        setTicketForm((prev) => ({
+                          ...prev,
+                          features: [
+                            ...(prev.features || []),
+                            ticketFeatureInput.trim(),
+                          ],
+                        }));
+                        setTicketFeatureInput('');
+                      }
+                    }}
+                  />
+                  <button
+                    type="button"
+                    className="btn-secondary text-sm px-3"
+                    onClick={() => {
+                      if (ticketFeatureInput.trim()) {
+                        setTicketForm((prev) => ({
+                          ...prev,
+                          features: [
+                            ...(prev.features || []),
+                            ticketFeatureInput.trim(),
+                          ],
+                        }));
+                        setTicketFeatureInput('');
+                      }
+                    }}
+                  >
+                    Add
+                  </button>
+                </div>
+                {(ticketForm.features || []).length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {(ticketForm.features || []).map((f, i) => (
+                      <span
+                        key={i}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-zinc-100 text-zinc-600"
+                      >
+                        {f}
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setTicketForm((prev) => ({
+                              ...prev,
+                              features: (prev.features || []).filter(
+                                (_, idx) => idx !== i,
+                              ),
+                            }))
+                          }
+                          className="text-zinc-400 hover:text-red-500"
+                        >
+                          &times;
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-zinc-600 mb-1">
+                    Sale Start Date & Time
+                  </label>
+                  <DatePicker
+                    selected={
+                      ticketForm.saleStartDate
+                        ? new Date(ticketForm.saleStartDate)
+                        : null
+                    }
+                    onChange={(date: Date | null) =>
+                      setTicketForm((prev) => ({
+                        ...prev,
+                        saleStartDate: date ? date.toISOString() : '',
+                      }))
+                    }
+                    showTimeSelect
+                    dateFormat="d MMM yyyy, h:mm aa"
+                    className="input-field w-full"
+                    placeholderText="Select start date"
+                    wrapperClassName="w-full"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-zinc-600 mb-1">
+                    Sale End Date & Time
+                  </label>
+                  <DatePicker
+                    selected={
+                      ticketForm.saleEndDate
+                        ? new Date(ticketForm.saleEndDate)
+                        : null
+                    }
+                    onChange={(date: Date | null) =>
+                      setTicketForm((prev) => ({
+                        ...prev,
+                        saleEndDate: date ? date.toISOString() : '',
+                      }))
+                    }
+                    showTimeSelect
+                    dateFormat="d MMM yyyy, h:mm aa"
+                    className="input-field w-full"
+                    placeholderText="Select end date"
+                    wrapperClassName="w-full"
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="p-6 border-t border-zinc-100 flex gap-3 justify-end">
+              <button
+                onClick={() => {
+                  setShowTicketModal(false);
+                  setEditingTicketId(null);
+                }}
+                className="btn-secondary"
+              >
+                Cancel
+              </button>
+              <button onClick={handleAddTicket} className="btn-primary">
+                {editingTicketId ? 'Update Ticket' : 'Add Ticket'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Session Modal */}
+      {showSessionModal && (
+        <div className="modal-overlay">
+          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-zinc-100">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold">
+                  {editingSessionId ? 'Edit Session' : 'Create Session'}
+                </h3>
                 <button
                   onClick={() => {
                     setShowSessionModal(false);
                     setEditingSessionId(null);
                   }}
-                  className="btn-secondary"
+                  className="text-zinc-400 hover:text-zinc-500"
                 >
-                  Cancel
-                </button>
-                <button onClick={handleAddSession} className="btn-primary">
-                  {editingSessionId ? "Update Session" : "Create Session"}
+                  <IconX size={20} />
                 </button>
               </div>
             </div>
+            <div className="p-6">
+              {/* Main Session Checkbox - Logic: Show ONLY if it IS Main, OR if No Main exists */}
+              {(sessionForm.isMainSession ||
+                !sessions.some(
+                  (s) => s.isMainSession && s.id !== editingSessionId,
+                )) && (
+                <div className="mb-4">
+                  <label className="flex items-center gap-2 cursor-pointer p-3 border rounded-lg hover:bg-zinc-50 bg-emerald-50/50 border-teal-100/50">
+                    <input
+                      type="checkbox"
+                      className="w-5 h-5 text-emerald-600 rounded focus:ring-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                      checked={sessionForm.isMainSession || false}
+                      onChange={(e) =>
+                        setSessionForm((prev) => ({
+                          ...prev,
+                          isMainSession: e.target.checked,
+                        }))
+                      }
+                      disabled={sessionForm.isMainSession} // Lock if checked
+                    />
+                    <div>
+                      <div className="font-medium text-zinc-900">
+                        Main session
+                        {sessionForm.isMainSession && (
+                          <span className="ml-2 text-xs text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-teal-100">
+                            Default (Locked)
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-xs text-zinc-400">
+                        Main sessions appear prominently and are auto-linked to
+                        Primary tickets.
+                      </div>
+                    </div>
+                  </label>
+                </div>
+              )}
+
+              {/* Session Code & Session Name */}
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-zinc-600 mb-1">
+                    Session Code *
+                  </label>
+                  <input
+                    type="text"
+                    className="input-field"
+                    placeholder="S-001"
+                    value={sessionForm.sessionCode}
+                    onChange={(e) =>
+                      setSessionForm((prev) => ({
+                        ...prev,
+                        sessionCode: e.target.value,
+                      }))
+                    }
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-zinc-600 mb-1">
+                    Session Name *
+                  </label>
+                  <input
+                    type="text"
+                    className="input-field"
+                    placeholder="Enter session name"
+                    value={sessionForm.sessionName}
+                    onChange={(e) =>
+                      setSessionForm((prev) => ({
+                        ...prev,
+                        sessionName: e.target.value,
+                      }))
+                    }
+                  />
+                </div>
+              </div>
+
+              {/* Session Type */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-zinc-600 mb-1">
+                  Session Type *
+                </label>
+                <select
+                  className="input-field"
+                  value={sessionForm.sessionType}
+                  onChange={(e) =>
+                    setSessionForm((prev) => ({
+                      ...prev,
+                      sessionType: e.target.value as any,
+                    }))
+                  }
+                >
+                  <option value="workshop">Workshop</option>
+                  <option value="gala_dinner">Gala Dinner</option>
+                  <option value="lecture">Lecture</option>
+                  <option value="ceremony">Ceremony</option>
+                  <option value="break">Break</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+
+              {/* Start Time & End Time */}
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-zinc-600 mb-1">
+                    Start Time *
+                  </label>
+                  <DatePicker
+                    selected={
+                      sessionForm.startTime
+                        ? new Date(sessionForm.startTime)
+                        : null
+                    }
+                    onChange={(date: Date | null) =>
+                      setSessionForm((prev) => ({
+                        ...prev,
+                        startTime: date ? date.toISOString() : '',
+                      }))
+                    }
+                    showTimeSelect
+                    dateFormat="d MMM yyyy, h:mm aa"
+                    className="input-field w-full"
+                    placeholderText="Select start time"
+                    wrapperClassName="w-full"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-zinc-600 mb-1">
+                    End Time *
+                  </label>
+                  <DatePicker
+                    selected={
+                      sessionForm.endTime ? new Date(sessionForm.endTime) : null
+                    }
+                    onChange={(date: Date | null) =>
+                      setSessionForm((prev) => ({
+                        ...prev,
+                        endTime: date ? date.toISOString() : '',
+                      }))
+                    }
+                    showTimeSelect
+                    dateFormat="d MMM yyyy, h:mm aa"
+                    className="input-field w-full"
+                    placeholderText="Select end time"
+                    wrapperClassName="w-full"
+                  />
+                </div>
+              </div>
+
+              {/* Room & Max Capacity */}
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-zinc-600 mb-1">
+                    Room
+                  </label>
+                  <input
+                    type="text"
+                    className="input-field"
+                    placeholder="Meeting Room 1"
+                    value={sessionForm.room}
+                    onChange={(e) =>
+                      setSessionForm((prev) => ({
+                        ...prev,
+                        room: e.target.value,
+                      }))
+                    }
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-zinc-600 mb-1">
+                    Max Capacity
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    className="input-field"
+                    placeholder="0"
+                    value={sessionForm.maxCapacity}
+                    onChange={(e) =>
+                      setSessionForm((prev) => ({
+                        ...prev,
+                        maxCapacity: parseInt(e.target.value) || 0,
+                      }))
+                    }
+                  />
+                  <p className="text-xs text-zinc-400 mt-1">0 = Unlimited</p>
+                </div>
+              </div>
+
+              {/* Instructor(s) */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-zinc-600 mb-1 flex items-center gap-2">
+                  <IconMicrophone size={16} /> Instructor(s)
+                </label>
+                <div className="border border-zinc-200 rounded-md bg-white">
+                  {speakers.length > 0 ? (
+                    <div className="max-h-32 overflow-y-auto p-2">
+                      {speakers.map((speaker) => (
+                        <label
+                          key={speaker.id}
+                          className="flex items-center gap-2 text-sm p-2 hover:bg-zinc-50 rounded cursor-pointer"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={sessionForm.selectedSpeakerIds?.includes(
+                              speaker.id,
+                            )}
+                            onChange={(e) => {
+                              const id = speaker.id;
+                              setSessionForm((prev) => ({
+                                ...prev,
+                                selectedSpeakerIds: e.target.checked
+                                  ? [...(prev.selectedSpeakerIds || []), id]
+                                  : (prev.selectedSpeakerIds || []).filter(
+                                      (sid) => sid !== id,
+                                    ),
+                              }));
+                            }}
+                            className="rounded border-zinc-200 text-emerald-600 focus:ring-emerald-600"
+                          />
+                          <span>
+                            {speaker.firstName} {speaker.lastName}
+                          </span>
+                          {speaker.organization && (
+                            <span className="text-xs text-zinc-400">
+                              ({speaker.organization})
+                            </span>
+                          )}
+                        </label>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="p-3 text-sm text-zinc-400">
+                      No instructors available
+                    </div>
+                  )}
+                </div>
+                <p className="text-xs text-zinc-400 mt-1">
+                  Selected: {sessionForm.selectedSpeakerIds?.length || 0}{' '}
+                  Instructor(s)
+                </p>
+              </div>
+
+              {/* Learning Objectives */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-zinc-600 mb-1 flex items-center gap-2">
+                  <IconTarget size={16} /> Learning Objectives
+                </label>
+                <textarea
+                  className="input-field"
+                  rows={3}
+                  placeholder="Describe the learning objectives for this session..."
+                  value={sessionForm.description}
+                  onChange={(e) =>
+                    setSessionForm((prev) => ({
+                      ...prev,
+                      description: e.target.value,
+                    }))
+                  }
+                />
+              </div>
+
+              {/* Time & Agenda */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-zinc-600 mb-2 flex items-center gap-2">
+                  <IconClock size={16} /> Time & Agenda
+                </label>
+                <p className="text-xs text-zinc-400 mb-2">
+                  Add agenda items with time slots (e.g. &quot;1:30 – 2:00
+                  PM&quot; and topic).
+                </p>
+                {(sessionForm.agenda || []).map((item, idx) => (
+                  <div key={idx} className="flex items-start gap-2 mb-2">
+                    <input
+                      type="text"
+                      className="input-field w-40"
+                      placeholder="1:30 – 2:00 PM"
+                      value={item.time}
+                      onChange={(e) => {
+                        const updated = [...(sessionForm.agenda || [])];
+                        updated[idx] = {
+                          ...updated[idx],
+                          time: e.target.value,
+                        };
+                        setSessionForm((prev) => ({
+                          ...prev,
+                          agenda: updated,
+                        }));
+                      }}
+                    />
+                    <input
+                      type="text"
+                      className="input-field flex-1"
+                      placeholder="Topic description"
+                      value={item.topic}
+                      onChange={(e) => {
+                        const updated = [...(sessionForm.agenda || [])];
+                        updated[idx] = {
+                          ...updated[idx],
+                          topic: e.target.value,
+                        };
+                        setSessionForm((prev) => ({
+                          ...prev,
+                          agenda: updated,
+                        }));
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const updated = (sessionForm.agenda || []).filter(
+                          (_, i) => i !== idx,
+                        );
+                        setSessionForm((prev) => ({
+                          ...prev,
+                          agenda: updated,
+                        }));
+                      }}
+                      className="text-red-400 hover:text-red-600 mt-2"
+                    >
+                      <IconTrash size={16} />
+                    </button>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSessionForm((prev) => ({
+                      ...prev,
+                      agenda: [...(prev.agenda || []), { time: '', topic: '' }],
+                    }));
+                  }}
+                  className="text-sm text-emerald-600 hover:text-teal-900 flex items-center gap-1 mt-1"
+                >
+                  <IconPlus size={14} /> Add agenda item
+                </button>
+              </div>
+            </div>
+            <div className="p-6 border-t border-zinc-100 flex gap-3 justify-end">
+              <button
+                onClick={() => {
+                  setShowSessionModal(false);
+                  setEditingSessionId(null);
+                }}
+                className="btn-secondary"
+              >
+                Cancel
+              </button>
+              <button onClick={handleAddSession} className="btn-primary">
+                {editingSessionId ? 'Update Session' : 'Create Session'}
+              </button>
+            </div>
           </div>
-        )
-      }
-    </AdminLayout >
+        </div>
+      )}
+    </AdminLayout>
   );
 }

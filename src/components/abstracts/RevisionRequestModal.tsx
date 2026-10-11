@@ -1,24 +1,24 @@
-"use client";
+'use client';
 
-import { useState } from "react";
+import { useState } from 'react';
 import {
   IconFileText,
   IconLoader2,
   IconPencil,
   IconUpload,
   IconX,
-} from "@tabler/icons-react";
+} from '@tabler/icons-react';
 
 export const revisionTopicOptions = [
-  { value: "title", label: "Complete Abstract Title" },
-  { value: "keywords", label: "Keywords" },
-  { value: "background", label: "Background" },
-  { value: "objective", label: "Objective" },
-  { value: "methods", label: "Methods" },
-  { value: "results", label: "Results" },
-  { value: "conclusion", label: "Conclusion" },
-  { value: "documents", label: "Attached Documents" },
-  { value: "other", label: "Other" },
+  { value: 'title', label: 'Complete Abstract Title' },
+  { value: 'keywords', label: 'Keywords' },
+  { value: 'background', label: 'Background' },
+  { value: 'objective', label: 'Objective' },
+  { value: 'methods', label: 'Methods' },
+  { value: 'results', label: 'Results' },
+  { value: 'conclusion', label: 'Conclusion' },
+  { value: 'documents', label: 'Attached Documents' },
+  { value: 'other', label: 'Other' },
 ];
 
 const getTopicLabel = (topic: string) =>
@@ -32,7 +32,11 @@ interface RevisionRequestModalProps {
   abstractTitle: string;
   isSubmitting: boolean;
   onClose: () => void;
-  onSubmit: (payload: { topic: string; comment: string; file: File | null }) => Promise<void> | void;
+  onSubmit: (payload: {
+    topic: string;
+    comment: string;
+    file: File | null;
+  }) => Promise<void> | void;
 }
 
 export function RevisionRequestModal({
@@ -41,20 +45,20 @@ export function RevisionRequestModal({
   onClose,
   onSubmit,
 }: RevisionRequestModalProps) {
-  const [topic, setTopic] = useState("");
-  const [comment, setComment] = useState("");
+  const [topic, setTopic] = useState('');
+  const [comment, setComment] = useState('');
   const [file, setFile] = useState<File | null>(null);
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
 
   const handleSubmit = async () => {
     const trimmedTopic = topic.trim();
     const trimmedComment = comment.trim();
     if (!trimmedTopic) {
-      setError("Please enter a revise topic.");
+      setError('Please enter a revise topic.');
       return;
     }
 
-    setError("");
+    setError('');
     await onSubmit({ topic: trimmedTopic, comment: trimmedComment, file });
   };
 
@@ -98,7 +102,8 @@ export function RevisionRequestModal({
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Short Details <span className="text-gray-400 font-normal">(optional)</span>
+              Short Details{' '}
+              <span className="text-gray-400 font-normal">(optional)</span>
             </label>
             <textarea
               className="input-field h-28"
@@ -125,7 +130,7 @@ export function RevisionRequestModal({
                   <IconUpload size={18} className="text-gray-400 shrink-0" />
                 )}
                 <span className="truncate">
-                  {file ? file.name : "PDF, DOC, DOCX, JPG, or PNG"}
+                  {file ? file.name : 'PDF, DOC, DOCX, JPG, or PNG'}
                 </span>
               </span>
               <span className="text-xs font-semibold text-amber-700 shrink-0">
@@ -151,9 +156,7 @@ export function RevisionRequestModal({
             )}
           </div>
 
-          {error && (
-            <p className="text-sm font-medium text-red-600">{error}</p>
-          )}
+          {error && <p className="text-sm font-medium text-red-600">{error}</p>}
         </div>
 
         <div className="p-6 border-t border-gray-100 flex gap-3 justify-end">

@@ -1,14 +1,14 @@
-"use client";
+'use client';
 
-import { useState, useEffect, useMemo } from "react";
-import Link from "next/link";
-import { useRouter, useParams } from "next/navigation";
-import { AdminLayout } from "@/components/layout";
-import { api } from "@/lib/api";
-import { getExternalEventReadiness } from "@/lib/eventReadiness";
-import toast from "react-hot-toast";
-import DatePicker from "react-datepicker";
-import "react-datepicker/dist/react-datepicker.css";
+import { useState, useEffect, useMemo } from 'react';
+import Link from 'next/link';
+import { useRouter, useParams } from 'next/navigation';
+import { AdminLayout } from '@/components/layout';
+import { api } from '@/lib/api';
+import { getExternalEventReadiness } from '@/lib/eventReadiness';
+import toast from 'react-hot-toast';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 import {
   IconCalendarEvent,
   IconLayoutGrid,
@@ -27,7 +27,7 @@ import {
   IconFileText,
   IconUpload,
   IconAlertTriangle,
-} from "@tabler/icons-react";
+} from '@tabler/icons-react';
 
 interface Speaker {
   id: number;
@@ -42,12 +42,7 @@ interface SessionData {
   sessionCode: string;
   sessionName: string;
   sessionType:
-    | "workshop"
-    | "gala_dinner"
-    | "lecture"
-    | "ceremony"
-    | "break"
-    | "other";
+    'workshop' | 'gala_dinner' | 'lecture' | 'ceremony' | 'break' | 'other';
   description: string;
   room: string;
   startTime: string;
@@ -63,10 +58,10 @@ interface SessionData {
 interface TicketData {
   id?: number;
   name: string;
-  category: "primary" | "addon";
+  category: 'primary' | 'addon';
   groupName?: string;
   price: string;
-  currency: "THB" | "USD";
+  currency: 'THB' | 'USD';
   originalPrice?: string;
   description?: string;
   features?: string[];
@@ -95,7 +90,7 @@ interface EventFormData {
   eventName: string;
   shortName: string;
   description: string;
-  eventType: "single_room" | "multi_session";
+  eventType: 'single_room' | 'multi_session';
   location: string;
   mapUrl: string;
   websiteUrl: string;
@@ -104,7 +99,7 @@ interface EventFormData {
   maxCapacity: number;
   conferenceCode: string;
   cpeCredits: string;
-  status: "draft" | "published" | "cancelled" | "completed";
+  status: 'draft' | 'published' | 'cancelled' | 'completed';
   imageUrl: string;
   coverImage: string;
   videoUrl: string;
@@ -112,49 +107,49 @@ interface EventFormData {
 }
 
 const roleOptions = [
-  { value: "pharmacist", label: "Pharmacist" },
-  { value: "medical_professional", label: "Medical Professional" },
-  { value: "student", label: "Student" },
-  { value: "general", label: "General" },
-  { value: "healthhack", label: "HealthHack" },
-  { value: "booth", label: "Booth" },
+  { value: 'pharmacist', label: 'Pharmacist' },
+  { value: 'medical_professional', label: 'Medical Professional' },
+  { value: 'student', label: 'Student' },
+  { value: 'general', label: 'General' },
+  { value: 'healthhack', label: 'HealthHack' },
+  { value: 'booth', label: 'Booth' },
 ];
 
 // Helper to convert ISO date (UTC) to datetime-local string in local browser timezone
 const toDateTimeLocal = (isoString: string): string => {
-  if (!isoString) return "";
+  if (!isoString) return '';
   try {
     const date = new Date(isoString);
     const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
-    const hours = String(date.getHours()).padStart(2, "0");
-    const minutes = String(date.getMinutes()).padStart(2, "0");
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
     return `${year}-${month}-${day}T${hours}:${minutes}`;
   } catch {
-    return "";
+    return '';
   }
 };
 
 const getBackofficeToken = () =>
-  localStorage.getItem("backoffice_token") ||
-  sessionStorage.getItem("backoffice_token") ||
-  "";
+  localStorage.getItem('backoffice_token') ||
+  sessionStorage.getItem('backoffice_token') ||
+  '';
 
 const studentLevelLabels: Record<string, string> = {
-  postgraduate: "Postgraduate",
-  undergraduate: "Undergraduate",
+  postgraduate: 'Postgraduate',
+  undergraduate: 'Undergraduate',
 };
 
 const parseAllowedList = (raw: unknown): string[] => {
   if (!raw) return [];
   if (Array.isArray(raw)) return raw.map(String).filter(Boolean);
-  if (typeof raw !== "string") return [];
+  if (typeof raw !== 'string') return [];
 
   const value = raw.trim();
   if (!value) return [];
 
-  if (value.startsWith("[")) {
+  if (value.startsWith('[')) {
     try {
       const parsed = JSON.parse(value);
       return Array.isArray(parsed) ? parsed.map(String).filter(Boolean) : [];
@@ -164,23 +159,23 @@ const parseAllowedList = (raw: unknown): string[] => {
   }
 
   return value
-    .split(",")
+    .split(',')
     .map((item) => item.trim())
     .filter(Boolean);
 };
 
 // Helper function to format datetime
 const formatDateTime = (dateTimeStr: string): string => {
-  if (!dateTimeStr) return "-";
+  if (!dateTimeStr) return '-';
   try {
     const date = new Date(dateTimeStr);
-    return date.toLocaleString("en-US", {
-      month: "short",
-      day: "numeric",
-      hour: "numeric",
-      minute: "2-digit",
+    return date.toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
       hour12: true,
-      timeZone: "Asia/Bangkok",
+      timeZone: 'Asia/Bangkok',
     });
   } catch {
     return dateTimeStr;
@@ -193,31 +188,31 @@ export default function EditEventPage() {
   const eventId = params.id as string;
 
   const [activeTab, setActiveTab] = useState<
-    "details" | "sessions" | "tickets" | "venue"
-  >("details");
+    'details' | 'sessions' | 'tickets' | 'venue'
+  >('details');
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
 
   // Form data
   const [formData, setFormData] = useState<EventFormData>({
-    eventCode: "",
-    eventName: "",
-    shortName: "",
-    description: "",
-    eventType: "single_room",
-    location: "",
-    mapUrl: "",
-    websiteUrl: "",
-    startDate: "",
-    endDate: "",
+    eventCode: '',
+    eventName: '',
+    shortName: '',
+    description: '',
+    eventType: 'single_room',
+    location: '',
+    mapUrl: '',
+    websiteUrl: '',
+    startDate: '',
+    endDate: '',
     maxCapacity: 0,
-    conferenceCode: "",
-    cpeCredits: "",
-    status: "draft",
-    imageUrl: "",
-    coverImage: "",
-    videoUrl: "",
+    conferenceCode: '',
+    cpeCredits: '',
+    status: 'draft',
+    imageUrl: '',
+    coverImage: '',
+    videoUrl: '',
     documents: [],
   });
 
@@ -229,13 +224,24 @@ export default function EditEventPage() {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadingTarget, setUploadingTarget] = useState<string | null>(null);
-  const [imageCaption, setImageCaption] = useState("");
+  const [imageCaption, setImageCaption] = useState('');
 
   // Pending file objects (uploaded on save)
-  const [pendingThumbnail, setPendingThumbnail] = useState<{ file: File; previewUrl: string } | null>(null);
-  const [pendingCover, setPendingCover] = useState<{ file: File; previewUrl: string } | null>(null);
-  const [pendingVideo, setPendingVideo] = useState<{ file: File; previewUrl: string } | null>(null);
-  const [pendingDocuments, setPendingDocuments] = useState<{ file: File; name: string }[]>([]);
+  const [pendingThumbnail, setPendingThumbnail] = useState<{
+    file: File;
+    previewUrl: string;
+  } | null>(null);
+  const [pendingCover, setPendingCover] = useState<{
+    file: File;
+    previewUrl: string;
+  } | null>(null);
+  const [pendingVideo, setPendingVideo] = useState<{
+    file: File;
+    previewUrl: string;
+  } | null>(null);
+  const [pendingDocuments, setPendingDocuments] = useState<
+    { file: File; name: string }[]
+  >([]);
 
   // Modals
   const [showSessionModal, setShowSessionModal] = useState(false);
@@ -245,13 +251,13 @@ export default function EditEventPage() {
 
   // Session form
   const [sessionForm, setSessionForm] = useState<SessionData>({
-    sessionCode: "",
-    sessionName: "",
-    sessionType: "other",
-    description: "",
-    room: "",
-    startTime: "",
-    endTime: "",
+    sessionCode: '',
+    sessionName: '',
+    sessionType: 'other',
+    description: '',
+    room: '',
+    startTime: '',
+    endTime: '',
     maxCapacity: 0,
     selectedSpeakerIds: [],
     agenda: [],
@@ -259,25 +265,25 @@ export default function EditEventPage() {
 
   // Ticket form
   const [ticketForm, setTicketForm] = useState<TicketData>({
-    name: "",
-    category: "primary",
-    groupName: "",
-    price: "",
-    currency: "THB",
-    originalPrice: "",
-    description: "",
+    name: '',
+    category: 'primary',
+    groupName: '',
+    price: '',
+    currency: 'THB',
+    originalPrice: '',
+    description: '',
     features: [],
-    badgeText: "",
-    quota: "0",
-    saleStartDate: "",
-    saleEndDate: "",
+    badgeText: '',
+    quota: '0',
+    saleStartDate: '',
+    saleEndDate: '',
     allowedRoles: [],
     allowedStudentLevels: [],
-    priority: "regular",
+    priority: 'regular',
     isActive: true,
     sessionIds: [],
   });
-  const [ticketFeatureInput, setTicketFeatureInput] = useState("");
+  const [ticketFeatureInput, setTicketFeatureInput] = useState('');
 
   const shouldShowSessions = true;
   const readiness = useMemo(
@@ -299,7 +305,7 @@ export default function EditEventPage() {
         const res = await api.speakers.list(token);
         setSpeakers(res.speakers as unknown as Speaker[]);
       } catch (err) {
-        console.error("Failed to fetch speakers:", err);
+        console.error('Failed to fetch speakers:', err);
       }
     };
     fetchSpeakers();
@@ -315,23 +321,23 @@ export default function EditEventPage() {
         const event = response.event;
 
         setFormData({
-          eventCode: event.eventCode || "",
-          eventName: event.eventName || "",
-          shortName: event.shortName || "",
-          description: event.description || "",
-          eventType: event.eventType || "single_room",
-          location: event.location || "",
-          mapUrl: event.mapUrl || "",
-          websiteUrl: event.websiteUrl || "",
+          eventCode: event.eventCode || '',
+          eventName: event.eventName || '',
+          shortName: event.shortName || '',
+          description: event.description || '',
+          eventType: event.eventType || 'single_room',
+          location: event.location || '',
+          mapUrl: event.mapUrl || '',
+          websiteUrl: event.websiteUrl || '',
           startDate: toDateTimeLocal(event.startDate),
           endDate: toDateTimeLocal(event.endDate),
           maxCapacity: event.maxCapacity ?? 0,
-          conferenceCode: event.conferenceCode || "",
-          cpeCredits: event.cpeCredits || "",
-          status: event.status || "draft",
-          imageUrl: event.imageUrl || "",
-          coverImage: event.coverImage || "",
-          videoUrl: event.videoUrl || "",
+          conferenceCode: event.conferenceCode || '',
+          cpeCredits: event.cpeCredits || '',
+          status: event.status || 'draft',
+          imageUrl: event.imageUrl || '',
+          coverImage: event.coverImage || '',
+          videoUrl: event.videoUrl || '',
           documents: event.documents || [],
         });
 
@@ -342,9 +348,9 @@ export default function EditEventPage() {
               id: s.id,
               sessionCode: s.sessionCode,
               sessionName: s.sessionName,
-              sessionType: s.sessionType || "other",
-              description: s.description || "",
-              room: s.room || "",
+              sessionType: s.sessionType || 'other',
+              description: s.description || '',
+              room: s.room || '',
               startTime: toDateTimeLocal(s.startTime),
               endTime: toDateTimeLocal(s.endTime),
               maxCapacity: s.maxCapacity ?? 0,
@@ -365,23 +371,23 @@ export default function EditEventPage() {
                 id: t.id,
                 name: t.name,
                 category: t.category,
-                groupName: t.groupName || "",
+                groupName: t.groupName || '',
                 price: t.price,
-                currency: t.currency || "THB",
-                originalPrice: t.originalPrice ? String(t.originalPrice) : "",
-                description: t.description || "",
+                currency: t.currency || 'THB',
+                originalPrice: t.originalPrice ? String(t.originalPrice) : '',
+                description: t.description || '',
                 features: t.features || [],
-                badgeText: t.badgeText || "",
+                badgeText: t.badgeText || '',
                 quota: String(t.quota || 0),
                 saleStartDate: t.saleStartDate
                   ? toDateTimeLocal(t.saleStartDate)
-                  : "",
+                  : '',
                 saleEndDate: t.saleEndDate
                   ? toDateTimeLocal(t.saleEndDate)
-                  : "",
+                  : '',
                 allowedRoles: roles,
                 allowedStudentLevels: studentLevels,
-                priority: t.priority || "regular",
+                priority: t.priority || 'regular',
                 isActive: t.isActive ?? true,
                 sessionIds: t.sessionIds || (t.sessionId ? [t.sessionId] : []),
               };
@@ -395,12 +401,12 @@ export default function EditEventPage() {
             response.venueImages.map((img: any) => ({
               id: img.id,
               imageUrl: img.imageUrl,
-              caption: img.caption || "",
+              caption: img.caption || '',
             })),
           );
         }
       } catch (err: any) {
-        setError(err.message || "Failed to fetch event");
+        setError(err.message || 'Failed to fetch event');
       } finally {
         setIsLoading(false);
       }
@@ -421,7 +427,7 @@ export default function EditEventPage() {
       const speakerNames = (sessionForm.selectedSpeakerIds || [])
         .map((id) => {
           const speaker = speakers.find((s) => s.id === id);
-          return speaker ? `${speaker.firstName} ${speaker.lastName}` : "";
+          return speaker ? `${speaker.firstName} ${speaker.lastName}` : '';
         })
         .filter(Boolean);
 
@@ -443,24 +449,27 @@ export default function EditEventPage() {
             maxCapacity: sessionForm.maxCapacity,
             isMainSession: sessionForm.isMainSession || false,
             requiresOptIn: sessionForm.requiresOptIn || false,
-            agenda: sessionForm.agenda && sessionForm.agenda.length > 0 ? sessionForm.agenda : undefined,
+            agenda:
+              sessionForm.agenda && sessionForm.agenda.length > 0
+                ? sessionForm.agenda
+                : undefined,
           },
         );
         setSessions((prev) =>
           prev.map((s) =>
             s.id === editingSessionId
               ? {
-                ...sessionForm,
-                id: editingSessionId,
-                isMainSession: sessionForm.isMainSession,
-                requiresOptIn: sessionForm.requiresOptIn,
-                sessionType: sessionForm.sessionType,
-              }
+                  ...sessionForm,
+                  id: editingSessionId,
+                  isMainSession: sessionForm.isMainSession,
+                  requiresOptIn: sessionForm.requiresOptIn,
+                  sessionType: sessionForm.sessionType,
+                }
               : s,
           ),
         );
         setEditingSessionId(null);
-        toast.success("Session updated successfully");
+        toast.success('Session updated successfully');
       } else {
         // Create new session
         const response = await api.backofficeEvents.createSession(
@@ -478,7 +487,10 @@ export default function EditEventPage() {
             maxCapacity: sessionForm.maxCapacity,
             isMainSession: sessionForm.isMainSession || false,
             requiresOptIn: sessionForm.requiresOptIn || false,
-            agenda: sessionForm.agenda && sessionForm.agenda.length > 0 ? sessionForm.agenda : undefined,
+            agenda:
+              sessionForm.agenda && sessionForm.agenda.length > 0
+                ? sessionForm.agenda
+                : undefined,
           },
         );
         const session = response.session as Record<string, unknown>;
@@ -489,8 +501,8 @@ export default function EditEventPage() {
             sessionCode: session.sessionCode as string,
             sessionName: session.sessionName as string,
             sessionType: sessionForm.sessionType,
-            description: (session.description as string) || "",
-            room: (session.room as string) || "",
+            description: (session.description as string) || '',
+            room: (session.room as string) || '',
             startTime: toDateTimeLocal(session.startTime as string),
             endTime: toDateTimeLocal(session.endTime as string),
             maxCapacity: (session.maxCapacity as number) ?? 0,
@@ -499,16 +511,16 @@ export default function EditEventPage() {
             requiresOptIn: sessionForm.requiresOptIn,
           },
         ]);
-        toast.success("Session created successfully");
+        toast.success('Session created successfully');
       }
       setSessionForm({
-        sessionCode: "",
-        sessionName: "",
-        sessionType: "other",
-        description: "",
-        room: "",
-        startTime: "",
-        endTime: "",
+        sessionCode: '',
+        sessionName: '',
+        sessionType: 'other',
+        description: '',
+        room: '',
+        startTime: '',
+        endTime: '',
         maxCapacity: 0,
         selectedSpeakerIds: [],
         isMainSession: false,
@@ -516,7 +528,7 @@ export default function EditEventPage() {
       });
       setShowSessionModal(false);
     } catch (err: any) {
-      toast.error(err.message || "Failed to save session");
+      toast.error(err.message || 'Failed to save session');
     }
   };
 
@@ -525,9 +537,9 @@ export default function EditEventPage() {
     setSessionForm({
       sessionCode: session.sessionCode,
       sessionName: session.sessionName,
-      sessionType: session.sessionType || "other",
-      description: session.description || "",
-      room: session.room || "",
+      sessionType: session.sessionType || 'other',
+      description: session.description || '',
+      room: session.room || '',
       startTime: session.startTime,
       endTime: session.endTime,
       maxCapacity: session.maxCapacity,
@@ -542,13 +554,13 @@ export default function EditEventPage() {
 
   // Delete session
   const handleDeleteSession = async (id: number) => {
-    if (!confirm("Delete this session?")) return;
+    if (!confirm('Delete this session?')) return;
     try {
       const token = getBackofficeToken();
       await api.backofficeEvents.deleteSession(token, parseInt(eventId), id);
       setSessions((prev) => prev.filter((s) => s.id !== id));
     } catch (err: any) {
-      toast.error(err.message || "Failed to delete session");
+      toast.error(err.message || 'Failed to delete session');
     }
   };
 
@@ -557,7 +569,9 @@ export default function EditEventPage() {
     if (!ticketForm.name || !ticketForm.price) return;
     try {
       const token = getBackofficeToken();
-      const normalizedStudentLevels = (ticketForm.allowedRoles || []).includes("student")
+      const normalizedStudentLevels = (ticketForm.allowedRoles || []).includes(
+        'student',
+      )
         ? ticketForm.allowedStudentLevels || []
         : [];
       // Build payload
@@ -567,26 +581,32 @@ export default function EditEventPage() {
         groupName: ticketForm.groupName || undefined,
         price: ticketForm.price, // Keep as string
         currency: ticketForm.currency,
-        originalPrice: ticketForm.originalPrice ? Number(ticketForm.originalPrice) : undefined,
+        originalPrice: ticketForm.originalPrice
+          ? Number(ticketForm.originalPrice)
+          : undefined,
         description: ticketForm.description || undefined,
-        features: ticketForm.features && ticketForm.features.length > 0 ? ticketForm.features : [],
+        features:
+          ticketForm.features && ticketForm.features.length > 0
+            ? ticketForm.features
+            : [],
         badgeText: ticketForm.badgeText || undefined,
         quota: parseInt(ticketForm.quota) || 0,
         allowedRoles: JSON.stringify(ticketForm.allowedRoles),
-        allowedStudentLevels: normalizedStudentLevels.length > 0
-          ? JSON.stringify(normalizedStudentLevels)
-          : editingTicketId
-            ? "[]"
-            : undefined,
-        priority: ticketForm.priority || "regular",
+        allowedStudentLevels:
+          normalizedStudentLevels.length > 0
+            ? JSON.stringify(normalizedStudentLevels)
+            : editingTicketId
+              ? '[]'
+              : undefined,
+        priority: ticketForm.priority || 'regular',
         isActive: ticketForm.isActive ?? true,
         // Handle session linking:
         // - Add-on: use selected IDs
         // - Primary: find and link all Main Sessions
         sessionIds:
-          ticketForm.category === "addon"
+          ticketForm.category === 'addon'
             ? ticketForm.sessionIds
-            : ticketForm.category === "primary"
+            : ticketForm.category === 'primary'
               ? sessions.filter((s) => s.isMainSession).map((s) => s.id)
               : [],
       };
@@ -619,32 +639,32 @@ export default function EditEventPage() {
           prev.map((t) =>
             t.id === editingTicketId
               ? {
-                ...t,
-                id: editingTicketId,
-                name: ticketForm.name,
-                category: ticketForm.category,
-                groupName: ticketForm.groupName,
-                price: ticketForm.price,
-                currency: ticketForm.currency,
-                originalPrice: ticketForm.originalPrice,
-                description: ticketForm.description,
-                features: ticketForm.features,
-                badgeText: ticketForm.badgeText,
-                quota: ticketForm.quota,
-                allowedRoles: ticketForm.allowedRoles,
-                allowedStudentLevels: normalizedStudentLevels,
-                saleStartDate: ticketForm.saleStartDate,
-                saleEndDate: ticketForm.saleEndDate,
-                sessionIds:
-                  ticketForm.category === "addon"
-                    ? ticketForm.sessionIds
-                    : [],
-              }
+                  ...t,
+                  id: editingTicketId,
+                  name: ticketForm.name,
+                  category: ticketForm.category,
+                  groupName: ticketForm.groupName,
+                  price: ticketForm.price,
+                  currency: ticketForm.currency,
+                  originalPrice: ticketForm.originalPrice,
+                  description: ticketForm.description,
+                  features: ticketForm.features,
+                  badgeText: ticketForm.badgeText,
+                  quota: ticketForm.quota,
+                  allowedRoles: ticketForm.allowedRoles,
+                  allowedStudentLevels: normalizedStudentLevels,
+                  saleStartDate: ticketForm.saleStartDate,
+                  saleEndDate: ticketForm.saleEndDate,
+                  sessionIds:
+                    ticketForm.category === 'addon'
+                      ? ticketForm.sessionIds
+                      : [],
+                }
               : t,
           ),
         );
         setEditingTicketId(null);
-        toast.success("Ticket updated successfully");
+        toast.success('Ticket updated successfully');
       } else {
         // Create new ticket
         const response = await api.backofficeEvents.createTicket(
@@ -660,55 +680,57 @@ export default function EditEventPage() {
           {
             id: ticket.id as number,
             name: ticket.name as string,
-            category: ticket.category as "primary" | "addon",
-            groupName: (ticket.groupName as string) || "",
+            category: ticket.category as 'primary' | 'addon',
+            groupName: (ticket.groupName as string) || '',
             price: String(ticket.price),
-            currency: (ticket.currency as "THB" | "USD") || "THB",
-            originalPrice: ticket.originalPrice ? String(ticket.originalPrice) : "",
-            description: (ticket.description as string) || "",
+            currency: (ticket.currency as 'THB' | 'USD') || 'THB',
+            originalPrice: ticket.originalPrice
+              ? String(ticket.originalPrice)
+              : '',
+            description: (ticket.description as string) || '',
             features: (ticket.features as string[]) || [],
-            badgeText: (ticket.badgeText as string) || "",
+            badgeText: (ticket.badgeText as string) || '',
             quota: String(ticket.quota || 0),
             saleStartDate: ticket.saleStartDate
               ? toDateTimeLocal(ticket.saleStartDate as string)
-              : "",
+              : '',
             saleEndDate: ticket.saleEndDate
               ? toDateTimeLocal(ticket.saleEndDate as string)
-              : "",
+              : '',
             allowedRoles: roles,
             allowedStudentLevels: studentLevels,
-            priority: (ticket.priority as string) || "regular",
+            priority: (ticket.priority as string) || 'regular',
             sessionIds:
               (ticket.sessionIds as number[]) ||
               (ticket.sessionId ? [ticket.sessionId as number] : []),
           },
         ]);
-        toast.success("Ticket created successfully");
+        toast.success('Ticket created successfully');
       }
 
       setTicketForm({
-        name: "",
-        category: "primary",
-        groupName: "",
-        price: "",
-        currency: "THB",
-        originalPrice: "",
-        description: "",
+        name: '',
+        category: 'primary',
+        groupName: '',
+        price: '',
+        currency: 'THB',
+        originalPrice: '',
+        description: '',
         features: [],
-        badgeText: "",
-        quota: "0",
-        saleStartDate: "",
-        saleEndDate: "",
+        badgeText: '',
+        quota: '0',
+        saleStartDate: '',
+        saleEndDate: '',
         allowedRoles: [],
         allowedStudentLevels: [],
-        priority: "regular",
+        priority: 'regular',
         isActive: true,
         sessionIds: [],
       });
-      setTicketFeatureInput("");
+      setTicketFeatureInput('');
       setShowTicketModal(false);
     } catch (err: any) {
-      toast.error(err.message || "Failed to save ticket");
+      toast.error(err.message || 'Failed to save ticket');
     }
   };
 
@@ -717,19 +739,19 @@ export default function EditEventPage() {
     setTicketForm({
       name: ticket.name,
       category: ticket.category,
-      groupName: ticket.groupName || "",
+      groupName: ticket.groupName || '',
       price: ticket.price,
       currency: ticket.currency,
-      originalPrice: ticket.originalPrice || "",
-      description: ticket.description || "",
+      originalPrice: ticket.originalPrice || '',
+      description: ticket.description || '',
       features: ticket.features || [],
-      badgeText: ticket.badgeText || "",
+      badgeText: ticket.badgeText || '',
       quota: ticket.quota,
       saleStartDate: ticket.saleStartDate,
       saleEndDate: ticket.saleEndDate,
       allowedRoles: ticket.allowedRoles || [],
       allowedStudentLevels: ticket.allowedStudentLevels || [],
-      priority: ticket.priority || "regular",
+      priority: ticket.priority || 'regular',
       isActive: ticket.isActive ?? true,
       sessionIds:
         ticket.sessionIds || (ticket.sessionId ? [ticket.sessionId] : []),
@@ -740,25 +762,25 @@ export default function EditEventPage() {
 
   // Delete ticket
   const handleDeleteTicket = async (id: number) => {
-    if (!confirm("Delete this ticket?")) return;
+    if (!confirm('Delete this ticket?')) return;
     try {
       const token = getBackofficeToken();
       await api.backofficeEvents.deleteTicket(token, parseInt(eventId), id);
       setTickets((prev) => prev.filter((t) => t.id !== id));
     } catch (err: any) {
-      toast.error(err.message || "Failed to delete ticket");
+      toast.error(err.message || 'Failed to delete ticket');
     }
   };
 
   // Delete venue image
   const handleDeleteImage = async (id: number) => {
-    if (!confirm("Delete this image?")) return;
+    if (!confirm('Delete this image?')) return;
     try {
       const token = getBackofficeToken();
       await api.backofficeEvents.deleteImage(token, parseInt(eventId), id);
       setVenueImages((prev) => prev.filter((img) => img.id !== id));
     } catch (err: any) {
-      toast.error(err.message || "Failed to delete image");
+      toast.error(err.message || 'Failed to delete image');
     }
   };
 
@@ -781,7 +803,7 @@ export default function EditEventPage() {
     try {
       const uploadPromises = files.map(async (file) => {
         const formData = new FormData();
-        formData.append("file", file);
+        formData.append('file', file);
 
         // 1. Upload to Drive
         const uploadRes = await api.upload.venueImage(token, formData);
@@ -810,22 +832,28 @@ export default function EditEventPage() {
       const uploadedImages = await Promise.all(uploadPromises);
 
       setVenueImages((prev) => [...prev, ...uploadedImages]);
-      setImageCaption("");
-      e.target.value = ""; // Reset input
-      toast.success(`Successfully uploaded ${files.length} image${files.length > 1 ? 's' : ''}`);
+      setImageCaption('');
+      e.target.value = ''; // Reset input
+      toast.success(
+        `Successfully uploaded ${files.length} image${files.length > 1 ? 's' : ''}`,
+      );
     } catch (err: any) {
-      toast.error(err.message || "Failed to upload images");
+      toast.error(err.message || 'Failed to upload images');
     } finally {
       setIsUploading(false);
     }
   };
 
   // Helper: upload file via XHR with progress tracking
-  const uploadFileWithProgress = (file: File, endpoint: string, target: string): Promise<{ url: string; filename: string }> => {
+  const uploadFileWithProgress = (
+    file: File,
+    endpoint: string,
+    target: string,
+  ): Promise<{ url: string; filename: string }> => {
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
       const data = new FormData();
-      data.append("file", file);
+      data.append('file', file);
 
       setUploadProgress(0);
       setUploadingTarget(target);
@@ -842,18 +870,18 @@ export default function EditEventPage() {
           try {
             resolve(JSON.parse(xhr.responseText));
           } catch {
-            reject(new Error("Invalid server response"));
+            reject(new Error('Invalid server response'));
           }
         } else {
           reject(new Error(`Upload failed (${xhr.status})`));
         }
       };
 
-      xhr.onerror = () => reject(new Error("Network error during upload"));
+      xhr.onerror = () => reject(new Error('Network error during upload'));
 
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3002";
-      xhr.open("POST", `${apiUrl}${endpoint}`);
-      xhr.setRequestHeader("Authorization", `Bearer ${getBackofficeToken()}`);
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002';
+      xhr.open('POST', `${apiUrl}${endpoint}`);
+      xhr.setRequestHeader('Authorization', `Bearer ${getBackofficeToken()}`);
       xhr.send(data);
     });
   };
@@ -865,18 +893,22 @@ export default function EditEventPage() {
   };
 
   // Handle Event Image Selection — store File + preview, upload on save
-  const handleEventImageUpload = (file: File, type: "thumbnail" | "cover") => {
+  const handleEventImageUpload = (file: File, type: 'thumbnail' | 'cover') => {
     const previewUrl = URL.createObjectURL(file);
-    if (type === "thumbnail") {
-      if (pendingThumbnail?.previewUrl) URL.revokeObjectURL(pendingThumbnail.previewUrl);
+    if (type === 'thumbnail') {
+      if (pendingThumbnail?.previewUrl)
+        URL.revokeObjectURL(pendingThumbnail.previewUrl);
       setPendingThumbnail({ file, previewUrl });
       setFormData((prev) => ({ ...prev, imageUrl: previewUrl }));
     } else {
-      if (pendingCover?.previewUrl) URL.revokeObjectURL(pendingCover.previewUrl);
+      if (pendingCover?.previewUrl)
+        URL.revokeObjectURL(pendingCover.previewUrl);
       setPendingCover({ file, previewUrl });
       setFormData((prev) => ({ ...prev, coverImage: previewUrl }));
     }
-    toast.success(`${type === "thumbnail" ? "Thumbnail" : "Cover"} image selected! It will be uploaded when you save.`);
+    toast.success(
+      `${type === 'thumbnail' ? 'Thumbnail' : 'Cover'} image selected! It will be uploaded when you save.`,
+    );
   };
 
   const handleVideoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -884,7 +916,7 @@ export default function EditEventPage() {
     if (!file) return;
 
     if (file.size > 50 * 1024 * 1024) {
-      toast.error("Video file too large (max 50MB)");
+      toast.error('Video file too large (max 50MB)');
       return;
     }
 
@@ -892,8 +924,8 @@ export default function EditEventPage() {
     if (pendingVideo?.previewUrl) URL.revokeObjectURL(pendingVideo.previewUrl);
     setPendingVideo({ file, previewUrl });
     setFormData((prev) => ({ ...prev, videoUrl: previewUrl }));
-    toast.success("Video selected! It will be uploaded when you save.");
-    e.target.value = "";
+    toast.success('Video selected! It will be uploaded when you save.');
+    e.target.value = '';
   };
 
   const handleDocumentUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -901,17 +933,20 @@ export default function EditEventPage() {
     if (!file) return;
 
     if (file.size > 50 * 1024 * 1024) {
-      toast.error("Document file too large (max 50MB)");
+      toast.error('Document file too large (max 50MB)');
       return;
     }
 
     setPendingDocuments((prev) => [...prev, { file, name: file.name }]);
     setFormData((prev) => ({
       ...prev,
-      documents: [...(prev.documents || []), { name: file.name, url: "pending" }],
+      documents: [
+        ...(prev.documents || []),
+        { name: file.name, url: 'pending' },
+      ],
     }));
-    toast.success("Document selected! It will be uploaded when you save.");
-    e.target.value = "";
+    toast.success('Document selected! It will be uploaded when you save.');
+    e.target.value = '';
   };
 
   // Upload single file to /upload/event-media
@@ -925,43 +960,43 @@ export default function EditEventPage() {
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
       const data = new FormData();
-      data.append("file", file);
-      data.append("eventCode", eventCode);
-      data.append("eventName", eventName);
-      data.append("mediaType", mediaType);
-      if (sortOrder !== undefined) data.append("sortOrder", String(sortOrder));
+      data.append('file', file);
+      data.append('eventCode', eventCode);
+      data.append('eventName', eventName);
+      data.append('mediaType', mediaType);
+      if (sortOrder !== undefined) data.append('sortOrder', String(sortOrder));
 
       xhr.onload = () => {
         if (xhr.status >= 200 && xhr.status < 300) {
           try {
             resolve(JSON.parse(xhr.responseText));
           } catch {
-            reject(new Error("Invalid server response"));
+            reject(new Error('Invalid server response'));
           }
         } else {
           reject(new Error(`Upload failed (${xhr.status})`));
         }
       };
 
-      xhr.onerror = () => reject(new Error("Network error during upload"));
+      xhr.onerror = () => reject(new Error('Network error during upload'));
 
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3002";
-      xhr.open("POST", `${apiUrl}/api/upload/event-media`);
-      xhr.setRequestHeader("Authorization", `Bearer ${getBackofficeToken()}`);
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002';
+      xhr.open('POST', `${apiUrl}/api/upload/event-media`);
+      xhr.setRequestHeader('Authorization', `Bearer ${getBackofficeToken()}`);
       xhr.send(data);
     });
   };
 
   // Extract src from iframe string if present
   const extractMapUrl = (html: string) => {
-    if (!html || !html.trim().startsWith("<iframe")) return html;
+    if (!html || !html.trim().startsWith('<iframe')) return html;
     const match = html.match(/src="([^"]+)"/);
     return match ? match[1] : html;
   };
 
   // Save event details
   const handleSaveDetails = async () => {
-    setError("");
+    setError('');
     setIsSubmitting(true);
 
     try {
@@ -983,87 +1018,162 @@ export default function EditEventPage() {
         conferenceCode: formData.conferenceCode || undefined,
         cpeCredits: formData.cpeCredits || undefined,
         status: formData.status,
-        imageUrl: formData.imageUrl === "" ? null : formData.imageUrl.startsWith("blob:") ? undefined : formData.imageUrl || undefined,
-        coverImage: formData.coverImage === "" ? null : formData.coverImage.startsWith("blob:") ? undefined : formData.coverImage || undefined,
-        videoUrl: formData.videoUrl === "" ? null : formData.videoUrl.startsWith("blob:") ? undefined : formData.videoUrl || undefined,
-        documents: formData.documents.filter(d => d.url !== "pending").length > 0
-          ? formData.documents.filter(d => d.url !== "pending")
-          : undefined,
+        imageUrl:
+          formData.imageUrl === ''
+            ? null
+            : formData.imageUrl.startsWith('blob:')
+              ? undefined
+              : formData.imageUrl || undefined,
+        coverImage:
+          formData.coverImage === ''
+            ? null
+            : formData.coverImage.startsWith('blob:')
+              ? undefined
+              : formData.coverImage || undefined,
+        videoUrl:
+          formData.videoUrl === ''
+            ? null
+            : formData.videoUrl.startsWith('blob:')
+              ? undefined
+              : formData.videoUrl || undefined,
+        documents:
+          formData.documents.filter((d) => d.url !== 'pending').length > 0
+            ? formData.documents.filter((d) => d.url !== 'pending')
+            : undefined,
       };
 
       await api.backofficeEvents.update(token, parseInt(eventId), eventData);
 
       // Upload pending media files in parallel
-      const hasPendingFiles = pendingThumbnail || pendingCover || pendingVideo || pendingDocuments.length > 0;
+      const hasPendingFiles =
+        pendingThumbnail ||
+        pendingCover ||
+        pendingVideo ||
+        pendingDocuments.length > 0;
       if (hasPendingFiles) {
         setIsUploading(true);
-        setUploadingTarget("media");
+        setUploadingTarget('media');
 
-        const mediaUploads: Promise<{ type: string; url: string } | null>[] = [];
+        const mediaUploads: Promise<{ type: string; url: string } | null>[] =
+          [];
         const evCode = formData.eventCode;
         const evName = formData.eventName;
 
         if (pendingThumbnail) {
           mediaUploads.push(
-            uploadEventMediaFile(pendingThumbnail.file, evCode, evName, "thumbnail")
-              .then(r => ({ type: "thumbnail", url: r.url }))
-              .catch(err => { console.error("Failed to upload thumbnail:", err); return null; })
+            uploadEventMediaFile(
+              pendingThumbnail.file,
+              evCode,
+              evName,
+              'thumbnail',
+            )
+              .then((r) => ({ type: 'thumbnail', url: r.url }))
+              .catch((err) => {
+                console.error('Failed to upload thumbnail:', err);
+                return null;
+              }),
           );
         }
 
         if (pendingCover) {
           mediaUploads.push(
-            uploadEventMediaFile(pendingCover.file, evCode, evName, "cover_img")
-              .then(r => ({ type: "cover_img", url: r.url }))
-              .catch(err => { console.error("Failed to upload cover:", err); return null; })
+            uploadEventMediaFile(pendingCover.file, evCode, evName, 'cover_img')
+              .then((r) => ({ type: 'cover_img', url: r.url }))
+              .catch((err) => {
+                console.error('Failed to upload cover:', err);
+                return null;
+              }),
           );
         }
 
         if (pendingVideo) {
           mediaUploads.push(
-            uploadEventMediaFile(pendingVideo.file, evCode, evName, "cover_vdo")
-              .then(r => ({ type: "cover_vdo", url: r.url }))
-              .catch(err => { console.error("Failed to upload video:", err); return null; })
+            uploadEventMediaFile(pendingVideo.file, evCode, evName, 'cover_vdo')
+              .then((r) => ({ type: 'cover_vdo', url: r.url }))
+              .catch((err) => {
+                console.error('Failed to upload video:', err);
+                return null;
+              }),
           );
         }
 
         for (const doc of pendingDocuments) {
           mediaUploads.push(
-            uploadEventMediaFile(doc.file, evCode, evName, "document")
-              .then(r => ({ type: "document", url: r.url, name: doc.name } as any))
-              .catch(err => { console.error("Failed to upload document:", err); return null; })
+            uploadEventMediaFile(doc.file, evCode, evName, 'document')
+              .then(
+                (r) =>
+                  ({ type: 'document', url: r.url, name: doc.name }) as any,
+              )
+              .catch((err) => {
+                console.error('Failed to upload document:', err);
+                return null;
+              }),
           );
         }
 
         const mediaResults = await Promise.allSettled(mediaUploads);
         const resolved = mediaResults
-          .filter((r): r is PromiseFulfilledResult<{ type: string; url: string } | null> => r.status === "fulfilled")
-          .map(r => r.value)
+          .filter(
+            (
+              r,
+            ): r is PromiseFulfilledResult<{
+              type: string;
+              url: string;
+            } | null> => r.status === 'fulfilled',
+          )
+          .map((r) => r.value)
           .filter((r): r is { type: string; url: string } => r !== null);
 
         // PATCH event with uploaded URLs
         const patchData: Record<string, unknown> = {};
         for (const result of resolved) {
-          if (result.type === "thumbnail") patchData.imageUrl = result.url;
-          if (result.type === "cover_img") patchData.coverImage = result.url;
-          if (result.type === "cover_vdo") patchData.videoUrl = result.url;
+          if (result.type === 'thumbnail') patchData.imageUrl = result.url;
+          if (result.type === 'cover_img') patchData.coverImage = result.url;
+          if (result.type === 'cover_vdo') patchData.videoUrl = result.url;
         }
 
-        const uploadedDocs = resolved.filter(r => r.type === "document") as any[];
+        const uploadedDocs = resolved.filter(
+          (r) => r.type === 'document',
+        ) as any[];
         if (uploadedDocs.length > 0) {
-          const existingDocs = (formData.documents || []).filter(d => d.url !== "pending");
-          patchData.documents = [...existingDocs, ...uploadedDocs.map((d: any) => ({ name: d.name || "document", url: d.url }))];
+          const existingDocs = (formData.documents || []).filter(
+            (d) => d.url !== 'pending',
+          );
+          patchData.documents = [
+            ...existingDocs,
+            ...uploadedDocs.map((d: any) => ({
+              name: d.name || 'document',
+              url: d.url,
+            })),
+          ];
         }
 
         if (Object.keys(patchData).length > 0) {
-          await api.backofficeEvents.update(token, parseInt(eventId), patchData);
+          await api.backofficeEvents.update(
+            token,
+            parseInt(eventId),
+            patchData,
+          );
           // Update local formData with real URLs
           setFormData((prev) => ({
             ...prev,
-            ...(patchData.imageUrl ? { imageUrl: patchData.imageUrl as string } : {}),
-            ...(patchData.coverImage ? { coverImage: patchData.coverImage as string } : {}),
-            ...(patchData.videoUrl ? { videoUrl: patchData.videoUrl as string } : {}),
-            ...(patchData.documents ? { documents: patchData.documents as { name: string; url: string }[] } : {}),
+            ...(patchData.imageUrl
+              ? { imageUrl: patchData.imageUrl as string }
+              : {}),
+            ...(patchData.coverImage
+              ? { coverImage: patchData.coverImage as string }
+              : {}),
+            ...(patchData.videoUrl
+              ? { videoUrl: patchData.videoUrl as string }
+              : {}),
+            ...(patchData.documents
+              ? {
+                  documents: patchData.documents as {
+                    name: string;
+                    url: string;
+                  }[],
+                }
+              : {}),
           }));
         }
 
@@ -1075,9 +1185,9 @@ export default function EditEventPage() {
         resetUploadState();
       }
 
-      toast.success("Event details saved!");
+      toast.success('Event details saved!');
     } catch (err: any) {
-      setError(err.message || "Failed to save event");
+      setError(err.message || 'Failed to save event');
     } finally {
       setIsSubmitting(false);
     }
@@ -1090,19 +1200,23 @@ export default function EditEventPage() {
       <div
         className={`mb-6 rounded-xl border px-4 py-4 ${
           readiness.ready
-            ? "border-emerald-200 bg-emerald-50"
-            : "border-amber-200 bg-amber-50"
+            ? 'border-emerald-200 bg-emerald-50'
+            : 'border-amber-200 bg-amber-50'
         }`}
       >
         <div className="flex items-start gap-3">
           <div
             className={`mt-0.5 flex h-8 w-8 items-center justify-center rounded-full ${
               readiness.ready
-                ? "bg-emerald-100 text-emerald-700"
-                : "bg-amber-100 text-amber-700"
+                ? 'bg-emerald-100 text-emerald-700'
+                : 'bg-amber-100 text-amber-700'
             }`}
           >
-            {readiness.ready ? <IconCheck size={18} /> : <IconAlertTriangle size={18} />}
+            {readiness.ready ? (
+              <IconCheck size={18} />
+            ) : (
+              <IconAlertTriangle size={18} />
+            )}
           </div>
           <div className="flex-1">
             <h4 className="text-sm font-semibold text-zinc-900">
@@ -1143,12 +1257,12 @@ export default function EditEventPage() {
   }
 
   const tabs = [
-    { id: "details", label: "Event Details", icon: IconCalendarEvent },
+    { id: 'details', label: 'Event Details', icon: IconCalendarEvent },
     ...(shouldShowSessions
-      ? [{ id: "sessions", label: "Sessions", icon: IconLayoutGrid }]
+      ? [{ id: 'sessions', label: 'Sessions', icon: IconLayoutGrid }]
       : []),
-    { id: "tickets", label: "Tickets", icon: IconTicket },
-    { id: "venue", label: "Venue/Images", icon: IconPhoto },
+    { id: 'tickets', label: 'Tickets', icon: IconTicket },
+    { id: 'venue', label: 'Venue/Images', icon: IconPhoto },
   ];
 
   return (
@@ -1175,35 +1289,36 @@ export default function EditEventPage() {
                 {formData.eventCode}
               </p>
               <h1 className="text-2xl font-bold">
-                {formData.eventName || "Untitled Event"}
+                {formData.eventName || 'Untitled Event'}
               </h1>
               <p className="text-teal-200 text-sm mt-1">
-                {formData.location || "No location set"} •{" "}
+                {formData.location || 'No location set'} •{' '}
                 {formData.conferenceCode && `CPE: ${formData.conferenceCode}`}
               </p>
             </div>
           </div>
           <div className="text-right">
             <span
-              className={`inline-block px-4 py-2 rounded-full text-sm font-semibold ${formData.status === "published"
-                ? "bg-green-500"
-                : formData.status === "draft"
-                  ? "bg-yellow-500"
-                  : formData.status === "cancelled"
-                    ? "bg-red-500"
-                    : "bg-zinc-500"
-                }`}
+              className={`inline-block px-4 py-2 rounded-full text-sm font-semibold ${
+                formData.status === 'published'
+                  ? 'bg-green-500'
+                  : formData.status === 'draft'
+                    ? 'bg-yellow-500'
+                    : formData.status === 'cancelled'
+                      ? 'bg-red-500'
+                      : 'bg-zinc-500'
+              }`}
             >
               {formData.status.charAt(0).toUpperCase() +
                 formData.status.slice(1)}
             </span>
             <p className="text-teal-200 text-sm mt-2">
               {formData.startDate &&
-                new Date(formData.startDate).toLocaleDateString("en-US", {
-                  month: "short",
-                  day: "numeric",
-                  year: "numeric",
-                  timeZone: "Asia/Bangkok",
+                new Date(formData.startDate).toLocaleDateString('en-US', {
+                  month: 'short',
+                  day: 'numeric',
+                  year: 'numeric',
+                  timeZone: 'Asia/Bangkok',
                 })}
             </p>
           </div>
@@ -1218,10 +1333,11 @@ export default function EditEventPage() {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
-              className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-all ${activeTab === tab.id
-                ? "bg-emerald-700 text-white shadow-md"
-                : "bg-white text-zinc-500 hover:bg-zinc-100 border border-zinc-200"
-                }`}
+              className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-all ${
+                activeTab === tab.id
+                  ? 'bg-emerald-700 text-white shadow-md'
+                  : 'bg-white text-zinc-500 hover:bg-zinc-100 border border-zinc-200'
+              }`}
             >
               <Icon size={18} />
               {tab.label}
@@ -1237,7 +1353,7 @@ export default function EditEventPage() {
       )}
 
       {/* Event Details Tab */}
-      {activeTab === "details" && (
+      {activeTab === 'details' && (
         <div className="card">
           {renderReadinessPanel()}
 
@@ -1306,7 +1422,8 @@ export default function EditEventPage() {
               }
             />
             <p className="mt-1 text-xs text-zinc-400">
-              Used in email subject lines. If blank, the full event name will be used.
+              Used in email subject lines. If blank, the full event name will be
+              used.
             </p>
           </div>
 
@@ -1334,21 +1451,33 @@ export default function EditEventPage() {
               {(formData.documents || []).length > 0 && (
                 <div className="grid gap-2">
                   {(formData.documents || []).map((doc, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-3 border border-zinc-200 rounded-xl bg-zinc-50">
+                    <div
+                      key={idx}
+                      className="flex items-center justify-between p-3 border border-zinc-200 rounded-xl bg-zinc-50"
+                    >
                       <div className="flex items-center gap-3 overflow-hidden">
                         <div className="w-8 h-8 rounded bg-emerald-50 flex items-center justify-center text-emerald-600 flex-shrink-0">
                           <IconFileText size={18} />
                         </div>
-                        <a href={doc.url} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-emerald-600 hover:underline truncate">
+                        <a
+                          href={doc.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm font-medium text-emerald-600 hover:underline truncate"
+                        >
                           {doc.name}
                         </a>
                       </div>
                       <button
                         type="button"
-                        onClick={() => setFormData(prev => ({
-                          ...prev,
-                          documents: prev.documents.filter((_, i) => i !== idx)
-                        }))}
+                        onClick={() =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            documents: prev.documents.filter(
+                              (_, i) => i !== idx,
+                            ),
+                          }))
+                        }
                         className="p-2 text-zinc-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                       >
                         <IconTrash size={18} />
@@ -1369,19 +1498,28 @@ export default function EditEventPage() {
                 />
                 <label
                   htmlFor="document-upload"
-                  className={`flex flex-col items-center justify-center w-full h-24 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${isUploading ? "bg-zinc-100 border-zinc-200 opacity-70" : "border-zinc-200 bg-zinc-50 hover:bg-zinc-100"
-                    }`}
+                  className={`flex flex-col items-center justify-center w-full h-24 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
+                    isUploading
+                      ? 'bg-zinc-100 border-zinc-200 opacity-70'
+                      : 'border-zinc-200 bg-zinc-50 hover:bg-zinc-100'
+                  }`}
                 >
                   <div className="flex flex-col items-center justify-center pb-6 pt-5">
                     {isUploading ? (
-                      <IconLoader2 size={24} className="text-zinc-400 mb-2 animate-spin" />
+                      <IconLoader2
+                        size={24}
+                        className="text-zinc-400 mb-2 animate-spin"
+                      />
                     ) : (
                       <IconUpload size={24} className="text-zinc-400 mb-2" />
                     )}
                     <p className="mb-2 text-sm text-zinc-400">
-                      <span className="font-semibold">Click to upload</span> a document
+                      <span className="font-semibold">Click to upload</span> a
+                      document
                     </p>
-                    <p className="text-xs text-zinc-400">PDF, DOC, DOCX, XLS or XLSX (Max 50MB)</p>
+                    <p className="text-xs text-zinc-400">
+                      PDF, DOC, DOCX, XLS or XLSX (Max 50MB)
+                    </p>
                   </div>
                 </label>
               </div>
@@ -1400,7 +1538,7 @@ export default function EditEventPage() {
                 onChange={(date: Date | null) =>
                   setFormData((prev) => ({
                     ...prev,
-                    startDate: date ? date.toISOString() : "",
+                    startDate: date ? date.toISOString() : '',
                   }))
                 }
                 showTimeSelect
@@ -1419,7 +1557,7 @@ export default function EditEventPage() {
                 onChange={(date: Date | null) =>
                   setFormData((prev) => ({
                     ...prev,
-                    endDate: date ? date.toISOString() : "",
+                    endDate: date ? date.toISOString() : '',
                   }))
                 }
                 showTimeSelect
@@ -1455,7 +1593,10 @@ export default function EditEventPage() {
                 placeholder="https://newpharmacist.example.com"
                 value={formData.websiteUrl}
                 onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, websiteUrl: e.target.value }))
+                  setFormData((prev) => ({
+                    ...prev,
+                    websiteUrl: e.target.value,
+                  }))
                 }
               />
               <p className="mt-1 text-xs text-zinc-400">
@@ -1472,7 +1613,7 @@ export default function EditEventPage() {
               type="text"
               className="input-field"
               placeholder='<iframe src="https://www.google.com/maps/embed?..." ></iframe>'
-              value={formData.mapUrl || ""}
+              value={formData.mapUrl || ''}
               onChange={(e) =>
                 setFormData((prev) => ({ ...prev, mapUrl: e.target.value }))
               }
@@ -1575,7 +1716,7 @@ export default function EditEventPage() {
       )}
 
       {/* Sessions Tab */}
-      {activeTab === "sessions" && shouldShowSessions && (
+      {activeTab === 'sessions' && shouldShowSessions && (
         <div className="card">
           {renderReadinessPanel()}
 
@@ -1584,13 +1725,13 @@ export default function EditEventPage() {
             <button
               onClick={() => {
                 setSessionForm({
-                  sessionCode: "",
-                  sessionName: "",
-                  sessionType: "other",
-                  description: "",
-                  room: "",
-                  startTime: "",
-                  endTime: "",
+                  sessionCode: '',
+                  sessionName: '',
+                  sessionType: 'other',
+                  description: '',
+                  room: '',
+                  startTime: '',
+                  endTime: '',
                   maxCapacity: 0,
                   selectedSpeakerIds: [],
                   isMainSession: false,
@@ -1642,11 +1783,19 @@ export default function EditEventPage() {
                               Main
                             </span>
                           </td>
-                          <td>{session.room || "-"}</td>
+                          <td>{session.room || '-'}</td>
                           <td className="text-sm">
                             {formatDateTime(session.startTime)}
                           </td>
-                          <td>{session.maxCapacity === 0 ? <span className="text-green-600 font-medium">Unlimited</span> : session.maxCapacity}</td>
+                          <td>
+                            {session.maxCapacity === 0 ? (
+                              <span className="text-green-600 font-medium">
+                                Unlimited
+                              </span>
+                            ) : (
+                              session.maxCapacity
+                            )}
+                          </td>
                           <td className="flex gap-1">
                             <button
                               onClick={() => handleEditSession(session)}
@@ -1664,7 +1813,7 @@ export default function EditEventPage() {
           )}
 
           {/* Sub Sessions Section */}
-          <div className={sessions.some((s) => s.isMainSession) ? "pt-2" : ""}>
+          <div className={sessions.some((s) => s.isMainSession) ? 'pt-2' : ''}>
             <div className="flex items-center gap-2 mb-4 border-b pb-2 border-zinc-200">
               <IconLayoutGrid size={20} className="text-zinc-400" />
               <h4 className="text-lg font-bold text-zinc-800">
@@ -1693,17 +1842,28 @@ export default function EditEventPage() {
                             {session.sessionCode}
                           </td>
                           <td>{session.sessionName}</td>
-                          <td>{session.room || "-"}</td>
+                          <td>{session.room || '-'}</td>
                           <td className="text-sm">
                             {formatDateTime(session.startTime)}
                           </td>
-                          <td>{session.maxCapacity === 0 ? <span className="text-green-600 font-medium">Unlimited</span> : session.maxCapacity}</td>
+                          <td>
+                            {session.maxCapacity === 0 ? (
+                              <span className="text-green-600 font-medium">
+                                Unlimited
+                              </span>
+                            ) : (
+                              session.maxCapacity
+                            )}
+                          </td>
                           <td className="flex gap-1">
                             <button
                               onClick={() => handleEditSession(session)}
                               className="p-1.5 hover:bg-emerald-50 rounded"
                             >
-                              <IconPencil size={18} className="text-emerald-600" />
+                              <IconPencil
+                                size={18}
+                                className="text-emerald-600"
+                              />
                             </button>
                             <button
                               onClick={() => handleDeleteSession(session.id!)}
@@ -1727,7 +1887,7 @@ export default function EditEventPage() {
       )}
 
       {/* Tickets Tab */}
-      {activeTab === "tickets" && (
+      {activeTab === 'tickets' && (
         <div className="card">
           {renderReadinessPanel()}
 
@@ -1762,22 +1922,22 @@ export default function EditEventPage() {
                       <td className="font-medium">{ticket.name}</td>
                       <td>
                         <span
-                          className={`badge ${ticket.category === "primary" ? "bg-emerald-50 text-teal-900" : "bg-purple-100 text-purple-800"}`}
+                          className={`badge ${ticket.category === 'primary' ? 'bg-emerald-50 text-teal-900' : 'bg-purple-100 text-purple-800'}`}
                         >
-                          {ticket.category === "primary" ? "Primary" : "Add-on"}
+                          {ticket.category === 'primary' ? 'Primary' : 'Add-on'}
                         </span>
-                        {ticket.category === "primary" && (
+                        {ticket.category === 'primary' && (
                           <div className="text-xs text-emerald-600 mt-1 flex items-center gap-1">
                             <IconCheck size={12} /> Includes Main Session
                           </div>
                         )}
-                        {ticket.category === "addon" &&
+                        {ticket.category === 'addon' &&
                           ticket.sessionIds &&
                           ticket.sessionIds.length > 0 && (
                             <div className="text-xs text-purple-600 mt-1">
                               {ticket.sessionIds.length === 1 ? (
                                 <>
-                                  →{" "}
+                                  →{' '}
                                   {sessions.find(
                                     (s) => s.id === ticket.sessionIds![0],
                                   )?.sessionName ||
@@ -1792,18 +1952,33 @@ export default function EditEventPage() {
                           )}
                       </td>
                       <td className="font-semibold">
-                        {ticket.currency}{" "}
+                        {ticket.currency}{' '}
                         {Number(ticket.price).toLocaleString()}
                       </td>
-                      <td>{ticket.quota === "0" || ticket.quota === "" ? <span className="text-green-600 font-medium">Unlimited</span> : ticket.quota}</td>
                       <td>
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${ticket.priority === 'early_bird' ? 'bg-orange-100 text-orange-800' :
-                          ticket.priority === 'regular' ? 'bg-zinc-100 text-zinc-800' :
-                            'bg-zinc-100 text-zinc-800'
-                          }`}>
-                          {ticket.priority === 'early_bird' ? 'Early Bird' :
-                            ticket.priority === 'regular' ? 'Regular' :
-                              'Regular'}
+                        {ticket.quota === '0' || ticket.quota === '' ? (
+                          <span className="text-green-600 font-medium">
+                            Unlimited
+                          </span>
+                        ) : (
+                          ticket.quota
+                        )}
+                      </td>
+                      <td>
+                        <span
+                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                            ticket.priority === 'early_bird'
+                              ? 'bg-orange-100 text-orange-800'
+                              : ticket.priority === 'regular'
+                                ? 'bg-zinc-100 text-zinc-800'
+                                : 'bg-zinc-100 text-zinc-800'
+                          }`}
+                        >
+                          {ticket.priority === 'early_bird'
+                            ? 'Early Bird'
+                            : ticket.priority === 'regular'
+                              ? 'Regular'
+                              : 'Regular'}
                         </span>
                       </td>
                       <td>
@@ -1812,22 +1987,40 @@ export default function EditEventPage() {
                             ticket.allowedRoles.map((role) => (
                               <span
                                 key={role}
-                                className={`text-xs px-1.5 py-0.5 rounded font-medium ${role === "pharmacist" ? "bg-green-100 text-green-800" :
-                                  role === "medical_professional" ? "bg-indigo-100 text-indigo-800" :
-                                    role === "student" ? "bg-emerald-50 text-teal-900" :
-                                      role === "general" ? "bg-zinc-100 text-zinc-800" :
-                                        "bg-zinc-100 text-zinc-800"
-                                  }`}
+                                className={`text-xs px-1.5 py-0.5 rounded font-medium ${
+                                  role === 'pharmacist'
+                                    ? 'bg-green-100 text-green-800'
+                                    : role === 'medical_professional'
+                                      ? 'bg-indigo-100 text-indigo-800'
+                                      : role === 'student'
+                                        ? 'bg-emerald-50 text-teal-900'
+                                        : role === 'general'
+                                          ? 'bg-zinc-100 text-zinc-800'
+                                          : 'bg-zinc-100 text-zinc-800'
+                                }`}
                               >
-                                {role === "pharmacist" ? "PHARMACIST" : role === "medical_professional" ? "MED. PROF." : role === "student" ? "STUDENT" : role === "general" ? "GENERAL" : role === "healthhack" ? "HealthHack" : role === "booth" ? "Booth" : role.toUpperCase()}
+                                {role === 'pharmacist'
+                                  ? 'PHARMACIST'
+                                  : role === 'medical_professional'
+                                    ? 'MED. PROF.'
+                                    : role === 'student'
+                                      ? 'STUDENT'
+                                      : role === 'general'
+                                        ? 'GENERAL'
+                                        : role === 'healthhack'
+                                          ? 'HealthHack'
+                                          : role === 'booth'
+                                            ? 'Booth'
+                                            : role.toUpperCase()}
                               </span>
                             ))
                           ) : (
                             <span className="text-xs text-zinc-400">All</span>
                           )}
-                          {ticket.allowedRoles?.includes("student") && (
+                          {ticket.allowedRoles?.includes('student') && (
                             <div className="mt-1 flex flex-wrap gap-1">
-                              {ticket.allowedStudentLevels && ticket.allowedStudentLevels.length > 0 ? (
+                              {ticket.allowedStudentLevels &&
+                              ticket.allowedStudentLevels.length > 0 ? (
                                 ticket.allowedStudentLevels.map((level) => (
                                   <span
                                     key={level}
@@ -1879,7 +2072,7 @@ export default function EditEventPage() {
       )}
 
       {/* Venue/Images Tab */}
-      {activeTab === "venue" && (
+      {activeTab === 'venue' && (
         <div className="space-y-6">
           {renderReadinessPanel()}
 
@@ -1894,18 +2087,27 @@ export default function EditEventPage() {
                   Thumbnail Image
                 </h3>
                 <p className="text-sm text-zinc-400 hidden md:block">
-                  This image is used on event cards and listings on the homepage.
-                  Recommended aspect ratio is 1:1 or 4:3.
+                  This image is used on event cards and listings on the
+                  homepage. Recommended aspect ratio is 1:1 or 4:3.
                 </p>
               </div>
               <div className="md:w-2/3">
                 <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-zinc-200 border-dashed rounded-xl relative overflow-hidden group bg-zinc-50/50 hover:bg-zinc-50 transition-colors">
                   {formData.imageUrl ? (
                     <>
-                      <img src={formData.imageUrl} alt="Thumbnail preview" className="max-h-48 object-contain" />
+                      <img
+                        src={formData.imageUrl}
+                        alt="Thumbnail preview"
+                        className="max-h-48 object-contain"
+                      />
                       <button
                         type="button"
-                        onClick={() => { if (pendingThumbnail?.previewUrl) URL.revokeObjectURL(pendingThumbnail.previewUrl); setPendingThumbnail(null); setFormData(prev => ({ ...prev, imageUrl: "" })); }}
+                        onClick={() => {
+                          if (pendingThumbnail?.previewUrl)
+                            URL.revokeObjectURL(pendingThumbnail.previewUrl);
+                          setPendingThumbnail(null);
+                          setFormData((prev) => ({ ...prev, imageUrl: '' }));
+                        }}
                         className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white p-1.5 rounded-full shadow-md z-10 transition-colors"
                         title="Remove thumbnail"
                       >
@@ -1915,7 +2117,18 @@ export default function EditEventPage() {
                         <label className="cursor-pointer text-white flex items-center gap-2 bg-black/50 px-4 py-2 rounded-full hover:bg-black/70 transition-colors">
                           <IconPlus size={20} />
                           <span>Change Thumbnail</span>
-                          <input type="file" className="hidden" accept="image/*" onChange={(e) => e.target.files?.[0] && handleEventImageUpload(e.target.files[0], "thumbnail")} />
+                          <input
+                            type="file"
+                            className="hidden"
+                            accept="image/*"
+                            onChange={(e) =>
+                              e.target.files?.[0] &&
+                              handleEventImageUpload(
+                                e.target.files[0],
+                                'thumbnail',
+                              )
+                            }
+                          />
                         </label>
                       </div>
                     </>
@@ -1927,19 +2140,37 @@ export default function EditEventPage() {
                       <div className="flex text-sm text-zinc-500 justify-center mt-4">
                         <label className="relative cursor-pointer bg-white px-4 py-2 border border-zinc-200 rounded-xl font-medium text-emerald-600 hover:bg-zinc-50 hover:text-emerald-600 transition-colors shadow-sm">
                           <span>Select an image file</span>
-                          <input type="file" className="sr-only" accept="image/*" onChange={(e) => e.target.files?.[0] && handleEventImageUpload(e.target.files[0], "thumbnail")} />
+                          <input
+                            type="file"
+                            className="sr-only"
+                            accept="image/*"
+                            onChange={(e) =>
+                              e.target.files?.[0] &&
+                              handleEventImageUpload(
+                                e.target.files[0],
+                                'thumbnail',
+                              )
+                            }
+                          />
                         </label>
                       </div>
-                      <p className="text-xs text-zinc-400 mt-2">PNG, JPG, WEBP up to 5MB</p>
+                      <p className="text-xs text-zinc-400 mt-2">
+                        PNG, JPG, WEBP up to 5MB
+                      </p>
                     </div>
                   )}
-                  {isUploading && uploadingTarget === "thumbnail" && (
+                  {isUploading && uploadingTarget === 'thumbnail' && (
                     <div className="absolute inset-0 bg-white/80 flex items-center justify-center backdrop-blur-sm z-20">
                       <div className="bg-white p-5 rounded-xl shadow-lg flex flex-col items-center w-52">
                         <div className="w-full bg-zinc-200 rounded-full h-2.5 mb-3">
-                          <div className="bg-emerald-700 h-2.5 rounded-full transition-all duration-300" style={{ width: `${uploadProgress}%` }} />
+                          <div
+                            className="bg-emerald-700 h-2.5 rounded-full transition-all duration-300"
+                            style={{ width: `${uploadProgress}%` }}
+                          />
                         </div>
-                        <span className="text-sm font-medium text-zinc-600">Uploading... {uploadProgress}%</span>
+                        <span className="text-sm font-medium text-zinc-600">
+                          Uploading... {uploadProgress}%
+                        </span>
                       </div>
                     </div>
                   )}
@@ -1959,18 +2190,28 @@ export default function EditEventPage() {
                   Cover Image
                 </h3>
                 <p className="text-sm text-zinc-400 hidden md:block">
-                  This image appears as the large banner at the top of the event detail page.
-                  Recommended aspect ratio is 16:9 for best display.
+                  This image appears as the large banner at the top of the event
+                  detail page. Recommended aspect ratio is 16:9 for best
+                  display.
                 </p>
               </div>
               <div className="md:w-2/3">
                 <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-zinc-200 border-dashed rounded-xl relative overflow-hidden group bg-zinc-50/50 hover:bg-zinc-50 transition-colors">
                   {formData.coverImage ? (
                     <>
-                      <img src={formData.coverImage} alt="Cover preview" className="max-h-48 object-cover w-full rounded" />
+                      <img
+                        src={formData.coverImage}
+                        alt="Cover preview"
+                        className="max-h-48 object-cover w-full rounded"
+                      />
                       <button
                         type="button"
-                        onClick={() => { if (pendingCover?.previewUrl) URL.revokeObjectURL(pendingCover.previewUrl); setPendingCover(null); setFormData(prev => ({ ...prev, coverImage: "" })); }}
+                        onClick={() => {
+                          if (pendingCover?.previewUrl)
+                            URL.revokeObjectURL(pendingCover.previewUrl);
+                          setPendingCover(null);
+                          setFormData((prev) => ({ ...prev, coverImage: '' }));
+                        }}
                         className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white p-1.5 rounded-full shadow-md z-10 transition-colors"
                         title="Remove cover image"
                       >
@@ -1980,7 +2221,15 @@ export default function EditEventPage() {
                         <label className="cursor-pointer text-white flex items-center gap-2 bg-black/50 px-4 py-2 rounded-full hover:bg-black/70 transition-colors">
                           <IconPlus size={20} />
                           <span>Change Cover</span>
-                          <input type="file" className="hidden" accept="image/*" onChange={(e) => e.target.files?.[0] && handleEventImageUpload(e.target.files[0], "cover")} />
+                          <input
+                            type="file"
+                            className="hidden"
+                            accept="image/*"
+                            onChange={(e) =>
+                              e.target.files?.[0] &&
+                              handleEventImageUpload(e.target.files[0], 'cover')
+                            }
+                          />
                         </label>
                       </div>
                     </>
@@ -1992,19 +2241,34 @@ export default function EditEventPage() {
                       <div className="flex text-sm text-zinc-500 justify-center mt-4">
                         <label className="relative cursor-pointer bg-white px-4 py-2 border border-zinc-200 rounded-xl font-medium text-indigo-600 hover:bg-zinc-50 hover:text-indigo-500 transition-colors shadow-sm">
                           <span>Select an image file</span>
-                          <input type="file" className="sr-only" accept="image/*" onChange={(e) => e.target.files?.[0] && handleEventImageUpload(e.target.files[0], "cover")} />
+                          <input
+                            type="file"
+                            className="sr-only"
+                            accept="image/*"
+                            onChange={(e) =>
+                              e.target.files?.[0] &&
+                              handleEventImageUpload(e.target.files[0], 'cover')
+                            }
+                          />
                         </label>
                       </div>
-                      <p className="text-xs text-zinc-400 mt-2">PNG, JPG, WEBP up to 10MB</p>
+                      <p className="text-xs text-zinc-400 mt-2">
+                        PNG, JPG, WEBP up to 10MB
+                      </p>
                     </div>
                   )}
-                  {isUploading && uploadingTarget === "cover" && (
+                  {isUploading && uploadingTarget === 'cover' && (
                     <div className="absolute inset-0 bg-white/80 flex items-center justify-center backdrop-blur-sm z-20">
                       <div className="bg-white p-5 rounded-xl shadow-lg flex flex-col items-center w-52">
                         <div className="w-full bg-zinc-200 rounded-full h-2.5 mb-3">
-                          <div className="bg-indigo-600 h-2.5 rounded-full transition-all duration-300" style={{ width: `${uploadProgress}%` }} />
+                          <div
+                            className="bg-indigo-600 h-2.5 rounded-full transition-all duration-300"
+                            style={{ width: `${uploadProgress}%` }}
+                          />
                         </div>
-                        <span className="text-sm font-medium text-zinc-600">Uploading... {uploadProgress}%</span>
+                        <span className="text-sm font-medium text-zinc-600">
+                          Uploading... {uploadProgress}%
+                        </span>
                       </div>
                     </div>
                   )}
@@ -2018,10 +2282,19 @@ export default function EditEventPage() {
                   <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-zinc-200 border-dashed rounded-xl relative overflow-hidden group bg-zinc-50/50 hover:bg-zinc-50 transition-colors">
                     {formData.videoUrl ? (
                       <>
-                        <video src={formData.videoUrl} controls className="max-h-48 w-full rounded bg-black" />
+                        <video
+                          src={formData.videoUrl}
+                          controls
+                          className="max-h-48 w-full rounded bg-black"
+                        />
                         <button
                           type="button"
-                          onClick={() => { if (pendingVideo?.previewUrl) URL.revokeObjectURL(pendingVideo.previewUrl); setPendingVideo(null); setFormData(prev => ({ ...prev, videoUrl: "" })); }}
+                          onClick={() => {
+                            if (pendingVideo?.previewUrl)
+                              URL.revokeObjectURL(pendingVideo.previewUrl);
+                            setPendingVideo(null);
+                            setFormData((prev) => ({ ...prev, videoUrl: '' }));
+                          }}
                           className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white p-1.5 rounded-full shadow-md z-10 transition-colors"
                           title="Remove video"
                         >
@@ -2031,40 +2304,71 @@ export default function EditEventPage() {
                           <label className="cursor-pointer text-white flex items-center gap-2 bg-black/50 px-4 py-2 rounded-full hover:bg-black/70 transition-colors">
                             <IconPlus size={20} />
                             <span>Change Video</span>
-                            <input type="file" className="hidden" accept="video/mp4,video/webm" onChange={handleVideoUpload} />
+                            <input
+                              type="file"
+                              className="hidden"
+                              accept="video/mp4,video/webm"
+                              onChange={handleVideoUpload}
+                            />
                           </label>
                         </div>
                       </>
                     ) : (
                       <div className="space-y-2 text-center">
                         <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto shadow-sm border border-zinc-100">
-                          <svg className="w-8 h-8 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                          <svg
+                            className="w-8 h-8 text-indigo-400"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
+                            />
                           </svg>
                         </div>
                         <div className="flex text-sm text-zinc-500 justify-center mt-4">
-                          <label className={`relative cursor-pointer bg-white px-4 py-2 border border-zinc-200 rounded-xl font-medium text-indigo-600 hover:bg-zinc-50 hover:text-indigo-500 transition-colors shadow-sm ${isUploading ? 'opacity-50 pointer-events-none' : ''}`}>
+                          <label
+                            className={`relative cursor-pointer bg-white px-4 py-2 border border-zinc-200 rounded-xl font-medium text-indigo-600 hover:bg-zinc-50 hover:text-indigo-500 transition-colors shadow-sm ${isUploading ? 'opacity-50 pointer-events-none' : ''}`}
+                          >
                             <span>Select a video file</span>
-                            <input type="file" className="sr-only" accept="video/mp4,video/webm" onChange={handleVideoUpload} disabled={isUploading} />
+                            <input
+                              type="file"
+                              className="sr-only"
+                              accept="video/mp4,video/webm"
+                              onChange={handleVideoUpload}
+                              disabled={isUploading}
+                            />
                           </label>
                         </div>
-                        <p className="text-xs text-zinc-400 mt-2">MP4 or WEBM up to 50MB</p>
+                        <p className="text-xs text-zinc-400 mt-2">
+                          MP4 or WEBM up to 50MB
+                        </p>
                       </div>
                     )}
 
-                    {isUploading && uploadingTarget === "video" && (
+                    {isUploading && uploadingTarget === 'video' && (
                       <div className="absolute inset-0 bg-white/80 flex items-center justify-center backdrop-blur-sm z-20">
                         <div className="bg-white p-5 rounded-xl shadow-lg flex flex-col items-center w-52">
                           <div className="w-full bg-zinc-200 rounded-full h-2.5 mb-3">
-                            <div className="bg-indigo-600 h-2.5 rounded-full transition-all duration-300" style={{ width: `${uploadProgress}%` }} />
+                            <div
+                              className="bg-indigo-600 h-2.5 rounded-full transition-all duration-300"
+                              style={{ width: `${uploadProgress}%` }}
+                            />
                           </div>
-                          <span className="text-sm font-medium text-zinc-600">Uploading... {uploadProgress}%</span>
+                          <span className="text-sm font-medium text-zinc-600">
+                            Uploading... {uploadProgress}%
+                          </span>
                         </div>
                       </div>
                     )}
                   </div>
                   <p className="text-xs text-zinc-400 mt-2">
-                    If provided, this video will be played as the background on the event details page.
+                    If provided, this video will be played as the background on
+                    the event details page.
                   </p>
                 </div>
               </div>
@@ -2082,12 +2386,15 @@ export default function EditEventPage() {
                   Venue Gallery
                 </h3>
                 <p className="text-sm text-zinc-400 hidden md:block mb-4">
-                  Add multiple photos to showcase the event venue, parking area, or previous events.
+                  Add multiple photos to showcase the event venue, parking area,
+                  or previous events.
                 </p>
               </div>
               <div className="md:w-2/3">
                 <div className="bg-zinc-50 p-5 border border-zinc-200 rounded-xl shadow-inner">
-                  <h4 className="font-semibold mb-3 text-zinc-800 text-sm uppercase tracking-wider">Add Gallery Image</h4>
+                  <h4 className="font-semibold mb-3 text-zinc-800 text-sm uppercase tracking-wider">
+                    Add Gallery Image
+                  </h4>
                   <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-end">
                     <div className="flex-1 w-full">
                       <label className="block text-sm font-medium text-zinc-600 mb-1">
@@ -2114,7 +2421,7 @@ export default function EditEventPage() {
                       />
                       <label
                         htmlFor="venue-image-upload"
-                        className={`btn-primary w-full sm:w-auto flex items-center justify-center gap-2 cursor-pointer shadow-sm ${isUploading ? "opacity-70 cursor-not-allowed" : ""}`}
+                        className={`btn-primary w-full sm:w-auto flex items-center justify-center gap-2 cursor-pointer shadow-sm ${isUploading ? 'opacity-70 cursor-not-allowed' : ''}`}
                       >
                         {isUploading ? (
                           <>
@@ -2169,7 +2476,8 @@ export default function EditEventPage() {
                             onClick={() => handleDeleteImage(img.id!)}
                             className="bg-red-500 hover:bg-red-600 text-white p-2 rounded-lg text-sm flex items-center justify-center gap-1 w-full shadow-lg transition-colors border border-red-400"
                           >
-                            <IconTrash size={16} /> <span className="font-medium">Remove</span>
+                            <IconTrash size={16} />{' '}
+                            <span className="font-medium">Remove</span>
                           </button>
                         </div>
                       </div>
@@ -2181,8 +2489,12 @@ export default function EditEventPage() {
                   <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto shadow-sm border border-zinc-100 mb-3">
                     <IconPhoto size={28} className="text-green-400" />
                   </div>
-                  <h5 className="text-zinc-600 font-medium">No gallery images</h5>
-                  <p className="text-sm text-zinc-400 mt-1">Upload images to display them here.</p>
+                  <h5 className="text-zinc-600 font-medium">
+                    No gallery images
+                  </h5>
+                  <p className="text-sm text-zinc-400 mt-1">
+                    Upload images to display them here.
+                  </p>
                 </div>
               )}
             </div>
@@ -2218,8 +2530,8 @@ export default function EditEventPage() {
             <div className="p-6 border-b border-zinc-100">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold flex items-center gap-2">
-                  <IconTicket size={20} />{" "}
-                  {editingTicketId ? "Edit Ticket" : "Add Ticket Type"}
+                  <IconTicket size={20} />{' '}
+                  {editingTicketId ? 'Edit Ticket' : 'Add Ticket Type'}
                 </h3>
                 <button
                   onClick={() => {
@@ -2244,7 +2556,7 @@ export default function EditEventPage() {
                     onChange={(e) =>
                       setTicketForm((prev) => ({
                         ...prev,
-                        category: e.target.value as "primary" | "addon",
+                        category: e.target.value as 'primary' | 'addon',
                       }))
                     }
                   >
@@ -2258,12 +2570,15 @@ export default function EditEventPage() {
                   </label>
                   <div className="border rounded-md p-3 max-h-40 overflow-y-auto space-y-2 bg-zinc-50">
                     {[
-                      { value: "pharmacist", label: "Pharmacist" },
-                      { value: "medical_professional", label: "Medical Professional" },
-                      { value: "student", label: "Student" },
-                      { value: "general", label: "General" },
-                      { value: "healthhack", label: "HealthHack" },
-                      { value: "booth", label: "Booth" },
+                      { value: 'pharmacist', label: 'Pharmacist' },
+                      {
+                        value: 'medical_professional',
+                        label: 'Medical Professional',
+                      },
+                      { value: 'student', label: 'Student' },
+                      { value: 'general', label: 'General' },
+                      { value: 'healthhack', label: 'HealthHack' },
+                      { value: 'booth', label: 'Booth' },
                     ].map((role) => (
                       <label
                         key={role.value}
@@ -2272,7 +2587,9 @@ export default function EditEventPage() {
                         <input
                           type="checkbox"
                           className="mt-1"
-                          checked={(ticketForm.allowedRoles || []).includes(role.value)}
+                          checked={(ticketForm.allowedRoles || []).includes(
+                            role.value,
+                          )}
                           onChange={(e) => {
                             const isChecked = e.target.checked;
                             setTicketForm((prev) => {
@@ -2280,40 +2597,56 @@ export default function EditEventPage() {
                               if (isChecked) {
                                 return currentRoles.includes(role.value)
                                   ? prev
-                                  : { ...prev, allowedRoles: [...currentRoles, role.value] };
+                                  : {
+                                      ...prev,
+                                      allowedRoles: [
+                                        ...currentRoles,
+                                        role.value,
+                                      ],
+                                    };
                               }
 
-                              const nextRoles = currentRoles.filter(r => r !== role.value);
+                              const nextRoles = currentRoles.filter(
+                                (r) => r !== role.value,
+                              );
                               return {
                                 ...prev,
                                 allowedRoles: nextRoles,
-                                allowedStudentLevels: role.value === "student" ? [] : prev.allowedStudentLevels,
+                                allowedStudentLevels:
+                                  role.value === 'student'
+                                    ? []
+                                    : prev.allowedStudentLevels,
                               };
                             });
                           }}
                         />
-                        <span className="text-sm font-medium text-zinc-600">{role.label}</span>
+                        <span className="text-sm font-medium text-zinc-600">
+                          {role.label}
+                        </span>
                       </label>
                     ))}
                   </div>
                   {(ticketForm.allowedRoles || []).length === 0 && (
-                    <p className="text-xs text-red-500 mt-1">Please select at least one target audience.</p>
+                    <p className="text-xs text-red-500 mt-1">
+                      Please select at least one target audience.
+                    </p>
                   )}
                 </div>
 
                 {/* Student Level Selection - only show when student role is selected */}
-                {(ticketForm.allowedRoles || []).includes("student") && (
+                {(ticketForm.allowedRoles || []).includes('student') && (
                   <div className="col-span-2">
                     <label className="block text-sm font-medium text-zinc-600 mb-2">
                       Student Level (optional)
                     </label>
                     <p className="text-xs text-zinc-400 mb-2">
-                      Leave empty to allow all student levels, or select specific levels.
+                      Leave empty to allow all student levels, or select
+                      specific levels.
                     </p>
                     <div className="border rounded-md p-3 space-y-2 bg-zinc-50">
                       {[
-                        { value: "postgraduate", label: "Postgraduate" },
-                        { value: "undergraduate", label: "Undergraduate" },
+                        { value: 'postgraduate', label: 'Postgraduate' },
+                        { value: 'undergraduate', label: 'Undergraduate' },
                       ].map((level) => (
                         <label
                           key={level.value}
@@ -2322,20 +2655,36 @@ export default function EditEventPage() {
                           <input
                             type="checkbox"
                             className="mt-1"
-                            checked={(ticketForm.allowedStudentLevels || []).includes(level.value)}
+                            checked={(
+                              ticketForm.allowedStudentLevels || []
+                            ).includes(level.value)}
                             onChange={(e) => {
                               const isChecked = e.target.checked;
                               setTicketForm((prev) => {
-                                const currentLevels = prev.allowedStudentLevels || [];
+                                const currentLevels =
+                                  prev.allowedStudentLevels || [];
                                 if (isChecked) {
-                                  return { ...prev, allowedStudentLevels: [...currentLevels, level.value] };
+                                  return {
+                                    ...prev,
+                                    allowedStudentLevels: [
+                                      ...currentLevels,
+                                      level.value,
+                                    ],
+                                  };
                                 } else {
-                                  return { ...prev, allowedStudentLevels: currentLevels.filter(l => l !== level.value) };
+                                  return {
+                                    ...prev,
+                                    allowedStudentLevels: currentLevels.filter(
+                                      (l) => l !== level.value,
+                                    ),
+                                  };
                                 }
                               });
                             }}
                           />
-                          <span className="text-sm font-medium text-zinc-600">{level.label}</span>
+                          <span className="text-sm font-medium text-zinc-600">
+                            {level.label}
+                          </span>
                         </label>
                       ))}
                     </div>
@@ -2344,7 +2693,7 @@ export default function EditEventPage() {
               </div>
 
               {/* Primary Ticket - Auto-linked Main Sessions */}
-              {ticketForm.category === "primary" &&
+              {ticketForm.category === 'primary' &&
                 sessions.filter((s) => s.isMainSession).length > 0 && (
                   <div className="mb-4 bg-purple-50 p-3 rounded-md border border-purple-100">
                     <p className="text-sm font-medium text-purple-700 mb-2 flex items-center gap-1">
@@ -2367,7 +2716,7 @@ export default function EditEventPage() {
                 )}
 
               {/* Session Selector - Only for Add-on tickets (Checkboxes) */}
-              {ticketForm.category === "addon" && sessions.length > 0 && (
+              {ticketForm.category === 'addon' && sessions.length > 0 && (
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-zinc-600 mb-2">
                     Link to Sessions/Workshops *
@@ -2493,7 +2842,7 @@ export default function EditEventPage() {
                     onChange={(e) =>
                       setTicketForm((prev) => ({
                         ...prev,
-                        currency: e.target.value as "THB" | "USD",
+                        currency: e.target.value as 'THB' | 'USD',
                       }))
                     }
                   >
@@ -2611,13 +2960,16 @@ export default function EditEventPage() {
                     onChange={(e) => setTicketFeatureInput(e.target.value)}
                     placeholder="Add a feature..."
                     onKeyDown={(e) => {
-                      if (e.key === "Enter" && ticketFeatureInput.trim()) {
+                      if (e.key === 'Enter' && ticketFeatureInput.trim()) {
                         e.preventDefault();
                         setTicketForm((prev) => ({
                           ...prev,
-                          features: [...(prev.features || []), ticketFeatureInput.trim()],
+                          features: [
+                            ...(prev.features || []),
+                            ticketFeatureInput.trim(),
+                          ],
                         }));
-                        setTicketFeatureInput("");
+                        setTicketFeatureInput('');
                       }
                     }}
                   />
@@ -2628,9 +2980,12 @@ export default function EditEventPage() {
                       if (ticketFeatureInput.trim()) {
                         setTicketForm((prev) => ({
                           ...prev,
-                          features: [...(prev.features || []), ticketFeatureInput.trim()],
+                          features: [
+                            ...(prev.features || []),
+                            ticketFeatureInput.trim(),
+                          ],
                         }));
-                        setTicketFeatureInput("");
+                        setTicketFeatureInput('');
                       }
                     }}
                   >
@@ -2650,7 +3005,9 @@ export default function EditEventPage() {
                           onClick={() =>
                             setTicketForm((prev) => ({
                               ...prev,
-                              features: (prev.features || []).filter((_, idx) => idx !== i),
+                              features: (prev.features || []).filter(
+                                (_, idx) => idx !== i,
+                              ),
                             }))
                           }
                           className="text-zinc-400 hover:text-red-500"
@@ -2677,7 +3034,7 @@ export default function EditEventPage() {
                     onChange={(date: Date | null) =>
                       setTicketForm((prev) => ({
                         ...prev,
-                        saleStartDate: date ? date.toISOString() : "",
+                        saleStartDate: date ? date.toISOString() : '',
                       }))
                     }
                     showTimeSelect
@@ -2700,7 +3057,7 @@ export default function EditEventPage() {
                     onChange={(date: Date | null) =>
                       setTicketForm((prev) => ({
                         ...prev,
-                        saleEndDate: date ? date.toISOString() : "",
+                        saleEndDate: date ? date.toISOString() : '',
                       }))
                     }
                     showTimeSelect
@@ -2726,8 +3083,8 @@ export default function EditEventPage() {
                 onClick={handleAddTicket}
                 className="btn-primary flex items-center gap-2"
               >
-                <IconCheck size={18} />{" "}
-                {editingTicketId ? "Update Ticket" : "Add Ticket"}
+                <IconCheck size={18} />{' '}
+                {editingTicketId ? 'Update Ticket' : 'Add Ticket'}
               </button>
             </div>
           </div>
@@ -2741,7 +3098,7 @@ export default function EditEventPage() {
             <div className="p-6 border-b border-zinc-100">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold">
-                  {editingSessionId ? "Edit Session" : "Create Session"}
+                  {editingSessionId ? 'Edit Session' : 'Create Session'}
                 </h3>
                 <button
                   onClick={() => {
@@ -2760,37 +3117,37 @@ export default function EditEventPage() {
                 !sessions.some(
                   (s) => s.isMainSession && s.id !== editingSessionId,
                 )) && (
-                  <div className="mb-4">
-                    <label className="flex items-center gap-2 cursor-pointer p-3 border rounded-lg hover:bg-zinc-50 bg-emerald-50/50 border-teal-100/50">
-                      <input
-                        type="checkbox"
-                        className="w-5 h-5 text-emerald-600 rounded focus:ring-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                        checked={sessionForm.isMainSession || false}
-                        onChange={(e) =>
-                          setSessionForm((prev) => ({
-                            ...prev,
-                            isMainSession: e.target.checked,
-                          }))
-                        }
-                        disabled={sessionForm.isMainSession} // Lock if checked
-                      />
-                      <div>
-                        <div className="font-medium text-zinc-900">
-                          Main session
-                          {sessionForm.isMainSession && (
-                            <span className="ml-2 text-xs text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-teal-100">
-                              Default (Locked)
-                            </span>
-                          )}
-                        </div>
-                        <div className="text-xs text-zinc-400">
-                          Main sessions appear prominently and are auto-linked to
-                          Primary tickets.
-                        </div>
+                <div className="mb-4">
+                  <label className="flex items-center gap-2 cursor-pointer p-3 border rounded-lg hover:bg-zinc-50 bg-emerald-50/50 border-teal-100/50">
+                    <input
+                      type="checkbox"
+                      className="w-5 h-5 text-emerald-600 rounded focus:ring-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                      checked={sessionForm.isMainSession || false}
+                      onChange={(e) =>
+                        setSessionForm((prev) => ({
+                          ...prev,
+                          isMainSession: e.target.checked,
+                        }))
+                      }
+                      disabled={sessionForm.isMainSession} // Lock if checked
+                    />
+                    <div>
+                      <div className="font-medium text-zinc-900">
+                        Main session
+                        {sessionForm.isMainSession && (
+                          <span className="ml-2 text-xs text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-teal-100">
+                            Default (Locked)
+                          </span>
+                        )}
                       </div>
-                    </label>
-                  </div>
-                )}
+                      <div className="text-xs text-zinc-400">
+                        Main sessions appear prominently and are auto-linked to
+                        Primary tickets.
+                      </div>
+                    </div>
+                  </label>
+                </div>
+              )}
 
               {!sessionForm.isMainSession && (
                 <div className="mb-4">
@@ -2811,7 +3168,9 @@ export default function EditEventPage() {
                         Requires checkout opt-in
                       </div>
                       <div className="text-xs text-zinc-400">
-                        Users must tick this session during checkout. Use for limited-capacity sessions such as workshops or networking.
+                        Users must tick this session during checkout. Use for
+                        limited-capacity sessions such as workshops or
+                        networking.
                       </div>
                     </div>
                   </label>
@@ -2895,7 +3254,7 @@ export default function EditEventPage() {
                     onChange={(date: Date | null) =>
                       setSessionForm((prev) => ({
                         ...prev,
-                        startTime: date ? date.toISOString() : "",
+                        startTime: date ? date.toISOString() : '',
                       }))
                     }
                     showTimeSelect
@@ -2916,7 +3275,7 @@ export default function EditEventPage() {
                     onChange={(date: Date | null) =>
                       setSessionForm((prev) => ({
                         ...prev,
-                        endTime: date ? date.toISOString() : "",
+                        endTime: date ? date.toISOString() : '',
                       }))
                     }
                     showTimeSelect
@@ -2974,7 +3333,8 @@ export default function EditEventPage() {
                   <IconClock size={16} /> Time & Agenda
                 </label>
                 <p className="text-xs text-zinc-400 mb-2">
-                  Add agenda items with time slots (e.g. &quot;1:30 – 2:00 PM&quot; and topic).
+                  Add agenda items with time slots (e.g. &quot;1:30 – 2:00
+                  PM&quot; and topic).
                 </p>
                 {(sessionForm.agenda || []).map((item, idx) => (
                   <div key={idx} className="flex items-start gap-2 mb-2">
@@ -2985,8 +3345,14 @@ export default function EditEventPage() {
                       value={item.time}
                       onChange={(e) => {
                         const updated = [...(sessionForm.agenda || [])];
-                        updated[idx] = { ...updated[idx], time: e.target.value };
-                        setSessionForm((prev) => ({ ...prev, agenda: updated }));
+                        updated[idx] = {
+                          ...updated[idx],
+                          time: e.target.value,
+                        };
+                        setSessionForm((prev) => ({
+                          ...prev,
+                          agenda: updated,
+                        }));
                       }}
                     />
                     <input
@@ -2996,15 +3362,26 @@ export default function EditEventPage() {
                       value={item.topic}
                       onChange={(e) => {
                         const updated = [...(sessionForm.agenda || [])];
-                        updated[idx] = { ...updated[idx], topic: e.target.value };
-                        setSessionForm((prev) => ({ ...prev, agenda: updated }));
+                        updated[idx] = {
+                          ...updated[idx],
+                          topic: e.target.value,
+                        };
+                        setSessionForm((prev) => ({
+                          ...prev,
+                          agenda: updated,
+                        }));
                       }}
                     />
                     <button
                       type="button"
                       onClick={() => {
-                        const updated = (sessionForm.agenda || []).filter((_, i) => i !== idx);
-                        setSessionForm((prev) => ({ ...prev, agenda: updated }));
+                        const updated = (sessionForm.agenda || []).filter(
+                          (_, i) => i !== idx,
+                        );
+                        setSessionForm((prev) => ({
+                          ...prev,
+                          agenda: updated,
+                        }));
                       }}
                       className="text-red-400 hover:text-red-600 mt-2"
                     >
@@ -3017,7 +3394,7 @@ export default function EditEventPage() {
                   onClick={() => {
                     setSessionForm((prev) => ({
                       ...prev,
-                      agenda: [...(prev.agenda || []), { time: "", topic: "" }],
+                      agenda: [...(prev.agenda || []), { time: '', topic: '' }],
                     }));
                   }}
                   className="text-sm text-emerald-600 hover:text-teal-900 flex items-center gap-1 mt-1"
@@ -3051,8 +3428,8 @@ export default function EditEventPage() {
                                 selectedSpeakerIds: e.target.checked
                                   ? [...(prev.selectedSpeakerIds || []), id]
                                   : (prev.selectedSpeakerIds || []).filter(
-                                    (sid) => sid !== id,
-                                  ),
+                                      (sid) => sid !== id,
+                                    ),
                               }));
                             }}
                             className="rounded border-zinc-200 text-emerald-600 focus:ring-emerald-600"
@@ -3075,7 +3452,7 @@ export default function EditEventPage() {
                   )}
                 </div>
                 <p className="text-xs text-zinc-400 mt-1">
-                  Selected: {sessionForm.selectedSpeakerIds?.length || 0}{" "}
+                  Selected: {sessionForm.selectedSpeakerIds?.length || 0}{' '}
                   Instructor(s)
                 </p>
               </div>
@@ -3110,7 +3487,7 @@ export default function EditEventPage() {
                 Cancel
               </button>
               <button onClick={handleAddSession} className="btn-primary">
-                {editingSessionId ? "Update Session" : "Create Session"}
+                {editingSessionId ? 'Update Session' : 'Create Session'}
               </button>
             </div>
           </div>

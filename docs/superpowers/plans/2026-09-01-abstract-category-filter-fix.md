@@ -20,10 +20,12 @@
 ### Task 1: Align category dropdown with the backend `categoryId` contract
 
 **Files:**
+
 - Modify: `src/app/abstracts/page.tsx`
 - Test: no frontend test suite exists; verify through TypeScript/build checks and source inspection.
 
 **Interfaces:**
+
 - Consumes: `eventCategoryList: { id: number; name: string }[]` and `api.abstracts.list(token, query)`.
 - Produces: category dropdown values as category ID strings and requests containing `categoryId=<id>`.
 

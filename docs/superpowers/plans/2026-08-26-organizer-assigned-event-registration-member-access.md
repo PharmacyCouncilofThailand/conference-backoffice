@@ -9,44 +9,49 @@
 ## Brainstorming decision
 
 ### Option A — Frontend-only visibility
+
 Add `/registrations` to the organizer menu/route allowlist and rely on event dropdown filtering.
 
 **Rejected:** UI hiding is not authorization. Direct API calls or crafted IDs could expose registration/member detail or global member statistics.
 
 ### Option B — Add a new role/permission table
+
 Create explicit registration/member permissions per organizer/event.
 
 **Rejected:** `staffEventAssignments` already models the exact event scope. A second permission source would duplicate state and create drift.
 
 ### Option C — Reuse assignment-scoped RBAC end-to-end
+
 Use the existing organizer assignments in frontend navigation and enforce the same event scope in API reads. Keep organizer access read-only for Registration/Member management operations.
 
 **Selected:** smallest coherent change, no migration, least privilege, and consistent with existing Events/Registrations list filtering.
 
 ## Permission matrix
 
-| Capability | Admin | Organizer |
-| --- | --- | --- |
-| Open `/registrations` | Yes | Yes |
-| List registrations | All events | Assigned events only |
-| Registration detail | Any event | Assigned events only |
-| Add/update registration | Existing Admin capability | No |
-| Open `/members` | Yes | Yes |
-| List members | All users / optional event filter | Members registered in assigned events only |
-| Member stats | Global | Assigned-event member population only |
-| Member detail API | Any member | Only members registered in assigned events |
-| Delete member | Yes | No |
-| Event dropdown | All events | Assigned events only (existing Events API behavior) |
+| Capability              | Admin                             | Organizer                                           |
+| ----------------------- | --------------------------------- | --------------------------------------------------- |
+| Open `/registrations`   | Yes                               | Yes                                                 |
+| List registrations      | All events                        | Assigned events only                                |
+| Registration detail     | Any event                         | Assigned events only                                |
+| Add/update registration | Existing Admin capability         | No                                                  |
+| Open `/members`         | Yes                               | Yes                                                 |
+| List members            | All users / optional event filter | Members registered in assigned events only          |
+| Member stats            | Global                            | Assigned-event member population only               |
+| Member detail API       | Any member                        | Only members registered in assigned events          |
+| Delete member           | Yes                               | No                                                  |
+| Event dropdown          | All events                        | Assigned events only (existing Events API behavior) |
 
 ## Task 1: Backoffice navigation and read-only UI
 
 **Files:**
+
 - Modify `src/contexts/AuthContext.tsx`
 - Modify `src/components/layout/Sidebar.tsx`
 - Modify `src/app/registrations/page.tsx`
 - Modify `src/app/members/page.tsx`
 
 Steps:
+
 1. Add `/registrations` to organizer page access so AuthGuard permits list and detail routes through prefix matching.
 2. Include `All Registrations` in the organizer Registrations submenu alongside existing Verification.
 3. On Registrations page, read the authenticated user role and hide `Add Registration` for organizer while retaining list/detail/export read behavior.
@@ -58,6 +63,7 @@ Steps:
 **File:** `conference-api/src/routes/backoffice/registrations.ts`
 
 Steps:
+
 1. Reuse `staffEventAssignments` for non-admin registration scope.
 2. Keep the existing list filter and ensure explicit event filters can never broaden scope.
 3. Scope `GET /registrations/:id` to assigned events for non-admin users. Return 404 for missing and out-of-scope registrations to avoid resource enumeration.
@@ -69,6 +75,7 @@ Steps:
 **File:** `conference-api/src/routes/backoffice/members.ts`
 
 Steps:
+
 1. Import `staffEventAssignments` and obtain assigned event IDs for non-admin users.
 2. For organizer list requests, constrain users to those having a confirmed registration in any assigned event. If `eventId` is supplied, it must also be assigned.
 3. For organizer with no assignments, return an empty list with normal pagination shape.

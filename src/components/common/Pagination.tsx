@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useState, useRef, useEffect } from "react";
-import { IconChevronDown, IconCheck } from "@tabler/icons-react";
+import { useState, useRef, useEffect } from 'react';
+import { IconChevronDown, IconCheck } from '@tabler/icons-react';
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
 
@@ -30,10 +30,11 @@ function RowsDropdown({
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      if (ref.current && !ref.current.contains(e.target as Node))
+        setOpen(false);
     };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
   }, []);
 
   return (
@@ -46,7 +47,7 @@ function RowsDropdown({
         {value}
         <IconChevronDown
           size={14}
-          className={`text-zinc-400 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+          className={`text-zinc-400 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
         />
       </button>
 
@@ -61,8 +62,8 @@ function RowsDropdown({
               }}
               className={`w-full flex items-center justify-between px-3 py-1.5 text-[13px] transition-colors ${
                 value === size
-                  ? "text-emerald-600 font-semibold bg-emerald-50"
-                  : "text-zinc-600 hover:bg-zinc-50"
+                  ? 'text-emerald-600 font-semibold bg-emerald-50'
+                  : 'text-zinc-600 hover:bg-zinc-50'
               }`}
             >
               {size}
@@ -82,10 +83,10 @@ export default function Pagination({
   pageSize = 10,
   onPageChange,
   onPageSizeChange,
-  itemName = "items",
+  itemName = 'items',
   showPageInfo = false,
   hideIfSinglePage = false,
-  className = "",
+  className = '',
 }: PaginationProps) {
   const startItem = totalCount === 0 ? 0 : (currentPage - 1) * pageSize + 1;
   const endItem = Math.min(currentPage * pageSize, totalCount);
@@ -100,11 +101,16 @@ export default function Pagination({
       <div className="flex items-center gap-4">
         <p className="text-[13px] text-zinc-400">
           {showPageInfo ? (
-            <>Page {currentPage} of {totalPages}</>
+            <>
+              Page {currentPage} of {totalPages}
+            </>
           ) : (
             <>
-              <span className="font-medium text-zinc-600">{startItem}–{endItem}</span> of{" "}
-              <span className="font-medium text-zinc-600">{totalCount}</span> {itemName}
+              <span className="font-medium text-zinc-600">
+                {startItem}–{endItem}
+              </span>{' '}
+              of <span className="font-medium text-zinc-600">{totalCount}</span>{' '}
+              {itemName}
             </>
           )}
         </p>
@@ -148,8 +154,8 @@ export default function Pagination({
               onClick={() => onPageChange(pageNum)}
               className={`w-8 h-8 rounded-full text-[13px] font-semibold transition-all ${
                 currentPage === pageNum
-                  ? "bg-zinc-900 text-white"
-                  : "text-zinc-500 hover:bg-zinc-100"
+                  ? 'bg-zinc-900 text-white'
+                  : 'text-zinc-500 hover:bg-zinc-100'
               }`}
             >
               {pageNum}

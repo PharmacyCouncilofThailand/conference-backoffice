@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useState, useEffect, useMemo } from "react";
-import { AdminLayout } from "@/components/layout";
+import { useState, useEffect, useMemo } from 'react';
+import { AdminLayout } from '@/components/layout';
 import {
   IconUserPlus,
   IconPencil,
@@ -14,49 +14,49 @@ import {
   IconDoor,
   IconChevronDown,
   IconChevronRight,
-} from "@tabler/icons-react";
-import { api } from "@/lib/api";
-import { presentationUserAssignments } from "@/lib/presentationUi";
-import { useAuth } from "@/contexts/AuthContext";
-import { Pagination } from "@/components/common";
-import toast from "react-hot-toast";
+} from '@tabler/icons-react';
+import { api } from '@/lib/api';
+import { presentationUserAssignments } from '@/lib/presentationUi';
+import { useAuth } from '@/contexts/AuthContext';
+import { Pagination } from '@/components/common';
+import toast from 'react-hot-toast';
 
 // User roles
 const roles = [
   {
-    id: "admin",
-    label: "Admin",
-    color: "bg-red-100 text-red-800",
-    description: "Full access to all features",
+    id: 'admin',
+    label: 'Admin',
+    color: 'bg-red-100 text-red-800',
+    description: 'Full access to all features',
   },
   {
-    id: "organizer",
-    label: "Organizer",
-    color: "bg-emerald-50 text-teal-900",
-    description: "View dashboard and manage events",
+    id: 'organizer',
+    label: 'Organizer',
+    color: 'bg-emerald-50 text-teal-900',
+    description: 'View dashboard and manage events',
   },
   {
-    id: "reviewer",
-    label: "Reviewer",
-    color: "bg-purple-100 text-purple-800",
-    description: "Review and approve abstracts",
+    id: 'reviewer',
+    label: 'Reviewer',
+    color: 'bg-purple-100 text-purple-800',
+    description: 'Review and approve abstracts',
   },
   {
-    id: "staff",
-    label: "Staff",
-    color: "bg-green-100 text-green-800",
-    description: "Check-in attendees",
+    id: 'staff',
+    label: 'Staff',
+    color: 'bg-green-100 text-green-800',
+    description: 'Check-in attendees',
   },
   {
-    id: "verifier",
-    label: "Verifier",
-    color: "bg-orange-100 text-orange-800",
-    description: "Verify student identity documents",
+    id: 'verifier',
+    label: 'Verifier',
+    color: 'bg-orange-100 text-orange-800',
+    description: 'Verify student identity documents',
   },
   {
-    id: "team_registration_viewer",
-    label: "Team Registration Viewer",
-    color: "bg-blue-100 text-blue-800",
+    id: 'team_registration_viewer',
+    label: 'Team Registration Viewer',
+    color: 'bg-blue-100 text-blue-800',
     description: "Read-only access to assigned Events' team registrations",
   },
 ];
@@ -67,11 +67,11 @@ const roles = [
 
 // Presentation types for reviewer assignment
 const presentationTypes = [
-  { id: "poster", label: "Poster", color: "bg-cyan-100 text-cyan-800" },
+  { id: 'poster', label: 'Poster', color: 'bg-cyan-100 text-cyan-800' },
   {
-    id: "oral",
-    label: "Oral Presentation",
-    color: "bg-orange-100 text-orange-800",
+    id: 'oral',
+    label: 'Oral Presentation',
+    color: 'bg-orange-100 text-orange-800',
   },
 ];
 
@@ -105,19 +105,23 @@ export default function UsersPage() {
   const [events, setEvents] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const [searchTerm, setSearchTerm] = useState("");
-  const [roleFilter, setRoleFilter] = useState("");
+  const [searchTerm, setSearchTerm] = useState('');
+  const [roleFilter, setRoleFilter] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [eventSearchTerm, setEventSearchTerm] = useState("");
+  const [eventSearchTerm, setEventSearchTerm] = useState('');
 
   // Session assignment state
-  const [eventSessions, setEventSessions] = useState<Record<number, SessionInfo[]>>({});
+  const [eventSessions, setEventSessions] = useState<
+    Record<number, SessionInfo[]>
+  >({});
   const [expandedEvents, setExpandedEvents] = useState<Set<number>>(new Set());
-  const [sessionAssignments, setSessionAssignments] = useState<{ eventId: number; sessionIds: number[] }[]>([]);
+  const [sessionAssignments, setSessionAssignments] = useState<
+    { eventId: number; sessionIds: number[] }[]
+  >([]);
   const [loadingSessions, setLoadingSessions] = useState<number | null>(null);
 
   // Pagination (Server-side)
@@ -132,19 +136,19 @@ export default function UsersPage() {
     setIsLoading(true);
     try {
       const params = new URLSearchParams();
-      params.append("page", page.toString());
-      params.append("limit", limit.toString());
-      if (searchTerm) params.append("search", searchTerm);
-      if (roleFilter) params.append("role", roleFilter);
+      params.append('page', page.toString());
+      params.append('limit', limit.toString());
+      if (searchTerm) params.append('search', searchTerm);
+      if (roleFilter) params.append('role', roleFilter);
 
       const usersData = await api.users.list(token, params.toString());
-      
+
       if (usersData?.users) {
         setUsers(
           usersData.users.map((u: any) => ({
             ...u,
             name: u.name || `${u.firstName} ${u.lastName}`.trim(),
-            status: u.isActive ? "active" : "inactive",
+            status: u.isActive ? 'active' : 'inactive',
             assignedEventIds: u.assignedEventIds || [],
             assignedCategories: u.assignedCategories || [],
             assignedPresentationTypes: u.assignedPresentationTypes || [],
@@ -154,7 +158,7 @@ export default function UsersPage() {
         setTotalPages(usersData.pagination.totalPages);
       }
     } catch (error) {
-      console.error("Failed to fetch users:", error);
+      console.error('Failed to fetch users:', error);
     } finally {
       setIsLoading(false);
     }
@@ -172,7 +176,7 @@ export default function UsersPage() {
         setEvents(eventsData.events);
       }
     } catch (error) {
-      console.error("Failed to fetch events:", error);
+      console.error('Failed to fetch events:', error);
     }
   };
 
@@ -204,7 +208,7 @@ export default function UsersPage() {
     setLoadingSessions(eventId);
     try {
       const res = await api.backofficeEvents.getSessions(token, eventId);
-      setEventSessions(prev => ({
+      setEventSessions((prev) => ({
         ...prev,
         [eventId]: (res.sessions || []).map((s: any) => ({
           id: s.id,
@@ -216,7 +220,7 @@ export default function UsersPage() {
         })),
       }));
     } catch (error) {
-      console.error("Failed to fetch sessions:", error);
+      console.error('Failed to fetch sessions:', error);
     } finally {
       setLoadingSessions(null);
     }
@@ -236,21 +240,29 @@ export default function UsersPage() {
 
   // Toggle session assignment
   const toggleSessionAssignment = (eventId: number, sessionId: number) => {
-    setSessionAssignments(prev => {
-      const existing = prev.find(a => a.eventId === eventId);
+    setSessionAssignments((prev) => {
+      const existing = prev.find((a) => a.eventId === eventId);
       if (existing) {
         const hasSession = existing.sessionIds.includes(sessionId);
         if (hasSession) {
           // Remove session
-          const newSessionIds = existing.sessionIds.filter(id => id !== sessionId);
+          const newSessionIds = existing.sessionIds.filter(
+            (id) => id !== sessionId,
+          );
           if (newSessionIds.length === 0) {
             // Remove entire event assignment if no sessions left
-            return prev.filter(a => a.eventId !== eventId);
+            return prev.filter((a) => a.eventId !== eventId);
           }
-          return prev.map(a => a.eventId === eventId ? { ...a, sessionIds: newSessionIds } : a);
+          return prev.map((a) =>
+            a.eventId === eventId ? { ...a, sessionIds: newSessionIds } : a,
+          );
         } else {
           // Add session
-          return prev.map(a => a.eventId === eventId ? { ...a, sessionIds: [...a.sessionIds, sessionId] } : a);
+          return prev.map((a) =>
+            a.eventId === eventId
+              ? { ...a, sessionIds: [...a.sessionIds, sessionId] }
+              : a,
+          );
         }
       } else {
         // New event assignment with this session
@@ -260,17 +272,20 @@ export default function UsersPage() {
   };
 
   // Toggle entire event (all sessions or event-level)
-  const toggleEventAssignmentWithSessions = (eventId: number, allSessions: boolean = false) => {
+  const toggleEventAssignmentWithSessions = (
+    eventId: number,
+    allSessions: boolean = false,
+  ) => {
     const sessions = eventSessions[eventId] || [];
-    setSessionAssignments(prev => {
-      const existing = prev.find(a => a.eventId === eventId);
+    setSessionAssignments((prev) => {
+      const existing = prev.find((a) => a.eventId === eventId);
       if (existing) {
         // Remove event
-        return prev.filter(a => a.eventId !== eventId);
+        return prev.filter((a) => a.eventId !== eventId);
       } else {
         // Add event (with all sessions if allSessions=true, otherwise event-level)
         if (allSessions && sessions.length > 0) {
-          return [...prev, { eventId, sessionIds: sessions.map(s => s.id) }];
+          return [...prev, { eventId, sessionIds: sessions.map((s) => s.id) }];
         }
         return [...prev, { eventId, sessionIds: [] }]; // event-level (no specific sessions)
       }
@@ -279,21 +294,21 @@ export default function UsersPage() {
 
   // Check if event is assigned
   const isEventAssigned = (eventId: number) => {
-    return sessionAssignments.some(a => a.eventId === eventId);
+    return sessionAssignments.some((a) => a.eventId === eventId);
   };
 
   // Check if session is assigned
   const isSessionAssigned = (eventId: number, sessionId: number) => {
-    const assignment = sessionAssignments.find(a => a.eventId === eventId);
+    const assignment = sessionAssignments.find((a) => a.eventId === eventId);
     return assignment?.sessionIds.includes(sessionId) || false;
   };
 
   // Form state
   const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    password: "",
-    role: "staff",
+    name: '',
+    email: '',
+    password: '',
+    role: 'staff',
     isActive: true,
     assignedEventIds: [] as number[],
     assignedCategories: [] as string[],
@@ -302,10 +317,10 @@ export default function UsersPage() {
 
   const filteredEvents = events.filter(
     (e) =>
-      (e.eventCode || "")
+      (e.eventCode || '')
         .toLowerCase()
         .includes(eventSearchTerm.toLowerCase()) ||
-      (e.eventName || "").toLowerCase().includes(eventSearchTerm.toLowerCase()),
+      (e.eventName || '').toLowerCase().includes(eventSearchTerm.toLowerCase()),
   );
 
   // Reviewer: abstract categories fetched per selected event
@@ -326,7 +341,8 @@ export default function UsersPage() {
       for (const c of cats) {
         const existing = map.get(c.name);
         if (existing) {
-          if (!existing.eventNames.includes(evName)) existing.eventNames.push(evName);
+          if (!existing.eventNames.includes(evName))
+            existing.eventNames.push(evName);
         } else {
           map.set(c.name, { name: c.name, eventNames: [evName] });
         }
@@ -338,7 +354,7 @@ export default function UsersPage() {
   // Fetch abstract categories for newly selected events when role is reviewer
   useEffect(() => {
     if (!token) return;
-    if (formData.role !== "reviewer") return;
+    if (formData.role !== 'reviewer') return;
     const missing = formData.assignedEventIds.filter(
       (id) => !(id in eventCategories),
     );
@@ -383,9 +399,9 @@ export default function UsersPage() {
     if (!token) return;
     try {
       // Split name into first and last name
-      const nameParts = formData.name.trim().split(" ");
-      const firstName = nameParts[0] || "-";
-      const lastName = nameParts.slice(1).join(" ") || "-";
+      const nameParts = formData.name.trim().split(' ');
+      const firstName = nameParts[0] || '-';
+      const lastName = nameParts.slice(1).join(' ') || '-';
 
       // 1. Create user with assignedCategories if reviewer
       const result = await api.users.create(token, {
@@ -394,40 +410,55 @@ export default function UsersPage() {
         role: formData.role,
         firstName,
         lastName,
-        ...presentationUserAssignments(formData.role, formData.assignedPresentationTypes, formData.assignedCategories),
+        ...presentationUserAssignments(
+          formData.role,
+          formData.assignedPresentationTypes,
+          formData.assignedCategories,
+        ),
       });
 
       // 2. Assign events/sessions if not admin and user was created
       const userId = (result?.user as Record<string, unknown>)?.id as number;
-      if (userId && formData.role !== "admin") {
-        if ((formData.role === "staff" || formData.role === "verifier") && sessionAssignments.length > 0) {
-          await api.users.assignEventsAndSessions(token, userId, sessionAssignments);
+      if (userId && formData.role !== 'admin') {
+        if (
+          (formData.role === 'staff' || formData.role === 'verifier') &&
+          sessionAssignments.length > 0
+        ) {
+          await api.users.assignEventsAndSessions(
+            token,
+            userId,
+            sessionAssignments,
+          );
         } else if (formData.assignedEventIds.length > 0) {
-          await api.users.assignEvents(token, userId, formData.assignedEventIds);
+          await api.users.assignEvents(
+            token,
+            userId,
+            formData.assignedEventIds,
+          );
         }
       }
 
       setShowCreateModal(false);
-      setEventSearchTerm("");
+      setEventSearchTerm('');
       setSessionAssignments([]);
       setExpandedEvents(new Set());
       setFormData({
-        name: "",
-        email: "",
-        password: "",
-        role: "staff",
+        name: '',
+        email: '',
+        password: '',
+        role: 'staff',
         isActive: true,
         assignedEventIds: [],
         assignedCategories: [],
         assignedPresentationTypes: [],
       });
-      toast.success("User created successfully!");
+      toast.success('User created successfully!');
 
       // Refresh list
       refreshUsers();
     } catch (error: any) {
-      console.error("Failed to create user:", error);
-      toast.error(`Failed to create user: ${error.message || "Unknown error"}`);
+      console.error('Failed to create user:', error);
+      toast.error(`Failed to create user: ${error.message || 'Unknown error'}`);
     }
   };
 
@@ -436,12 +467,16 @@ export default function UsersPage() {
     try {
       // Prepare update data
       const updates: any = {
-        firstName: formData.name.split(" ")[0] || formData.name,
-        lastName: formData.name.split(" ").slice(1).join(" ") || "-",
+        firstName: formData.name.split(' ')[0] || formData.name,
+        lastName: formData.name.split(' ').slice(1).join(' ') || '-',
         role: formData.role,
         email: formData.email,
         isActive: formData.isActive,
-        ...presentationUserAssignments(formData.role, formData.assignedPresentationTypes, formData.assignedCategories),
+        ...presentationUserAssignments(
+          formData.role,
+          formData.assignedPresentationTypes,
+          formData.assignedCategories,
+        ),
       };
       if (formData.password) {
         updates.password = formData.password;
@@ -451,11 +486,22 @@ export default function UsersPage() {
       await api.users.update(token, selectedUser.id, updates);
 
       // 2. Update assignments if not admin
-      if (updates.role !== "admin") {
-        if ((updates.role === "staff" || updates.role === "verifier") && sessionAssignments.length > 0) {
-          await api.users.assignEventsAndSessions(token, selectedUser.id, sessionAssignments);
+      if (updates.role !== 'admin') {
+        if (
+          (updates.role === 'staff' || updates.role === 'verifier') &&
+          sessionAssignments.length > 0
+        ) {
+          await api.users.assignEventsAndSessions(
+            token,
+            selectedUser.id,
+            sessionAssignments,
+          );
         } else {
-          await api.users.assignEvents(token, selectedUser.id, formData.assignedEventIds);
+          await api.users.assignEvents(
+            token,
+            selectedUser.id,
+            formData.assignedEventIds,
+          );
         }
       }
 
@@ -463,13 +509,13 @@ export default function UsersPage() {
       setSelectedUser(null);
       setSessionAssignments([]);
       setExpandedEvents(new Set());
-      toast.success("User updated successfully!");
+      toast.success('User updated successfully!');
 
       // Refresh list
       refreshUsers();
     } catch (error) {
-      console.error("Failed to update user:", error);
-      toast.error("Failed to update user");
+      console.error('Failed to update user:', error);
+      toast.error('Failed to update user');
     }
   };
 
@@ -480,13 +526,13 @@ export default function UsersPage() {
 
       setShowDeleteModal(false);
       setSelectedUser(null);
-      toast.success("User deleted successfully!");
+      toast.success('User deleted successfully!');
 
       // Refresh list
       refreshUsers();
     } catch (error) {
-      console.error("Failed to delete user:", error);
-      toast.error("Failed to delete user");
+      console.error('Failed to delete user:', error);
+      toast.error('Failed to delete user');
     }
   };
 
@@ -494,7 +540,7 @@ export default function UsersPage() {
     if (!token || !selectedUser) return;
     try {
       // For staff/verifier: use session-level assignment API
-      if (selectedUser.role === "staff" || selectedUser.role === "verifier") {
+      if (selectedUser.role === 'staff' || selectedUser.role === 'verifier') {
         await api.users.assignEventsAndSessions(
           token,
           selectedUser.id,
@@ -512,32 +558,39 @@ export default function UsersPage() {
       setShowAssignModal(false);
       setSelectedUser(null);
       setSessionAssignments([]);
-      toast.success("Assignments updated!");
+      toast.success('Assignments updated!');
 
       // Refresh list
       refreshUsers();
     } catch (error) {
-      console.error("Failed to assign:", error);
-      toast.error("Failed to update assignments");
+      console.error('Failed to assign:', error);
+      toast.error('Failed to update assignments');
     }
   };
 
   const openEditModal = (user: User) => {
     setSelectedUser(user);
-    setEventSearchTerm("");
+    setEventSearchTerm('');
     setExpandedEvents(new Set());
     // Initialize session assignments for staff/verifier
     if (user.assignments && user.assignments.length > 0) {
-      setSessionAssignments(user.assignments.map(a => ({ eventId: a.eventId, sessionIds: [...a.sessionIds] })));
+      setSessionAssignments(
+        user.assignments.map((a) => ({
+          eventId: a.eventId,
+          sessionIds: [...a.sessionIds],
+        })),
+      );
     } else {
-      setSessionAssignments(user.assignedEventIds.map(eventId => ({ eventId, sessionIds: [] })));
+      setSessionAssignments(
+        user.assignedEventIds.map((eventId) => ({ eventId, sessionIds: [] })),
+      );
     }
     setFormData({
       name: user.name,
       email: user.email,
-      password: "",
+      password: '',
       role: user.role,
-      isActive: user.status === "active", // Map string status back to boolean
+      isActive: user.status === 'active', // Map string status back to boolean
       assignedEventIds: user.assignedEventIds,
       assignedCategories: user.assignedCategories || [],
       assignedPresentationTypes: user.assignedPresentationTypes || [],
@@ -547,14 +600,21 @@ export default function UsersPage() {
 
   const openAssignModal = (user: User) => {
     setSelectedUser(user);
-    setEventSearchTerm("");
+    setEventSearchTerm('');
     setExpandedEvents(new Set());
     // Initialize session assignments from user data
     if (user.assignments && user.assignments.length > 0) {
-      setSessionAssignments(user.assignments.map(a => ({ eventId: a.eventId, sessionIds: [...a.sessionIds] })));
+      setSessionAssignments(
+        user.assignments.map((a) => ({
+          eventId: a.eventId,
+          sessionIds: [...a.sessionIds],
+        })),
+      );
     } else {
       // Fallback: convert eventIds to event-level assignments
-      setSessionAssignments(user.assignedEventIds.map(eventId => ({ eventId, sessionIds: [] })));
+      setSessionAssignments(
+        user.assignedEventIds.map((eventId) => ({ eventId, sessionIds: [] })),
+      );
     }
     setFormData({
       ...formData,
@@ -597,8 +657,8 @@ export default function UsersPage() {
         {roles.map((role) => (
           <div
             key={role.id}
-            className={`card py-4 cursor-pointer hover:shadow-md transition-shadow ${roleFilter === role.id ? "ring-2 ring-teal-600" : ""}`}
-            onClick={() => setRoleFilter(roleFilter === role.id ? "" : role.id)}
+            className={`card py-4 cursor-pointer hover:shadow-md transition-shadow ${roleFilter === role.id ? 'ring-2 ring-teal-600' : ''}`}
+            onClick={() => setRoleFilter(roleFilter === role.id ? '' : role.id)}
           >
             <p className="text-2xl font-bold text-zinc-800">
               {users.filter((u) => u.role === role.id).length}
@@ -713,7 +773,7 @@ export default function UsersPage() {
                             </span>
                           </td>
                           <td className="px-4 py-4">
-                            {user.role === "admin" ? (
+                            {user.role === 'admin' ? (
                               <span className="text-xs text-zinc-400 italic">
                                 All Events Access
                               </span>
@@ -737,24 +797,24 @@ export default function UsersPage() {
                           <td className="px-4 py-4 text-center">
                             <span
                               className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${
-                                user.status === "active"
-                                  ? "bg-green-50 text-green-700 border-green-200"
-                                  : "bg-red-50 text-red-700 border-red-200"
+                                user.status === 'active'
+                                  ? 'bg-green-50 text-green-700 border-green-200'
+                                  : 'bg-red-50 text-red-700 border-red-200'
                               }`}
                             >
                               <span
                                 className={`w-1.5 h-1.5 rounded-full ${
-                                  user.status === "active"
-                                    ? "bg-green-500"
-                                    : "bg-red-500"
+                                  user.status === 'active'
+                                    ? 'bg-green-500'
+                                    : 'bg-red-500'
                                 }`}
                               ></span>
-                              {user.status === "active" ? "Active" : "Inactive"}
+                              {user.status === 'active' ? 'Active' : 'Inactive'}
                             </span>
                           </td>
                           <td className="px-4 py-4 text-center">
                             <div className="flex gap-1 justify-center items-center">
-                              {user.role !== "admin" && (
+                              {user.role !== 'admin' && (
                                 <button
                                   className="p-2 hover:bg-emerald-50 rounded-lg text-zinc-400 hover:text-emerald-600 transition-colors"
                                   title="Assign Events"
@@ -830,7 +890,7 @@ export default function UsersPage() {
                 {role.label}
               </span>
               <p className="text-sm text-zinc-500">{role.description}</p>
-              {role.id === "admin" && (
+              {role.id === 'admin' && (
                 <p className="text-xs text-zinc-400 mt-2 italic">
                   Access to all events
                 </p>
@@ -924,58 +984,63 @@ export default function UsersPage() {
               </div>
 
               {/* 1️⃣ Event Assignment (only for non-admin, non-staff/verifier) */}
-              {formData.role !== "admin" && formData.role !== "staff" && formData.role !== "verifier" && (
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-zinc-600 mb-2">
-                    1. Assign Events *
-                  </label>
-                  <div className="mb-2 relative">
-                    <IconSearch
-                      size={16}
-                      className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Search events..."
-                      className="w-full pl-11 pr-3 py-2 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:border-teal-600"
-                      value={eventSearchTerm}
-                      onChange={(e) => setEventSearchTerm(e.target.value)}
-                    />
+              {formData.role !== 'admin' &&
+                formData.role !== 'staff' &&
+                formData.role !== 'verifier' && (
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-zinc-600 mb-2">
+                      1. Assign Events *
+                    </label>
+                    <div className="mb-2 relative">
+                      <IconSearch
+                        size={16}
+                        className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400"
+                      />
+                      <input
+                        type="text"
+                        placeholder="Search events..."
+                        className="w-full pl-11 pr-3 py-2 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:border-teal-600"
+                        value={eventSearchTerm}
+                        onChange={(e) => setEventSearchTerm(e.target.value)}
+                      />
+                    </div>
+                    <div className="border border-zinc-200 rounded-xl p-3 max-h-40 overflow-y-auto">
+                      {filteredEvents.map((event) => (
+                        <label
+                          key={event.id}
+                          className="flex items-center gap-3 py-2 hover:bg-zinc-50 cursor-pointer"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={formData.assignedEventIds.includes(
+                              event.id,
+                            )}
+                            onChange={() => toggleEventAssignment(event.id)}
+                            className="w-4 h-4 text-emerald-600 rounded"
+                          />
+                          <div>
+                            <p className="font-medium text-sm">
+                              {event.eventCode}
+                            </p>
+                            <p className="text-xs text-zinc-400">
+                              {event.eventName}
+                            </p>
+                          </div>
+                        </label>
+                      ))}
+                    </div>
                   </div>
-                  <div className="border border-zinc-200 rounded-xl p-3 max-h-40 overflow-y-auto">
-                    {filteredEvents.map((event) => (
-                      <label
-                        key={event.id}
-                        className="flex items-center gap-3 py-2 hover:bg-zinc-50 cursor-pointer"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={formData.assignedEventIds.includes(event.id)}
-                          onChange={() => toggleEventAssignment(event.id)}
-                          className="w-4 h-4 text-emerald-600 rounded"
-                        />
-                        <div>
-                          <p className="font-medium text-sm">
-                            {event.eventCode}
-                          </p>
-                          <p className="text-xs text-zinc-400">
-                            {event.eventName}
-                          </p>
-                        </div>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              )}
+                )}
 
               {/* 2️⃣ Presentation Type Assignment (organizer/reviewer) */}
-              {["organizer", "reviewer"].includes(formData.role) && (
+              {['organizer', 'reviewer'].includes(formData.role) && (
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-zinc-600 mb-2">
                     2. Assign Presentation Types *
                   </label>
                   <p className="text-xs text-zinc-400 mb-2">
-                    เลือกประเภทที่เจ้าหน้าที่ได้รับมอบหมาย หากไม่เลือกจะไม่เห็นไฟล์นำเสนอ
+                    เลือกประเภทที่เจ้าหน้าที่ได้รับมอบหมาย
+                    หากไม่เลือกจะไม่เห็นไฟล์นำเสนอ
                   </p>
                   <div className="border border-zinc-200 rounded-xl p-3 space-y-2">
                     {presentationTypes.map((type) => (
@@ -1002,13 +1067,14 @@ export default function UsersPage() {
                     ))}
                   </div>
                   <p className="text-xs text-zinc-400 mt-2">
-                    Selected: {formData.assignedPresentationTypes.length} type(s)
+                    Selected: {formData.assignedPresentationTypes.length}{' '}
+                    type(s)
                   </p>
                 </div>
               )}
 
               {/* 3️⃣ Abstract Category Assignment (only for reviewer, dynamic from selected events) */}
-              {formData.role === "reviewer" && (
+              {formData.role === 'reviewer' && (
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-zinc-600 mb-2">
                     3. Assign Abstract Categories *
@@ -1033,7 +1099,9 @@ export default function UsersPage() {
                         >
                           <input
                             type="checkbox"
-                            checked={formData.assignedCategories.includes(cat.name)}
+                            checked={formData.assignedCategories.includes(
+                              cat.name,
+                            )}
                             onChange={() => toggleCategoryAssignment(cat.name)}
                             className="w-4 h-4 text-purple-600 rounded"
                           />
@@ -1041,7 +1109,7 @@ export default function UsersPage() {
                             {cat.name}
                           </span>
                           <span className="ml-auto text-[10px] text-zinc-400 truncate max-w-[160px]">
-                            {cat.eventNames.join(", ")}
+                            {cat.eventNames.join(', ')}
                           </span>
                         </label>
                       ))}
@@ -1054,13 +1122,14 @@ export default function UsersPage() {
               )}
 
               {/* Event + Session Assignment (for staff/verifier) */}
-              {(formData.role === "staff" || formData.role === "verifier") && (
+              {(formData.role === 'staff' || formData.role === 'verifier') && (
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-zinc-600 mb-2">
                     Assign Events & Sessions *
                   </label>
                   <p className="text-xs text-zinc-400 mb-2">
-                    Select events and specific sessions this {formData.role} will check-in
+                    Select events and specific sessions this {formData.role}{' '}
+                    will check-in
                   </p>
                   <div className="mb-2 relative">
                     <IconSearch
@@ -1080,14 +1149,21 @@ export default function UsersPage() {
                       const assigned = isEventAssigned(event.id);
                       const expanded = expandedEvents.has(event.id);
                       const sessions = eventSessions[event.id] || [];
-                      const assignedSessionCount = sessionAssignments.find(a => a.eventId === event.id)?.sessionIds.length || 0;
+                      const assignedSessionCount =
+                        sessionAssignments.find((a) => a.eventId === event.id)
+                          ?.sessionIds.length || 0;
                       return (
-                        <div key={event.id} className="rounded-lg border border-zinc-100">
+                        <div
+                          key={event.id}
+                          className="rounded-lg border border-zinc-100"
+                        >
                           <div className="flex items-center gap-2 p-2 hover:bg-zinc-50">
                             <input
                               type="checkbox"
                               checked={assigned}
-                              onChange={() => toggleEventAssignmentWithSessions(event.id)}
+                              onChange={() =>
+                                toggleEventAssignmentWithSessions(event.id)
+                              }
                               className="w-4 h-4 text-emerald-600 rounded"
                             />
                             <button
@@ -1096,42 +1172,78 @@ export default function UsersPage() {
                               className="flex-1 flex items-center gap-2 text-left"
                             >
                               <div className="flex-1">
-                                <p className="font-medium text-sm">{event.eventCode}</p>
-                                <p className="text-xs text-zinc-400">{event.eventName}</p>
+                                <p className="font-medium text-sm">
+                                  {event.eventCode}
+                                </p>
+                                <p className="text-xs text-zinc-400">
+                                  {event.eventName}
+                                </p>
                               </div>
                               {assigned && assignedSessionCount > 0 && (
                                 <span className="text-xs bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded">
-                                  {assignedSessionCount} session{assignedSessionCount > 1 ? 's' : ''}
+                                  {assignedSessionCount} session
+                                  {assignedSessionCount > 1 ? 's' : ''}
                                 </span>
                               )}
-                              {expanded ? <IconChevronDown size={16} className="text-zinc-400" /> : <IconChevronRight size={16} className="text-zinc-400" />}
+                              {expanded ? (
+                                <IconChevronDown
+                                  size={16}
+                                  className="text-zinc-400"
+                                />
+                              ) : (
+                                <IconChevronRight
+                                  size={16}
+                                  className="text-zinc-400"
+                                />
+                              )}
                             </button>
                           </div>
                           {expanded && (
                             <div className="pl-8 pr-3 pb-2 space-y-1">
                               {loadingSessions === event.id ? (
                                 <div className="flex items-center gap-2 py-2 text-zinc-400 text-xs">
-                                  <IconLoader2 size={14} className="animate-spin" /> Loading sessions...
+                                  <IconLoader2
+                                    size={14}
+                                    className="animate-spin"
+                                  />{' '}
+                                  Loading sessions...
                                 </div>
                               ) : sessions.length === 0 ? (
-                                <p className="text-xs text-zinc-400 py-2">No sessions found</p>
+                                <p className="text-xs text-zinc-400 py-2">
+                                  No sessions found
+                                </p>
                               ) : (
-                                sessions.map(session => (
+                                sessions.map((session) => (
                                   <label
                                     key={session.id}
                                     className="flex items-center gap-2 py-1.5 px-2 hover:bg-emerald-50 cursor-pointer rounded text-sm"
                                   >
                                     <input
                                       type="checkbox"
-                                      checked={isSessionAssigned(event.id, session.id)}
-                                      onChange={() => toggleSessionAssignment(event.id, session.id)}
+                                      checked={isSessionAssigned(
+                                        event.id,
+                                        session.id,
+                                      )}
+                                      onChange={() =>
+                                        toggleSessionAssignment(
+                                          event.id,
+                                          session.id,
+                                        )
+                                      }
                                       className="w-3.5 h-3.5 text-emerald-600 rounded"
                                     />
-                                    <IconDoor size={14} className="text-zinc-400" />
+                                    <IconDoor
+                                      size={14}
+                                      className="text-zinc-400"
+                                    />
                                     <div className="flex-1">
-                                      <span className="text-zinc-800">{session.sessionName}</span>
+                                      <span className="text-zinc-800">
+                                        {session.sessionName}
+                                      </span>
                                       {session.room && (
-                                        <span className="text-xs text-zinc-400 ml-2">({session.room})</span>
+                                        <span className="text-xs text-zinc-400 ml-2">
+                                          ({session.room})
+                                        </span>
                                       )}
                                     </div>
                                   </label>
@@ -1145,7 +1257,12 @@ export default function UsersPage() {
                   </div>
                   {sessionAssignments.length > 0 && (
                     <p className="text-xs text-zinc-400 mt-2">
-                      Assigned: {sessionAssignments.length} event(s), {sessionAssignments.reduce((sum, a) => sum + a.sessionIds.length, 0)} session(s)
+                      Assigned: {sessionAssignments.length} event(s),{' '}
+                      {sessionAssignments.reduce(
+                        (sum, a) => sum + a.sessionIds.length,
+                        0,
+                      )}{' '}
+                      session(s)
                     </p>
                   )}
                 </div>
@@ -1259,76 +1376,81 @@ export default function UsersPage() {
                       setFormData({ ...formData, isActive: !formData.isActive })
                     }
                     className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2 ${
-                      formData.isActive ? "bg-green-500" : "bg-zinc-200"
+                      formData.isActive ? 'bg-green-500' : 'bg-zinc-200'
                     }`}
                   >
                     <span
                       className={`${
-                        formData.isActive ? "translate-x-6" : "translate-x-1"
+                        formData.isActive ? 'translate-x-6' : 'translate-x-1'
                       } inline-block h-4 w-4 transform rounded-full bg-white transition-transform`}
                     />
                   </button>
                   <span
-                    className={`text-sm font-medium ${formData.isActive ? "text-green-600" : "text-zinc-400"}`}
+                    className={`text-sm font-medium ${formData.isActive ? 'text-green-600' : 'text-zinc-400'}`}
                   >
-                    {formData.isActive ? "Active" : "Inactive"}
+                    {formData.isActive ? 'Active' : 'Inactive'}
                   </span>
                 </div>
               </div>
 
               {/* 1️⃣ Event Assignment (only for non-admin, non-staff/verifier) */}
-              {formData.role !== "admin" && formData.role !== "staff" && formData.role !== "verifier" && (
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-zinc-600 mb-2">
-                    1. Assigned Events
-                  </label>
-                  <div className="mb-2 relative">
-                    <IconSearch
-                      size={16}
-                      className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Search events..."
-                      className="w-full pl-11 pr-3 py-2 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:border-teal-600"
-                      value={eventSearchTerm}
-                      onChange={(e) => setEventSearchTerm(e.target.value)}
-                    />
+              {formData.role !== 'admin' &&
+                formData.role !== 'staff' &&
+                formData.role !== 'verifier' && (
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-zinc-600 mb-2">
+                      1. Assigned Events
+                    </label>
+                    <div className="mb-2 relative">
+                      <IconSearch
+                        size={16}
+                        className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400"
+                      />
+                      <input
+                        type="text"
+                        placeholder="Search events..."
+                        className="w-full pl-11 pr-3 py-2 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:border-teal-600"
+                        value={eventSearchTerm}
+                        onChange={(e) => setEventSearchTerm(e.target.value)}
+                      />
+                    </div>
+                    <div className="border border-zinc-200 rounded-xl p-3 max-h-40 overflow-y-auto">
+                      {filteredEvents.map((event) => (
+                        <label
+                          key={event.id}
+                          className="flex items-center gap-3 py-2 hover:bg-zinc-50 cursor-pointer"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={formData.assignedEventIds.includes(
+                              event.id,
+                            )}
+                            onChange={() => toggleEventAssignment(event.id)}
+                            className="w-4 h-4 text-emerald-600 rounded"
+                          />
+                          <div>
+                            <p className="font-medium text-sm">
+                              {event.eventCode}
+                            </p>
+                            <p className="text-xs text-zinc-400">
+                              {event.eventName}
+                            </p>
+                          </div>
+                        </label>
+                      ))}
+                    </div>
                   </div>
-                  <div className="border border-zinc-200 rounded-xl p-3 max-h-40 overflow-y-auto">
-                    {filteredEvents.map((event) => (
-                      <label
-                        key={event.id}
-                        className="flex items-center gap-3 py-2 hover:bg-zinc-50 cursor-pointer"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={formData.assignedEventIds.includes(event.id)}
-                          onChange={() => toggleEventAssignment(event.id)}
-                          className="w-4 h-4 text-emerald-600 rounded"
-                        />
-                        <div>
-                          <p className="font-medium text-sm">
-                            {event.eventCode}
-                          </p>
-                          <p className="text-xs text-zinc-400">
-                            {event.eventName}
-                          </p>
-                        </div>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              )}
+                )}
 
               {/* 2️⃣ Presentation Type Assignment (organizer/reviewer) */}
-              {["organizer", "reviewer"].includes(formData.role) && (
+              {['organizer', 'reviewer'].includes(formData.role) && (
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-zinc-600 mb-2">
                     2. Assigned Presentation Types
                   </label>
                   <p className="text-xs text-zinc-400 mb-2">
-                    เลือกประเภทที่เจ้าหน้าที่ได้รับมอบหมาย หากไม่เลือกจะไม่เห็นไฟล์นำเสนอ
+                    เลือกประเภทที่เจ้าหน้าที่ได้รับมอบหมาย
+                    หากไม่เลือกจะไม่เห็นไฟล์นำเสนอ
                   </p>
                   <div className="border border-zinc-200 rounded-xl p-3 space-y-2">
                     {presentationTypes.map((type) => (
@@ -1355,13 +1477,14 @@ export default function UsersPage() {
                     ))}
                   </div>
                   <p className="text-xs text-zinc-400 mt-2">
-                    Selected: {formData.assignedPresentationTypes.length} type(s)
+                    Selected: {formData.assignedPresentationTypes.length}{' '}
+                    type(s)
                   </p>
                 </div>
               )}
 
               {/* 3️⃣ Abstract Category Assignment (only for reviewer, dynamic from selected events) */}
-              {formData.role === "reviewer" && (
+              {formData.role === 'reviewer' && (
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-zinc-600 mb-2">
                     3. Assigned Abstract Categories
@@ -1386,7 +1509,9 @@ export default function UsersPage() {
                         >
                           <input
                             type="checkbox"
-                            checked={formData.assignedCategories.includes(cat.name)}
+                            checked={formData.assignedCategories.includes(
+                              cat.name,
+                            )}
                             onChange={() => toggleCategoryAssignment(cat.name)}
                             className="w-4 h-4 text-purple-600 rounded"
                           />
@@ -1394,7 +1519,7 @@ export default function UsersPage() {
                             {cat.name}
                           </span>
                           <span className="ml-auto text-[10px] text-zinc-400 truncate max-w-[160px]">
-                            {cat.eventNames.join(", ")}
+                            {cat.eventNames.join(', ')}
                           </span>
                         </label>
                       ))}
@@ -1407,13 +1532,14 @@ export default function UsersPage() {
               )}
 
               {/* Event + Session Assignment (for staff/verifier) */}
-              {(formData.role === "staff" || formData.role === "verifier") && (
+              {(formData.role === 'staff' || formData.role === 'verifier') && (
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-zinc-600 mb-2">
                     Assigned Events & Sessions
                   </label>
                   <p className="text-xs text-zinc-400 mb-2">
-                    Select events and specific sessions this {formData.role} will check-in
+                    Select events and specific sessions this {formData.role}{' '}
+                    will check-in
                   </p>
                   <div className="mb-2 relative">
                     <IconSearch
@@ -1433,14 +1559,21 @@ export default function UsersPage() {
                       const assigned = isEventAssigned(event.id);
                       const expanded = expandedEvents.has(event.id);
                       const sessions = eventSessions[event.id] || [];
-                      const assignedSessionCount = sessionAssignments.find(a => a.eventId === event.id)?.sessionIds.length || 0;
+                      const assignedSessionCount =
+                        sessionAssignments.find((a) => a.eventId === event.id)
+                          ?.sessionIds.length || 0;
                       return (
-                        <div key={event.id} className="rounded-lg border border-zinc-100">
+                        <div
+                          key={event.id}
+                          className="rounded-lg border border-zinc-100"
+                        >
                           <div className="flex items-center gap-2 p-2 hover:bg-zinc-50">
                             <input
                               type="checkbox"
                               checked={assigned}
-                              onChange={() => toggleEventAssignmentWithSessions(event.id)}
+                              onChange={() =>
+                                toggleEventAssignmentWithSessions(event.id)
+                              }
                               className="w-4 h-4 text-emerald-600 rounded"
                             />
                             <button
@@ -1449,42 +1582,78 @@ export default function UsersPage() {
                               className="flex-1 flex items-center gap-2 text-left"
                             >
                               <div className="flex-1">
-                                <p className="font-medium text-sm">{event.eventCode}</p>
-                                <p className="text-xs text-zinc-400">{event.eventName}</p>
+                                <p className="font-medium text-sm">
+                                  {event.eventCode}
+                                </p>
+                                <p className="text-xs text-zinc-400">
+                                  {event.eventName}
+                                </p>
                               </div>
                               {assigned && assignedSessionCount > 0 && (
                                 <span className="text-xs bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded">
-                                  {assignedSessionCount} session{assignedSessionCount > 1 ? 's' : ''}
+                                  {assignedSessionCount} session
+                                  {assignedSessionCount > 1 ? 's' : ''}
                                 </span>
                               )}
-                              {expanded ? <IconChevronDown size={16} className="text-zinc-400" /> : <IconChevronRight size={16} className="text-zinc-400" />}
+                              {expanded ? (
+                                <IconChevronDown
+                                  size={16}
+                                  className="text-zinc-400"
+                                />
+                              ) : (
+                                <IconChevronRight
+                                  size={16}
+                                  className="text-zinc-400"
+                                />
+                              )}
                             </button>
                           </div>
                           {expanded && (
                             <div className="pl-8 pr-3 pb-2 space-y-1">
                               {loadingSessions === event.id ? (
                                 <div className="flex items-center gap-2 py-2 text-zinc-400 text-xs">
-                                  <IconLoader2 size={14} className="animate-spin" /> Loading sessions...
+                                  <IconLoader2
+                                    size={14}
+                                    className="animate-spin"
+                                  />{' '}
+                                  Loading sessions...
                                 </div>
                               ) : sessions.length === 0 ? (
-                                <p className="text-xs text-zinc-400 py-2">No sessions found</p>
+                                <p className="text-xs text-zinc-400 py-2">
+                                  No sessions found
+                                </p>
                               ) : (
-                                sessions.map(session => (
+                                sessions.map((session) => (
                                   <label
                                     key={session.id}
                                     className="flex items-center gap-2 py-1.5 px-2 hover:bg-emerald-50 cursor-pointer rounded text-sm"
                                   >
                                     <input
                                       type="checkbox"
-                                      checked={isSessionAssigned(event.id, session.id)}
-                                      onChange={() => toggleSessionAssignment(event.id, session.id)}
+                                      checked={isSessionAssigned(
+                                        event.id,
+                                        session.id,
+                                      )}
+                                      onChange={() =>
+                                        toggleSessionAssignment(
+                                          event.id,
+                                          session.id,
+                                        )
+                                      }
                                       className="w-3.5 h-3.5 text-emerald-600 rounded"
                                     />
-                                    <IconDoor size={14} className="text-zinc-400" />
+                                    <IconDoor
+                                      size={14}
+                                      className="text-zinc-400"
+                                    />
                                     <div className="flex-1">
-                                      <span className="text-zinc-800">{session.sessionName}</span>
+                                      <span className="text-zinc-800">
+                                        {session.sessionName}
+                                      </span>
                                       {session.room && (
-                                        <span className="text-xs text-zinc-400 ml-2">({session.room})</span>
+                                        <span className="text-xs text-zinc-400 ml-2">
+                                          ({session.room})
+                                        </span>
                                       )}
                                     </div>
                                   </label>
@@ -1498,7 +1667,12 @@ export default function UsersPage() {
                   </div>
                   {sessionAssignments.length > 0 && (
                     <p className="text-xs text-zinc-400 mt-2">
-                      Assigned: {sessionAssignments.length} event(s), {sessionAssignments.reduce((sum, a) => sum + a.sessionIds.length, 0)} session(s)
+                      Assigned: {sessionAssignments.length} event(s),{' '}
+                      {sessionAssignments.reduce(
+                        (sum, a) => sum + a.sessionIds.length,
+                        0,
+                      )}{' '}
+                      session(s)
                     </p>
                   )}
                 </div>
@@ -1528,20 +1702,29 @@ export default function UsersPage() {
           <div className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] flex flex-col">
             <div className="p-6 bg-emerald-700 rounded-t-2xl flex-shrink-0">
               <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                {(selectedUser.role === "staff" || selectedUser.role === "verifier") ? (
-                  <><IconDoor size={20} /> Assign Sessions</>
+                {selectedUser.role === 'staff' ||
+                selectedUser.role === 'verifier' ? (
+                  <>
+                    <IconDoor size={20} /> Assign Sessions
+                  </>
                 ) : (
-                  <><IconCalendarEvent size={20} /> Assign Events</>
+                  <>
+                    <IconCalendarEvent size={20} /> Assign Events
+                  </>
                 )}
               </h3>
-              <p className="text-blue-100 text-sm mt-1">{selectedUser.name} ({selectedUser.role})</p>
+              <p className="text-blue-100 text-sm mt-1">
+                {selectedUser.name} ({selectedUser.role})
+              </p>
             </div>
             <div className="p-6 flex-1 overflow-y-auto">
               {/* Staff/Verifier: Session-level assignment */}
-              {(selectedUser.role === "staff" || selectedUser.role === "verifier") ? (
+              {selectedUser.role === 'staff' ||
+              selectedUser.role === 'verifier' ? (
                 <>
                   <p className="text-sm text-zinc-500 mb-4">
-                    Select events and sessions this {selectedUser.role} can check-in:
+                    Select events and sessions this {selectedUser.role} can
+                    check-in:
                   </p>
                   <div className="mb-3 relative">
                     <IconSearch
@@ -1561,10 +1744,15 @@ export default function UsersPage() {
                       const isAssigned = isEventAssigned(event.id);
                       const isExpanded = expandedEvents.has(event.id);
                       const sessions = eventSessions[event.id] || [];
-                      const assignedSessionCount = sessionAssignments.find(a => a.eventId === event.id)?.sessionIds.length || 0;
+                      const assignedSessionCount =
+                        sessionAssignments.find((a) => a.eventId === event.id)
+                          ?.sessionIds.length || 0;
 
                       return (
-                        <div key={event.id} className="border-b border-zinc-100 last:border-b-0">
+                        <div
+                          key={event.id}
+                          className="border-b border-zinc-100 last:border-b-0"
+                        >
                           {/* Event row */}
                           <div className="flex items-center gap-2 p-3 hover:bg-zinc-50">
                             <button
@@ -1572,26 +1760,43 @@ export default function UsersPage() {
                               className="p-1 hover:bg-zinc-200 rounded transition-colors"
                             >
                               {loadingSessions === event.id ? (
-                                <IconLoader2 size={16} className="animate-spin text-zinc-400" />
+                                <IconLoader2
+                                  size={16}
+                                  className="animate-spin text-zinc-400"
+                                />
                               ) : isExpanded ? (
-                                <IconChevronDown size={16} className="text-zinc-400" />
+                                <IconChevronDown
+                                  size={16}
+                                  className="text-zinc-400"
+                                />
                               ) : (
-                                <IconChevronRight size={16} className="text-zinc-400" />
+                                <IconChevronRight
+                                  size={16}
+                                  className="text-zinc-400"
+                                />
                               )}
                             </button>
                             <input
                               type="checkbox"
                               checked={isAssigned}
-                              onChange={() => toggleEventAssignmentWithSessions(event.id)}
+                              onChange={() =>
+                                toggleEventAssignmentWithSessions(event.id)
+                              }
                               className="w-4 h-4 text-emerald-600 rounded"
                             />
                             <div className="flex-1">
-                              <p className="font-medium text-sm">{event.eventCode}</p>
-                              <p className="text-xs text-zinc-400">{event.eventName}</p>
+                              <p className="font-medium text-sm">
+                                {event.eventCode}
+                              </p>
+                              <p className="text-xs text-zinc-400">
+                                {event.eventName}
+                              </p>
                             </div>
                             {isAssigned && (
                               <span className="text-xs bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full">
-                                {assignedSessionCount > 0 ? `${assignedSessionCount} sessions` : "All"}
+                                {assignedSessionCount > 0
+                                  ? `${assignedSessionCount} sessions`
+                                  : 'All'}
                               </span>
                             )}
                           </div>
@@ -1600,7 +1805,8 @@ export default function UsersPage() {
                           {isExpanded && sessions.length > 0 && (
                             <div className="bg-zinc-50 pl-10 pr-3 py-2 space-y-1">
                               <p className="text-xs text-zinc-400 mb-2">
-                                Select specific sessions (or leave unchecked for all sessions):
+                                Select specific sessions (or leave unchecked for
+                                all sessions):
                               </p>
                               {sessions.map((session) => (
                                 <label
@@ -1609,32 +1815,58 @@ export default function UsersPage() {
                                 >
                                   <input
                                     type="checkbox"
-                                    checked={isSessionAssigned(event.id, session.id)}
-                                    onChange={() => toggleSessionAssignment(event.id, session.id)}
+                                    checked={isSessionAssigned(
+                                      event.id,
+                                      session.id,
+                                    )}
+                                    onChange={() =>
+                                      toggleSessionAssignment(
+                                        event.id,
+                                        session.id,
+                                      )
+                                    }
                                     className="w-4 h-4 text-green-600 rounded"
                                   />
                                   <div className="flex-1">
-                                    <p className="text-sm font-medium text-zinc-600">{session.sessionName}</p>
+                                    <p className="text-sm font-medium text-zinc-600">
+                                      {session.sessionName}
+                                    </p>
                                     <div className="flex items-center gap-2 text-xs text-zinc-400">
-                                      {session.sessionType && <span className="capitalize">{session.sessionType.replace('_', ' ')}</span>}
-                                      {session.room && <span>• {session.room}</span>}
+                                      {session.sessionType && (
+                                        <span className="capitalize">
+                                          {session.sessionType.replace(
+                                            '_',
+                                            ' ',
+                                          )}
+                                        </span>
+                                      )}
+                                      {session.room && (
+                                        <span>• {session.room}</span>
+                                      )}
                                     </div>
                                   </div>
                                 </label>
                               ))}
                             </div>
                           )}
-                          {isExpanded && sessions.length === 0 && loadingSessions !== event.id && (
-                            <div className="bg-zinc-50 pl-10 pr-3 py-3 text-xs text-zinc-400">
-                              No sessions found for this event
-                            </div>
-                          )}
+                          {isExpanded &&
+                            sessions.length === 0 &&
+                            loadingSessions !== event.id && (
+                              <div className="bg-zinc-50 pl-10 pr-3 py-3 text-xs text-zinc-400">
+                                No sessions found for this event
+                              </div>
+                            )}
                         </div>
                       );
                     })}
                   </div>
                   <p className="text-xs text-zinc-400 mt-3">
-                    Assigned: {sessionAssignments.length} event(s), {sessionAssignments.reduce((sum, a) => sum + (a.sessionIds.length || 0), 0)} specific session(s)
+                    Assigned: {sessionAssignments.length} event(s),{' '}
+                    {sessionAssignments.reduce(
+                      (sum, a) => sum + (a.sessionIds.length || 0),
+                      0,
+                    )}{' '}
+                    specific session(s)
                   </p>
                 </>
               ) : (
@@ -1670,7 +1902,9 @@ export default function UsersPage() {
                         />
                         <div className="flex-1">
                           <p className="font-medium">{event.eventCode}</p>
-                          <p className="text-sm text-zinc-400">{event.eventName}</p>
+                          <p className="text-sm text-zinc-400">
+                            {event.eventName}
+                          </p>
                         </div>
                       </label>
                     ))}
@@ -1683,7 +1917,10 @@ export default function UsersPage() {
             </div>
             <div className="p-6 border-t border-zinc-100 flex gap-3 justify-end flex-shrink-0">
               <button
-                onClick={() => { setShowAssignModal(false); setSessionAssignments([]); }}
+                onClick={() => {
+                  setShowAssignModal(false);
+                  setSessionAssignments([]);
+                }}
                 className="btn-secondary"
               >
                 Cancel

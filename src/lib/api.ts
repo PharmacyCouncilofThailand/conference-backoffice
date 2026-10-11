@@ -22,7 +22,7 @@ import type {
   TeamRegistrationDetail,
   TeamRegistrationListItem,
   PromoCodeAbstractReportRow,
-} from "@/types/api";
+} from '@/types/api';
 import type {
   GrantBatchDto,
   GrantTrackingDto,
@@ -32,7 +32,7 @@ import type {
   SessionGrantEmailAttemptsDto,
   SessionGrantHistoryDto,
   SessionGrantRetryDto,
-} from "@/types/session-grants";
+} from '@/types/session-grants';
 import type {
   AdminWheelSpinsResponse,
   AdminWheelState,
@@ -52,15 +52,21 @@ import type {
   WheelCreditClaim,
   WheelCreditRevocation,
   WheelPage,
-} from "@/types/lucky-wheel";
+} from '@/types/lucky-wheel';
 
 import type {
-  PresentationSettingsHistoryDto, PresentationReconciliationDto, PresentationListDto, PresentationDetailDto,
-  PresentationPreviewInput, PresentationPreviewDto, PresentationBatchDto, RevisionDto,
-} from "@/types/presentations";
+  PresentationSettingsHistoryDto,
+  PresentationReconciliationDto,
+  PresentationListDto,
+  PresentationDetailDto,
+  PresentationPreviewInput,
+  PresentationPreviewDto,
+  PresentationBatchDto,
+  RevisionDto,
+} from '@/types/presentations';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL;
-const AUTH_UNAUTHORIZED_EVENT = "accp-backoffice-auth:unauthorized";
+const AUTH_UNAUTHORIZED_EVENT = 'accp-backoffice-auth:unauthorized';
 
 interface FetchOptions extends RequestInit {
   token?: string;
@@ -75,7 +81,7 @@ export class ApiError extends Error {
     public readonly capacity?: InvitationCapacity,
   ) {
     super(message);
-    this.name = "ApiError";
+    this.name = 'ApiError';
   }
 }
 
@@ -96,7 +102,7 @@ interface BackofficeCheckinSession {
   sessionType?: string;
   ticketName: string | null;
   source?: string;
-  attendanceMode?: "daily" | "single";
+  attendanceMode?: 'daily' | 'single';
   attendanceId?: string | null;
   attendanceDate?: string | null;
   checkedInAt: string | null;
@@ -112,7 +118,7 @@ interface BackofficeCheckinResponse {
 }
 
 interface BackofficeCheckinRow {
-  kind?: "daily" | "single";
+  kind?: 'daily' | 'single';
   id: number | string;
   attendanceId?: string | null;
   registrationSessionId: number;
@@ -137,17 +143,17 @@ interface BackofficeCheckinRow {
 }
 
 function getStoredBackofficeToken(): string {
-  if (typeof window === "undefined") return "";
+  if (typeof window === 'undefined') return '';
 
   return (
-    localStorage.getItem("backoffice_token") ||
-    sessionStorage.getItem("backoffice_token") ||
-    ""
+    localStorage.getItem('backoffice_token') ||
+    sessionStorage.getItem('backoffice_token') ||
+    ''
   );
 }
 
 function dispatchUnauthorizedEvent() {
-  if (typeof window !== "undefined") {
+  if (typeof window !== 'undefined') {
     window.dispatchEvent(new Event(AUTH_UNAUTHORIZED_EVENT));
   }
 }
@@ -159,12 +165,12 @@ export async function fetchAPI<T>(
   const { token, ...fetchOptions } = options;
   const resolvedToken =
     token ||
-    (endpoint === "/backoffice/login" ? "" : getStoredBackofficeToken());
+    (endpoint === '/backoffice/login' ? '' : getStoredBackofficeToken());
 
   const headers: Record<string, string> = {};
 
-  if (fetchOptions.body && typeof fetchOptions.body === "string") {
-    headers["Content-Type"] = "application/json";
+  if (fetchOptions.body && typeof fetchOptions.body === 'string') {
+    headers['Content-Type'] = 'application/json';
   }
 
   // Copy existing headers if any
@@ -174,7 +180,7 @@ export async function fetchAPI<T>(
   }
 
   if (resolvedToken) {
-    headers["Authorization"] = `Bearer ${resolvedToken}`;
+    headers['Authorization'] = `Bearer ${resolvedToken}`;
   }
 
   const res = await fetch(`${API_BASE}${endpoint}`, {
@@ -183,21 +189,25 @@ export async function fetchAPI<T>(
   });
 
   if (!res.ok) {
-    if (res.status === 401 && endpoint !== "/backoffice/login") {
+    if (res.status === 401 && endpoint !== '/backoffice/login') {
       dispatchUnauthorizedEvent();
     }
 
-    const error = await res.json().catch(() => ({ error: "Request failed" }));
-    const detailsText = error.details ? ` — ${JSON.stringify(error.details)}` : "";
+    const error = await res.json().catch(() => ({ error: 'Request failed' }));
+    const detailsText = error.details
+      ? ` — ${JSON.stringify(error.details)}`
+      : '';
     const message =
-      typeof error.error === "object" ? error.error?.message : error.error;
+      typeof error.error === 'object' ? error.error?.message : error.error;
     const capacity = error.capacity ?? error.details?.capacity;
     throw new ApiError(
       (message || `API Error: ${res.status}`) + detailsText,
       res.status,
-      typeof error.code === "string" ? error.code : undefined,
+      typeof error.code === 'string' ? error.code : undefined,
       error.details,
-      capacity && typeof capacity === "object" ? capacity as InvitationCapacity : undefined,
+      capacity && typeof capacity === 'object'
+        ? (capacity as InvitationCapacity)
+        : undefined,
     );
   }
 
@@ -208,58 +218,169 @@ export async function fetchAPI<T>(
 export const api = {
   presentations: {
     getSettings: (eventId: number, token: string) =>
-      fetchAPI<{ success: true; data: PresentationSettingsHistoryDto }>(`/api/backoffice/events/${eventId}/presentation-settings`, { token }),
+      fetchAPI<{ success: true; data: PresentationSettingsHistoryDto }>(
+        `/api/backoffice/events/${eventId}/presentation-settings`,
+        { token },
+      ),
     recheck: (eventId: number, key: string, token: string) =>
-      fetchAPI<{ success: true; data: PresentationReconciliationDto }>(`/api/backoffice/events/${eventId}/presentation-reconciliations`, {
-        token, method: "POST", headers: { "Idempotency-Key": key }, body: JSON.stringify({}),
-      }),
+      fetchAPI<{ success: true; data: PresentationReconciliationDto }>(
+        `/api/backoffice/events/${eventId}/presentation-reconciliations`,
+        {
+          token,
+          method: 'POST',
+          headers: { 'Idempotency-Key': key },
+          body: JSON.stringify({}),
+        },
+      ),
     list: (eventId: number, query: URLSearchParams, token: string) =>
-      fetchAPI<{ success: true; data: PresentationListDto }>(`/api/backoffice/events/${eventId}/presentation-targets?${query}`, { token }),
+      fetchAPI<{ success: true; data: PresentationListDto }>(
+        `/api/backoffice/events/${eventId}/presentation-targets?${query}`,
+        { token },
+      ),
     detail: (eventId: number, abstractId: number, token: string) =>
-      fetchAPI<{ success: true; data: PresentationDetailDto }>(`/api/backoffice/events/${eventId}/presentation-targets/${abstractId}`, { token }),
-    preview: (eventId: number, input: PresentationPreviewInput, token: string) =>
-      fetchAPI<{ success: true; data: PresentationPreviewDto }>(`/api/backoffice/events/${eventId}/presentation-email-previews`, {
-        token, method: "POST", body: JSON.stringify(input),
-      }),
-    batch: (eventId: number, input: { kind: "initial" | "reminder"; abstractIds: number[]; previewFingerprint: string }, key: string, token: string) =>
-      fetchAPI<{ success: true; data: { batchId: string; queued: number; jobIds: string[] } }>(`/api/backoffice/events/${eventId}/presentation-notification-batches`, {
-        token, method: "POST", headers: { "Idempotency-Key": key }, body: JSON.stringify(input),
-      }),
+      fetchAPI<{ success: true; data: PresentationDetailDto }>(
+        `/api/backoffice/events/${eventId}/presentation-targets/${abstractId}`,
+        { token },
+      ),
+    preview: (
+      eventId: number,
+      input: PresentationPreviewInput,
+      token: string,
+    ) =>
+      fetchAPI<{ success: true; data: PresentationPreviewDto }>(
+        `/api/backoffice/events/${eventId}/presentation-email-previews`,
+        {
+          token,
+          method: 'POST',
+          body: JSON.stringify(input),
+        },
+      ),
+    batch: (
+      eventId: number,
+      input: {
+        kind: 'initial' | 'reminder';
+        abstractIds: number[];
+        previewFingerprint: string;
+      },
+      key: string,
+      token: string,
+    ) =>
+      fetchAPI<{
+        success: true;
+        data: { batchId: string; queued: number; jobIds: string[] };
+      }>(
+        `/api/backoffice/events/${eventId}/presentation-notification-batches`,
+        {
+          token,
+          method: 'POST',
+          headers: { 'Idempotency-Key': key },
+          body: JSON.stringify(input),
+        },
+      ),
     batchResult: (eventId: number, batchId: string, token: string) =>
-      fetchAPI<{ success: true; data: PresentationBatchDto }>(`/api/backoffice/events/${eventId}/presentation-notification-batches/${batchId}`, { token }),
-    verify: (eventId: number, input: { sourceKey: string; fingerprint: string; reason: string }, key: string, token: string) =>
-      fetchAPI<{ success: true; data: { abstractId: number; state: "ready" } }>(`/api/backoffice/events/${eventId}/presentation-verifications`, {
-        token, method: "POST", headers: { "Idempotency-Key": key }, body: JSON.stringify(input),
-      }),
-    settings: (eventId: number, input: { closesAt: string; version: number; reason: string }, key: string, token: string) =>
-      fetchAPI<{ success: true; data: { closesAt: string; version: number } }>(`/api/backoffice/events/${eventId}/presentation-settings`, {
-        token, method: "PATCH", headers: { "Idempotency-Key": key }, body: JSON.stringify(input),
-      }),
-    createRevision: (eventId: number, abstractId: number, input: { requestId: string; details: string; closesAt: string; previewFingerprint: string }, key: string, token: string) =>
-      fetchAPI<{ success: true; data: { request: RevisionDto; emailJobId: string } }>(`/api/backoffice/events/${eventId}/presentation-targets/${abstractId}/revision-requests`, {
-        token, method: "POST", headers: { "Idempotency-Key": key }, body: JSON.stringify(input),
-      }),
-    cancelRevision: (eventId: number, requestId: string, reason: string, key: string, token: string) =>
-      fetchAPI<{ success: true; data: RevisionDto }>(`/api/backoffice/events/${eventId}/presentation-revision-requests/${requestId}/cancellations`, {
-        token, method: "POST", headers: { "Idempotency-Key": key }, body: JSON.stringify({ reason }),
-      }),
-    resend: (eventId: number, jobId: string, previewFingerprint: string, key: string, token: string) =>
-      fetchAPI<{ success: true; data: { jobId: string } }>(`/api/backoffice/events/${eventId}/presentation-email-jobs/${jobId}/resends`, {
-        token, method: "POST", headers: { "Idempotency-Key": key }, body: JSON.stringify({ previewFingerprint }),
-      }),
+      fetchAPI<{ success: true; data: PresentationBatchDto }>(
+        `/api/backoffice/events/${eventId}/presentation-notification-batches/${batchId}`,
+        { token },
+      ),
+    verify: (
+      eventId: number,
+      input: { sourceKey: string; fingerprint: string; reason: string },
+      key: string,
+      token: string,
+    ) =>
+      fetchAPI<{ success: true; data: { abstractId: number; state: 'ready' } }>(
+        `/api/backoffice/events/${eventId}/presentation-verifications`,
+        {
+          token,
+          method: 'POST',
+          headers: { 'Idempotency-Key': key },
+          body: JSON.stringify(input),
+        },
+      ),
+    settings: (
+      eventId: number,
+      input: { closesAt: string; version: number; reason: string },
+      key: string,
+      token: string,
+    ) =>
+      fetchAPI<{ success: true; data: { closesAt: string; version: number } }>(
+        `/api/backoffice/events/${eventId}/presentation-settings`,
+        {
+          token,
+          method: 'PATCH',
+          headers: { 'Idempotency-Key': key },
+          body: JSON.stringify(input),
+        },
+      ),
+    createRevision: (
+      eventId: number,
+      abstractId: number,
+      input: {
+        requestId: string;
+        details: string;
+        closesAt: string;
+        previewFingerprint: string;
+      },
+      key: string,
+      token: string,
+    ) =>
+      fetchAPI<{
+        success: true;
+        data: { request: RevisionDto; emailJobId: string };
+      }>(
+        `/api/backoffice/events/${eventId}/presentation-targets/${abstractId}/revision-requests`,
+        {
+          token,
+          method: 'POST',
+          headers: { 'Idempotency-Key': key },
+          body: JSON.stringify(input),
+        },
+      ),
+    cancelRevision: (
+      eventId: number,
+      requestId: string,
+      reason: string,
+      key: string,
+      token: string,
+    ) =>
+      fetchAPI<{ success: true; data: RevisionDto }>(
+        `/api/backoffice/events/${eventId}/presentation-revision-requests/${requestId}/cancellations`,
+        {
+          token,
+          method: 'POST',
+          headers: { 'Idempotency-Key': key },
+          body: JSON.stringify({ reason }),
+        },
+      ),
+    resend: (
+      eventId: number,
+      jobId: string,
+      previewFingerprint: string,
+      key: string,
+      token: string,
+    ) =>
+      fetchAPI<{ success: true; data: { jobId: string } }>(
+        `/api/backoffice/events/${eventId}/presentation-email-jobs/${jobId}/resends`,
+        {
+          token,
+          method: 'POST',
+          headers: { 'Idempotency-Key': key },
+          body: JSON.stringify({ previewFingerprint }),
+        },
+      ),
   },
   auth: {
     login: (credentials: LoginCredentials) =>
-      fetchAPI<LoginResponse>("/backoffice/login", {
-        method: "POST",
+      fetchAPI<LoginResponse>('/backoffice/login', {
+        method: 'POST',
         body: JSON.stringify(credentials),
       }),
   },
 
   upload: {
     venueImage: (token: string, formData: FormData) =>
-      fetchAPI<{ success: boolean; url: string }>("/api/upload/venue-image", {
-        method: "POST",
+      fetchAPI<{ success: boolean; url: string }>('/api/upload/venue-image', {
+        method: 'POST',
         body: formData as unknown as BodyInit,
         token,
       }),
@@ -267,7 +388,7 @@ export const api = {
 
   // Public Events (ReadOnly or Public usage)
   events: {
-    list: () => fetchAPI<{ events: Event[] }>("/api/events"),
+    list: () => fetchAPI<{ events: Event[] }>('/api/events'),
     get: (id: string) => fetchAPI<{ event: Event }>(`/api/events/${id}`),
   },
 
@@ -275,29 +396,29 @@ export const api = {
   users: {
     list: (token: string, query?: string) =>
       fetchAPI<{ users: Record<string, unknown>[]; pagination: Pagination }>(
-        `/api/backoffice/users${query ? `?${query}` : ""}`,
+        `/api/backoffice/users${query ? `?${query}` : ''}`,
         { token },
       ),
     create: (token: string, data: Record<string, unknown>) =>
-      fetchAPI<{ user: Record<string, unknown> }>("/api/backoffice/users", {
-        method: "POST",
+      fetchAPI<{ user: Record<string, unknown> }>('/api/backoffice/users', {
+        method: 'POST',
         body: JSON.stringify(data),
         token,
       }),
     update: (token: string, id: number, data: Record<string, unknown>) =>
       fetchAPI<{ user: Record<string, unknown> }>(
         `/api/backoffice/users/${id}`,
-        { method: "PATCH", body: JSON.stringify(data), token },
+        { method: 'PATCH', body: JSON.stringify(data), token },
       ),
     delete: (token: string, id: number) =>
       fetchAPI<{ success: boolean }>(`/api/backoffice/users/${id}`, {
-        method: "DELETE",
+        method: 'DELETE',
         token,
       }),
     assignEvents: (token: string, id: number, eventIds: number[]) =>
       fetchAPI<{ success: boolean; count: number }>(
         `/api/backoffice/users/${id}/assignments`,
-        { method: "POST", body: JSON.stringify({ eventIds }), token },
+        { method: 'POST', body: JSON.stringify({ eventIds }), token },
       ),
     assignEventsAndSessions: (
       token: string,
@@ -306,7 +427,7 @@ export const api = {
     ) =>
       fetchAPI<{ success: boolean }>(
         `/api/backoffice/users/${id}/assignments`,
-        { method: "PUT", body: JSON.stringify({ assignments }), token },
+        { method: 'PUT', body: JSON.stringify({ assignments }), token },
       ),
   },
 
@@ -315,16 +436,16 @@ export const api = {
       fetchAPI<{
         verifications: VerificationRequest[];
         pagination: Pagination;
-      }>(`/api/backoffice/verifications${query ? `?${query}` : ""}`, { token }),
+      }>(`/api/backoffice/verifications${query ? `?${query}` : ''}`, { token }),
     approve: (token: string, id: string, comment?: string) =>
       fetchAPI<{ success: boolean; user: User }>(
         `/api/backoffice/verifications/${id}/approve`,
-        { method: "POST", body: JSON.stringify({ comment }), token },
+        { method: 'POST', body: JSON.stringify({ comment }), token },
       ),
     reject: (token: string, id: string, reason: string) =>
       fetchAPI<{ success: boolean; user: User }>(
         `/api/backoffice/verifications/${id}/reject`,
-        { method: "POST", body: JSON.stringify({ reason }), token },
+        { method: 'POST', body: JSON.stringify({ reason }), token },
       ),
     getRejectionHistory: (token: string, id: string) =>
       fetchAPI<{
@@ -345,7 +466,7 @@ export const api = {
         requests: StudentEligibilityRequest[];
         pagination: Pagination;
       }>(
-        `/api/backoffice/student-eligibility-requests${query ? `?${query}` : ""}`,
+        `/api/backoffice/student-eligibility-requests${query ? `?${query}` : ''}`,
         { token },
       ),
     get: (token: string, id: number) =>
@@ -357,19 +478,19 @@ export const api = {
       token: string,
       id: number,
       data:
-        | { status: "approved"; reviewNote?: string }
-        | { status: "rejected"; rejectionReason: string; reviewNote?: string },
+        | { status: 'approved'; reviewNote?: string }
+        | { status: 'rejected'; rejectionReason: string; reviewNote?: string },
     ) =>
       fetchAPI<{ success: boolean; request: StudentEligibilityRequest }>(
         `/api/backoffice/student-eligibility-requests/${id}`,
-        { method: "PATCH", body: JSON.stringify(data), token },
+        { method: 'PATCH', body: JSON.stringify(data), token },
       ),
   },
 
   backofficeEvents: {
     list: (token: string, query?: string) =>
       fetchAPI<{ events: Record<string, unknown>[]; pagination: Pagination }>(
-        `/api/backoffice/events${query ? `?${query}` : ""}`,
+        `/api/backoffice/events${query ? `?${query}` : ''}`,
         { token },
       ),
     get: (token: string, id: number) =>
@@ -385,20 +506,20 @@ export const api = {
         }[];
       }>(`/api/backoffice/events/${id}`, { token }),
     create: (token: string, data: EventCreateInput) =>
-      fetchAPI<{ event: Event }>("/api/backoffice/events", {
-        method: "POST",
+      fetchAPI<{ event: Event }>('/api/backoffice/events', {
+        method: 'POST',
         body: JSON.stringify(data),
         token,
       }),
     update: (token: string, id: number, data: EventUpdateInput) =>
       fetchAPI<{ event: Event }>(`/api/backoffice/events/${id}`, {
-        method: "PATCH",
+        method: 'PATCH',
         body: JSON.stringify(data),
         token,
       }),
     delete: (token: string, id: number) =>
       fetchAPI<void>(`/api/backoffice/events/${id}`, {
-        method: "DELETE",
+        method: 'DELETE',
         token,
       }),
 
@@ -408,7 +529,7 @@ export const api = {
         sessions: (Record<string, unknown> | GrantSessionChoiceDto)[];
         serverNow?: string;
       }>(
-        `/api/backoffice/events/${eventId}/sessions${forGrant ? "?forGrant=true" : ""}`,
+        `/api/backoffice/events/${eventId}/sessions${forGrant ? '?forGrant=true' : ''}`,
         { token },
       ),
     createSession: (
@@ -418,7 +539,7 @@ export const api = {
     ) =>
       fetchAPI<{ session: Record<string, unknown> }>(
         `/api/backoffice/events/${eventId}/sessions`,
-        { method: "POST", body: JSON.stringify(data), token },
+        { method: 'POST', body: JSON.stringify(data), token },
       ),
     updateSession: (
       token: string,
@@ -428,12 +549,12 @@ export const api = {
     ) =>
       fetchAPI<{ session: Record<string, unknown> }>(
         `/api/backoffice/events/${eventId}/sessions/${sessionId}`,
-        { method: "PATCH", body: JSON.stringify(data), token },
+        { method: 'PATCH', body: JSON.stringify(data), token },
       ),
     deleteSession: (token: string, eventId: number, sessionId: number) =>
       fetchAPI<void>(
         `/api/backoffice/events/${eventId}/sessions/${sessionId}`,
-        { method: "DELETE", token },
+        { method: 'DELETE', token },
       ),
     getSessionEnrollments: (
       token: string,
@@ -472,7 +593,7 @@ export const api = {
     ) =>
       fetchAPI<{ ticket: Record<string, unknown> }>(
         `/api/backoffice/events/${eventId}/tickets`,
-        { method: "POST", body: JSON.stringify(data), token },
+        { method: 'POST', body: JSON.stringify(data), token },
       ),
     updateTicket: (
       token: string,
@@ -482,11 +603,11 @@ export const api = {
     ) =>
       fetchAPI<{ ticket: Record<string, unknown> }>(
         `/api/backoffice/events/${eventId}/tickets/${ticketId}`,
-        { method: "PATCH", body: JSON.stringify(data), token },
+        { method: 'PATCH', body: JSON.stringify(data), token },
       ),
     deleteTicket: (token: string, eventId: number, ticketId: number) =>
       fetchAPI<void>(`/api/backoffice/events/${eventId}/tickets/${ticketId}`, {
-        method: "DELETE",
+        method: 'DELETE',
         token,
       }),
 
@@ -498,11 +619,11 @@ export const api = {
     ) =>
       fetchAPI<{ image: { id: number; imageUrl: string } }>(
         `/api/backoffice/events/${eventId}/images`,
-        { method: "POST", body: JSON.stringify(data), token },
+        { method: 'POST', body: JSON.stringify(data), token },
       ),
     deleteImage: (token: string, eventId: number, imageId: number) =>
       fetchAPI<void>(`/api/backoffice/events/${eventId}/images/${imageId}`, {
-        method: "DELETE",
+        method: 'DELETE',
         token,
       }),
   },
@@ -534,7 +655,7 @@ export const api = {
     ) =>
       fetchAPI<{ success: boolean; data: { id: string } }>(
         `/api/backoffice/team-registrations/${registrationId}`,
-        { method: "PATCH", body: JSON.stringify(data), token },
+        { method: 'PATCH', body: JSON.stringify(data), token },
       ),
     resendConfirmation: (token: string, registrationId: string) =>
       fetchAPI<{
@@ -542,7 +663,7 @@ export const api = {
         data: { deliveryKey: string; recipients: number };
       }>(
         `/api/backoffice/team-registrations/${registrationId}/resend-confirmation`,
-        { method: "POST", token },
+        { method: 'POST', token },
       ),
     getConfig: (token: string, eventId: number) =>
       fetchAPI<{
@@ -558,7 +679,7 @@ export const api = {
     ) =>
       fetchAPI<{ success: boolean; data: { config: TeamRegistrationConfig } }>(
         `/api/backoffice/events/${eventId}/team-registration-config`,
-        { method: "PUT", body: JSON.stringify(config), token },
+        { method: 'PUT', body: JSON.stringify(config), token },
       ),
   },
 
@@ -571,20 +692,20 @@ export const api = {
           eventId: number;
           sessionId: number | null;
         }[];
-      }>(`/api/backoffice/speakers${query ? `?${query}` : ""}`, { token }),
+      }>(`/api/backoffice/speakers${query ? `?${query}` : ''}`, { token }),
     create: (token: string, data: Record<string, unknown>) =>
       fetchAPI<{ speaker: Record<string, unknown> }>(
-        "/api/backoffice/speakers",
-        { method: "POST", body: JSON.stringify(data), token },
+        '/api/backoffice/speakers',
+        { method: 'POST', body: JSON.stringify(data), token },
       ),
     update: (token: string, id: number, data: Record<string, unknown>) =>
       fetchAPI<{ speaker: Record<string, unknown> }>(
         `/api/backoffice/speakers/${id}`,
-        { method: "PATCH", body: JSON.stringify(data), token },
+        { method: 'PATCH', body: JSON.stringify(data), token },
       ),
     delete: (token: string, id: number) =>
       fetchAPI<void>(`/api/backoffice/speakers/${id}`, {
-        method: "DELETE",
+        method: 'DELETE',
         token,
       }),
     assignEvents: (
@@ -595,7 +716,7 @@ export const api = {
       fetchAPI<{ success: boolean }>(
         `/api/backoffice/speakers/${speakerId}/events`,
         {
-          method: "POST",
+          method: 'POST',
           body: JSON.stringify({ assignments }),
           token,
         },
@@ -607,16 +728,23 @@ export const api = {
       fetchAPI<{
         registrations: Record<string, unknown>[];
         pagination: Pagination;
-      }>(`/api/backoffice/registrations${query ? `?${query}` : ""}`, { token }),
+      }>(`/api/backoffice/registrations${query ? `?${query}` : ''}`, { token }),
     get: (token: string, id: number, date?: string) =>
-      fetchAPI<{ registration: Record<string, unknown>; attendance?: { serverNow: string; serverDate: string; selectedDate: string } }>(
-        `/api/backoffice/registrations/${id}${date ? `?date=${encodeURIComponent(date)}` : ""}`,
+      fetchAPI<{
+        registration: Record<string, unknown>;
+        attendance?: {
+          serverNow: string;
+          serverDate: string;
+          selectedDate: string;
+        };
+      }>(
+        `/api/backoffice/registrations/${id}${date ? `?date=${encodeURIComponent(date)}` : ''}`,
         { token },
       ),
     update: (token: string, id: number, data: Record<string, unknown>) =>
       fetchAPI<{ registration: Record<string, unknown> }>(
         `/api/backoffice/registrations/${id}`,
-        { method: "PATCH", body: JSON.stringify(data), token },
+        { method: 'PATCH', body: JSON.stringify(data), token },
       ),
     manualAdd: (
       token: string,
@@ -629,8 +757,8 @@ export const api = {
       },
     ) =>
       fetchAPI<{ success: boolean; registration: Record<string, unknown> }>(
-        "/api/backoffice/registrations/manual",
-        { method: "POST", body: JSON.stringify(data), token },
+        '/api/backoffice/registrations/manual',
+        { method: 'POST', body: JSON.stringify(data), token },
       ),
     batchManualAdd: (
       token: string,
@@ -647,8 +775,8 @@ export const api = {
         addedCount: number;
         successList: Record<string, unknown>[];
         skippedList: { userId: number; reason: string }[];
-      }>("/api/backoffice/registrations/manual/batch", {
-        method: "POST",
+      }>('/api/backoffice/registrations/manual/batch', {
+        method: 'POST',
         body: JSON.stringify(data),
         token,
       }),
@@ -658,7 +786,7 @@ export const api = {
       ticketTypeId?: number,
     ) =>
       fetchAPI<{ registeredUserIds: number[]; ticketCategory?: string }>(
-        `/api/backoffice/registrations/registered-users?eventId=${eventId}${ticketTypeId ? `&ticketTypeId=${ticketTypeId}` : ""}`,
+        `/api/backoffice/registrations/registered-users?eventId=${eventId}${ticketTypeId ? `&ticketTypeId=${ticketTypeId}` : ''}`,
         { token },
       ),
     addSessions: (
@@ -668,15 +796,20 @@ export const api = {
     ) =>
       fetchAPI<{ success: boolean; addedCount: number }>(
         `/api/backoffice/registrations/${id}/sessions`,
-        { method: "POST", body: JSON.stringify(data), token },
+        { method: 'POST', body: JSON.stringify(data), token },
       ),
   },
 
   sessionGrants: {
     preview: (token: string, body: SessionGrantCreateInput) =>
-      fetchAPI<import('@/types/session-grants').GrantEmailPreview>("/api/backoffice/session-grants/preview", {
-        method: "POST", body: JSON.stringify(body), token,
-      }),
+      fetchAPI<import('@/types/session-grants').GrantEmailPreview>(
+        '/api/backoffice/session-grants/preview',
+        {
+          method: 'POST',
+          body: JSON.stringify(body),
+          token,
+        },
+      ),
     tracking: (token: string, query: string) =>
       fetchAPI<GrantTrackingDto>(
         `/api/backoffice/session-grants/tracking${query ? `?${query}` : ''}`,
@@ -684,16 +817,18 @@ export const api = {
       ),
 
     status: (token: string) =>
-      fetchAPI<{ enabled: boolean }>("/api/backoffice/session-grants/status", { token }),
+      fetchAPI<{ enabled: boolean }>('/api/backoffice/session-grants/status', {
+        token,
+      }),
     create: (
       token: string,
       idempotencyKey: string,
       body: SessionGrantCreateInput,
     ) =>
-      fetchAPI<GrantBatchDto>("/api/backoffice/session-grants", {
-        method: "POST",
+      fetchAPI<GrantBatchDto>('/api/backoffice/session-grants', {
+        method: 'POST',
         body: JSON.stringify(body),
-        headers: { "Idempotency-Key": idempotencyKey },
+        headers: { 'Idempotency-Key': idempotencyKey },
         token,
       }),
     get: (token: string, batchId: string, page = 1, limit = 50) =>
@@ -703,7 +838,7 @@ export const api = {
       ),
     list: (token: string, query: string) =>
       fetchAPI<SessionGrantHistoryDto>(
-        `/api/backoffice/session-grants${query ? `?${query}` : ""}`,
+        `/api/backoffice/session-grants${query ? `?${query}` : ''}`,
         { token },
       ),
     retry: (
@@ -715,7 +850,7 @@ export const api = {
       fetchAPI<SessionGrantRetryDto>(
         `/api/backoffice/session-grants/${encodeURIComponent(batchId)}/retry`,
         {
-          method: "POST",
+          method: 'POST',
           body: JSON.stringify({ itemIds, acknowledgeUnknown }),
           token,
         },
@@ -738,7 +873,7 @@ export const api = {
       fetchAPI<{
         abstracts: Record<string, unknown>[];
         pagination: Pagination;
-      }>(`/api/backoffice/abstracts${query ? `?${query}` : ""}`, { token }),
+      }>(`/api/backoffice/abstracts${query ? `?${query}` : ''}`, { token }),
     get: (token: string, id: number) =>
       fetchAPI<{ abstract: Record<string, unknown> }>(
         `/api/backoffice/abstracts/${id}`,
@@ -752,7 +887,7 @@ export const api = {
     ) =>
       fetchAPI<{ abstract: Record<string, unknown> }>(
         `/api/backoffice/abstracts/${id}/status`,
-        { method: "PATCH", body: JSON.stringify({ status, comment }), token },
+        { method: 'PATCH', body: JSON.stringify({ status, comment }), token },
       ),
     requestRevision: (
       token: string,
@@ -760,16 +895,16 @@ export const api = {
       data: { topic: string; comment: string; file?: File | null },
     ) => {
       const formData = new FormData();
-      formData.append("topic", data.topic);
-      formData.append("comment", data.comment);
-      if (data.file) formData.append("revisionFile", data.file);
+      formData.append('topic', data.topic);
+      formData.append('comment', data.comment);
+      if (data.file) formData.append('revisionFile', data.file);
 
       return fetchAPI<{
         success: boolean;
         abstract: Record<string, unknown>;
         revisionRequest: Record<string, unknown>;
       }>(`/api/backoffice/abstracts/${id}/revision`, {
-        method: "POST",
+        method: 'POST',
         body: formData as unknown as BodyInit,
         token,
       });
@@ -777,7 +912,7 @@ export const api = {
     resendConfirmation: (token: string, id: number) =>
       fetchAPI<{ success: boolean; deadline: string; deadlineDays: number }>(
         `/api/backoffice/abstracts/${id}/resend-confirmation`,
-        { method: "POST", token },
+        { method: 'POST', token },
       ),
     manualConfirm: (token: string, id: number) =>
       fetchAPI<{
@@ -786,17 +921,20 @@ export const api = {
         confirmedAt: string;
         alreadyConfirmed?: boolean;
       }>(`/api/backoffice/abstracts/${id}/manual-confirm`, {
-        method: "POST",
+        method: 'POST',
         token,
       }),
   },
 
   checkins: {
     list: (token: string, query?: string) =>
-      fetchAPI<{ checkins: BackofficeCheckinRow[]; pagination: Pagination; serverNow?: string; serverDate?: string; selectedDate?: string | null }>(
-        `/api/backoffice/checkins${query ? `?${query}` : ""}`,
-        { token },
-      ),
+      fetchAPI<{
+        checkins: BackofficeCheckinRow[];
+        pagination: Pagination;
+        serverNow?: string;
+        serverDate?: string;
+        selectedDate?: string | null;
+      }>(`/api/backoffice/checkins${query ? `?${query}` : ''}`, { token }),
     create: (
       token: string,
       data: {
@@ -807,7 +945,7 @@ export const api = {
       },
     ) =>
       fetchAPI<BackofficeCheckinResponse>(`/api/backoffice/checkins`, {
-        method: "POST",
+        method: 'POST',
         body: JSON.stringify(data),
         token,
       }),
@@ -820,7 +958,7 @@ export const api = {
         serverNow?: string;
         serverDate?: string;
         selectedDate?: string;
-        attendanceMode?: "daily" | "single";
+        attendanceMode?: 'daily' | 'single';
         eligibleRegistrations?: number;
         checkedInPeopleOnDate?: number;
         uniquePeople?: number;
@@ -836,7 +974,7 @@ export const api = {
           remaining: number;
           percentage: number;
         }[];
-      }>(`/api/backoffice/checkins/stats${query ? `?${query}` : ""}`, {
+      }>(`/api/backoffice/checkins/stats${query ? `?${query}` : ''}`, {
         token,
       }),
     universities: (token: string, eventId: number) =>
@@ -848,7 +986,7 @@ export const api = {
       fetchAPI<{ success: boolean; undone: Record<string, unknown> }>(
         `/api/backoffice/checkins/undo`,
         {
-          method: "POST",
+          method: 'POST',
           body: JSON.stringify({ registrationSessionId }),
           token,
         },
@@ -857,7 +995,7 @@ export const api = {
       fetchAPI<{ success: boolean; undone: Record<string, unknown> }>(
         `/api/backoffice/checkins/undo`,
         {
-          method: "POST",
+          method: 'POST',
           body: JSON.stringify({ attendanceId, reason }),
           token,
         },
@@ -867,7 +1005,7 @@ export const api = {
   tickets: {
     list: (token: string, query?: string) =>
       fetchAPI<{ tickets: Ticket[]; pagination: Pagination }>(
-        `/api/backoffice/tickets${query ? `?${query}` : ""}`,
+        `/api/backoffice/tickets${query ? `?${query}` : ''}`,
         { token },
       ),
   },
@@ -875,14 +1013,14 @@ export const api = {
   sessions: {
     list: (token: string, query?: string) =>
       fetchAPI<{ sessions: Session[]; pagination: Pagination }>(
-        `/api/backoffice/sessions${query ? `?${query}` : ""}`,
+        `/api/backoffice/sessions${query ? `?${query}` : ''}`,
         { token },
       ),
   },
 
   payments: {
     list: (token: string) =>
-      fetchAPI<{ payments: Payment[] }>("/api/payments", { token }),
+      fetchAPI<{ payments: Payment[] }>('/api/payments', { token }),
   },
 
   promoCodes: {
@@ -890,7 +1028,7 @@ export const api = {
       fetchAPI<{
         promoCodes: Record<string, unknown>[];
         pagination: Pagination;
-      }>(`/api/backoffice/promo-codes${query ? `?${query}` : ""}`, { token }),
+      }>(`/api/backoffice/promo-codes${query ? `?${query}` : ''}`, { token }),
     get: (token: string, id: number) =>
       fetchAPI<{ promoCode: Record<string, unknown> }>(
         `/api/backoffice/promo-codes/${id}`,
@@ -898,23 +1036,23 @@ export const api = {
       ),
     create: (token: string, data: Record<string, unknown>) =>
       fetchAPI<{ promoCode: Record<string, unknown> }>(
-        "/api/backoffice/promo-codes",
-        { method: "POST", body: JSON.stringify(data), token },
+        '/api/backoffice/promo-codes',
+        { method: 'POST', body: JSON.stringify(data), token },
       ),
     update: (token: string, id: number, data: Record<string, unknown>) =>
       fetchAPI<{ promoCode: Record<string, unknown> }>(
         `/api/backoffice/promo-codes/${id}`,
-        { method: "PUT", body: JSON.stringify(data), token },
+        { method: 'PUT', body: JSON.stringify(data), token },
       ),
     delete: (token: string, id: number) =>
       fetchAPI<{ success: boolean }>(`/api/backoffice/promo-codes/${id}`, {
-        method: "DELETE",
+        method: 'DELETE',
         token,
       }),
     toggle: (token: string, id: number) =>
       fetchAPI<{ promoCode: Record<string, unknown> }>(
         `/api/backoffice/promo-codes/${id}/toggle`,
-        { method: "PATCH", token },
+        { method: 'PATCH', token },
       ),
   },
 
@@ -929,28 +1067,28 @@ export const api = {
   abstractCategories: {
     list: (token: string, query?: string) =>
       fetchAPI<{ categories: Record<string, unknown>[] }>(
-        `/api/backoffice/abstract-categories${query ? `?${query}` : ""}`,
+        `/api/backoffice/abstract-categories${query ? `?${query}` : ''}`,
         { token },
       ),
     create: (token: string, data: Record<string, unknown>) =>
       fetchAPI<{ category: Record<string, unknown> }>(
-        "/api/backoffice/abstract-categories",
-        { method: "POST", body: JSON.stringify(data), token },
+        '/api/backoffice/abstract-categories',
+        { method: 'POST', body: JSON.stringify(data), token },
       ),
     update: (token: string, id: number, data: Record<string, unknown>) =>
       fetchAPI<{ category: Record<string, unknown> }>(
         `/api/backoffice/abstract-categories/${id}`,
-        { method: "PATCH", body: JSON.stringify(data), token },
+        { method: 'PATCH', body: JSON.stringify(data), token },
       ),
     delete: (token: string, id: number) =>
       fetchAPI<{ success: boolean }>(
         `/api/backoffice/abstract-categories/${id}`,
-        { method: "DELETE", token },
+        { method: 'DELETE', token },
       ),
     toggle: (token: string, id: number) =>
       fetchAPI<{ category: Record<string, unknown> }>(
         `/api/backoffice/abstract-categories/${id}/toggle`,
-        { method: "PATCH", token },
+        { method: 'PATCH', token },
       ),
   },
 
@@ -967,12 +1105,12 @@ export const api = {
     ) =>
       fetchAPI<{ profile: Record<string, unknown> }>(
         `/api/backoffice/events/${eventId}/sponsor`,
-        { method: "PATCH", body: JSON.stringify(data), token },
+        { method: 'PATCH', body: JSON.stringify(data), token },
       ),
     uploadOrganizerLogo: (token: string, eventId: number, formData: FormData) =>
       fetchAPI<{ profile: Record<string, unknown>; organizerLogoUrl: string }>(
         `/api/backoffice/events/${eventId}/sponsor/organizer-logo/upload`,
-        { method: "POST", body: formData as unknown as BodyInit, token },
+        { method: 'POST', body: formData as unknown as BodyInit, token },
       ),
 
     createStat: (
@@ -982,17 +1120,17 @@ export const api = {
     ) =>
       fetchAPI<{ stat: SponsorStat }>(
         `/api/backoffice/events/${eventId}/sponsor/stats`,
-        { method: "POST", body: JSON.stringify(data), token },
+        { method: 'POST', body: JSON.stringify(data), token },
       ),
     updateStat: (token: string, id: number, data: Record<string, unknown>) =>
       fetchAPI<{ stat: SponsorStat }>(`/api/backoffice/sponsor-stats/${id}`, {
-        method: "PATCH",
+        method: 'PATCH',
         body: JSON.stringify(data),
         token,
       }),
     deleteStat: (token: string, id: number) =>
       fetchAPI<{ success: boolean }>(`/api/backoffice/sponsor-stats/${id}`, {
-        method: "DELETE",
+        method: 'DELETE',
         token,
       }),
 
@@ -1003,16 +1141,16 @@ export const api = {
     ) =>
       fetchAPI<{ package: SponsorPackage }>(
         `/api/backoffice/events/${eventId}/sponsor/packages`,
-        { method: "POST", body: JSON.stringify(data), token },
+        { method: 'POST', body: JSON.stringify(data), token },
       ),
     updatePackage: (token: string, id: number, data: Record<string, unknown>) =>
       fetchAPI<{ package: SponsorPackage }>(
         `/api/backoffice/sponsor-packages/${id}`,
-        { method: "PATCH", body: JSON.stringify(data), token },
+        { method: 'PATCH', body: JSON.stringify(data), token },
       ),
     deletePackage: (token: string, id: number) =>
       fetchAPI<{ success: boolean }>(`/api/backoffice/sponsor-packages/${id}`, {
-        method: "DELETE",
+        method: 'DELETE',
         token,
       }),
     updatePackageFeatures: (
@@ -1022,7 +1160,7 @@ export const api = {
     ) =>
       fetchAPI<{ features: Record<string, unknown>[] }>(
         `/api/backoffice/sponsor-packages/${id}/features`,
-        { method: "PUT", body: JSON.stringify({ features }), token },
+        { method: 'PUT', body: JSON.stringify({ features }), token },
       ),
     updatePackageComponents: (
       token: string,
@@ -1031,7 +1169,7 @@ export const api = {
     ) =>
       fetchAPI<{ components: Record<string, unknown>[] }>(
         `/api/backoffice/sponsor-packages/${id}/components`,
-        { method: "PUT", body: JSON.stringify({ components }), token },
+        { method: 'PUT', body: JSON.stringify({ components }), token },
       ),
 
     createBenefit: (
@@ -1041,16 +1179,16 @@ export const api = {
     ) =>
       fetchAPI<{ benefit: SponsorBenefit }>(
         `/api/backoffice/events/${eventId}/sponsor/benefits`,
-        { method: "POST", body: JSON.stringify(data), token },
+        { method: 'POST', body: JSON.stringify(data), token },
       ),
     updateBenefit: (token: string, id: number, data: Record<string, unknown>) =>
       fetchAPI<{ benefit: SponsorBenefit }>(
         `/api/backoffice/sponsor-benefits/${id}`,
-        { method: "PATCH", body: JSON.stringify(data), token },
+        { method: 'PATCH', body: JSON.stringify(data), token },
       ),
     deleteBenefit: (token: string, id: number) =>
       fetchAPI<{ success: boolean }>(`/api/backoffice/sponsor-benefits/${id}`, {
-        method: "DELETE",
+        method: 'DELETE',
         token,
       }),
 
@@ -1061,7 +1199,7 @@ export const api = {
     ) =>
       fetchAPI<{ timelineItem: SponsorTimelineItem }>(
         `/api/backoffice/events/${eventId}/sponsor/timeline`,
-        { method: "POST", body: JSON.stringify(data), token },
+        { method: 'POST', body: JSON.stringify(data), token },
       ),
     updateTimelineItem: (
       token: string,
@@ -1070,18 +1208,18 @@ export const api = {
     ) =>
       fetchAPI<{ timelineItem: SponsorTimelineItem }>(
         `/api/backoffice/sponsor-timeline/${id}`,
-        { method: "PATCH", body: JSON.stringify(data), token },
+        { method: 'PATCH', body: JSON.stringify(data), token },
       ),
     deleteTimelineItem: (token: string, id: number) =>
       fetchAPI<{ success: boolean }>(`/api/backoffice/sponsor-timeline/${id}`, {
-        method: "DELETE",
+        method: 'DELETE',
         token,
       }),
 
     uploadMedia: (token: string, eventId: number, formData: FormData) =>
       fetchAPI<{ media: SponsorMediaAsset }>(
         `/api/backoffice/events/${eventId}/sponsor/media/upload`,
-        { method: "POST", body: formData as unknown as BodyInit, token },
+        { method: 'POST', body: formData as unknown as BodyInit, token },
       ),
     createMedia: (
       token: string,
@@ -1090,22 +1228,22 @@ export const api = {
     ) =>
       fetchAPI<{ media: SponsorMediaAsset }>(
         `/api/backoffice/events/${eventId}/sponsor/media`,
-        { method: "POST", body: JSON.stringify(data), token },
+        { method: 'POST', body: JSON.stringify(data), token },
       ),
     updateMedia: (token: string, id: number, data: Record<string, unknown>) =>
       fetchAPI<{ media: SponsorMediaAsset }>(
         `/api/backoffice/sponsor-media/${id}`,
-        { method: "PATCH", body: JSON.stringify(data), token },
+        { method: 'PATCH', body: JSON.stringify(data), token },
       ),
     deleteMedia: (token: string, id: number) =>
       fetchAPI<{ success: boolean }>(`/api/backoffice/sponsor-media/${id}`, {
-        method: "DELETE",
+        method: 'DELETE',
         token,
       }),
 
     listApplications: (token: string, query?: string) =>
       fetchAPI<{ applications: SponsorApplication[]; pagination: Pagination }>(
-        `/api/backoffice/sponsor-applications${query ? `?${query}` : ""}`,
+        `/api/backoffice/sponsor-applications${query ? `?${query}` : ''}`,
         { token },
       ),
     getApplication: (token: string, id: number) =>
@@ -1120,7 +1258,7 @@ export const api = {
     ) =>
       fetchAPI<{ application: SponsorApplication }>(
         `/api/backoffice/sponsor-applications/${id}`,
-        { method: "PATCH", body: JSON.stringify(data), token },
+        { method: 'PATCH', body: JSON.stringify(data), token },
       ),
     updateApplicationStatus: (
       token: string,
@@ -1129,7 +1267,7 @@ export const api = {
     ) =>
       fetchAPI<{ application: SponsorApplication }>(
         `/api/backoffice/sponsor-applications/${id}/status`,
-        { method: "PATCH", body: JSON.stringify(data), token },
+        { method: 'PATCH', body: JSON.stringify(data), token },
       ),
     updatePaymentStatus: (
       token: string,
@@ -1138,67 +1276,138 @@ export const api = {
     ) =>
       fetchAPI<{ application: SponsorApplication }>(
         `/api/backoffice/sponsor-applications/${id}/payment-status`,
-        { method: "PATCH", body: JSON.stringify(data), token },
+        { method: 'PATCH', body: JSON.stringify(data), token },
       ),
   },
 
   luckyWheel: {
     listDays: (token: string, eventId: number) =>
       fetchAPI<{ eventId: number; days: WheelDayWindow[]; requestId: string }>(
-        `/api/backoffice/lucky-wheel/events/${eventId}/days`, { token },
+        `/api/backoffice/lucky-wheel/events/${eventId}/days`,
+        { token },
       ),
     getDay: (token: string, eventId: number, date: string) =>
-      fetchAPI<{ eventId: number; day: WheelDayWindow | null; requestId: string }>(
-        `/api/backoffice/lucky-wheel/events/${eventId}/days/${date}`, { token },
+      fetchAPI<{
+        eventId: number;
+        day: WheelDayWindow | null;
+        requestId: string;
+      }>(`/api/backoffice/lucky-wheel/events/${eventId}/days/${date}`, {
+        token,
+      }),
+    saveDay: (
+      token: string,
+      eventId: number,
+      date: string,
+      data: {
+        startAt: string;
+        endAt: string;
+        expectedVersion: number | null;
+        reason: string | null;
+      },
+    ) =>
+      fetchAPI<{ eventId: number; day: WheelDayWindow; requestId: string }>(
+        `/api/backoffice/lucky-wheel/events/${eventId}/days/${date}`,
+        { method: 'PUT', body: JSON.stringify(data), token },
       ),
-    saveDay: (token: string, eventId: number, date: string, data: {
-      startAt: string; endAt: string; expectedVersion: number | null; reason: string | null;
-    }) => fetchAPI<{ eventId: number; day: WheelDayWindow; requestId: string }>(
-      `/api/backoffice/lucky-wheel/events/${eventId}/days/${date}`,
-      { method: "PUT", body: JSON.stringify(data), token },
-    ),
     listDayChanges: (token: string, eventId: number, date: string, page = 1) =>
-      fetchAPI<WheelPage<WheelDayChange> & { eventId: number; date: string; requestId: string }>(
-        `/api/backoffice/lucky-wheel/events/${eventId}/days/${date}/changes?page=${page}&pageSize=20`, { token },
+      fetchAPI<
+        WheelPage<WheelDayChange> & {
+          eventId: number;
+          date: string;
+          requestId: string;
+        }
+      >(
+        `/api/backoffice/lucky-wheel/events/${eventId}/days/${date}/changes?page=${page}&pageSize=20`,
+        { token },
       ),
-    createQrBatch: (token: string, eventId: number, data: {
-      date: string; names: string[]; idempotencyKey: string;
-    }) => fetchAPI<{ eventId: number; date: string; qrCodes: WheelQrCode[]; replayed: boolean; requestId: string }>(
-      `/api/backoffice/lucky-wheel/events/${eventId}/qr-codes`,
-      { method: "POST", body: JSON.stringify(data), token },
-    ),
+    createQrBatch: (
+      token: string,
+      eventId: number,
+      data: {
+        date: string;
+        names: string[];
+        idempotencyKey: string;
+      },
+    ) =>
+      fetchAPI<{
+        eventId: number;
+        date: string;
+        qrCodes: WheelQrCode[];
+        replayed: boolean;
+        requestId: string;
+      }>(`/api/backoffice/lucky-wheel/events/${eventId}/qr-codes`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+        token,
+      }),
     listQrCodes: (token: string, eventId: number, date: string, page = 1) =>
-      fetchAPI<WheelPage<WheelQrListItem> & { eventId: number; date: string; requestId: string }>(
-        `/api/backoffice/lucky-wheel/events/${eventId}/qr-codes?date=${date}&page=${page}&pageSize=20`, { token },
+      fetchAPI<
+        WheelPage<WheelQrListItem> & {
+          eventId: number;
+          date: string;
+          requestId: string;
+        }
+      >(
+        `/api/backoffice/lucky-wheel/events/${eventId}/qr-codes?date=${date}&page=${page}&pageSize=20`,
+        { token },
       ),
-    setQrStatus: (token: string, eventId: number, qrId: string, data: {
-      status: "open" | "closed"; reason?: string; idempotencyKey: string;
-    }) => fetchAPI<WheelQrCode & { replayed: boolean; requestId: string }>(
-      `/api/backoffice/lucky-wheel/events/${eventId}/qr-codes/${qrId}`,
-      { method: "PATCH", body: JSON.stringify(data), token },
-    ),
+    setQrStatus: (
+      token: string,
+      eventId: number,
+      qrId: string,
+      data: {
+        status: 'open' | 'closed';
+        reason?: string;
+        idempotencyKey: string;
+      },
+    ) =>
+      fetchAPI<WheelQrCode & { replayed: boolean; requestId: string }>(
+        `/api/backoffice/lucky-wheel/events/${eventId}/qr-codes/${qrId}`,
+        { method: 'PATCH', body: JSON.stringify(data), token },
+      ),
     getQrDownload: (token: string, eventId: number, qrId: string) =>
       fetchAPI<WheelQrDownload & { requestId: string }>(
-        `/api/backoffice/lucky-wheel/events/${eventId}/qr-codes/${qrId}`, { token },
+        `/api/backoffice/lucky-wheel/events/${eventId}/qr-codes/${qrId}`,
+        { token },
       ),
     listQrClaims: (token: string, eventId: number, qrId: string, page = 1) =>
-      fetchAPI<WheelPage<WheelCreditClaim> & { eventId: number; qrId: string; requestId: string }>(
-        `/api/backoffice/lucky-wheel/events/${eventId}/qr-codes/${qrId}/claims?page=${page}&pageSize=20`, { token },
+      fetchAPI<
+        WheelPage<WheelCreditClaim> & {
+          eventId: number;
+          qrId: string;
+          requestId: string;
+        }
+      >(
+        `/api/backoffice/lucky-wheel/events/${eventId}/qr-codes/${qrId}/claims?page=${page}&pageSize=20`,
+        { token },
       ),
-    revokeCreditClaim: (token: string, eventId: number, claimId: string, data: {
-      reason: string; idempotencyKey: string;
-    }) => fetchAPI<WheelCreditRevocation>(
-      `/api/backoffice/lucky-wheel/events/${eventId}/credit-claims/${claimId}/revocations`,
-      { method: "POST", body: JSON.stringify(data), token },
-    ),
+    revokeCreditClaim: (
+      token: string,
+      eventId: number,
+      claimId: string,
+      data: {
+        reason: string;
+        idempotencyKey: string;
+      },
+    ) =>
+      fetchAPI<WheelCreditRevocation>(
+        `/api/backoffice/lucky-wheel/events/${eventId}/credit-claims/${claimId}/revocations`,
+        { method: 'POST', body: JSON.stringify(data), token },
+      ),
     getState: (token: string, eventId: number) =>
       fetchAPI<AdminWheelState>(
         `/api/backoffice/lucky-wheel/events/${eventId}`,
         { token },
       ),
-    setupAttendance: (token: string, eventId: number, data: AttendanceSetupInput) =>
-      fetchAPI<AttendanceSetupResult>(`/api/backoffice/lucky-wheel/events/${eventId}/attendance-setup`,
-        { method: "POST", body: JSON.stringify(data), token }),
+    setupAttendance: (
+      token: string,
+      eventId: number,
+      data: AttendanceSetupInput,
+    ) =>
+      fetchAPI<AttendanceSetupResult>(
+        `/api/backoffice/lucky-wheel/events/${eventId}/attendance-setup`,
+        { method: 'POST', body: JSON.stringify(data), token },
+      ),
     initialize: (token: string, eventId: number, mainSessionId: number) =>
       fetchAPI<{
         eventId: number;
@@ -1207,7 +1416,7 @@ export const api = {
         created: boolean;
         requestId: string;
       }>(`/api/backoffice/lucky-wheel/events/${eventId}`, {
-        method: "PUT",
+        method: 'PUT',
         body: JSON.stringify({ mainSessionId }),
         token,
       }),
@@ -1229,15 +1438,11 @@ export const api = {
         replayed: boolean;
         requestId: string;
       }>(`/api/backoffice/lucky-wheel/events/${eventId}/publication`, {
-        method: "PUT",
+        method: 'PUT',
         body: JSON.stringify(data),
         token,
       }),
-    adjustStock: (
-      token: string,
-      eventId: number,
-      data: StockAdjustmentInput,
-    ) =>
+    adjustStock: (token: string, eventId: number, data: StockAdjustmentInput) =>
       fetchAPI<{
         eventId: number;
         segmentId: string;
@@ -1248,7 +1453,7 @@ export const api = {
         replayed: boolean;
         requestId: string;
       }>(`/api/backoffice/lucky-wheel/events/${eventId}/stock`, {
-        method: "POST",
+        method: 'POST',
         body: JSON.stringify(data),
         token,
       }),
@@ -1267,33 +1472,29 @@ export const api = {
         replayed: boolean;
         requestId: string;
       }>(`/api/backoffice/lucky-wheel/events/${eventId}/pause`, {
-        method: "PUT",
+        method: 'PUT',
         body: JSON.stringify(data),
         token,
       }),
-    listSpins: (
-      token: string,
-      eventId: number,
-      query?: URLSearchParams,
-    ) =>
+    listSpins: (token: string, eventId: number, query?: URLSearchParams) =>
       fetchAPI<AdminWheelSpinsResponse>(
-        `/api/backoffice/lucky-wheel/events/${eventId}/spins${query && query.size ? `?${query.toString()}` : ""}`,
+        `/api/backoffice/lucky-wheel/events/${eventId}/spins${query && query.size ? `?${query.toString()}` : ''}`,
         { token },
       ),
     uploadImage: (token: string, eventId: number, file: File) => {
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append('file', file);
       return fetchAPI<WheelImageUpload>(
         `/api/backoffice/lucky-wheel/events/${eventId}/images`,
         {
-          method: "POST",
+          method: 'POST',
           body: formData as unknown as BodyInit,
           token,
         },
       );
     },
     collectionAccess: (token: string, eventId: number) =>
-      fetchAPI<{ eventId: number; role: "admin" | "staff" }>(
+      fetchAPI<{ eventId: number; role: 'admin' | 'staff' }>(
         `/api/backoffice/lucky-wheel/events/${eventId}/collection-access`,
         { token },
       ),
@@ -1301,7 +1502,7 @@ export const api = {
       fetchAPI<RewardLookup>(
         `/api/backoffice/lucky-wheel/events/${eventId}/reward-lookups`,
         {
-          method: "POST",
+          method: 'POST',
           body: JSON.stringify({ credential }),
           token,
         },
@@ -1314,7 +1515,7 @@ export const api = {
     ) =>
       fetchAPI<Record<string, unknown>>(
         `/api/backoffice/lucky-wheel/events/${eventId}/spins/${spinId}/redemption`,
-        { method: "PUT", body: JSON.stringify(data), token },
+        { method: 'PUT', body: JSON.stringify(data), token },
       ),
     correctRedemption: (
       token: string,
@@ -1324,14 +1525,14 @@ export const api = {
     ) =>
       fetchAPI<Record<string, unknown>>(
         `/api/backoffice/lucky-wheel/events/${eventId}/spins/${spinId}/redemption-corrections`,
-        { method: "POST", body: JSON.stringify(data), token },
+        { method: 'POST', body: JSON.stringify(data), token },
       ),
   },
 
   members: {
     list: (token: string, query?: string) =>
       fetchAPI<{ members: Record<string, unknown>[]; pagination: Pagination }>(
-        `/api/backoffice/members${query ? `?${query}` : ""}`,
+        `/api/backoffice/members${query ? `?${query}` : ''}`,
         { token },
       ),
     get: (token: string, id: number) =>
@@ -1346,29 +1547,31 @@ export const api = {
         notPurchased: number;
         byRole: { role: string; count: number }[];
         byStatus: { status: string; count: number }[];
-      }>(`/api/backoffice/members/stats/summary${query ? `?${query}` : ""}`, { token }),
+      }>(`/api/backoffice/members/stats/summary${query ? `?${query}` : ''}`, {
+        token,
+      }),
     delete: (token: string, id: number) =>
       fetchAPI<{ success: boolean }>(`/api/backoffice/members/${id}`, {
-        method: "DELETE",
+        method: 'DELETE',
         token,
       }),
   },
 
   // File Upload
-  uploadFile: (token: string, file: File, folder: string = "general") => {
+  uploadFile: (token: string, file: File, folder: string = 'general') => {
     const formData = new FormData();
-    formData.append("file", file);
-    formData.append("folder", folder);
+    formData.append('file', file);
+    formData.append('folder', folder);
     const resolvedToken = token || getStoredBackofficeToken();
     const headers: Record<string, string> = {};
 
     if (resolvedToken) {
-      headers["Authorization"] = `Bearer ${resolvedToken}`;
+      headers['Authorization'] = `Bearer ${resolvedToken}`;
     }
 
     const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
     return fetch(`${API_BASE_URL}/upload`, {
-      method: "POST",
+      method: 'POST',
       headers,
       body: formData,
     }).then(async (res) => {
@@ -1376,7 +1579,7 @@ export const api = {
         if (res.status === 401) {
           dispatchUnauthorizedEvent();
         }
-        throw new Error("Upload failed");
+        throw new Error('Upload failed');
       }
       return res.json() as Promise<{ success: boolean; url: string }>;
     });

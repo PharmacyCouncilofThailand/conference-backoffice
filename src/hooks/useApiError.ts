@@ -14,20 +14,20 @@ interface ApiError {
 export function useApiError() {
   const handleError = useCallback((error: unknown, customMessage?: string) => {
     let message = customMessage || 'An error occurred';
-    
+
     if (error instanceof Error) {
       message = error.message;
     } else if (typeof error === 'object' && error !== null) {
       const apiError = error as ApiError;
       message = apiError.message || customMessage || 'An error occurred';
     }
-    
+
     // Log to console for debugging
     console.error('[API Error]', error);
-    
+
     // Show toast notification
     toast.error(message);
-    
+
     return message;
   }, []);
 

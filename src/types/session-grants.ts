@@ -1,14 +1,16 @@
 export type InvitationStatus =
-  | "pending"
-  | "accepted"
-  | "declined"
-  | "expired"
-  | "revoked";
+  'pending' | 'accepted' | 'declined' | 'expired' | 'revoked';
 
-export type GrantOutcome = "added" | "invited" | "skipped";
+export type GrantOutcome = 'added' | 'invited' | 'skipped';
 
 export interface GrantEmailPreview {
-  emails: { registrationId: number; name: string; recipient: string; subject: string; html: string }[];
+  emails: {
+    registrationId: number;
+    name: string;
+    recipient: string;
+    subject: string;
+    html: string;
+  }[];
   skipped: { registrationId: number; reasonCode: SessionGrantSkipCode }[];
 }
 
@@ -34,21 +36,21 @@ export interface InvitationCapacity {
 }
 
 export type SessionGrantSkipCode =
-  | "REGISTRATION_NOT_FOUND"
-  | "EVENT_MISMATCH"
-  | "REGISTRATION_NOT_CONFIRMED"
-  | "ALREADY_REGISTERED"
-  | "ALREADY_INVITED"
-  | "DUPLICATE_PARTICIPANT";
+  | 'REGISTRATION_NOT_FOUND'
+  | 'EVENT_MISMATCH'
+  | 'REGISTRATION_NOT_CONFIRMED'
+  | 'ALREADY_REGISTERED'
+  | 'ALREADY_INVITED'
+  | 'DUPLICATE_PARTICIPANT';
 
 export type SessionGrantEmailStatus =
-  | "not_applicable"
-  | "pending"
-  | "sending"
-  | "sent"
-  | "failed"
-  | "unknown"
-  | "suppressed";
+  | 'not_applicable'
+  | 'pending'
+  | 'sending'
+  | 'sent'
+  | 'failed'
+  | 'unknown'
+  | 'suppressed';
 
 export interface SessionGrantPagination {
   page: number;
@@ -111,12 +113,12 @@ export interface SessionGrantHistoryDto {
 export interface SessionGrantEmailAttemptDto {
   id: string;
   attemptNo: number;
-  trigger: "system" | "admin";
+  trigger: 'system' | 'admin';
   triggeredBy: number | null;
   recipientEmail: string;
   templateVersion: string;
   subject: string;
-  result: "sending" | "sent" | "failed" | "unknown" | "suppressed";
+  result: 'sending' | 'sent' | 'failed' | 'unknown' | 'suppressed';
   startedAt: string;
   requestStartedAt: string | null;
   finishedAt: string | null;
@@ -159,13 +161,13 @@ export interface GrantSessionChoiceDto {
   effectiveDeadline: string | null;
   grantEligible: boolean;
   disabledReason:
-    | "SESSION_INACTIVE"
-    | "SESSION_ENDED"
-    | "SESSION_RESPONSE_CLOSED"
-    | null;
+    'SESSION_INACTIVE' | 'SESSION_ENDED' | 'SESSION_RESPONSE_CLOSED' | null;
 }
 
-export interface GrantTrackingItemDto extends Omit<SessionGrantItemDto, 'registrationSessionId'> {
+export interface GrantTrackingItemDto extends Omit<
+  SessionGrantItemDto,
+  'registrationSessionId'
+> {
   batchId: string;
   eventId: number;
   sessionId: number;

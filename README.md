@@ -11,12 +11,16 @@ npm run dev
 
 ## Available Scripts
 
-| Command         | Description                          |
-| --------------- | ------------------------------------ |
-| `npm run dev`   | Start development server (port 3001) |
-| `npm run build` | Build for production                 |
-| `npm run start` | Start production server              |
-| `npm run lint`  | Run ESLint                           |
+| Command                | Description                                        |
+| ---------------------- | -------------------------------------------------- |
+| `npm run dev`          | Start development server (port 3001)               |
+| `npm run build`        | Build for production                               |
+| `npm run start`        | Start production server                            |
+| `npm run lint`         | Run ESLint                                         |
+| `npm run format`       | Format source code and documentation with Prettier |
+| `npm run format:check` | Check formatting without changing files            |
+
+Prettier uses two-space indentation, single quotes, trailing commas, and LF line endings. Generated files, lockfiles, environment files, and public assets are excluded. Run `npm run format` to apply formatting to existing code.
 
 ## Environment Variables
 

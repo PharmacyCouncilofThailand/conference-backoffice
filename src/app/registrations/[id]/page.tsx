@@ -8,740 +8,986 @@ import { api } from '@/lib/api';
 import { AddSessionDialog } from '@/components/registrations/AddSessionDialog';
 import { SessionGrantResults } from '@/components/registrations/SessionGrantResults';
 import { SessionEmailPreviewDialog } from '@/components/registrations/SessionEmailPreviewDialog';
-import type { GrantSessionChoiceDto, GrantPreviewRequest, InvitationStatus, SessionGrantHistoryItemDto } from '@/types/session-grants';
+import type {
+  GrantSessionChoiceDto,
+  GrantPreviewRequest,
+  InvitationStatus,
+  SessionGrantHistoryItemDto,
+} from '@/types/session-grants';
 import { useAuth } from '@/contexts/AuthContext';
 import {
-    IconArrowLeft,
-    IconLoader2,
-    IconUser,
-    IconMail,
-    IconPhone,
-    IconBuilding,
-    IconWorld,
-    IconTicket,
-    IconCalendar,
-    IconMapPin,
-    IconClock,
-    IconCheck,
-    IconX,
-    IconPrinter,
-    IconEdit,
-    IconUserPlus,
+  IconArrowLeft,
+  IconLoader2,
+  IconUser,
+  IconMail,
+  IconPhone,
+  IconBuilding,
+  IconWorld,
+  IconTicket,
+  IconCalendar,
+  IconMapPin,
+  IconClock,
+  IconCheck,
+  IconX,
+  IconPrinter,
+  IconEdit,
+  IconUserPlus,
 } from '@tabler/icons-react';
 import toast from 'react-hot-toast';
 
 const getBackofficeToken = () =>
-    localStorage.getItem('backoffice_token') ||
-    sessionStorage.getItem('backoffice_token') ||
-    '';
+  localStorage.getItem('backoffice_token') ||
+  sessionStorage.getItem('backoffice_token') ||
+  '';
 
 interface AttendanceHistoryRow {
-    kind: 'daily' | 'single';
-    id: string | number;
-    attendanceId: string | null;
-    attendanceDate: string | null;
-    scannedAt: string;
-    cancelledAt: string | null;
-    cancellationReason: string | null;
+  kind: 'daily' | 'single';
+  id: string | number;
+  attendanceId: string | null;
+  attendanceDate: string | null;
+  scannedAt: string;
+  cancelledAt: string | null;
+  cancellationReason: string | null;
 }
 
 interface RegistrationSession {
-    id: number;
-    sessionId: number;
-    ticketTypeId: number | null;
-    checkedInAt: string | null;
-    checkedInById: number | null;
-    source: string;
-    addedById: number | null;
-    addedAt: string;
-    createdAt: string;
-    sessionCode: string;
-    sessionName: string;
-    sessionType: string;
-    startTime: string;
-    endTime: string;
-    room: string | null;
-    ticketName: string | null;
-    ticketCategory: string | null;
-    checkedInByFirstName: string | null;
-    checkedInByLastName: string | null;
-    addedByFirstName: string | null;
-    addedByLastName: string | null;
-    attendanceMode?: 'daily' | 'single';
-    selectedDayAttendance?: AttendanceHistoryRow | null;
-    attendanceHistory?: AttendanceHistoryRow[];
+  id: number;
+  sessionId: number;
+  ticketTypeId: number | null;
+  checkedInAt: string | null;
+  checkedInById: number | null;
+  source: string;
+  addedById: number | null;
+  addedAt: string;
+  createdAt: string;
+  sessionCode: string;
+  sessionName: string;
+  sessionType: string;
+  startTime: string;
+  endTime: string;
+  room: string | null;
+  ticketName: string | null;
+  ticketCategory: string | null;
+  checkedInByFirstName: string | null;
+  checkedInByLastName: string | null;
+  addedByFirstName: string | null;
+  addedByLastName: string | null;
+  attendanceMode?: 'daily' | 'single';
+  selectedDayAttendance?: AttendanceHistoryRow | null;
+  attendanceHistory?: AttendanceHistoryRow[];
 }
 
 interface RegistrationInvitation {
-    invitationId: string;
-    sessionId: number;
-    sessionName: string;
-    sessionType: string | null;
-    startTime: string;
-    endTime: string;
-    room: string | null;
-    status: InvitationStatus;
-    expiresAt: string;
-    effectiveDeadline: string;
-    respondedAt: string | null;
-    createdAt: string;
-    emailStatus: string;
-    attemptCount: number;
-    lastErrorCode: string | null;
+  invitationId: string;
+  sessionId: number;
+  sessionName: string;
+  sessionType: string | null;
+  startTime: string;
+  endTime: string;
+  room: string | null;
+  status: InvitationStatus;
+  expiresAt: string;
+  effectiveDeadline: string;
+  respondedAt: string | null;
+  createdAt: string;
+  emailStatus: string;
+  attemptCount: number;
+  lastErrorCode: string | null;
 }
 
 interface RegistrationDetail {
-    id: number;
-    regCode: string;
-    email: string;
-    firstName: string;
-    lastName: string;
-    dietaryRequirements: string | null;
-    status: string;
-    source: string;
-    addedNote: string | null;
-    createdAt: string;
-    eventId: number;
-    eventName: string;
-    eventCode: string;
-    ticketTypeId: number;
-    ticketName: string;
-    ticketCategory: string;
-    ticketPrice: string;
-    ticketCurrency: string;
-    userId: number | null;
-    userPhone: string | null;
-    userRole: string | null;
-    userInstitution: string | null;
-    userCountry: string | null;
-    addedById: number | null;
-    addedByFirstName: string | null;
-    addedByLastName: string | null;
-    sessions: RegistrationSession[];
-    invitations: RegistrationInvitation[];
+  id: number;
+  regCode: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  dietaryRequirements: string | null;
+  status: string;
+  source: string;
+  addedNote: string | null;
+  createdAt: string;
+  eventId: number;
+  eventName: string;
+  eventCode: string;
+  ticketTypeId: number;
+  ticketName: string;
+  ticketCategory: string;
+  ticketPrice: string;
+  ticketCurrency: string;
+  userId: number | null;
+  userPhone: string | null;
+  userRole: string | null;
+  userInstitution: string | null;
+  userCountry: string | null;
+  addedById: number | null;
+  addedByFirstName: string | null;
+  addedByLastName: string | null;
+  sessions: RegistrationSession[];
+  invitations: RegistrationInvitation[];
 }
 
 const invitationLabels: Record<InvitationStatus, string> = {
-    pending: 'รอตอบรับ',
-    accepted: 'ยืนยันเข้าร่วม',
-    declined: 'ปฏิเสธ',
-    expired: 'หมดเวลา',
-    revoked: 'ใช้คำเชิญไม่ได้',
+  pending: 'รอตอบรับ',
+  accepted: 'ยืนยันเข้าร่วม',
+  declined: 'ปฏิเสธ',
+  expired: 'หมดเวลา',
+  revoked: 'ใช้คำเชิญไม่ได้',
 };
 
-const bangkokDateTime = (value: string) => new Date(value).toLocaleString('th-TH', {
+const bangkokDateTime = (value: string) =>
+  new Date(value).toLocaleString('th-TH', {
     timeZone: 'Asia/Bangkok',
     dateStyle: 'medium',
     timeStyle: 'short',
-});
+  });
 
-const sessionTypeConfig: Record<string, { label: string; bg: string; text: string }> = {
-    workshop: { label: 'Workshop', bg: 'bg-orange-100', text: 'text-orange-700' },
-    gala_dinner: { label: 'Gala Dinner', bg: 'bg-pink-100', text: 'text-pink-700' },
-    lecture: { label: 'Lecture', bg: 'bg-emerald-50', text: 'text-emerald-700' },
-    ceremony: { label: 'Ceremony', bg: 'bg-purple-100', text: 'text-purple-700' },
-    break: { label: 'Break', bg: 'bg-zinc-100', text: 'text-zinc-500' },
-    other: { label: 'Other', bg: 'bg-slate-100', text: 'text-slate-700' },
+const sessionTypeConfig: Record<
+  string,
+  { label: string; bg: string; text: string }
+> = {
+  workshop: { label: 'Workshop', bg: 'bg-orange-100', text: 'text-orange-700' },
+  gala_dinner: {
+    label: 'Gala Dinner',
+    bg: 'bg-pink-100',
+    text: 'text-pink-700',
+  },
+  lecture: { label: 'Lecture', bg: 'bg-emerald-50', text: 'text-emerald-700' },
+  ceremony: { label: 'Ceremony', bg: 'bg-purple-100', text: 'text-purple-700' },
+  break: { label: 'Break', bg: 'bg-zinc-100', text: 'text-zinc-500' },
+  other: { label: 'Other', bg: 'bg-slate-100', text: 'text-slate-700' },
 };
 
 export default function RegistrationDetailPage() {
-    const params = useParams();
-    const router = useRouter();
-    const { user } = useAuth();
-    const id = params.id as string;
+  const params = useParams();
+  const router = useRouter();
+  const { user } = useAuth();
+  const id = params.id as string;
 
-    const [registration, setRegistration] = useState<RegistrationDetail | null>(null);
-    const [grantFeatureEnabled, setGrantFeatureEnabled] = useState(false);
-    const [grantDialogOpen, setGrantDialogOpen] = useState(false);
-    const [grantBatchId, setGrantBatchId] = useState<string | null>(null);
-    const [grantSubmitting, setGrantSubmitting] = useState(false);
-    const [pendingGrant, setPendingGrant] = useState<GrantPreviewRequest | null>(null);
-    const [previewRequest, setPreviewRequest] = useState<GrantPreviewRequest | null>(null);
-    const [grantHistory, setGrantHistory] = useState<SessionGrantHistoryItemDto[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-    const [attendanceDate, setAttendanceDate] = useState(() => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date()));
-    const [attendanceMeta, setAttendanceMeta] = useState<{ serverDate: string; selectedDate: string } | null>(null);
+  const [registration, setRegistration] = useState<RegistrationDetail | null>(
+    null,
+  );
+  const [grantFeatureEnabled, setGrantFeatureEnabled] = useState(false);
+  const [grantDialogOpen, setGrantDialogOpen] = useState(false);
+  const [grantBatchId, setGrantBatchId] = useState<string | null>(null);
+  const [grantSubmitting, setGrantSubmitting] = useState(false);
+  const [pendingGrant, setPendingGrant] = useState<GrantPreviewRequest | null>(
+    null,
+  );
+  const [previewRequest, setPreviewRequest] =
+    useState<GrantPreviewRequest | null>(null);
+  const [grantHistory, setGrantHistory] = useState<
+    SessionGrantHistoryItemDto[]
+  >([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [attendanceDate, setAttendanceDate] = useState(() =>
+    new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Asia/Bangkok',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(new Date()),
+  );
+  const [attendanceMeta, setAttendanceMeta] = useState<{
+    serverDate: string;
+    selectedDate: string;
+  } | null>(null);
 
-    useEffect(() => {
-        if (user?.role !== 'admin') {
-            setGrantFeatureEnabled(false);
-            return;
-        }
-        api.sessionGrants.status(getBackofficeToken())
-            .then((status) => setGrantFeatureEnabled(status.enabled))
-            .catch(() => setGrantFeatureEnabled(false));
-    }, [user?.role]);
+  useEffect(() => {
+    if (user?.role !== 'admin') {
+      setGrantFeatureEnabled(false);
+      return;
+    }
+    api.sessionGrants
+      .status(getBackofficeToken())
+      .then((status) => setGrantFeatureEnabled(status.enabled))
+      .catch(() => setGrantFeatureEnabled(false));
+  }, [user?.role]);
 
-    useEffect(() => {
-        if (id) {
-            fetchRegistration();
-        }
-    }, [id, user?.role, attendanceDate]);
+  useEffect(() => {
+    if (id) {
+      fetchRegistration();
+    }
+  }, [id, user?.role, attendanceDate]);
 
-    const fetchRegistration = async () => {
-        setIsLoading(!registration);
-        setError(null);
-        try {
-            const token = getBackofficeToken();
-            const res = await api.registrations.get(token, parseInt(id), attendanceDate);
-            setRegistration(res.registration as unknown as RegistrationDetail);
-            setAttendanceMeta(res.attendance ? { serverDate: res.attendance.serverDate, selectedDate: res.attendance.selectedDate } : null);
-            if (user?.role === 'admin') {
-                try {
-                    const history = await api.sessionGrants.list(token, new URLSearchParams({
-                        registrationId: id,
-                        page: '1',
-                        limit: '50',
-                    }).toString());
-                    setGrantHistory(history.batches);
-                } catch (historyError) {
-                    console.error('Failed to fetch session grant history:', historyError);
-                    setGrantHistory([]);
-                }
+  const fetchRegistration = async () => {
+    setIsLoading(!registration);
+    setError(null);
+    try {
+      const token = getBackofficeToken();
+      const res = await api.registrations.get(
+        token,
+        parseInt(id),
+        attendanceDate,
+      );
+      setRegistration(res.registration as unknown as RegistrationDetail);
+      setAttendanceMeta(
+        res.attendance
+          ? {
+              serverDate: res.attendance.serverDate,
+              selectedDate: res.attendance.selectedDate,
             }
-        } catch (err) {
-            console.error('Failed to fetch registration:', err);
-            setError(err instanceof Error ? err.message : 'Failed to load registration');
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const grantSelectedSession = (session: GrantSessionChoiceDto) => {
-        if (!registration || grantSubmitting) return;
-        if (pendingGrant?.sessionId === session.id) {
-            void submitGrant(pendingGrant);
-            return;
-        }
-        setPreviewRequest({ key: crypto.randomUUID(), sessionId: session.id, registrationIds: [registration.id] });
-    };
-
-    const submitGrant = async (operation: GrantPreviewRequest) => {
-        if (grantSubmitting) return;
-        setPendingGrant(operation);
-        setGrantSubmitting(true);
+          : null,
+      );
+      if (user?.role === 'admin') {
         try {
-            const result = await api.sessionGrants.create(getBackofficeToken(), operation.key, {
-                sessionId: operation.sessionId,
-                registrationIds: operation.registrationIds,
-            });
-            setGrantBatchId(result.batchId);
-            setPendingGrant(null);
-            setPreviewRequest(null);
-            toast.success(result.invitedCount > 0
-                ? 'สร้างคำเชิญเข้าร่วม Session แล้ว'
-                : result.addedCount > 0
-                    ? 'เพิ่มสิทธิ์ Session สำเร็จ'
-                    : 'ดำเนินการเสร็จแล้วโดยไม่มีสิทธิ์ใหม่');
-            await fetchRegistration();
-        } catch (err) {
-            console.error('Failed to grant session:', err);
-            toast.error(err instanceof Error ? err.message : 'เพิ่มสิทธิ์ Session ไม่สำเร็จ');
-        } finally {
-            setGrantSubmitting(false);
+          const history = await api.sessionGrants.list(
+            token,
+            new URLSearchParams({
+              registrationId: id,
+              page: '1',
+              limit: '50',
+            }).toString(),
+          );
+          setGrantHistory(history.batches);
+        } catch (historyError) {
+          console.error('Failed to fetch session grant history:', historyError);
+          setGrantHistory([]);
         }
-    };
-
-    const formatDate = (dateStr: string) => {
-        return new Date(dateStr).toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
-        });
-    };
-
-    const formatDateTime = (dateStr: string) => {
-        return new Date(dateStr).toLocaleString('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
-            hour: 'numeric',
-            minute: '2-digit',
-            hour12: true,
-        });
-    };
-
-    const formatTime = (dateStr: string) => {
-        return new Date(dateStr).toLocaleTimeString('en-US', {
-            hour: 'numeric',
-            minute: '2-digit',
-            hour12: true,
-        });
-    };
-
-    if (isLoading) {
-        return (
-            <AdminLayout title="Registration Details">
-                <div className="flex justify-center items-center py-20">
-                    <IconLoader2 size={40} className="animate-spin text-emerald-600" />
-                </div>
-            </AdminLayout>
-        );
+      }
+    } catch (err) {
+      console.error('Failed to fetch registration:', err);
+      setError(
+        err instanceof Error ? err.message : 'Failed to load registration',
+      );
+    } finally {
+      setIsLoading(false);
     }
+  };
 
-    if (error || !registration) {
-        return (
-            <AdminLayout title="Registration Details">
-                <div className="text-center py-20">
-                    <p className="text-red-600 mb-4">{error || 'Registration not found'}</p>
-                    <Link href="/registrations" className="btn-secondary">
-                        <IconArrowLeft size={18} className="mr-2" />
-                        Back to Registrations
-                    </Link>
-                </div>
-            </AdminLayout>
-        );
+  const grantSelectedSession = (session: GrantSessionChoiceDto) => {
+    if (!registration || grantSubmitting) return;
+    if (pendingGrant?.sessionId === session.id) {
+      void submitGrant(pendingGrant);
+      return;
     }
+    setPreviewRequest({
+      key: crypto.randomUUID(),
+      sessionId: session.id,
+      registrationIds: [registration.id],
+    });
+  };
 
-    const adminGrantedSessions = registration.sessions.filter(s => s.source === 'admin_grant');
-    const attributedSessions = registration.sessions.filter(s => s.source !== 'admin_grant');
-    const mainSessions = attributedSessions.filter(s => s.ticketCategory === 'primary');
-    const addonSessions = attributedSessions.filter(s => s.ticketCategory === 'addon');
-    const otherSessions = attributedSessions.filter(s => s.ticketCategory !== 'primary' && s.ticketCategory !== 'addon');
+  const submitGrant = async (operation: GrantPreviewRequest) => {
+    if (grantSubmitting) return;
+    setPendingGrant(operation);
+    setGrantSubmitting(true);
+    try {
+      const result = await api.sessionGrants.create(
+        getBackofficeToken(),
+        operation.key,
+        {
+          sessionId: operation.sessionId,
+          registrationIds: operation.registrationIds,
+        },
+      );
+      setGrantBatchId(result.batchId);
+      setPendingGrant(null);
+      setPreviewRequest(null);
+      toast.success(
+        result.invitedCount > 0
+          ? 'สร้างคำเชิญเข้าร่วม Session แล้ว'
+          : result.addedCount > 0
+            ? 'เพิ่มสิทธิ์ Session สำเร็จ'
+            : 'ดำเนินการเสร็จแล้วโดยไม่มีสิทธิ์ใหม่',
+      );
+      await fetchRegistration();
+    } catch (err) {
+      console.error('Failed to grant session:', err);
+      toast.error(
+        err instanceof Error ? err.message : 'เพิ่มสิทธิ์ Session ไม่สำเร็จ',
+      );
+    } finally {
+      setGrantSubmitting(false);
+    }
+  };
 
+  const formatDate = (dateStr: string) => {
+    return new Date(dateStr).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+  };
+
+  const formatDateTime = (dateStr: string) => {
+    return new Date(dateStr).toLocaleString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    });
+  };
+
+  const formatTime = (dateStr: string) => {
+    return new Date(dateStr).toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    });
+  };
+
+  if (isLoading) {
     return (
-        <AdminLayout title="Registration Details">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-                <div className="flex items-center gap-4">
-                    <Link
-                        href="/registrations"
-                        className="p-2 hover:bg-zinc-100 rounded-lg transition-colors"
-                    >
-                        <IconArrowLeft size={20} />
-                    </Link>
-                    <div>
-                        <h1 className="text-2xl font-bold text-zinc-900">
-                            {registration.firstName} {registration.lastName}
-                        </h1>
-                        <p className="text-zinc-400 font-mono">{registration.regCode}</p>
-                    </div>
-                </div>
-                <div className="flex gap-2">
-                    {user?.role === 'admin' && grantFeatureEnabled && (
-                        <button type="button" className="btn-primary flex items-center gap-2" onClick={() => setGrantDialogOpen(true)} disabled={grantSubmitting}>
-                            <IconUserPlus size={18} /> {grantSubmitting ? 'กำลังเพิ่มสิทธิ์...' : 'เพิ่มสิทธิ์ Session'}
-                        </button>
-                    )}
-                    <button className="btn-secondary flex items-center gap-2">
-                        <IconPrinter size={18} /> Print Badge
-                    </button>
-                </div>
+      <AdminLayout title="Registration Details">
+        <div className="flex justify-center items-center py-20">
+          <IconLoader2 size={40} className="animate-spin text-emerald-600" />
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  if (error || !registration) {
+    return (
+      <AdminLayout title="Registration Details">
+        <div className="text-center py-20">
+          <p className="text-red-600 mb-4">
+            {error || 'Registration not found'}
+          </p>
+          <Link href="/registrations" className="btn-secondary">
+            <IconArrowLeft size={18} className="mr-2" />
+            Back to Registrations
+          </Link>
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  const adminGrantedSessions = registration.sessions.filter(
+    (s) => s.source === 'admin_grant',
+  );
+  const attributedSessions = registration.sessions.filter(
+    (s) => s.source !== 'admin_grant',
+  );
+  const mainSessions = attributedSessions.filter(
+    (s) => s.ticketCategory === 'primary',
+  );
+  const addonSessions = attributedSessions.filter(
+    (s) => s.ticketCategory === 'addon',
+  );
+  const otherSessions = attributedSessions.filter(
+    (s) => s.ticketCategory !== 'primary' && s.ticketCategory !== 'addon',
+  );
+
+  return (
+    <AdminLayout title="Registration Details">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+        <div className="flex items-center gap-4">
+          <Link
+            href="/registrations"
+            className="p-2 hover:bg-zinc-100 rounded-lg transition-colors"
+          >
+            <IconArrowLeft size={20} />
+          </Link>
+          <div>
+            <h1 className="text-2xl font-bold text-zinc-900">
+              {registration.firstName} {registration.lastName}
+            </h1>
+            <p className="text-zinc-400 font-mono">{registration.regCode}</p>
+          </div>
+        </div>
+        <div className="flex gap-2">
+          {user?.role === 'admin' && grantFeatureEnabled && (
+            <button
+              type="button"
+              className="btn-primary flex items-center gap-2"
+              onClick={() => setGrantDialogOpen(true)}
+              disabled={grantSubmitting}
+            >
+              <IconUserPlus size={18} />{' '}
+              {grantSubmitting ? 'กำลังเพิ่มสิทธิ์...' : 'เพิ่มสิทธิ์ Session'}
+            </button>
+          )}
+          <button className="btn-secondary flex items-center gap-2">
+            <IconPrinter size={18} /> Print Badge
+          </button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left Column - Main Info */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Registration Info Card */}
+          <div className="card">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold">
+                Registration Information
+              </h2>
+              <span
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border ${
+                  registration.status === 'confirmed'
+                    ? 'bg-green-50 text-green-700 border-green-200'
+                    : registration.status === 'pending'
+                      ? 'bg-yellow-50 text-yellow-700 border-yellow-200'
+                      : 'bg-red-50 text-red-700 border-red-200'
+                }`}
+              >
+                {registration.status === 'confirmed' && (
+                  <span className="w-2 h-2 rounded-full bg-green-500"></span>
+                )}
+                {registration.status === 'pending' && (
+                  <span className="w-2 h-2 rounded-full bg-yellow-500"></span>
+                )}
+                {registration.status === 'cancelled' && (
+                  <span className="w-2 h-2 rounded-full bg-red-500"></span>
+                )}
+                {registration.status.charAt(0).toUpperCase() +
+                  registration.status.slice(1)}
+              </span>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Left Column - Main Info */}
-                <div className="lg:col-span-2 space-y-6">
-                    {/* Registration Info Card */}
-                    <div className="card">
-                        <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-lg font-semibold">Registration Information</h2>
-                            <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border ${
-                                registration.status === 'confirmed' ? 'bg-green-50 text-green-700 border-green-200' :
-                                registration.status === 'pending' ? 'bg-yellow-50 text-yellow-700 border-yellow-200' :
-                                'bg-red-50 text-red-700 border-red-200'
-                            }`}>
-                                {registration.status === 'confirmed' && <span className="w-2 h-2 rounded-full bg-green-500"></span>}
-                                {registration.status === 'pending' && <span className="w-2 h-2 rounded-full bg-yellow-500"></span>}
-                                {registration.status === 'cancelled' && <span className="w-2 h-2 rounded-full bg-red-500"></span>}
-                                {registration.status.charAt(0).toUpperCase() + registration.status.slice(1)}
-                            </span>
-                        </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <p className="text-sm text-zinc-400 mb-1">Event</p>
+                <p className="font-medium text-zinc-900">
+                  {registration.eventName}
+                </p>
+                <span className="inline-flex px-2 py-0.5 mt-1 rounded text-xs font-medium bg-zinc-100 text-zinc-500">
+                  {registration.eventCode}
+                </span>
+              </div>
+              <div>
+                <p className="text-sm text-zinc-400 mb-1">Primary Ticket</p>
+                <p className="font-medium text-zinc-900">
+                  {registration.ticketName}
+                </p>
+                <p className="text-sm text-zinc-400">
+                  {registration.ticketCurrency}{' '}
+                  {parseFloat(registration.ticketPrice).toLocaleString()}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-zinc-400 mb-1">Registration Date</p>
+                <p className="font-medium text-zinc-900">
+                  {formatDateTime(registration.createdAt)}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-zinc-400 mb-1">Source</p>
+                {registration.source === 'manual' ? (
+                  <div>
+                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-purple-50 text-purple-700 border border-purple-200">
+                      <IconUserPlus size={14} /> Manual
+                    </span>
+                    {registration.addedByFirstName && (
+                      <p className="text-sm text-zinc-400 mt-1">
+                        Added by {registration.addedByFirstName}{' '}
+                        {registration.addedByLastName}
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <span className="inline-flex px-2 py-1 rounded-full text-xs font-medium bg-zinc-50 text-zinc-500">
+                    Purchase
+                  </span>
+                )}
+              </div>
+              {registration.addedNote && (
+                <div className="md:col-span-2">
+                  <p className="text-sm text-zinc-400 mb-1">Note</p>
+                  <p className="text-zinc-600 bg-zinc-50 p-3 rounded-lg">
+                    {registration.addedNote}
+                  </p>
+                </div>
+              )}
+              {registration.dietaryRequirements && (
+                <div className="md:col-span-2">
+                  <p className="text-sm text-zinc-400 mb-1">
+                    Dietary Requirements
+                  </p>
+                  <p className="text-zinc-600">
+                    {registration.dietaryRequirements}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <p className="text-sm text-zinc-400 mb-1">Event</p>
-                                <p className="font-medium text-zinc-900">{registration.eventName}</p>
-                                <span className="inline-flex px-2 py-0.5 mt-1 rounded text-xs font-medium bg-zinc-100 text-zinc-500">
-                                    {registration.eventCode}
-                                </span>
-                            </div>
-                            <div>
-                                <p className="text-sm text-zinc-400 mb-1">Primary Ticket</p>
-                                <p className="font-medium text-zinc-900">{registration.ticketName}</p>
-                                <p className="text-sm text-zinc-400">
-                                    {registration.ticketCurrency} {parseFloat(registration.ticketPrice).toLocaleString()}
-                                </p>
-                            </div>
-                            <div>
-                                <p className="text-sm text-zinc-400 mb-1">Registration Date</p>
-                                <p className="font-medium text-zinc-900">{formatDateTime(registration.createdAt)}</p>
-                            </div>
-                            <div>
-                                <p className="text-sm text-zinc-400 mb-1">Source</p>
-                                {registration.source === 'manual' ? (
-                                    <div>
-                                        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-purple-50 text-purple-700 border border-purple-200">
-                                            <IconUserPlus size={14} /> Manual
-                                        </span>
-                                        {registration.addedByFirstName && (
-                                            <p className="text-sm text-zinc-400 mt-1">
-                                                Added by {registration.addedByFirstName} {registration.addedByLastName}
-                                            </p>
-                                        )}
-                                    </div>
-                                ) : (
-                                    <span className="inline-flex px-2 py-1 rounded-full text-xs font-medium bg-zinc-50 text-zinc-500">
-                                        Purchase
-                                    </span>
-                                )}
-                            </div>
-                            {registration.addedNote && (
-                                <div className="md:col-span-2">
-                                    <p className="text-sm text-zinc-400 mb-1">Note</p>
-                                    <p className="text-zinc-600 bg-zinc-50 p-3 rounded-lg">{registration.addedNote}</p>
-                                </div>
-                            )}
-                            {registration.dietaryRequirements && (
-                                <div className="md:col-span-2">
-                                    <p className="text-sm text-zinc-400 mb-1">Dietary Requirements</p>
-                                    <p className="text-zinc-600">{registration.dietaryRequirements}</p>
-                                </div>
-                            )}
-                        </div>
+          {/* Sessions Card */}
+          <div className="card">
+            <h2 className="text-lg font-semibold mb-4">Registered Sessions</h2>
+
+            {registration.sessions.length === 0 ? (
+              <p className="text-zinc-400 text-center py-8">
+                No sessions registered
+              </p>
+            ) : (
+              <div className="space-y-4">
+                {adminGrantedSessions.length > 0 && (
+                  <div>
+                    <p className="text-sm font-medium text-zinc-400 mb-2">
+                      Admin-added Sessions
+                    </p>
+                    <div className="space-y-2">
+                      {adminGrantedSessions.map((session) => (
+                        <SessionCard
+                          key={session.id}
+                          session={session}
+                          formatTime={formatTime}
+                          formatDate={formatDate}
+                        />
+                      ))}
                     </div>
+                  </div>
+                )}
 
-                    {/* Sessions Card */}
-                    <div className="card">
-                        <h2 className="text-lg font-semibold mb-4">Registered Sessions</h2>
+                {mainSessions.length > 0 && (
+                  <div className="pt-4 border-t border-zinc-100">
+                    <p className="text-sm font-medium text-zinc-400 mb-2">
+                      Main Conference
+                    </p>
+                    <div className="space-y-2">
+                      {mainSessions.map((session) => (
+                        <SessionCard
+                          key={session.id}
+                          session={session}
+                          formatTime={formatTime}
+                          formatDate={formatDate}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
 
-                        {registration.sessions.length === 0 ? (
-                            <p className="text-zinc-400 text-center py-8">No sessions registered</p>
+                {addonSessions.length > 0 && (
+                  <div className="pt-4 border-t border-zinc-100">
+                    <p className="text-sm font-medium text-zinc-400 mb-2">
+                      Add-on Sessions
+                    </p>
+                    <div className="space-y-2">
+                      {addonSessions.map((session) => (
+                        <SessionCard
+                          key={session.id}
+                          session={session}
+                          formatTime={formatTime}
+                          formatDate={formatDate}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {otherSessions.length > 0 && (
+                  <div className="pt-4 border-t border-zinc-100">
+                    <p className="text-sm font-medium text-zinc-400 mb-2">
+                      Other Sessions
+                    </p>
+                    <div className="space-y-2">
+                      {otherSessions.map((session) => (
+                        <SessionCard
+                          key={session.id}
+                          session={session}
+                          formatTime={formatTime}
+                          formatDate={formatDate}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+          {registration.invitations.length > 0 && (
+            <div className="card">
+              <h2 className="text-lg font-semibold mb-4">
+                ประวัติคำเชิญ Session
+              </h2>
+              <div className="space-y-3">
+                {registration.invitations.map((invitation) => (
+                  <div
+                    key={invitation.invitationId}
+                    className="rounded-xl border border-zinc-200 p-4"
+                  >
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <div>
+                        <p className="font-medium text-zinc-900">
+                          {invitation.sessionName}
+                        </p>
+                        <p className="mt-1 text-xs text-zinc-500">
+                          {bangkokDateTime(invitation.startTime)}
+                          {invitation.room ? ` · ${invitation.room}` : ''}
+                        </p>
+                      </div>
+                      <span className="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700">
+                        {invitationLabels[invitation.status]}
+                      </span>
+                    </div>
+                    <p className="mt-2 text-sm text-zinc-500">
+                      ตอบรับได้ก่อน{' '}
+                      {bangkokDateTime(invitation.effectiveDeadline)} เวลาไทย
+                      {invitation.respondedAt
+                        ? ` · ตอบเมื่อ ${bangkokDateTime(invitation.respondedAt)}`
+                        : ''}
+                    </p>
+                    <p className="mt-1 text-xs text-zinc-400">
+                      อีเมล: {invitation.emailStatus} · Attempts:{' '}
+                      {invitation.attemptCount}
+                      {invitation.lastErrorCode
+                        ? ` · ${invitation.lastErrorCode}`
+                        : ''}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Right Column - Attendee Info */}
+        <div className="space-y-6">
+          {/* Attendee Card */}
+          <div className="card">
+            <h2 className="text-lg font-semibold mb-4">Attendee Information</h2>
+            <div className="space-y-4">
+              <div className="flex items-start gap-3">
+                <IconUser size={20} className="text-zinc-400 mt-0.5" />
+                <div>
+                  <p className="text-sm text-zinc-400">Name</p>
+                  <p className="font-medium text-zinc-900">
+                    {registration.firstName} {registration.lastName}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <IconMail size={20} className="text-zinc-400 mt-0.5" />
+                <div>
+                  <p className="text-sm text-zinc-400">Email</p>
+                  <p className="font-medium text-zinc-900 break-all">
+                    {registration.email}
+                  </p>
+                </div>
+              </div>
+              {registration.userPhone && (
+                <div className="flex items-start gap-3">
+                  <IconPhone size={20} className="text-zinc-400 mt-0.5" />
+                  <div>
+                    <p className="text-sm text-zinc-400">Phone</p>
+                    <p className="font-medium text-zinc-900">
+                      {registration.userPhone}
+                    </p>
+                  </div>
+                </div>
+              )}
+              {registration.userInstitution && (
+                <div className="flex items-start gap-3">
+                  <IconBuilding size={20} className="text-zinc-400 mt-0.5" />
+                  <div>
+                    <p className="text-sm text-zinc-400">Institution</p>
+                    <p className="font-medium text-zinc-900">
+                      {registration.userInstitution}
+                    </p>
+                  </div>
+                </div>
+              )}
+              {registration.userCountry && (
+                <div className="flex items-start gap-3">
+                  <IconWorld size={20} className="text-zinc-400 mt-0.5" />
+                  <div>
+                    <p className="text-sm text-zinc-400">Country</p>
+                    <p className="font-medium text-zinc-900">
+                      {registration.userCountry}
+                    </p>
+                  </div>
+                </div>
+              )}
+              {registration.userRole && (
+                <div className="flex items-start gap-3">
+                  <IconTicket size={20} className="text-zinc-400 mt-0.5" />
+                  <div>
+                    <p className="text-sm text-zinc-400">Role</p>
+                    <span className="inline-flex px-2 py-0.5 rounded text-xs font-medium bg-emerald-50 text-emerald-700">
+                      {registration.userRole}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="card">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h2 className="text-lg font-semibold">Check-in Status</h2>
+                <p className="text-xs text-zinc-500">
+                  เวลาเซิร์ฟเวอร์: {attendanceMeta?.serverDate || '-'} ·
+                  เลือกดูสถานะตามวันไทย
+                </p>
+              </div>
+              <input
+                type="date"
+                value={attendanceDate}
+                onChange={(event) => setAttendanceDate(event.target.value)}
+                className="input w-auto"
+                aria-label="Attendance date"
+              />
+            </div>
+            <div className="space-y-4">
+              {registration.sessions.length === 0 ? (
+                <p className="text-zinc-400 text-sm">No sessions to check in</p>
+              ) : (
+                registration.sessions.map((session) => {
+                  const current =
+                    session.attendanceMode === 'daily'
+                      ? session.selectedDayAttendance
+                      : session.checkedInAt
+                        ? {
+                            attendanceId: null,
+                            attendanceDate: null,
+                            scannedAt: session.checkedInAt,
+                            cancelledAt: null,
+                            cancellationReason: null,
+                          }
+                        : null;
+                  return (
+                    <div
+                      key={session.id}
+                      className="rounded-xl border border-zinc-200 p-3"
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-medium text-zinc-800">
+                            {session.sessionName}
+                          </p>
+                          <p className="text-xs text-zinc-500">
+                            {session.attendanceMode === 'daily'
+                              ? `Daily attendance · ${attendanceMeta?.selectedDate || attendanceDate}`
+                              : 'Single-session attendance'}
+                          </p>
+                        </div>
+                        {current ? (
+                          <span className="flex items-center gap-1 rounded-full bg-green-50 px-2 py-1 text-xs text-green-600">
+                            <IconCheck size={14} /> Checked In
+                          </span>
                         ) : (
-                            <div className="space-y-4">
-                                {adminGrantedSessions.length > 0 && (
-                                    <div>
-                                        <p className="text-sm font-medium text-zinc-400 mb-2">Admin-added Sessions</p>
-                                        <div className="space-y-2">
-                                            {adminGrantedSessions.map((session) => (
-                                                <SessionCard key={session.id} session={session} formatTime={formatTime} formatDate={formatDate} />
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {mainSessions.length > 0 && (
-                                    <div className="pt-4 border-t border-zinc-100">
-                                        <p className="text-sm font-medium text-zinc-400 mb-2">Main Conference</p>
-                                        <div className="space-y-2">
-                                            {mainSessions.map((session) => (
-                                                <SessionCard key={session.id} session={session} formatTime={formatTime} formatDate={formatDate} />
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {addonSessions.length > 0 && (
-                                    <div className="pt-4 border-t border-zinc-100">
-                                        <p className="text-sm font-medium text-zinc-400 mb-2">Add-on Sessions</p>
-                                        <div className="space-y-2">
-                                            {addonSessions.map((session) => (
-                                                <SessionCard key={session.id} session={session} formatTime={formatTime} formatDate={formatDate} />
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {otherSessions.length > 0 && (
-                                    <div className="pt-4 border-t border-zinc-100">
-                                        <p className="text-sm font-medium text-zinc-400 mb-2">Other Sessions</p>
-                                        <div className="space-y-2">
-                                            {otherSessions.map((session) => (
-                                                <SessionCard key={session.id} session={session} formatTime={formatTime} formatDate={formatDate} />
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
+                          <span className="flex items-center gap-1 rounded-full bg-zinc-50 px-2 py-1 text-xs text-zinc-400">
+                            <IconX size={14} /> Not Yet
+                          </span>
+                        )}
+                      </div>
+                      {current && (
+                        <p className="mt-2 text-xs text-zinc-500">
+                          {bangkokDateTime(current.scannedAt)}
+                        </p>
+                      )}
+                      {session.attendanceMode === 'daily' &&
+                        (session.attendanceHistory?.length ?? 0) > 0 && (
+                          <div className="mt-3 border-t border-zinc-100 pt-3">
+                            <p className="mb-2 text-xs font-medium text-zinc-500">
+                              Attendance history
+                            </p>
+                            <div className="space-y-2">
+                              {session.attendanceHistory!.map((row) => (
+                                <div
+                                  key={String(row.id)}
+                                  className="flex items-start justify-between gap-3 text-xs"
+                                >
+                                  <div>
+                                    <span
+                                      className={
+                                        row.cancelledAt
+                                          ? 'text-rose-600'
+                                          : 'text-emerald-700'
+                                      }
+                                    >
+                                      {row.attendanceDate} ·{' '}
+                                      {row.cancelledAt ? 'Cancelled' : 'Active'}
+                                    </span>
+                                    <p className="text-zinc-400">
+                                      {bangkokDateTime(row.scannedAt)}
+                                    </p>
+                                    {row.cancellationReason && (
+                                      <p className="text-rose-500">
+                                        {row.cancellationReason}
+                                      </p>
+                                    )}
+                                  </div>
+                                  {!row.cancelledAt && row.attendanceId && (
+                                    <button
+                                      className="font-medium text-amber-700 hover:text-amber-800"
+                                      onClick={async () => {
+                                        const reason = window
+                                          .prompt(
+                                            'เหตุผลในการยกเลิกเช็คอิน (จำเป็น)',
+                                          )
+                                          ?.trim();
+                                        if (!reason) return;
+                                        try {
+                                          await api.checkins.undoDaily(
+                                            getBackofficeToken(),
+                                            row.attendanceId!,
+                                            reason,
+                                          );
+                                          toast.success(
+                                            'ยกเลิกเช็คอินแล้ว โดยเก็บประวัติเดิมไว้',
+                                          );
+                                          await fetchRegistration();
+                                        } catch (error) {
+                                          toast.error(
+                                            error instanceof Error
+                                              ? error.message
+                                              : 'ยกเลิกเช็คอินไม่สำเร็จ',
+                                          );
+                                        }
+                                      }}
+                                    >
+                                      Cancel
+                                    </button>
+                                  )}
+                                </div>
+                              ))}
                             </div>
+                          </div>
                         )}
                     </div>
-                    {registration.invitations.length > 0 && (
-                        <div className="card">
-                            <h2 className="text-lg font-semibold mb-4">ประวัติคำเชิญ Session</h2>
-                            <div className="space-y-3">
-                                {registration.invitations.map((invitation) => (
-                                    <div key={invitation.invitationId} className="rounded-xl border border-zinc-200 p-4">
-                                        <div className="flex flex-wrap items-start justify-between gap-2">
-                                            <div>
-                                                <p className="font-medium text-zinc-900">{invitation.sessionName}</p>
-                                                <p className="mt-1 text-xs text-zinc-500">
-                                                    {bangkokDateTime(invitation.startTime)}{invitation.room ? ` · ${invitation.room}` : ''}
-                                                </p>
-                                            </div>
-                                            <span className="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700">
-                                                {invitationLabels[invitation.status]}
-                                            </span>
-                                        </div>
-                                        <p className="mt-2 text-sm text-zinc-500">
-                                            ตอบรับได้ก่อน {bangkokDateTime(invitation.effectiveDeadline)} เวลาไทย
-                                            {invitation.respondedAt ? ` · ตอบเมื่อ ${bangkokDateTime(invitation.respondedAt)}` : ''}
-                                        </p>
-                                        <p className="mt-1 text-xs text-zinc-400">
-                                            อีเมล: {invitation.emailStatus} · Attempts: {invitation.attemptCount}
-                                            {invitation.lastErrorCode ? ` · ${invitation.lastErrorCode}` : ''}
-                                        </p>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-                </div>
-
-                {/* Right Column - Attendee Info */}
-                <div className="space-y-6">
-                    {/* Attendee Card */}
-                    <div className="card">
-                        <h2 className="text-lg font-semibold mb-4">Attendee Information</h2>
-                        <div className="space-y-4">
-                            <div className="flex items-start gap-3">
-                                <IconUser size={20} className="text-zinc-400 mt-0.5" />
-                                <div>
-                                    <p className="text-sm text-zinc-400">Name</p>
-                                    <p className="font-medium text-zinc-900">{registration.firstName} {registration.lastName}</p>
-                                </div>
-                            </div>
-                            <div className="flex items-start gap-3">
-                                <IconMail size={20} className="text-zinc-400 mt-0.5" />
-                                <div>
-                                    <p className="text-sm text-zinc-400">Email</p>
-                                    <p className="font-medium text-zinc-900 break-all">{registration.email}</p>
-                                </div>
-                            </div>
-                            {registration.userPhone && (
-                                <div className="flex items-start gap-3">
-                                    <IconPhone size={20} className="text-zinc-400 mt-0.5" />
-                                    <div>
-                                        <p className="text-sm text-zinc-400">Phone</p>
-                                        <p className="font-medium text-zinc-900">{registration.userPhone}</p>
-                                    </div>
-                                </div>
-                            )}
-                            {registration.userInstitution && (
-                                <div className="flex items-start gap-3">
-                                    <IconBuilding size={20} className="text-zinc-400 mt-0.5" />
-                                    <div>
-                                        <p className="text-sm text-zinc-400">Institution</p>
-                                        <p className="font-medium text-zinc-900">{registration.userInstitution}</p>
-                                    </div>
-                                </div>
-                            )}
-                            {registration.userCountry && (
-                                <div className="flex items-start gap-3">
-                                    <IconWorld size={20} className="text-zinc-400 mt-0.5" />
-                                    <div>
-                                        <p className="text-sm text-zinc-400">Country</p>
-                                        <p className="font-medium text-zinc-900">{registration.userCountry}</p>
-                                    </div>
-                                </div>
-                            )}
-                            {registration.userRole && (
-                                <div className="flex items-start gap-3">
-                                    <IconTicket size={20} className="text-zinc-400 mt-0.5" />
-                                    <div>
-                                        <p className="text-sm text-zinc-400">Role</p>
-                                        <span className="inline-flex px-2 py-0.5 rounded text-xs font-medium bg-emerald-50 text-emerald-700">
-                                            {registration.userRole}
-                                        </span>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
-                    <div className="card">
-                        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-                            <div>
-                                <h2 className="text-lg font-semibold">Check-in Status</h2>
-                                <p className="text-xs text-zinc-500">
-                                    เวลาเซิร์ฟเวอร์: {attendanceMeta?.serverDate || '-'} · เลือกดูสถานะตามวันไทย
-                                </p>
-                            </div>
-                            <input
-                                type="date"
-                                value={attendanceDate}
-                                onChange={(event) => setAttendanceDate(event.target.value)}
-                                className="input w-auto"
-                                aria-label="Attendance date"
-                            />
-                        </div>
-                        <div className="space-y-4">
-                            {registration.sessions.length === 0 ? (
-                                <p className="text-zinc-400 text-sm">No sessions to check in</p>
-                            ) : (
-                                registration.sessions.map((session) => {
-                                    const current = session.attendanceMode === 'daily'
-                                        ? session.selectedDayAttendance
-                                        : session.checkedInAt
-                                            ? {
-                                                attendanceId: null,
-                                                attendanceDate: null,
-                                                scannedAt: session.checkedInAt,
-                                                cancelledAt: null,
-                                                cancellationReason: null,
-                                            }
-                                            : null;
-                                    return (
-                                        <div key={session.id} className="rounded-xl border border-zinc-200 p-3">
-                                            <div className="flex items-center justify-between gap-3">
-                                                <div>
-                                                    <p className="text-sm font-medium text-zinc-800">{session.sessionName}</p>
-                                                    <p className="text-xs text-zinc-500">
-                                                        {session.attendanceMode === 'daily'
-                                                            ? `Daily attendance · ${attendanceMeta?.selectedDate || attendanceDate}`
-                                                            : 'Single-session attendance'}
-                                                    </p>
-                                                </div>
-                                                {current ? (
-                                                    <span className="flex items-center gap-1 rounded-full bg-green-50 px-2 py-1 text-xs text-green-600">
-                                                        <IconCheck size={14} /> Checked In
-                                                    </span>
-                                                ) : (
-                                                    <span className="flex items-center gap-1 rounded-full bg-zinc-50 px-2 py-1 text-xs text-zinc-400">
-                                                        <IconX size={14} /> Not Yet
-                                                    </span>
-                                                )}
-                                            </div>
-                                            {current && (
-                                                <p className="mt-2 text-xs text-zinc-500">
-                                                    {bangkokDateTime(current.scannedAt)}
-                                                </p>
-                                            )}
-                                            {session.attendanceMode === 'daily' && (session.attendanceHistory?.length ?? 0) > 0 && (
-                                                <div className="mt-3 border-t border-zinc-100 pt-3">
-                                                    <p className="mb-2 text-xs font-medium text-zinc-500">Attendance history</p>
-                                                    <div className="space-y-2">
-                                                        {session.attendanceHistory!.map((row) => (
-                                                            <div key={String(row.id)} className="flex items-start justify-between gap-3 text-xs">
-                                                                <div>
-                                                                    <span className={row.cancelledAt ? 'text-rose-600' : 'text-emerald-700'}>
-                                                                        {row.attendanceDate} · {row.cancelledAt ? 'Cancelled' : 'Active'}
-                                                                    </span>
-                                                                    <p className="text-zinc-400">{bangkokDateTime(row.scannedAt)}</p>
-                                                                    {row.cancellationReason && <p className="text-rose-500">{row.cancellationReason}</p>}
-                                                                </div>
-                                                                {!row.cancelledAt && row.attendanceId && (
-                                                                    <button
-                                                                        className="font-medium text-amber-700 hover:text-amber-800"
-                                                                        onClick={async () => {
-                                                                            const reason = window.prompt('เหตุผลในการยกเลิกเช็คอิน (จำเป็น)')?.trim();
-                                                                            if (!reason) return;
-                                                                            try {
-                                                                                await api.checkins.undoDaily(getBackofficeToken(), row.attendanceId!, reason);
-                                                                                toast.success('ยกเลิกเช็คอินแล้ว โดยเก็บประวัติเดิมไว้');
-                                                                                await fetchRegistration();
-                                                                            } catch (error) {
-                                                                                toast.error(error instanceof Error ? error.message : 'ยกเลิกเช็คอินไม่สำเร็จ');
-                                                                            }
-                                                                        }}
-                                                                    >
-                                                                        Cancel
-                                                                    </button>
-                                                                )}
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    );
-                                })
-                            )}
-                        </div>
-                    </div>
-                </div>
+                  );
+                })
+              )}
             </div>
+          </div>
+        </div>
+      </div>
 
-            {user?.role === 'admin' && grantHistory.length > 0 && (
-                <div className="card mt-6">
-                    <h2 className="text-lg font-semibold mb-4">ประวัติการเพิ่มสิทธิ์ Session โดย Admin</h2>
-                    <div className="space-y-2">
-                        {grantHistory.map((entry) => (
-                            <div key={`${entry.batchId}-${entry.sessionId}-${entry.createdAt}`} className="rounded-lg border border-zinc-200 p-3 text-sm">
-                                <div className="flex flex-wrap items-center justify-between gap-2">
-                                    <span className="font-medium text-zinc-900">{entry.sessionName}</span>
-                                    <span className="text-zinc-500">{new Date(entry.createdAt).toLocaleString('th-TH')}</span>
-                                </div>
-                                <p className="mt-1 text-zinc-500">
-                                    ผลสิทธิ์: {entry.outcome === 'added' ? 'เพิ่มสิทธิ์แล้ว' : entry.outcome === 'invited' ? 'สร้างคำเชิญแล้ว' : 'ข้าม'} · อีเมล: {entry.emailStatus} · Attempts: {entry.attemptCount}
-                                </p>
-                                {entry.invitation && (
-                                    <p className="mt-1 text-xs text-amber-700">
-                                        {invitationLabels[entry.invitation.invitationStatus]} · ก่อน {bangkokDateTime(entry.invitation.effectiveDeadline)} เวลาไทย
-                                        {entry.invitation.respondedAt ? ` · ตอบเมื่อ ${bangkokDateTime(entry.invitation.respondedAt)}` : ''}
-                                    </p>
-                                )}
-                            </div>
-                        ))}
-                    </div>
+      {user?.role === 'admin' && grantHistory.length > 0 && (
+        <div className="card mt-6">
+          <h2 className="text-lg font-semibold mb-4">
+            ประวัติการเพิ่มสิทธิ์ Session โดย Admin
+          </h2>
+          <div className="space-y-2">
+            {grantHistory.map((entry) => (
+              <div
+                key={`${entry.batchId}-${entry.sessionId}-${entry.createdAt}`}
+                className="rounded-lg border border-zinc-200 p-3 text-sm"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="font-medium text-zinc-900">
+                    {entry.sessionName}
+                  </span>
+                  <span className="text-zinc-500">
+                    {new Date(entry.createdAt).toLocaleString('th-TH')}
+                  </span>
                 </div>
-            )}
+                <p className="mt-1 text-zinc-500">
+                  ผลสิทธิ์:{' '}
+                  {entry.outcome === 'added'
+                    ? 'เพิ่มสิทธิ์แล้ว'
+                    : entry.outcome === 'invited'
+                      ? 'สร้างคำเชิญแล้ว'
+                      : 'ข้าม'}{' '}
+                  · อีเมล: {entry.emailStatus} · Attempts: {entry.attemptCount}
+                </p>
+                {entry.invitation && (
+                  <p className="mt-1 text-xs text-amber-700">
+                    {invitationLabels[entry.invitation.invitationStatus]} · ก่อน{' '}
+                    {bangkokDateTime(entry.invitation.effectiveDeadline)}{' '}
+                    เวลาไทย
+                    {entry.invitation.respondedAt
+                      ? ` · ตอบเมื่อ ${bangkokDateTime(entry.invitation.respondedAt)}`
+                      : ''}
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
-            {grantBatchId && (
-                <div className="card mt-6">
-                    <SessionGrantResults batchId={grantBatchId} onEntitlementsChanged={() => { void fetchRegistration(); }} />
-                </div>
-            )}
+      {grantBatchId && (
+        <div className="card mt-6">
+          <SessionGrantResults
+            batchId={grantBatchId}
+            onEntitlementsChanged={() => {
+              void fetchRegistration();
+            }}
+          />
+        </div>
+      )}
 
-            {user?.role === 'admin' && grantFeatureEnabled && (
-                <AddSessionDialog
-                    open={grantDialogOpen}
-                    eventId={registration.eventId}
-                    existingSessionIds={registration.sessions.map((session) => session.sessionId)}
-                    onClose={() => setGrantDialogOpen(false)}
-                    onSessionSelected={(session) => { void grantSelectedSession(session); }}
-                />
-            )}
-            {user?.role === 'admin' && previewRequest && <SessionEmailPreviewDialog
-                request={previewRequest} submitting={grantSubmitting}
-                onClose={() => setPreviewRequest(null)} onConfirm={submitGrant}
-            />}
-        </AdminLayout>
-    );
+      {user?.role === 'admin' && grantFeatureEnabled && (
+        <AddSessionDialog
+          open={grantDialogOpen}
+          eventId={registration.eventId}
+          existingSessionIds={registration.sessions.map(
+            (session) => session.sessionId,
+          )}
+          onClose={() => setGrantDialogOpen(false)}
+          onSessionSelected={(session) => {
+            void grantSelectedSession(session);
+          }}
+        />
+      )}
+      {user?.role === 'admin' && previewRequest && (
+        <SessionEmailPreviewDialog
+          request={previewRequest}
+          submitting={grantSubmitting}
+          onClose={() => setPreviewRequest(null)}
+          onConfirm={submitGrant}
+        />
+      )}
+    </AdminLayout>
+  );
 }
 
-function SessionCard({ session, formatTime, formatDate }: { session: RegistrationSession; formatTime: (d: string) => string; formatDate: (d: string) => string }) {
-    const typeConfig = sessionTypeConfig[session.sessionType] || sessionTypeConfig.other;
+function SessionCard({
+  session,
+  formatTime,
+  formatDate,
+}: {
+  session: RegistrationSession;
+  formatTime: (d: string) => string;
+  formatDate: (d: string) => string;
+}) {
+  const typeConfig =
+    sessionTypeConfig[session.sessionType] || sessionTypeConfig.other;
 
-    return (
-        <div className="p-4 border border-zinc-200 rounded-xl hover:border-zinc-200 transition-colors">
-            <div className="flex items-start justify-between gap-4">
-                <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                        <span className={`px-2 py-0.5 rounded text-xs font-medium ${typeConfig.bg} ${typeConfig.text}`}>
-                            {typeConfig.label}
-                        </span>
-                        <span className="text-xs text-zinc-400 font-mono">{session.sessionCode}</span>
-                    </div>
-                    <p className="font-medium text-zinc-900">{session.sessionName}</p>
-                    {session.source === 'admin_grant' && (
-                        <div className="flex flex-wrap items-center gap-2 mt-1 text-xs">
-                            <span className="inline-flex px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200">
-                                เพิ่มโดย Admin
-                            </span>
-                            <span className="text-zinc-400">
-                                {session.addedByFirstName ? `เพิ่มโดย ${session.addedByFirstName} ${session.addedByLastName || ''}`.trim() : 'ผู้ดูแล'} · {formatDate(session.addedAt)}
-                            </span>
-                        </div>
-                    )}
-                    <div className="flex flex-wrap items-center gap-3 mt-2 text-sm text-zinc-400">
-                        <span className="flex items-center gap-1">
-                            <IconCalendar size={14} />
-                            {formatDate(session.startTime)}
-                        </span>
-                        <span className="flex items-center gap-1">
-                            <IconClock size={14} />
-                            {formatTime(session.startTime)} - {formatTime(session.endTime)}
-                        </span>
-                        {session.room && (
-                            <span className="flex items-center gap-1">
-                                <IconMapPin size={14} />
-                                {session.room}
-                            </span>
-                        )}
-                    </div>
-                </div>
-                            </div>
+  return (
+    <div className="p-4 border border-zinc-200 rounded-xl hover:border-zinc-200 transition-colors">
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <span
+              className={`px-2 py-0.5 rounded text-xs font-medium ${typeConfig.bg} ${typeConfig.text}`}
+            >
+              {typeConfig.label}
+            </span>
+            <span className="text-xs text-zinc-400 font-mono">
+              {session.sessionCode}
+            </span>
+          </div>
+          <p className="font-medium text-zinc-900">{session.sessionName}</p>
+          {session.source === 'admin_grant' && (
+            <div className="flex flex-wrap items-center gap-2 mt-1 text-xs">
+              <span className="inline-flex px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200">
+                เพิ่มโดย Admin
+              </span>
+              <span className="text-zinc-400">
+                {session.addedByFirstName
+                  ? `เพิ่มโดย ${session.addedByFirstName} ${session.addedByLastName || ''}`.trim()
+                  : 'ผู้ดูแล'}{' '}
+                · {formatDate(session.addedAt)}
+              </span>
+            </div>
+          )}
+          <div className="flex flex-wrap items-center gap-3 mt-2 text-sm text-zinc-400">
+            <span className="flex items-center gap-1">
+              <IconCalendar size={14} />
+              {formatDate(session.startTime)}
+            </span>
+            <span className="flex items-center gap-1">
+              <IconClock size={14} />
+              {formatTime(session.startTime)} - {formatTime(session.endTime)}
+            </span>
+            {session.room && (
+              <span className="flex items-center gap-1">
+                <IconMapPin size={14} />
+                {session.room}
+              </span>
+            )}
+          </div>
         </div>
-    );
+      </div>
+    </div>
+  );
 }

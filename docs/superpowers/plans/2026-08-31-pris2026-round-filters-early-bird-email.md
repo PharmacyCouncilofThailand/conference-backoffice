@@ -61,14 +61,17 @@ Do not send cutoff dates or eligibility flags from frontend.
 ## File Map
 
 **Create:**
+
 - `src/lib/pris2026AbstractRounds.ts` — UI-only mapping from PRIS round IDs to the generic API date query contract.
 
 **Modify:**
+
 - `src/types/api.ts` — add reusable event option code support only if needed by abstract page types; no API eligibility types.
 - `src/app/abstracts/page.tsx` — PRIS round selector, query mapping, export mapping, round reset behavior.
 - `src/app/email-manual/page.tsx` — expose new manual template in template group and improve recipient context copy for this template.
 
 **Verify only:**
+
 - `src/lib/api.ts` — existing `api.abstracts.list(token, query)` already supports arbitrary query string and requires no contract rewrite unless TypeScript types are tightened during implementation.
 
 ---
@@ -76,33 +79,39 @@ Do not send cutoff dates or eligibility flags from frontend.
 ### Task 1: Add One PRIS Abstract Round Mapping Helper
 
 **Files:**
+
 - Create: `src/lib/pris2026AbstractRounds.ts`
 
 **Interfaces:**
+
 - Consumes UI round ID.
 - Produces generic query parameters; no pricing logic.
 
 ```ts
-export const PRIS_2026_EVENT_CODE = "PRIS-2026" as const;
+export const PRIS_2026_EVENT_CODE = 'PRIS-2026' as const;
 
-export type Pris2026AbstractRoundFilter = "" | "round1" | "round2";
+export type Pris2026AbstractRoundFilter = '' | 'round1' | 'round2';
 
 export const PRIS_2026_ABSTRACT_ROUND_OPTIONS = [
-  { id: "round1", label: "Round 1", detail: "Submitted through 31 Aug 2026, 23:59" },
-  { id: "round2", label: "Round 2", detail: "Submitted 1–20 Sep 2026" },
+  {
+    id: 'round1',
+    label: 'Round 1',
+    detail: 'Submitted through 31 Aug 2026, 23:59',
+  },
+  { id: 'round2', label: 'Round 2', detail: 'Submitted 1–20 Sep 2026' },
 ] as const;
 
 export function getPris2026RoundQuery(round: Pris2026AbstractRoundFilter): {
   submittedFrom?: string;
   submittedBefore?: string;
 } {
-  if (round === "round1") {
-    return { submittedBefore: "2026-08-31T17:00:00.000Z" };
+  if (round === 'round1') {
+    return { submittedBefore: '2026-08-31T17:00:00.000Z' };
   }
-  if (round === "round2") {
+  if (round === 'round2') {
     return {
-      submittedFrom: "2026-08-31T17:00:00.000Z",
-      submittedBefore: "2026-09-20T17:00:00.000Z",
+      submittedFrom: '2026-08-31T17:00:00.000Z',
+      submittedBefore: '2026-09-20T17:00:00.000Z',
     };
   }
   return {};
@@ -141,10 +150,12 @@ git commit -m "feat: define PRIS abstract round filters"
 ### Task 2: Preserve Event Code in Abstract Filter Options
 
 **Files:**
+
 - Modify: `src/app/abstracts/page.tsx:148-190`
 - Modify: `src/types/api.ts:15-31` only if a shared option type is preferred.
 
 **Interfaces:**
+
 - Consumes admin event API rows (`eventCode`, `eventName`) and non-admin `AssignedEvent.code`.
 - Produces local options with `{ id, code, name }` so PRIS-specific round controls are not shown for unrelated events.
 
@@ -153,17 +164,21 @@ git commit -m "feat: define PRIS abstract round filters"
 From:
 
 ```ts
-const [eventOptions, setEventOptions] = useState<{ id: number; name: string }[]>([]);
+const [eventOptions, setEventOptions] = useState<
+  { id: number; name: string }[]
+>([]);
 ```
 
 To:
 
 ```ts
-const [eventOptions, setEventOptions] = useState<{
-  id: number;
-  code: string;
-  name: string;
-}[]>([]);
+const [eventOptions, setEventOptions] = useState<
+  {
+    id: number;
+    code: string;
+    name: string;
+  }[]
+>([]);
 ```
 
 - [ ] **Step 2: Map admin event code**
@@ -172,7 +187,7 @@ const [eventOptions, setEventOptions] = useState<{
 setEventOptions(
   (res.events as any[]).map((e) => ({
     id: e.id as number,
-    code: String(e.eventCode || ""),
+    code: String(e.eventCode || ''),
     name: e.eventName as string,
   })),
 );
@@ -227,18 +242,20 @@ git commit -m "refactor: preserve event code in abstract filters"
 ### Task 3: Add PRIS Round Filter to Abstract List
 
 **Files:**
+
 - Modify: `src/app/abstracts/page.tsx:148-330`
 - Modify: `src/app/abstracts/page.tsx:520-590`
 - Consume: `src/lib/pris2026AbstractRounds.ts`
 
 **Interfaces:**
+
 - Consumes `getPris2026RoundQuery(roundFilter)`.
 - Produces list query with generic API date parameters.
 
 - [ ] **Step 1: Add round state**
 
 ```ts
-const [roundFilter, setRoundFilter] = useState<Pris2026AbstractRoundFilter>("");
+const [roundFilter, setRoundFilter] = useState<Pris2026AbstractRoundFilter>('');
 ```
 
 - [ ] **Step 2: Reset round when event changes away from PRIS**
@@ -248,7 +265,7 @@ Add effect:
 ```ts
 useEffect(() => {
   if (!isPris2026Event && roundFilter) {
-    setRoundFilter("");
+    setRoundFilter('');
     setPage(1);
   }
 }, [isPris2026Event, roundFilter]);
@@ -266,7 +283,8 @@ Current fetch effect must include `roundFilter`.
 if (isPris2026Event && roundFilter) {
   const roundQuery = getPris2026RoundQuery(roundFilter);
   if (roundQuery.submittedFrom) params.submittedFrom = roundQuery.submittedFrom;
-  if (roundQuery.submittedBefore) params.submittedBefore = roundQuery.submittedBefore;
+  if (roundQuery.submittedBefore)
+    params.submittedBefore = roundQuery.submittedBefore;
 }
 ```
 
@@ -277,20 +295,22 @@ Keep status/category/presentation/event/search filters unchanged and additive.
 Place next to current category/presentation/status filters:
 
 ```tsx
-{isPris2026Event && (
-  <select
-    value={roundFilter}
-    onChange={(e) => {
-      setRoundFilter(e.target.value as Pris2026AbstractRoundFilter);
-      setPage(1);
-    }}
-    className="input-field w-full"
-  >
-    <option value="">All Rounds</option>
-    <option value="round1">Round 1 — through 31 Aug 2026</option>
-    <option value="round2">Round 2 — 1–20 Sep 2026</option>
-  </select>
-)}
+{
+  isPris2026Event && (
+    <select
+      value={roundFilter}
+      onChange={(e) => {
+        setRoundFilter(e.target.value as Pris2026AbstractRoundFilter);
+        setPage(1);
+      }}
+      className="input-field w-full"
+    >
+      <option value="">All Rounds</option>
+      <option value="round1">Round 1 — through 31 Aug 2026</option>
+      <option value="round2">Round 2 — 1–20 Sep 2026</option>
+    </select>
+  );
+}
 ```
 
 Do not show a Round 2 result/announcement date.
@@ -327,9 +347,11 @@ git commit -m "feat: filter PRIS abstracts by round"
 ### Task 4: Make Excel Export Honor Round Filter Exactly
 
 **Files:**
+
 - Modify: `src/app/abstracts/page.tsx:240-315`
 
 **Interfaces:**
+
 - Consumes same `getPris2026RoundQuery()` as list fetch.
 - Produces export API query matching visible filters.
 
@@ -341,7 +363,8 @@ Use same helper, not duplicated dates:
 if (isPris2026Event && roundFilter) {
   const roundQuery = getPris2026RoundQuery(roundFilter);
   if (roundQuery.submittedFrom) params.submittedFrom = roundQuery.submittedFrom;
-  if (roundQuery.submittedBefore) params.submittedBefore = roundQuery.submittedBefore;
+  if (roundQuery.submittedBefore)
+    params.submittedBefore = roundQuery.submittedBefore;
 }
 ```
 
@@ -350,10 +373,10 @@ if (isPris2026Event && roundFilter) {
 Recommended filename:
 
 ```ts
-const roundSuffix = roundFilter ? `_${roundFilter}` : "";
+const roundSuffix = roundFilter ? `_${roundFilter}` : '';
 exportToExcel(
   rows,
-  `abstracts_${eventName.replace(/\s+/g, "_")}${roundSuffix}`,
+  `abstracts_${eventName.replace(/\s+/g, '_')}${roundSuffix}`,
 );
 ```
 
@@ -362,6 +385,7 @@ Do not change exported column content unless needed for existing behavior.
 - [ ] **Step 3: Compare screen count vs export count**
 
 Manual contract check with seeded data:
+
 - select Round 1;
 - note `totalCount`;
 - export;
@@ -390,9 +414,11 @@ git commit -m "fix: apply PRIS round filter to abstract export"
 ### Task 5: Expose New Manual Early Bird Template in UI
 
 **Files:**
+
 - Modify: `src/app/email-manual/page.tsx:45-70`
 
 **Interfaces:**
+
 - Consumes API template entry with ID `pris-early-bird-reminder`.
 - Produces selectable button in current Manual Email page.
 
@@ -438,9 +464,11 @@ git commit -m "feat: expose PRIS Early Bird manual email"
 ### Task 6: Improve Manual Reminder Recipient Context Without Changing Eligibility
 
 **Files:**
+
 - Modify: `src/app/email-manual/page.tsx:350-530`
 
 **Interfaces:**
+
 - Consumes API recipient `detail`/`tag` and selected template metadata.
 - Produces clearer operator messaging before mass send.
 
@@ -450,7 +478,9 @@ When `selectedTemplateId === "pris-early-bird-reminder"`, show:
 
 ```tsx
 <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-  รายชื่อด้านล่างถูกคัดจาก API แล้ว: บัญชีสร้างก่อน cutoff, มี PRIS 2026 abstract ก่อน cutoff และยังไม่มี confirmed primary registration. ระบบจะตรวจสิทธิ์ซ้ำตอน Preview / Validate / Send.
+  รายชื่อด้านล่างถูกคัดจาก API แล้ว: บัญชีสร้างก่อน cutoff, มี PRIS 2026
+  abstract ก่อน cutoff และยังไม่มี confirmed primary registration.
+  ระบบจะตรวจสิทธิ์ซ้ำตอน Preview / Validate / Send.
 </div>
 ```
 
@@ -489,9 +519,11 @@ git commit -m "chore: clarify PRIS reminder audience"
 ### Task 7: Cross-Repo Contract Smoke Test
 
 **Files:**
+
 - No code change expected.
 
 **Interfaces:**
+
 - Consumes deployed API from API plan Tasks 7 and 10.
 - Produces verified backoffice behavior.
 
@@ -526,6 +558,7 @@ Repeat Round1/2 and confirm export network request uses identical date filters.
 - [ ] **Step 5: Test Manual Email lifecycle**
 
 For `PRIS Early Bird Reminder`:
+
 1. select event;
 2. recipients load from API;
 3. search narrows list;

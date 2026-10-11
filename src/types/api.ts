@@ -5,12 +5,12 @@
 // ============================================================================
 
 export type StaffRole =
-  | "admin"
-  | "organizer"
-  | "reviewer"
-  | "staff"
-  | "verifier"
-  | "team_registration_viewer";
+  | 'admin'
+  | 'organizer'
+  | 'reviewer'
+  | 'staff'
+  | 'verifier'
+  | 'team_registration_viewer';
 
 export interface AssignedEvent {
   id: number;
@@ -45,8 +45,8 @@ export interface LoginResponse {
 // Event Types
 // ============================================================================
 
-export type EventStatus = "draft" | "published" | "cancelled" | "completed";
-export type EventType = "single_room" | "multi_session";
+export type EventStatus = 'draft' | 'published' | 'cancelled' | 'completed';
+export type EventType = 'single_room' | 'multi_session';
 
 export interface Event {
   id: number;
@@ -122,7 +122,7 @@ export interface Session {
 // Ticket Types
 // ============================================================================
 
-export type TicketCategory = "primary" | "addon";
+export type TicketCategory = 'primary' | 'addon';
 
 export interface Ticket {
   id: number;
@@ -151,19 +151,12 @@ export interface Ticket {
 // Sponsor Types
 // ============================================================================
 
-export type SponsorPackageType = "booth" | "symposium" | "bundle";
+export type SponsorPackageType = 'booth' | 'symposium' | 'bundle';
 export type SponsorMediaType =
-  | "past_sponsor_logo"
-  | "previous_year_impression"
-  | "brochure"
-  | "other";
+  'past_sponsor_logo' | 'previous_year_impression' | 'brochure' | 'other';
 export type SponsorApplicationStatus =
-  | "submitted"
-  | "under_review"
-  | "approved"
-  | "rejected"
-  | "cancelled";
-export type SponsorPaymentStatus = "pending_review" | "verified" | "rejected";
+  'submitted' | 'under_review' | 'approved' | 'rejected' | 'cancelled';
+export type SponsorPaymentStatus = 'pending_review' | 'verified' | 'rejected';
 
 export interface SponsorEventProfile {
   id?: number;
@@ -234,7 +227,7 @@ export interface SponsorPackage {
   remainingQuota?: number | null;
   rawRemainingQuota?: number | null;
   effectiveQuota?: number | null;
-  availabilitySource?: "package" | "components";
+  availabilitySource?: 'package' | 'components';
   features?: SponsorPackageFeature[];
   components?: SponsorPackageComponent[];
 }
@@ -343,7 +336,7 @@ export interface SponsorPage {
 // Registration Types
 // ============================================================================
 
-export type RegistrationStatus = "confirmed" | "cancelled";
+export type RegistrationStatus = 'confirmed' | 'cancelled';
 
 export interface Registration {
   id: number;
@@ -358,7 +351,7 @@ export interface Registration {
   ticketName?: string;
   eventName?: string;
   eventCode?: string;
-  source?: "purchase" | "manual" | "free" | "quick";
+  source?: 'purchase' | 'manual' | 'free' | 'quick';
   promoCode?: string | null;
   addedNote?: string | null;
   addedByFirstName?: string | null;
@@ -369,7 +362,7 @@ export interface Registration {
 // Verification Types
 // ============================================================================
 
-export type AccountStatus = "pending_approval" | "active" | "rejected";
+export type AccountStatus = 'pending_approval' | 'active' | 'rejected';
 
 export interface VerificationRequest {
   id: number;
@@ -384,10 +377,7 @@ export interface VerificationRequest {
 }
 
 export type StudentEligibilityStatus =
-  | "pending"
-  | "approved"
-  | "rejected"
-  | "cancelled";
+  'pending' | 'approved' | 'rejected' | 'cancelled';
 
 export interface StudentEligibilityRequest {
   id: number;
@@ -400,7 +390,7 @@ export interface StudentEligibilityRequest {
   role: string;
   pharmacyLicenseId?: string | null;
   institution?: string | null;
-  studentLevel: "postgraduate";
+  studentLevel: 'postgraduate';
   status: StudentEligibilityStatus;
   documentFileName: string;
   documentUrl: string;
@@ -421,15 +411,15 @@ export interface StudentEligibilityRequest {
 // ============================================================================
 
 export type AbstractCategory =
-  | "clinical_pharmacy"
-  | "social_administrative"
-  | "community_pharmacy"
-  | "pharmacology_toxicology"
-  | "pharmacy_education"
-  | "digital_pharmacy";
+  | 'clinical_pharmacy'
+  | 'social_administrative'
+  | 'community_pharmacy'
+  | 'pharmacology_toxicology'
+  | 'pharmacy_education'
+  | 'digital_pharmacy';
 
-export type PresentationType = "oral" | "poster";
-export type AbstractStatus = "pending" | "accepted" | "rejected";
+export type PresentationType = 'oral' | 'poster';
+export type AbstractStatus = 'pending' | 'accepted' | 'rejected';
 
 export interface Abstract {
   id: number;
@@ -458,7 +448,7 @@ export interface PromoCodeAbstractReportRow {
     id: number;
     trackingId: string | null;
     title: string;
-    status: "pending" | "accepted" | "rejected" | "revision";
+    status: 'pending' | 'accepted' | 'rejected' | 'revision';
     categoryName: string;
     presentationType: PresentationType;
     confirmedAt: string | null;
@@ -472,7 +462,7 @@ export interface PromoCodeAbstractReportRow {
 // Speaker Types
 // ============================================================================
 
-export type SpeakerType = "keynote" | "panelist" | "moderator" | "guest";
+export type SpeakerType = 'keynote' | 'panelist' | 'moderator' | 'guest';
 
 export interface Speaker {
   id: number;
@@ -491,7 +481,7 @@ export interface Speaker {
 // ============================================================================
 
 export interface PromoRuleSet {
-  matchType: "all" | "any" | "only";
+  matchType: 'all' | 'any' | 'only';
   ticketTypeIds: number[];
 }
 
@@ -500,7 +490,7 @@ export interface PromoCode {
   eventId?: number | null;
   code: string;
   description?: string | null;
-  discountType: "percentage" | "fixed";
+  discountType: 'percentage' | 'fixed';
   discountValue: string;
   fixedValueThb?: string | null;
   fixedValueUsd?: string | null;
@@ -522,7 +512,7 @@ export interface PromoCode {
 // Payment Types
 // ============================================================================
 
-export type PaymentStatus = "pending" | "paid" | "failed" | "refunded";
+export type PaymentStatus = 'pending' | 'paid' | 'failed' | 'refunded';
 
 export interface Payment {
   id: number;
@@ -536,18 +526,14 @@ export interface Payment {
 
 // Team registrations are an isolated domain and do not reuse ticket registrations.
 export type TeamRegistrationStatus =
-  | "draft"
-  | "ready_for_payment"
-  | "payment_pending"
-  | "paid"
-  | "expired";
+  'draft' | 'ready_for_payment' | 'payment_pending' | 'paid' | 'expired';
 export type TeamPaymentAttemptStatus =
-  | "creating"
-  | "pending"
-  | "paid"
-  | "failed"
-  | "expired"
-  | "verification_required";
+  | 'creating'
+  | 'pending'
+  | 'paid'
+  | 'failed'
+  | 'expired'
+  | 'verification_required';
 
 export interface TeamRegistrationListItem {
   id: string;
@@ -556,7 +542,7 @@ export interface TeamRegistrationListItem {
   category: {
     code: string;
     name: string;
-    educationLevel: "higher_education" | "upper_secondary";
+    educationLevel: 'higher_education' | 'upper_secondary';
   };
   leader: { name: string; email: string };
   memberCount: number;
@@ -571,9 +557,9 @@ export interface TeamRegistrationListItem {
 
 export interface TeamRegistrationMember {
   id: string;
-  memberRole: "leader" | "member";
+  memberRole: 'leader' | 'member';
   position: number;
-  title: "mr" | "ms";
+  title: 'mr' | 'ms';
   firstName: string;
   lastName: string;
   nickname: string | null;
@@ -647,8 +633,8 @@ export interface TeamRegistrationCategoryConfig {
   id?: number;
   code: string;
   displayName: string;
-  educationLevel: "higher_education" | "upper_secondary";
-  pharmacyRule: "required" | "forbidden";
+  educationLevel: 'higher_education' | 'upper_secondary';
+  pharmacyRule: 'required' | 'forbidden';
   isActive: boolean;
   displayOrder: number;
 }
@@ -667,7 +653,7 @@ export interface TeamRegistrationPriceConfig {
   pricingRoundCode: string;
   categoryCode: string;
   amount: number | string;
-  currency: "THB";
+  currency: 'THB';
 }
 export interface TeamRegistrationConfig {
   id?: number;

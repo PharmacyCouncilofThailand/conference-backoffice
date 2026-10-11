@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import Link from "next/link";
-import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { useState } from 'react';
+import Link from 'next/link';
+import Image from 'next/image';
+import { usePathname } from 'next/navigation';
 import {
   IconLayoutDashboard,
   IconUsers,
@@ -23,154 +23,154 @@ import {
   IconMailBolt,
   IconBriefcase,
   IconGift,
-} from "@tabler/icons-react";
-import { useAuth } from "@/contexts/AuthContext";
+} from '@tabler/icons-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 // Menu structure with categories - organized by workflow
 const menuStructure = [
   {
-    type: "link",
-    href: "/",
-    label: "Dashboard",
+    type: 'link',
+    href: '/',
+    label: 'Dashboard',
     icon: IconLayoutDashboard,
   },
   {
-    type: "category",
-    label: "EVENT MANAGEMENT",
+    type: 'category',
+    label: 'EVENT MANAGEMENT',
   },
   {
-    type: "submenu",
-    label: "Events",
+    type: 'submenu',
+    label: 'Events',
     icon: IconCalendarEvent,
     children: [
-      { href: "/events", label: "All Events" },
-      { href: "/sessions", label: "Sessions" },
-      { href: "/speakers", label: "Speakers" },
+      { href: '/events', label: 'All Events' },
+      { href: '/sessions', label: 'Sessions' },
+      { href: '/speakers', label: 'Speakers' },
     ],
   },
   {
-    type: "link",
-    href: "/sponsors",
-    label: "Sponsor Hub",
+    type: 'link',
+    href: '/sponsors',
+    label: 'Sponsor Hub',
     icon: IconBriefcase,
   },
   {
-    type: "submenu",
-    label: "Abstracts",
+    type: 'submenu',
+    label: 'Abstracts',
     icon: IconFileText,
     children: [
-      { href: "/abstracts", label: "All Abstracts" },
-      { href: "/presentations", label: "Presentation submissions" },
-      { href: "/abstract-categories", label: "Categories" },
+      { href: '/abstracts', label: 'All Abstracts' },
+      { href: '/presentations', label: 'Presentation submissions' },
+      { href: '/abstract-categories', label: 'Categories' },
     ],
   },
   {
-    type: "category",
-    label: "FINANCE & TICKETING",
+    type: 'category',
+    label: 'FINANCE & TICKETING',
   },
   {
-    type: "submenu",
-    label: "Tickets",
+    type: 'submenu',
+    label: 'Tickets',
     icon: IconTicket,
     children: [
-      { href: "/tickets", label: "Ticket Types" },
-      { href: "/promo-codes", label: "Promo Codes" },
+      { href: '/tickets', label: 'Ticket Types' },
+      { href: '/promo-codes', label: 'Promo Codes' },
     ],
   },
   {
-    type: "link",
-    href: "/payments",
-    label: "Payments",
+    type: 'link',
+    href: '/payments',
+    label: 'Payments',
     icon: IconCreditCard,
   },
   {
-    type: "category",
-    label: "ATTENDEE MANAGEMENT",
+    type: 'category',
+    label: 'ATTENDEE MANAGEMENT',
   },
   {
-    type: "submenu",
-    label: "Registrations",
+    type: 'submenu',
+    label: 'Registrations',
     icon: IconUsers,
     children: [
-      { href: "/registrations", label: "All Registrations" },
+      { href: '/registrations', label: 'All Registrations' },
       { href: '/session-grants', label: 'ติดตามสิทธิ์ Session' },
-      { href: "/promo-code-abstracts", label: "Promo Code & Abstracts" },
-      { href: "/verification", label: "Student Verification" },
-      { href: "/student-eligibility", label: "Postgrad Eligibility" },
+      { href: '/promo-code-abstracts', label: 'Promo Code & Abstracts' },
+      { href: '/verification', label: 'Student Verification' },
+      { href: '/student-eligibility', label: 'Postgrad Eligibility' },
     ],
   },
   {
-    type: "link",
-    href: "/members",
-    label: "Members",
+    type: 'link',
+    href: '/members',
+    label: 'Members',
     icon: IconUsers,
   },
   {
-    type: "link",
-    href: "/team-registrations",
-    label: "Team Registrations",
+    type: 'link',
+    href: '/team-registrations',
+    label: 'Team Registrations',
     icon: IconUsersGroup,
   },
   {
-    type: "category",
-    label: "OPERATIONS & REPORTS",
+    type: 'category',
+    label: 'OPERATIONS & REPORTS',
   },
   {
-    type: "link",
-    href: "/checkin",
-    label: "Check-in Scanner",
+    type: 'link',
+    href: '/checkin',
+    label: 'Check-in Scanner',
     icon: IconScan,
   },
   {
-    type: "link",
-    href: "/checkins",
-    label: "Checked-in List",
+    type: 'link',
+    href: '/checkins',
+    label: 'Checked-in List',
     icon: IconUserCheck,
   },
   {
-    type: "link",
-    href: "/reports",
-    label: "Reports",
+    type: 'link',
+    href: '/reports',
+    label: 'Reports',
     icon: IconReportAnalytics,
   },
   {
-    type: "link",
-    href: "/lucky-wheel",
-    label: "Lucky Wheel",
+    type: 'link',
+    href: '/lucky-wheel',
+    label: 'Lucky Wheel',
     icon: IconGift,
   },
   {
-    type: "link",
-    href: "/reward-collection",
-    label: "ส่งมอบรางวัล",
+    type: 'link',
+    href: '/reward-collection',
+    label: 'ส่งมอบรางวัล',
     icon: IconGift,
   },
   {
-    type: "category",
-    label: "SYSTEM ADMINISTRATION",
+    type: 'category',
+    label: 'SYSTEM ADMINISTRATION',
   },
   {
-    type: "link",
-    href: "/users",
-    label: "Users & Roles",
+    type: 'link',
+    href: '/users',
+    label: 'Users & Roles',
     icon: IconUsersGroup,
   },
   {
-    type: "link",
-    href: "/email-retrosend",
-    label: "Email Retrosend",
+    type: 'link',
+    href: '/email-retrosend',
+    label: 'Email Retrosend',
     icon: IconMailForward,
   },
   {
-    type: "link",
-    href: "/email-manual",
-    label: "Manual Email",
+    type: 'link',
+    href: '/email-manual',
+    label: 'Manual Email',
     icon: IconMailBolt,
   },
   {
-    type: "link",
-    href: "/settings",
-    label: "Settings",
+    type: 'link',
+    href: '/settings',
+    label: 'Settings',
     icon: IconSettings,
   },
 ];
@@ -190,7 +190,7 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
 
   const handleLogout = () => {
     logout();
-    window.location.href = "/login";
+    window.location.href = '/login';
   };
 
   const toggleSubmenu = (label: string) => {
@@ -200,8 +200,8 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
   };
 
   const isActiveLink = (href: string) => {
-    if (href === "/") return pathname === "/";
-    return pathname === href || pathname.startsWith(href + "/");
+    if (href === '/') return pathname === '/';
+    return pathname === href || pathname.startsWith(href + '/');
   };
 
   const isSubmenuActive = (children: { href: string }[]) => {
@@ -213,25 +213,33 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
     .map((item) => {
       // Admin sees everything
       if (isAdmin) return item;
-      if (item.children) item = { ...item, children: item.children.filter(child => child.href !== '/session-grants') };
+      if (item.children)
+        item = {
+          ...item,
+          children: item.children.filter(
+            (child) => child.href !== '/session-grants',
+          ),
+        };
 
       // Sponsor Hub is admin-only.
-      if (item.href === "/sponsors") return null;
+      if (item.href === '/sponsors') return null;
 
-      if (role === "team_registration_viewer") {
-        if (item.href === "/team-registrations") return item;
+      if (role === 'team_registration_viewer') {
+        if (item.href === '/team-registrations') return item;
         return null;
       }
 
       // Verifier specific restrictions
-      if (role === "verifier") {
+      if (role === 'verifier') {
         // Only show Verification related items
-        if (item.label === "ATTENDEE MANAGEMENT") return item;
-        if (item.label === "Registrations" && item.children) {
+        if (item.label === 'ATTENDEE MANAGEMENT') return item;
+        if (item.label === 'Registrations' && item.children) {
           return {
             ...item,
             children: item.children.filter(
-              (child) => child.href === "/verification" || child.href === "/student-eligibility",
+              (child) =>
+                child.href === '/verification' ||
+                child.href === '/student-eligibility',
             ),
           };
         }
@@ -239,55 +247,61 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
       }
 
       // Organizer specific restrictions
-      if (role === "organizer") {
-        if (item.href === "/members") return item;
-        if (item.label === "ATTENDEE MANAGEMENT") return item;
+      if (role === 'organizer') {
+        if (item.href === '/members') return item;
+        if (item.label === 'ATTENDEE MANAGEMENT') return item;
 
-        if (item.label === "Registrations" && item.children) {
+        if (item.label === 'Registrations' && item.children) {
           return {
             ...item,
             children: item.children.filter(
-              (child) => child.href === "/registrations" ||
-                child.href === "/promo-code-abstracts" ||
-                child.href === "/verification",
+              (child) =>
+                child.href === '/registrations' ||
+                child.href === '/promo-code-abstracts' ||
+                child.href === '/verification',
             ),
           };
         }
-        if (item.label === "Abstracts" && item.children) {
+        if (item.label === 'Abstracts' && item.children) {
           return {
             ...item,
-            children: item.children.filter((child) => child.href === "/abstracts"),
+            children: item.children.filter(
+              (child) => child.href === '/abstracts',
+            ),
           };
         }
         return null;
       }
 
       // Reviewer specific restrictions
-      if (role === "reviewer") {
+      if (role === 'reviewer') {
         // Only show Abstracts submenu
-        if (item.label === "Abstracts" && item.children) {
+        if (item.label === 'Abstracts' && item.children) {
           return {
             ...item,
-            children: item.children.filter((child) => child.href === "/abstracts"),
+            children: item.children.filter(
+              (child) => child.href === '/abstracts',
+            ),
           };
         }
         return null;
       }
 
       // Staff specific restrictions
-      if (role === "staff") {
-        if (item.href === "/checkin" || item.href === "/reward-collection") return item;
+      if (role === 'staff') {
+        if (item.href === '/checkin' || item.href === '/reward-collection')
+          return item;
         return null;
       }
 
       // Non-admin restrictions (existing logic)
 
       // Hide System Administration category and its links
-      if (item.label === "SYSTEM ADMINISTRATION") return null;
-      if (item.href === "/users") return null;
-      if (item.href === "/email-retrosend") return null;
-      if (item.href === "/email-manual") return null;
-      if (item.href === "/settings") return null;
+      if (item.label === 'SYSTEM ADMINISTRATION') return null;
+      if (item.href === '/users') return null;
+      if (item.href === '/email-retrosend') return null;
+      if (item.href === '/email-manual') return null;
+      if (item.href === '/settings') return null;
 
       return item;
     })
@@ -299,16 +313,27 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
         sidebar
         transform transition-transform duration-300 ease-out
         lg:translate-x-0
-        ${isOpen ? "translate-x-0" : "-translate-x-full"}
+        ${isOpen ? 'translate-x-0' : '-translate-x-full'}
       `}
     >
       {/* Brand */}
       <div className="flex items-center justify-between px-5 h-16 shrink-0">
         <Link href="/" className="flex items-center gap-2.5" onClick={onClose}>
-          <Image src="/logo.png" alt="Logo" width={28} height={28} className="w-7 h-auto" />
-          <span className="text-white font-bold text-sm tracking-tight">ConferenceHub</span>
+          <Image
+            src="/logo.png"
+            alt="Logo"
+            width={28}
+            height={28}
+            className="w-7 h-auto"
+          />
+          <span className="text-white font-bold text-sm tracking-tight">
+            ConferenceHub
+          </span>
         </Link>
-        <button onClick={onClose} className="lg:hidden p-1.5 hover:bg-white/10 rounded-lg text-zinc-500">
+        <button
+          onClick={onClose}
+          className="lg:hidden p-1.5 hover:bg-white/10 rounded-lg text-zinc-500"
+        >
           <IconX size={18} />
         </button>
       </div>
@@ -319,7 +344,7 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
           {filteredMenu.map((item, index) => {
             if (!item) return null;
 
-            if (item.type === "category") {
+            if (item.type === 'category') {
               return (
                 <li key={index} className="px-5 pt-6 pb-1.5">
                   <span className="text-[10px] font-semibold uppercase tracking-[0.1em] text-zinc-600">
@@ -329,7 +354,7 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
               );
             }
 
-            if (item.type === "link" && item.href) {
+            if (item.type === 'link' && item.href) {
               const Icon = item.icon!;
               const isActive = isActiveLink(item.href);
               return (
@@ -337,7 +362,7 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
                   <Link
                     href={item.href}
                     onClick={onClose}
-                    className={`sidebar-link ${isActive ? "active" : ""}`}
+                    className={`sidebar-link ${isActive ? 'active' : ''}`}
                   >
                     <Icon size={18} stroke={1.5} />
                     <span>{item.label}</span>
@@ -346,7 +371,7 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
               );
             }
 
-            if (item.type === "submenu" && item.children) {
+            if (item.type === 'submenu' && item.children) {
               const Icon = item.icon!;
               const isExpanded = expandedMenus.includes(item.label);
               const isActive = isSubmenuActive(item.children);
@@ -355,7 +380,7 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
                 <li key={index}>
                   <button
                     onClick={() => toggleSubmenu(item.label)}
-                    className={`sidebar-link w-full justify-between ${isActive ? "!text-white" : ""}`}
+                    className={`sidebar-link w-full justify-between ${isActive ? '!text-white' : ''}`}
                   >
                     <div className="flex items-center gap-3">
                       <Icon size={18} stroke={1.5} />
@@ -363,12 +388,12 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
                     </div>
                     <IconChevronDown
                       size={14}
-                      className={`text-zinc-600 transition-transform duration-200 ${isExpanded ? "rotate-0" : "-rotate-90"}`}
+                      className={`text-zinc-600 transition-transform duration-200 ${isExpanded ? 'rotate-0' : '-rotate-90'}`}
                     />
                   </button>
 
                   <ul
-                    className={`overflow-hidden transition-all duration-200 ease-out ${isExpanded ? "max-h-40 opacity-100" : "max-h-0 opacity-0"}`}
+                    className={`overflow-hidden transition-all duration-200 ease-out ${isExpanded ? 'max-h-40 opacity-100' : 'max-h-0 opacity-0'}`}
                   >
                     {item.children.map((child, childIndex) => {
                       const isChildActive = isActiveLink(child.href);
@@ -380,10 +405,12 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
                             className={`
                               flex items-center gap-2.5 text-[13px] font-medium
                               py-1.5 pl-14 pr-4 mx-2.5 rounded-md transition-colors duration-150
-                              ${isChildActive ? "text-white" : "text-zinc-500 hover:text-zinc-300"}
+                              ${isChildActive ? 'text-white' : 'text-zinc-500 hover:text-zinc-300'}
                             `}
                           >
-                            <span className={`w-1 h-1 rounded-full shrink-0 ${isChildActive ? "bg-emerald-400" : "bg-zinc-700"}`} />
+                            <span
+                              className={`w-1 h-1 rounded-full shrink-0 ${isChildActive ? 'bg-emerald-400' : 'bg-zinc-700'}`}
+                            />
                             {child.label}
                           </Link>
                         </li>

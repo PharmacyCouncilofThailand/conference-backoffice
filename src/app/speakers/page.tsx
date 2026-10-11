@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { useState, useEffect, useRef } from "react";
-import { AdminLayout } from "@/components/layout";
-import { api } from "@/lib/api";
-import toast from "react-hot-toast";
+import { useState, useEffect, useRef } from 'react';
+import { AdminLayout } from '@/components/layout';
+import { api } from '@/lib/api';
+import toast from 'react-hot-toast';
 import {
   IconMicrophone,
   IconPlus,
@@ -18,14 +18,14 @@ import {
   IconPhoto,
   IconCalendarEvent,
   IconUpload,
-} from "@tabler/icons-react";
-import { useAuth } from "@/contexts/AuthContext";
+} from '@tabler/icons-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 // Mock stats colors (can be real if we add status to schema later, currently schema doesn't have status for speaker itself, only in relation)
 const statusColors: { [key: string]: string } = {
-  confirmed: "bg-green-100 text-green-700",
-  pending: "bg-yellow-100 text-yellow-700",
-  declined: "bg-red-100 text-red-700",
+  confirmed: 'bg-green-100 text-green-700',
+  pending: 'bg-yellow-100 text-yellow-700',
+  declined: 'bg-red-100 text-red-700',
 };
 
 interface Speaker {
@@ -50,16 +50,16 @@ interface Event {
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 const getBackofficeToken = () =>
-  localStorage.getItem("backoffice_token") ||
-  sessionStorage.getItem("backoffice_token") ||
-  "";
+  localStorage.getItem('backoffice_token') ||
+  sessionStorage.getItem('backoffice_token') ||
+  '';
 
 export default function SpeakersPage() {
   const { isAdmin, user } = useAuth();
   const [speakers, setSpeakers] = useState<Speaker[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState('');
   const [eventFilter, setEventFilter] = useState<number | null>(null);
   const [sessionFilter, setSessionFilter] = useState<number | null>(null);
   const [allSessions, setAllSessions] = useState<any[]>([]);
@@ -74,12 +74,12 @@ export default function SpeakersPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
-    title: "",
-    organization: "",
-    bio: "",
-    photoUrl: "",
+    firstName: '',
+    lastName: '',
+    title: '',
+    organization: '',
+    bio: '',
+    photoUrl: '',
     assignments: [] as { eventId: number; sessionId: number | null }[],
   });
 
@@ -101,17 +101,17 @@ export default function SpeakersPage() {
         })) as Event[],
       );
     } catch (error) {
-      console.error("Failed to fetch events:", error);
+      console.error('Failed to fetch events:', error);
     }
   };
 
   const fetchAllSessions = async () => {
     try {
       const token = getBackofficeToken();
-      const res = await api.sessions.list(token, "limit=1000");
+      const res = await api.sessions.list(token, 'limit=1000');
       setAllSessions(res.sessions || []);
     } catch (error) {
-      console.error("Failed to fetch all sessions:", error);
+      console.error('Failed to fetch all sessions:', error);
     }
   };
 
@@ -124,8 +124,8 @@ export default function SpeakersPage() {
     try {
       const token = getBackofficeToken();
       const params = new URLSearchParams();
-      if (eventFilter) params.append("eventId", eventFilter.toString());
-      if (sessionFilter) params.append("sessionId", sessionFilter.toString());
+      if (eventFilter) params.append('eventId', eventFilter.toString());
+      if (sessionFilter) params.append('sessionId', sessionFilter.toString());
 
       const data = await api.speakers.list(token, params.toString());
       setSpeakers((data.speakers || []) as unknown as Speaker[]);
@@ -143,7 +143,7 @@ export default function SpeakersPage() {
       });
       setSpeakerAssignmentMap(map);
     } catch (error) {
-      console.error("Failed to fetch speakers:", error);
+      console.error('Failed to fetch speakers:', error);
     } finally {
       setIsLoading(false);
     }
@@ -153,11 +153,11 @@ export default function SpeakersPage() {
     setIsUploading(true);
     try {
       const token = getBackofficeToken();
-      const data = await api.uploadFile(token, file, "speakers");
+      const data = await api.uploadFile(token, file, 'speakers');
       setFormData({ ...formData, photoUrl: data.url });
     } catch (error) {
-      console.error("Upload error:", error);
-      toast.error("Failed to upload image");
+      console.error('Upload error:', error);
+      toast.error('Failed to upload image');
     } finally {
       setIsUploading(false);
     }
@@ -168,18 +168,18 @@ export default function SpeakersPage() {
     const search = searchTerm.toLowerCase();
     return (
       fullName.includes(search) ||
-      (speaker.organization?.toLowerCase() || "").includes(search)
+      (speaker.organization?.toLowerCase() || '').includes(search)
     );
   });
 
   const resetForm = () => {
     setFormData({
-      firstName: "",
-      lastName: "",
-      title: "",
-      organization: "",
-      bio: "",
-      photoUrl: "",
+      firstName: '',
+      lastName: '',
+      title: '',
+      organization: '',
+      bio: '',
+      photoUrl: '',
       assignments: [],
     });
   };
@@ -189,10 +189,10 @@ export default function SpeakersPage() {
     setFormData({
       firstName: speaker.firstName,
       lastName: speaker.lastName,
-      title: speaker.position || "",
-      organization: speaker.organization || "",
-      bio: speaker.bio || "",
-      photoUrl: speaker.photoUrl || "",
+      title: speaker.position || '',
+      organization: speaker.organization || '',
+      bio: speaker.bio || '',
+      photoUrl: speaker.photoUrl || '',
       assignments: speakerAssignmentMap[speaker.id] || [],
     });
     setShowEditModal(true);
@@ -225,7 +225,7 @@ export default function SpeakersPage() {
       setShowCreateModal(false);
       resetForm();
     } catch (error) {
-      toast.error("Failed to create speaker");
+      toast.error('Failed to create speaker');
       console.error(error);
     } finally {
       setIsSubmitting(false);
@@ -258,7 +258,7 @@ export default function SpeakersPage() {
       setShowEditModal(false);
       setSelectedSpeaker(null);
     } catch (error) {
-      toast.error("Failed to update speaker");
+      toast.error('Failed to update speaker');
       console.error(error);
     } finally {
       setIsSubmitting(false);
@@ -275,7 +275,7 @@ export default function SpeakersPage() {
       setShowDeleteModal(false);
       setSelectedSpeaker(null);
     } catch (error) {
-      toast.error("Failed to delete speaker");
+      toast.error('Failed to delete speaker');
       console.error(error);
     } finally {
       setIsSubmitting(false);
@@ -284,10 +284,10 @@ export default function SpeakersPage() {
 
   // Helper to get reliable image URL from Google Drive via our proxy
   const getSpeakerImageUrl = (url: string) => {
-    if (!url) return "";
+    if (!url) return '';
 
     // If it's a Google Drive URL, use our proxy
-    if (url.includes("drive.google.com")) {
+    if (url.includes('drive.google.com')) {
       return `${API_URL}/api/upload/proxy?url=${encodeURIComponent(url)}`;
     }
 
@@ -303,7 +303,7 @@ export default function SpeakersPage() {
         </div>
         <span className="text-sm font-medium text-zinc-600">Select Event:</span>
         <select
-          value={eventFilter || ""}
+          value={eventFilter || ''}
           onChange={(e) => {
             const val = e.target.value ? parseInt(e.target.value) : null;
             setEventFilter(val);
@@ -319,11 +319,9 @@ export default function SpeakersPage() {
           ))}
         </select>
 
-        <span className="text-sm font-medium text-zinc-600 ml-4">
-          Session:
-        </span>
+        <span className="text-sm font-medium text-zinc-600 ml-4">Session:</span>
         <select
-          value={sessionFilter || ""}
+          value={sessionFilter || ''}
           onChange={(e) =>
             setSessionFilter(e.target.value ? parseInt(e.target.value) : null)
           }
@@ -347,8 +345,8 @@ export default function SpeakersPage() {
           <h2 className="text-lg font-semibold text-zinc-800 flex items-center gap-2">
             <IconMicrophone size={20} className="text-emerald-600" />
             {eventFilter
-              ? `Speakers for ${events.find((e) => e.id === eventFilter)?.eventName || "Event"}`
-              : "All Speakers"}
+              ? `Speakers for ${events.find((e) => e.id === eventFilter)?.eventName || 'Event'}`
+              : 'All Speakers'}
           </h2>
           <button
             onClick={() => {
@@ -410,15 +408,15 @@ export default function SpeakersPage() {
                           title={
                             session
                               ? `Session: ${session.sessionName}`
-                              : "Event assignment"
+                              : 'Event assignment'
                           }
                         >
                           <IconCalendarEvent size={12} />
                           {event.eventCode}
                           {session && (
                             <>
-                              {" "}
-                              -{" "}
+                              {' '}
+                              -{' '}
                               <span className="font-bold">
                                 {session.sessionCode}
                               </span>
@@ -496,8 +494,8 @@ export default function SpeakersPage() {
             <div className="p-6 border-b border-zinc-100">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold flex items-center gap-2">
-                  <IconMicrophone size={20} />{" "}
-                  {showCreateModal ? "Add Speaker" : "Edit Speaker"}
+                  <IconMicrophone size={20} />{' '}
+                  {showCreateModal ? 'Add Speaker' : 'Edit Speaker'}
                 </h3>
                 <button
                   onClick={() => {
@@ -599,7 +597,7 @@ export default function SpeakersPage() {
                       <button
                         type="button"
                         onClick={() =>
-                          setFormData({ ...formData, photoUrl: "" })
+                          setFormData({ ...formData, photoUrl: '' })
                         }
                         className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5"
                       >
@@ -630,7 +628,7 @@ export default function SpeakersPage() {
                     >
                       {isUploading ? (
                         <>
-                          <IconLoader2 size={16} className="animate-spin" />{" "}
+                          <IconLoader2 size={16} className="animate-spin" />{' '}
                           Uploading...
                         </>
                       ) : (
@@ -798,8 +796,8 @@ export default function SpeakersPage() {
                   </>
                 ) : (
                   <>
-                    <IconCheck size={18} />{" "}
-                    {showCreateModal ? "Add Speaker" : "Save Changes"}
+                    <IconCheck size={18} />{' '}
+                    {showCreateModal ? 'Add Speaker' : 'Save Changes'}
                   </>
                 )}
               </button>
