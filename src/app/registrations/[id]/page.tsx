@@ -7,7 +7,8 @@ import { AdminLayout } from '@/components/layout';
 import { api } from '@/lib/api';
 import { AddSessionDialog } from '@/components/registrations/AddSessionDialog';
 import { SessionGrantResults } from '@/components/registrations/SessionGrantResults';
-import type { GrantSessionChoiceDto, InvitationStatus, SessionGrantHistoryItemDto } from '@/types/session-grants';
+import { SessionEmailPreviewDialog } from '@/components/registrations/SessionEmailPreviewDialog';
+import type { GrantSessionChoiceDto, GrantPreviewRequest, InvitationStatus, SessionGrantHistoryItemDto } from '@/types/session-grants';
 import { useAuth } from '@/contexts/AuthContext';
 import {
     IconArrowLeft,
@@ -154,7 +155,8 @@ export default function RegistrationDetailPage() {
     const [grantDialogOpen, setGrantDialogOpen] = useState(false);
     const [grantBatchId, setGrantBatchId] = useState<string | null>(null);
     const [grantSubmitting, setGrantSubmitting] = useState(false);
-    const [pendingGrant, setPendingGrant] = useState<{ key: string; sessionId: number } | null>(null);
+    const [pendingGrant, setPendingGrant] = useState<GrantPreviewRequest | null>(null);
+    const [previewRequest, setPreviewRequest] = useState<GrantPreviewRequest | null>(null);
     const [grantHistory, setGrantHistory] = useState<SessionGrantHistoryItemDto[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -206,24 +208,27 @@ export default function RegistrationDetailPage() {
         }
     };
 
-    const grantSelectedSession = async (session: GrantSessionChoiceDto) => {
+    const grantSelectedSession = (session: GrantSessionChoiceDto) => {
         if (!registration || grantSubmitting) return;
-        if (session.adminGrantRequiresConfirmation) {
-            const deadline = session.effectiveDeadline ? `\nตอบรับได้ก่อน ${bangkokDateTime(session.effectiveDeadline)} เวลาไทย` : '';
-            if (!window.confirm(`Session นี้ต้องให้ผู้เข้าร่วมตอบรับก่อนจึงจะมีสิทธิ์เข้า Session${deadline}\n\nต้องการสร้างคำเชิญหรือไม่?`)) return;
+        if (pendingGrant?.sessionId === session.id) {
+            void submitGrant(pendingGrant);
+            return;
         }
-        const operation = pendingGrant?.sessionId === session.id
-            ? pendingGrant
-            : { key: crypto.randomUUID(), sessionId: session.id };
-        if (!pendingGrant || pendingGrant.sessionId !== session.id) setPendingGrant(operation);
+        setPreviewRequest({ key: crypto.randomUUID(), sessionId: session.id, registrationIds: [registration.id] });
+    };
+
+    const submitGrant = async (operation: GrantPreviewRequest) => {
+        if (grantSubmitting) return;
+        setPendingGrant(operation);
         setGrantSubmitting(true);
         try {
             const result = await api.sessionGrants.create(getBackofficeToken(), operation.key, {
-                sessionId: session.id,
-                registrationIds: [registration.id],
+                sessionId: operation.sessionId,
+                registrationIds: operation.registrationIds,
             });
             setGrantBatchId(result.batchId);
             setPendingGrant(null);
+            setPreviewRequest(null);
             toast.success(result.invitedCount > 0
                 ? 'สร้างคำเชิญเข้าร่วม Session แล้ว'
                 : result.addedCount > 0
@@ -687,6 +692,10 @@ export default function RegistrationDetailPage() {
                     onSessionSelected={(session) => { void grantSelectedSession(session); }}
                 />
             )}
+            {user?.role === 'admin' && previewRequest && <SessionEmailPreviewDialog
+                request={previewRequest} submitting={grantSubmitting}
+                onClose={() => setPreviewRequest(null)} onConfirm={submitGrant}
+            />}
         </AdminLayout>
     );
 }

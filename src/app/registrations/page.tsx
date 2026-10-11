@@ -10,8 +10,9 @@ import { useDebounce } from '@/hooks/useDebounce';
 import { Pagination } from '@/components/common';
 import { AddSessionDialog } from '@/components/registrations/AddSessionDialog';
 import { SessionGrantResults } from '@/components/registrations/SessionGrantResults';
+import { SessionEmailPreviewDialog } from '@/components/registrations/SessionEmailPreviewDialog';
 import { SESSION_GRANT_SELECTION_LIMIT, updateSelection, type SelectedRegistration } from '@/lib/session-grant-selection';
-import type { GrantSessionChoiceDto } from '@/types/session-grants';
+import type { GrantSessionChoiceDto, GrantPreviewRequest } from '@/types/session-grants';
 import { useAuth } from '@/contexts/AuthContext';
 import toast from 'react-hot-toast';
 import {
@@ -129,6 +130,7 @@ export default function RegistrationsPage() {
         registrationIds: number[];
     } | null>(null);
     const [grantBatchId, setGrantBatchId] = useState<string | null>(() => searchParams.get('grantBatchId'));
+    const [previewRequest, setPreviewRequest] = useState<GrantPreviewRequest | null>(null);
     const registrationRequestRef = useRef(0);
 
     // Pagination
@@ -332,26 +334,25 @@ export default function RegistrationsPage() {
         setPage(1);
     };
 
-    const submitGrant = async () => {
+    const openGrantPreview = () => {
         if (!grantSession || selectedCount === 0 || isGrantSubmitting) return;
         if (selectedCount > SESSION_GRANT_SELECTION_LIMIT) {
             toast.error(`เลือกได้สูงสุด ${SESSION_GRANT_SELECTION_LIMIT} Registration ต่อรายการ`);
             return;
         }
-        if (grantSession.adminGrantRequiresConfirmation) {
-            const deadline = grantSession.effectiveDeadline
-                ? `\nตอบรับได้ก่อน ${bangkokDateTime(grantSession.effectiveDeadline)} เวลาไทย`
-                : '';
-            const confirmed = window.confirm(
-                `Session นี้ต้องให้ผู้เข้าร่วมตอบรับก่อนจึงจะมีสิทธิ์เข้า Session\nจะสร้างคำเชิญสำหรับ ${selectedCount} Registration${deadline}\n\nต้องการดำเนินการต่อหรือไม่?`,
-            );
-            if (!confirmed) return;
+        if (pendingGrantOperation) {
+            void submitGrant(pendingGrantOperation);
+            return;
         }
-        const operation = pendingGrantOperation || {
+        setPreviewRequest({
             key: crypto.randomUUID(),
             sessionId: grantSession.id,
             registrationIds: [...selectedRegistrations.keys()].sort((a, b) => a - b),
-        };
+        });
+    };
+
+    const submitGrant = async (operation: GrantPreviewRequest) => {
+        if (isGrantSubmitting) return;
         if (!pendingGrantOperation) setPendingGrantOperation(operation);
         setIsGrantSubmitting(true);
         try {
@@ -365,6 +366,7 @@ export default function RegistrationsPage() {
             router.replace(`/registrations?${next.toString()}`);
             setSelectedRegistrations(new Map());
             setPendingGrantOperation(null);
+            setPreviewRequest(null);
             toast.success(`เพิ่มสิทธิ์ ${result.addedCount} · สร้างคำเชิญ ${result.invitedCount} · ข้าม ${result.skippedCount}`);
             await fetchRegistrations();
         } catch (error) {
@@ -539,7 +541,7 @@ export default function RegistrationsPage() {
                             <button type="button" className="btn-secondary" onClick={() => { setSelectedRegistrations(new Map()); setPendingGrantOperation(null); }} disabled={selectedCount === 0}>
                                 ล้างรายการ
                             </button>
-                            <button type="button" className="btn-primary" onClick={() => void submitGrant()} disabled={selectedCount === 0 || isGrantSubmitting}>
+                            <button type="button" className="btn-primary" onClick={openGrantPreview} disabled={selectedCount === 0 || isGrantSubmitting}>
                                 {isGrantSubmitting ? 'กำลังดำเนินการ...' : pendingGrantOperation ? 'ลองคำขอเดิมอีกครั้ง' : `ยืนยัน ${selectedCount} คน`}
                             </button>
                         </div>
@@ -749,6 +751,10 @@ export default function RegistrationsPage() {
                 />
             )}
 
+            {isAdmin && previewRequest && <SessionEmailPreviewDialog
+                request={previewRequest} submitting={isGrantSubmitting}
+                onClose={() => setPreviewRequest(null)} onConfirm={submitGrant}
+            />}
         </AdminLayout>
     );
 }

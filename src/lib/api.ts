@@ -673,6 +673,10 @@ export const api = {
   },
 
   sessionGrants: {
+    preview: (token: string, body: SessionGrantCreateInput) =>
+      fetchAPI<import('@/types/session-grants').GrantEmailPreview>("/api/backoffice/session-grants/preview", {
+        method: "POST", body: JSON.stringify(body), token,
+      }),
     tracking: (token: string, query: string) =>
       fetchAPI<GrantTrackingDto>(
         `/api/backoffice/session-grants/tracking${query ? `?${query}` : ''}`,

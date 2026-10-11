@@ -7,6 +7,17 @@ export type InvitationStatus =
 
 export type GrantOutcome = "added" | "invited" | "skipped";
 
+export interface GrantEmailPreview {
+  emails: { registrationId: number; name: string; recipient: string; subject: string; html: string }[];
+  skipped: { registrationId: number; reasonCode: SessionGrantSkipCode }[];
+}
+
+export interface GrantPreviewRequest {
+  key: string;
+  sessionId: number;
+  registrationIds: number[];
+}
+
 export interface InvitationMetadata {
   invitationId: string;
   invitationStatus: InvitationStatus;
