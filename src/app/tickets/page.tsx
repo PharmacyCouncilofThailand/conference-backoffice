@@ -155,6 +155,7 @@ export default function TicketsPage() {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [events, setEvents] = useState<EventOption[]>([]);
   const [sessions, setSessions] = useState<EventSession[]>([]);
+  const [sessionsEventId, setSessionsEventId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -205,11 +206,53 @@ export default function TicketsPage() {
   }, []);
 
   useEffect(() => {
-    if ((showCreateModal || showEditModal) && formData.eventId) {
-      fetchSessions(formData.eventId);
-    } else {
-      setSessions([]);
+    let cancelled = false;
+    const eventId = formData.eventId;
+    setSessions([]);
+    setSessionsEventId(null);
+
+    if ((showCreateModal || showEditModal) && eventId) {
+      const loadSessions = async () => {
+        try {
+          const token = getBackofficeToken();
+          const res = await api.backofficeEvents.getSessions(token, eventId);
+          if (cancelled) return;
+          const mappedSessions = res.sessions.map((s: any) => ({
+            id: s.id,
+            sessionCode: s.sessionCode,
+            sessionName: s.sessionName,
+            isMainSession: s.isMainSession || false,
+          }));
+          setSessions(mappedSessions);
+          setSessionsEventId(eventId);
+          setFormData((prev) => {
+            if (cancelled || prev.eventId !== eventId) return prev;
+            const validIds = new Set(mappedSessions.map((s) => s.id));
+            const selectedIds = prev.sessionIds.filter((id) =>
+              validIds.has(id),
+            );
+            const mainIds =
+              showCreateModal && prev.category === 'primary'
+                ? mappedSessions.filter((s) => s.isMainSession).map((s) => s.id)
+                : [];
+            return {
+              ...prev,
+              sessionIds: Array.from(new Set([...selectedIds, ...mainIds])),
+            };
+          });
+        } catch (error) {
+          if (cancelled) return;
+          console.error('Failed to fetch sessions:', error);
+          toast.error(
+            'Failed to load sessions. Please reopen the ticket form.',
+          );
+        }
+      };
+      void loadSessions();
     }
+    return () => {
+      cancelled = true;
+    };
   }, [formData.eventId, showCreateModal, showEditModal]);
 
   useEffect(() => {
@@ -238,38 +281,6 @@ export default function TicketsPage() {
       }
     } catch (error) {
       console.error('Failed to fetch events:', error);
-    }
-  };
-
-  const fetchSessions = async (eventId: number) => {
-    try {
-      const token = getBackofficeToken();
-      const res = await api.backofficeEvents.getSessions(token, eventId);
-      const mappedSessions = res.sessions.map((s: any) => ({
-        id: s.id,
-        sessionCode: s.sessionCode,
-        sessionName: s.sessionName,
-        isMainSession: s.isMainSession || false,
-      }));
-      setSessions(mappedSessions);
-
-      setFormData((prev) => {
-        if (showCreateModal && prev.category === 'primary') {
-          const mainSessionIds = mappedSessions
-            .filter((s: EventSession) => s.isMainSession)
-            .map((s: EventSession) => s.id);
-          return {
-            ...prev,
-            sessionIds: Array.from(
-              new Set([...prev.sessionIds, ...mainSessionIds]),
-            ),
-          };
-        }
-        return prev;
-      });
-    } catch (error) {
-      console.error('Failed to fetch sessions:', error);
-      setSessions([]);
     }
   };
 
@@ -342,6 +353,7 @@ export default function TicketsPage() {
   };
 
   const handleCreate = async () => {
+    if (sessionsEventId !== formData.eventId) return;
     if (!formData.eventId) {
       toast.error('Please select an event');
       return;
@@ -393,13 +405,16 @@ export default function TicketsPage() {
       fetchTickets();
     } catch (error) {
       console.error(error);
-      toast.error('Failed to create ticket');
+      toast.error(
+        error instanceof Error ? error.message : 'Failed to create ticket',
+      );
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleEdit = async () => {
+    if (sessionsEventId !== formData.eventId) return;
     if (!selectedTicket || !formData.eventId) return;
     if (formData.quota < 0) {
       toast.error('Quota must be 0 (unlimited) or greater');
@@ -974,12 +989,16 @@ export default function TicketsPage() {
                   <select
                     className="input-field"
                     value={formData.eventId}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        eventId: Number(e.target.value),
-                      })
-                    }
+                    onChange={(e) => {
+                      const eventId = Number(e.target.value);
+                      setSessions([]);
+                      setSessionsEventId(null);
+                      setFormData((prev) => ({
+                        ...prev,
+                        eventId,
+                        sessionIds: [],
+                      }));
+                    }}
                     disabled={!showCreateModal}
                   >
                     {events.map((event) => (
@@ -996,6 +1015,7 @@ export default function TicketsPage() {
                   <select
                     className="input-field"
                     value={formData.category}
+                    disabled={sessionsEventId !== formData.eventId}
                     onChange={(e) => {
                       const newCategory = e.target.value;
                       setFormData((prev) => {
@@ -1053,6 +1073,7 @@ export default function TicketsPage() {
                         <input
                           type="checkbox"
                           className="mt-1"
+                          disabled={sessionsEventId !== formData.eventId}
                           checked={formData.sessionIds.includes(session.id)}
                           onChange={(e) => {
                             const isChecked = e.target.checked;
@@ -1091,7 +1112,9 @@ export default function TicketsPage() {
                     ))
                   ) : (
                     <p className="text-sm text-zinc-400 italic text-center py-2">
-                      No sessions available for this event
+                      {sessionsEventId === formData.eventId
+                        ? 'No sessions available for this event'
+                        : 'Waiting for sessions to load'}
                     </p>
                   )}
                 </div>
@@ -1514,7 +1537,7 @@ export default function TicketsPage() {
               <button
                 onClick={showCreateModal ? handleCreate : handleEdit}
                 className="btn-primary flex items-center gap-2"
-                disabled={isSubmitting}
+                disabled={isSubmitting || sessionsEventId !== formData.eventId}
               >
                 {isSubmitting && (
                   <IconLoader2 size={18} className="animate-spin" />
