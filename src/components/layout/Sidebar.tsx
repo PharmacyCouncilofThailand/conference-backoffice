@@ -105,6 +105,7 @@ const menuStructure = [
     label: 'Members',
     icon: IconUsers,
   },
+  { type: 'link', href: '/booths', label: 'Booths', icon: IconUsers },
   {
     type: 'link',
     href: '/team-registrations',
@@ -222,7 +223,7 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
         };
 
       // Sponsor Hub is admin-only.
-      if (item.href === '/sponsors') return null;
+      if (item.href === '/sponsors' || item.href === '/booths') return null;
 
       if (role === 'team_registration_viewer') {
         if (item.href === '/team-registrations') return item;

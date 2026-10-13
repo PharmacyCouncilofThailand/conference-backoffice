@@ -86,6 +86,12 @@ export class ApiError extends Error {
 }
 
 interface BackofficeCheckinRegistration {
+  booth?: {
+    id: number;
+    name: string;
+    type: string;
+    mealCouponEligible: boolean | null;
+  } | null;
   id: number;
   regCode: string;
   firstName: string;
@@ -118,6 +124,12 @@ interface BackofficeCheckinResponse {
 }
 
 interface BackofficeCheckinRow {
+  booth?: {
+    id: number;
+    name: string;
+    type: string;
+    mealCouponEligible: boolean | null;
+  } | null;
   kind?: 'daily' | 'single';
   id: number | string;
   attendanceId?: string | null;
@@ -194,9 +206,10 @@ export async function fetchAPI<T>(
     }
 
     const error = await res.json().catch(() => ({ error: 'Request failed' }));
-    const detailsText = error.details
-      ? ` — ${JSON.stringify(error.details)}`
-      : '';
+    const detailsText =
+      error.details && !error.details.registration
+        ? ` — ${JSON.stringify(error.details)}`
+        : '';
     const message =
       typeof error.error === 'object' ? error.error?.message : error.error;
     const capacity = error.capacity ?? error.details?.capacity;

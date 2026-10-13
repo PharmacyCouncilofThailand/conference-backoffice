@@ -6,6 +6,8 @@ import { AdminLayout } from '@/components/layout';
 import { useAuth, type AssignedSession } from '@/contexts/AuthContext';
 import { api, ApiError } from '@/lib/api';
 import toast from 'react-hot-toast';
+import { MealCouponNote } from '@/components/booths/MealCouponNote';
+import { couponRegistrationFromError } from '@/lib/boothCheckin';
 import {
   IconScan,
   IconCheck,
@@ -34,6 +36,7 @@ type ScanResult = null | {
   message: string;
   eventName?: string;
   registrationSessionId?: number;
+  mealCouponEligible?: boolean | null;
 };
 
 interface EventOption {
@@ -66,6 +69,7 @@ interface SessionInfo {
 }
 
 interface PendingRegistration {
+  booth?: { mealCouponEligible: boolean | null } | null;
   id: number;
   regCode: string;
   firstName: string;
@@ -76,6 +80,7 @@ interface PendingRegistration {
 }
 
 interface RecentCheckin {
+  booth?: { mealCouponEligible: boolean | null } | null;
   id: number | string;
   kind?: 'daily' | 'single';
   attendanceId?: string | null;
@@ -452,6 +457,7 @@ export default function CheckinPage() {
             name: `${res.registration.firstName} ${res.registration.lastName}`,
             ticketType: res.registration.ticketName,
             eventName: res.registration.eventName,
+            mealCouponEligible: res.registration.booth?.mealCouponEligible,
             message: `Checked in: ${res.checkedInSession?.sessionName}`,
             registrationSessionId: undefined,
           });
@@ -483,6 +489,7 @@ export default function CheckinPage() {
             name: `${res.registration.firstName} ${res.registration.lastName}`,
             ticketType: res.registration.ticketName,
             eventName: res.registration.eventName,
+            mealCouponEligible: res.registration.booth?.mealCouponEligible,
             message: res.checkedInCount
               ? `Checked in ${res.checkedInCount} sessions!`
               : 'Check-in successful!',
@@ -496,7 +503,13 @@ export default function CheckinPage() {
         if (soundEnabled) playDuplicateSound();
         const message = duplicateMessage(error);
         toast.error(message);
-        setScanResult({ status: 'duplicate', code, message });
+        const coupon = couponRegistrationFromError(error);
+        setScanResult({
+          status: 'duplicate',
+          code,
+          message,
+          ...(coupon ?? {}),
+        });
       } else if (
         msg.includes('ไม่มีสิทธิ์') ||
         msg.includes('NO_ACCESS') ||
@@ -582,6 +595,7 @@ export default function CheckinPage() {
           name: `${pendingRegistration.firstName} ${pendingRegistration.lastName}`,
           ticketType: pendingRegistration.ticketName,
           eventName: pendingRegistration.eventName,
+          mealCouponEligible: pendingRegistration.booth?.mealCouponEligible,
           message: `Checked in ${res.checkedInCount} sessions!`,
         });
         setPendingSessions(null);
@@ -1094,6 +1108,11 @@ export default function CheckinPage() {
                         <p className="text-xs text-zinc-400 font-mono">
                           {pendingRegistration.regCode}
                         </p>
+                        <MealCouponNote
+                          eligible={
+                            pendingRegistration.booth?.mealCouponEligible
+                          }
+                        />
                       </div>
                     </div>
                   </div>
@@ -1230,6 +1249,7 @@ export default function CheckinPage() {
                   >
                     {scanResult.message}
                   </p>
+                  <MealCouponNote eligible={scanResult.mealCouponEligible} />
 
                   {scanResult.name && (
                     <div className="bg-white rounded-lg p-4 mb-4 text-left shadow-sm">

@@ -7,6 +7,7 @@ import { exportToExcel } from '@/lib/exportExcel';
 import { useDebounce } from '@/hooks/useDebounce';
 import { Pagination } from '@/components/common';
 import toast from 'react-hot-toast';
+import { MealCouponNote } from '@/components/booths/MealCouponNote';
 import {
   IconArrowBackUp,
   IconChartBar,
@@ -18,6 +19,7 @@ import {
 } from '@tabler/icons-react';
 
 interface CheckinRow {
+  booth?: { mealCouponEligible: boolean | null } | null;
   kind?: 'daily' | 'single';
   id: number | string;
   attendanceId?: string | null;
@@ -490,6 +492,9 @@ export default function CheckinsListPage() {
                         <p className="font-medium text-zinc-900">
                           {row.firstName} {row.lastName}
                         </p>
+                        <MealCouponNote
+                          eligible={row.booth?.mealCouponEligible}
+                        />
                         <p className="text-xs text-zinc-500">
                           {row.regCode} · {row.university || 'No university'}
                         </p>
