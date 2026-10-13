@@ -3,6 +3,18 @@ import { useEffect, useState } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { AdminLayout } from '@/components/layout';
+import Pagination from '@/components/common/Pagination';
+import {
+  IconArrowLeft,
+  IconBuildingStore,
+  IconDownload,
+  IconLoader2,
+  IconPencil,
+  IconPlus,
+  IconRefresh,
+  IconSearch,
+  IconUsers,
+} from '@tabler/icons-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@/lib/api';
 import { boothApi } from '@/lib/boothApi';
@@ -19,11 +31,14 @@ import type {
   BoothType,
   BoothMemberReport,
 } from '@/types/booths';
-const inputClass =
-  'rounded-lg border border-zinc-300 bg-white p-2 text-zinc-900';
-const buttonClass =
-  'rounded-lg bg-zinc-900 px-4 py-2 text-white disabled:opacity-40';
+const inputClass = 'input-field';
+const buttonClass = 'btn-primary gap-2';
 const types: BoothType[] = ['symposium', 'premium', 'standard'];
+const typeLabels: Record<BoothType, string> = {
+  symposium: 'Symposium',
+  premium: 'Premium',
+  standard: 'Standard',
+};
 export default function BoothAdmin({ detail = false }: { detail?: boolean }) {
   const { user, token } = useAuth();
   const params = useParams();
@@ -143,12 +158,23 @@ export default function BoothAdmin({ detail = false }: { detail?: boolean }) {
     }
   }
   const pagination = detail ? report?.pagination : list?.pagination;
+  const pager = pagination && (
+    <Pagination
+      currentPage={page}
+      totalPages={pagination.totalPages}
+      totalCount={pagination.total}
+      pageSize={20}
+      onPageChange={setPage}
+      itemName={detail ? 'สมาชิก' : 'Booth'}
+      className="flex-wrap gap-3 border-t border-zinc-100"
+    />
+  );
   return (
     <AdminLayout title={detail ? 'สมาชิก Booth' : 'ทะเบียน Booth'}>
-      <div className="space-y-5 p-4 text-zinc-900">
+      <div className="space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-bold">
+            <h1 className="text-2xl font-bold tracking-tight text-zinc-900">
               {detail
                 ? (report?.booth.name ?? 'สมาชิก Booth')
                 : 'ทะเบียน Booth'}
@@ -157,10 +183,26 @@ export default function BoothAdmin({ detail = false }: { detail?: boolean }) {
               สมาชิก สิทธิ์คูปองอาหาร และเช็กอินรายวัน
             </p>
           </div>
-          {detail && (
-            <Link href={`/booths?eventId=${eventId}`} className="underline">
+          {detail ? (
+            <Link
+              href={`/booths?eventId=${eventId}`}
+              className="btn-secondary gap-2"
+            >
+              <IconArrowLeft size={18} aria-hidden="true" />
               กลับทะเบียน Booth
             </Link>
+          ) : (
+            admin && (
+              <button
+                type="button"
+                disabled={!eventId}
+                className={buttonClass}
+                onClick={() => edit(null)}
+              >
+                <IconPlus size={18} aria-hidden="true" />
+                เพิ่ม Booth
+              </button>
+            )
           )}
         </div>
         {!admin ? (
@@ -168,9 +210,11 @@ export default function BoothAdmin({ detail = false }: { detail?: boolean }) {
         ) : (
           <>
             {!detail && (
-              <div className="flex flex-wrap gap-3">
-                <label>
-                  Event{' '}
+              <div className="card">
+                <label className="block max-w-xl space-y-2">
+                  <span className="text-sm font-medium text-zinc-700">
+                    Event
+                  </span>
                   <select
                     value={eventId || ''}
                     onChange={(e) => {
@@ -188,14 +232,6 @@ export default function BoothAdmin({ detail = false }: { detail?: boolean }) {
                     ))}
                   </select>
                 </label>
-                <button
-                  type="button"
-                  disabled={!eventId}
-                  className={buttonClass}
-                  onClick={() => edit(null)}
-                >
-                  เพิ่ม Booth
-                </button>
               </div>
             )}
             {detail && !eventId && (
@@ -206,77 +242,104 @@ export default function BoothAdmin({ detail = false }: { detail?: boolean }) {
             {error && (
               <div
                 role="alert"
-                className="rounded-lg border border-red-300 bg-red-50 p-3"
+                className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-red-50 p-4 text-sm text-red-700"
               >
                 {error}{' '}
                 <button
-                  className="underline"
+                  className="inline-flex items-center gap-2 font-medium underline underline-offset-4"
                   onClick={() => setRevision((x) => x + 1)}
                 >
+                  <IconRefresh size={16} aria-hidden="true" />
                   ลองใหม่
                 </button>
               </div>
             )}
             {editor !== undefined && (
-              <form
-                onSubmit={save}
-                className="space-y-3 rounded-xl border bg-white p-4"
-              >
-                <h2 className="font-bold">
+              <form onSubmit={save} className="card space-y-5">
+                <h2 className="text-lg font-semibold text-zinc-800">
                   {editor ? 'แก้ไข Booth' : 'เพิ่ม Booth'}
                 </h2>
-                <label className="block">
-                  ชื่อ Booth{' '}
-                  <input
-                    required
-                    maxLength={255}
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className={inputClass}
-                  />
-                </label>
-                <label className="block">
-                  ประเภท{' '}
-                  <select
-                    value={editorType}
-                    onChange={(e) => setEditorType(e.target.value as BoothType)}
-                    disabled={!!editor?.typeLockedAt}
-                    className={inputClass}
-                  >
-                    {types.map((t) => (
-                      <option key={t} value={t}>
-                        {t}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                <div className="grid gap-5 md:grid-cols-2">
+                  <label className="block space-y-2">
+                    <span className="text-sm font-medium text-zinc-700">
+                      ชื่อ Booth <span className="text-red-500">*</span>
+                    </span>
+                    <input
+                      required
+                      maxLength={255}
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      className={inputClass}
+                    />
+                  </label>
+                  <label className="block space-y-2">
+                    <span className="text-sm font-medium text-zinc-700">
+                      ประเภท
+                    </span>
+                    <select
+                      value={editorType}
+                      onChange={(e) =>
+                        setEditorType(e.target.value as BoothType)
+                      }
+                      disabled={!!editor?.typeLockedAt}
+                      className={inputClass}
+                    >
+                      {types.map((t) => (
+                        <option key={t} value={t}>
+                          {typeLabels[t]}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
                 {editor?.typeLockedAt && (
-                  <p className="text-sm">
+                  <p className="rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-800">
                     เปลี่ยนประเภทไม่ได้ เนื่องจากมีผู้รับตั๋วแล้ว
                   </p>
                 )}
-                <div className="flex gap-3">
-                  <button disabled={saving} className={buttonClass}>
-                    {saving ? 'กำลังบันทึก' : 'บันทึก'}
-                  </button>
-                  <button type="button" onClick={() => setEditor(undefined)}>
+                <div className="flex justify-end gap-3 border-t border-zinc-100 pt-4">
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    disabled={saving}
+                    onClick={() => setEditor(undefined)}
+                  >
                     ยกเลิก
+                  </button>
+                  <button disabled={saving} className={buttonClass}>
+                    {saving && (
+                      <IconLoader2
+                        size={18}
+                        className="animate-spin"
+                        aria-hidden="true"
+                      />
+                    )}
+                    {saving ? 'กำลังบันทึก' : 'บันทึก'}
                   </button>
                 </div>
               </form>
             )}
             {!!eventId && (
-              <div className="flex flex-wrap gap-3">
-                <input
-                  aria-label="ค้นหา Booth หรือสมาชิก"
-                  placeholder={detail ? 'ค้นหาชื่อ / อีเมล' : 'ค้นหาชื่อ Booth'}
-                  value={search}
-                  onChange={(e) => {
-                    setSearch(e.target.value);
-                    setPage(1);
-                  }}
-                  className={inputClass}
-                />
+              <div className="card flex flex-col gap-3 sm:flex-row sm:items-center">
+                <div className="relative min-w-0 flex-1">
+                  <IconSearch
+                    size={18}
+                    className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400"
+                    aria-hidden="true"
+                  />
+                  <input
+                    aria-label="ค้นหา Booth หรือสมาชิก"
+                    placeholder={
+                      detail ? 'ค้นหาชื่อ / อีเมล' : 'ค้นหาชื่อ Booth'
+                    }
+                    value={search}
+                    onChange={(e) => {
+                      setSearch(e.target.value);
+                      setPage(1);
+                    }}
+                    className="input-field-search !min-w-0"
+                  />
+                </div>
                 {!detail && (
                   <select
                     aria-label="ประเภท Booth"
@@ -285,11 +348,13 @@ export default function BoothAdmin({ detail = false }: { detail?: boolean }) {
                       setType(e.target.value);
                       setPage(1);
                     }}
-                    className={inputClass}
+                    className={`${inputClass} sm:max-w-[200px]`}
                   >
                     <option value="">ทุกประเภท</option>
                     {types.map((t) => (
-                      <option key={t}>{t}</option>
+                      <option key={t} value={t}>
+                        {typeLabels[t]}
+                      </option>
                     ))}
                   </select>
                 )}
@@ -297,154 +362,256 @@ export default function BoothAdmin({ detail = false }: { detail?: boolean }) {
                   <button
                     disabled={exporting || !report}
                     onClick={download}
-                    className={buttonClass}
+                    className="btn-secondary gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
+                    {exporting ? (
+                      <IconLoader2
+                        size={18}
+                        className="animate-spin shrink-0"
+                        aria-hidden="true"
+                      />
+                    ) : (
+                      <IconDownload
+                        size={18}
+                        className="shrink-0"
+                        aria-hidden="true"
+                      />
+                    )}
                     {exporting
                       ? 'กำลังดาวน์โหลด'
-                      : 'ดาวน์โหลดสมาชิกทั้งหมดของ Booth (Excel)'}
+                      : 'ดาวน์โหลด Excel (สมาชิกทั้งหมด)'}
                   </button>
                 )}
               </div>
             )}
-            {loading && <p role="status">กำลังโหลดข้อมูล</p>}
-            {list && (
-              <div className="overflow-x-auto rounded-xl border bg-white">
-                <table className="w-full text-left text-sm">
-                  <thead>
-                    <tr>
-                      {[
-                        'Booth',
-                        'ประเภท',
-                        'สมาชิก',
-                        'รับตั๋ว',
-                        'เข้าเงื่อนไข',
-                        'สิทธิ์ / โควตา',
-                        'จัดการ',
-                      ].map((h) => (
-                        <th key={h} className="p-3">
-                          {h}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {list.booths.map((b) => (
-                      <tr key={b.id} className="border-t">
-                        <td className="p-3">
-                          <Link
-                            className="font-semibold underline"
-                            href={`/booths/${b.id}?eventId=${eventId}`}
-                          >
-                            {b.name} #{b.id}
-                          </Link>
-                        </td>
-                        <td className="p-3">{b.type}</td>
-                        <td className="p-3">{b.memberCount}</td>
-                        <td className="p-3">{b.ticketCount}</td>
-                        <td className="p-3">{b.qualifiedCount}</td>
-                        <td className="p-3">
-                          {b.eligibleCount} / {b.quota}
-                        </td>
-                        <td className="p-3">
-                          <button className="underline" onClick={() => edit(b)}>
-                            แก้ไข
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                {!list.booths.length && (
-                  <p className="p-4">ยังไม่มี Booth ตามเงื่อนไขนี้</p>
-                )}
+            {loading && (
+              <div
+                className="card flex items-center justify-center gap-2 py-12 text-sm text-zinc-500"
+                role="status"
+              >
+                <IconLoader2
+                  size={20}
+                  className="animate-spin"
+                  aria-hidden="true"
+                />
+                กำลังโหลดข้อมูล
               </div>
             )}
-            {report && (
-              <>
-                <p className="text-sm">
-                  {report.event.eventName} · {report.booth.type} · มีสิทธิ์{' '}
-                  {report.booth.eligibleCount}/{report.booth.quota} คน
+            {!eventId && !detail && (
+              <div className="card py-12 text-center">
+                <IconBuildingStore
+                  size={32}
+                  className="mx-auto mb-3 text-zinc-400"
+                  aria-hidden="true"
+                />
+                <p className="font-medium text-zinc-700">
+                  เลือก Event เพื่อดูทะเบียน Booth
                 </p>
-                {!report.columns.length && (
-                  <p className="text-sm text-zinc-500">
-                    งานนี้ยังไม่ได้ตั้งค่าเช็กอินรายวัน
-                  </p>
-                )}
-                <div className="overflow-x-auto rounded-xl border bg-white">
-                  <table className="w-full whitespace-nowrap text-left text-sm">
+              </div>
+            )}
+            {list && (
+              <div className="card !p-0 overflow-hidden">
+                <div className="flex items-center justify-between gap-3 px-6 py-5">
+                  <h2 className="text-lg font-semibold text-zinc-800">
+                    รายชื่อ Booth
+                  </h2>
+                  <span className="text-sm text-zinc-500">
+                    {pagination?.total ?? 0} Booth
+                  </span>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="data-table min-w-[760px] tabular-nums">
+                    <caption className="sr-only">
+                      รายชื่อ Booth และโควตาคูปองอาหาร
+                    </caption>
                     <thead>
                       <tr>
                         {[
-                          'ชื่อ-นามสกุล',
-                          'อีเมล',
-                          'เบอร์โทร',
-                          'วันที่รับตั๋ว',
-                          'ลำดับ',
-                          'สิทธิ์คูปอง',
-                          ...report.columns.map(
-                            (c) => `${c.date} · ${c.sessionName}`,
-                          ),
-                        ].map((h, i) => (
-                          <th key={i} className="p-3">
+                          'Booth',
+                          'ประเภท',
+                          'สมาชิก',
+                          'รับตั๋ว',
+                          'เข้าเงื่อนไข',
+                          'สิทธิ์ / โควตา',
+                          'จัดการ',
+                        ].map((h) => (
+                          <th key={h} scope="col">
                             {h}
                           </th>
                         ))}
                       </tr>
                     </thead>
                     <tbody>
-                      {report.members.map((m) => (
-                        <tr className="border-t" key={m.id}>
+                      {list.booths.map((b) => (
+                        <tr key={b.id}>
                           <td className="p-3">
-                            {m.firstName} {m.lastName}
-                          </td>
-                          <td className="p-3">{m.email}</td>
-                          <td className="p-3">{m.phone ?? '—'}</td>
-                          <td className="p-3">
-                            {boothTicketDate(m.firstTicketConfirmedAt) ||
-                              'ยังไม่มีตั๋ว'}
-                          </td>
-                          <td className="p-3">
-                            {m.qualificationSequence ?? '—'}
+                            <Link
+                              className="font-semibold text-zinc-900 hover:text-emerald-700 hover:underline underline-offset-4"
+                              href={`/booths/${b.id}?eventId=${eventId}`}
+                            >
+                              {b.name}
+                            </Link>
                           </td>
                           <td className="p-3">
-                            {boothEligibilityLabel(m.mealCouponEligible)}
+                            <span className="badge badge-info">
+                              {typeLabels[b.type]}
+                            </span>
                           </td>
-                          {report.columns.map((c) => (
-                            <td className="p-3" key={c.key}>
-                              {dailyAttendanceLabel[m.attendanceByDate[c.key]]}
-                            </td>
-                          ))}
+                          <td className="p-3">{b.memberCount}</td>
+                          <td className="p-3">{b.ticketCount}</td>
+                          <td className="p-3">{b.qualifiedCount}</td>
+                          <td className="p-3">
+                            <span className="badge badge-success">
+                              {b.eligibleCount} / {b.quota}
+                            </span>
+                          </td>
+                          <td className="p-3">
+                            <button
+                              className="btn-secondary gap-1.5 !px-3 !py-1.5"
+                              aria-label={`แก้ไข ${b.name}`}
+                              onClick={() => edit(b)}
+                            >
+                              <IconPencil size={15} aria-hidden="true" />
+                              แก้ไข
+                            </button>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
+                </div>
+                {!list.booths.length && (
+                  <div className="py-12 text-center">
+                    <IconBuildingStore
+                      size={32}
+                      className="mx-auto mb-3 text-zinc-400"
+                      aria-hidden="true"
+                    />
+                    <p className="text-sm text-zinc-500">
+                      ยังไม่มี Booth ตามเงื่อนไขนี้
+                    </p>
+                  </div>
+                )}
+                {pager}
+              </div>
+            )}
+            {report && (
+              <>
+                <div className="flex flex-wrap items-center gap-3 text-sm text-zinc-600">
+                  <span>{report.event.eventName}</span>
+                  <span className="badge badge-info">
+                    {typeLabels[report.booth.type]}
+                  </span>
+                  <span className="badge badge-success">
+                    มีสิทธิ์ {report.booth.eligibleCount}/{report.booth.quota}{' '}
+                    คน
+                  </span>
+                </div>
+                {!report.columns.length && (
+                  <p className="text-sm text-zinc-500">
+                    งานนี้ยังไม่ได้ตั้งค่าเช็กอินรายวัน
+                  </p>
+                )}
+                <div className="card !p-0 overflow-hidden">
+                  <div className="flex items-center justify-between gap-3 px-6 py-5">
+                    <h2 className="text-lg font-semibold text-zinc-800">
+                      รายชื่อสมาชิก
+                    </h2>
+                    <span className="text-sm text-zinc-500">
+                      {pagination?.total ?? 0} คน
+                    </span>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="data-table whitespace-nowrap tabular-nums">
+                      <caption className="sr-only">
+                        สมาชิก Booth สิทธิ์คูปองอาหาร และเช็กอินรายวัน
+                      </caption>
+                      <thead>
+                        <tr>
+                          {[
+                            'ชื่อ-นามสกุล',
+                            'อีเมล',
+                            'เบอร์โทร',
+                            'วันที่รับตั๋ว',
+                            'ลำดับ',
+                            'สิทธิ์คูปอง',
+                            ...report.columns.map(
+                              (c) => `${c.date} · ${c.sessionName}`,
+                            ),
+                          ].map((h, i) => (
+                            <th key={i} scope="col">
+                              {h}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {report.members.map((m) => (
+                          <tr key={m.id}>
+                            <td className="p-3">
+                              <span className="font-medium text-zinc-900">
+                                {m.firstName} {m.lastName}
+                              </span>
+                            </td>
+                            <td className="p-3">{m.email}</td>
+                            <td className="p-3">{m.phone ?? '—'}</td>
+                            <td className="p-3">
+                              {boothTicketDate(m.firstTicketConfirmedAt) ||
+                                'ยังไม่มีตั๋ว'}
+                            </td>
+                            <td className="p-3">
+                              {m.qualificationSequence ?? '—'}
+                            </td>
+                            <td className="p-3">
+                              <span
+                                className={
+                                  m.mealCouponEligible === true
+                                    ? 'badge badge-success'
+                                    : m.mealCouponEligible === null
+                                      ? 'badge badge-warning'
+                                      : 'badge bg-zinc-100 text-zinc-600'
+                                }
+                              >
+                                {boothEligibilityLabel(m.mealCouponEligible)}
+                              </span>
+                            </td>
+                            {report.columns.map((c) => (
+                              <td className="p-3" key={c.key}>
+                                <span
+                                  className={
+                                    m.attendanceByDate[c.key] === 'checked_in'
+                                      ? 'badge badge-success'
+                                      : 'text-zinc-500'
+                                  }
+                                >
+                                  {
+                                    dailyAttendanceLabel[
+                                      m.attendanceByDate[c.key]
+                                    ]
+                                  }
+                                </span>
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                   {!report.members.length && (
-                    <p className="p-4">ยังไม่มีสมาชิกตามเงื่อนไขนี้</p>
+                    <div className="py-12 text-center">
+                      <IconUsers
+                        size={32}
+                        className="mx-auto mb-3 text-zinc-400"
+                        aria-hidden="true"
+                      />
+                      <p className="text-sm text-zinc-500">
+                        ยังไม่มีสมาชิกตามเงื่อนไขนี้
+                      </p>
+                    </div>
                   )}
+                  {pager}
                 </div>
               </>
-            )}
-            {pagination && pagination.totalPages > 1 && (
-              <div className="flex items-center gap-3">
-                <button
-                  disabled={page <= 1}
-                  onClick={() => setPage((x) => x - 1)}
-                  className={buttonClass}
-                >
-                  ก่อนหน้า
-                </button>
-                <span>
-                  หน้า {page}/{pagination.totalPages} · {pagination.total}{' '}
-                  รายการ
-                </span>
-                <button
-                  disabled={page >= pagination.totalPages}
-                  onClick={() => setPage((x) => x + 1)}
-                  className={buttonClass}
-                >
-                  ถัดไป
-                </button>
-              </div>
             )}
           </>
         )}
