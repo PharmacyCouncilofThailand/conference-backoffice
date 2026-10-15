@@ -519,8 +519,15 @@ test('real table gates conflict approval, invalid selection and read-only contro
     eventId: 42,
     closesAt: '2026-10-15T17:00:00.000Z',
   };
+  Object.assign(rows[0].announcement, { participantGroup: 'student' });
   const managed = nodes(
     PresentationTable({ ...props, manage: true, view: 'notifications' }),
+  );
+  assert.equal(
+    managed.filter(
+      (node) => node.type === 'span' && node.props.children === 'ผลงานนักศึกษา',
+    ).length,
+    1,
   );
   const checkboxes = managed.filter((node) => node.type === 'input');
   assert.equal(checkboxes.length, 4);
@@ -541,6 +548,176 @@ test('real table gates conflict approval, invalid selection and read-only contro
       .length,
     0,
   );
+});
+
+test('group tabs request scoped server pagination and clear selected email recipients when switching groups', async () => {
+  const queries: URLSearchParams[] = [];
+  const rows = Array.from({ length: 44 }, (_, index) => ({
+    ...detailFixture().row,
+    sourceKey: `2:${index + 1}`,
+    abstractId: index + 1,
+    canNotify: true,
+    announcement: {
+      ...detailFixture().row.announcement,
+      round: 2,
+      participantGroup: index < 26 ? undefined : 'student',
+    },
+  }));
+  const harness = presentationHarness(
+    'src/app/presentations/page.tsx',
+    'default',
+    {
+      '@/components/layout/AdminLayout': { AdminLayout: 'main' },
+      '@/components/common': { Pagination: 'pagination' },
+      '@/lib/api': {
+        api: {
+          events: {
+            list: async () => ({
+              events: [{ id: 42, eventCode: 'PRIS-2026', eventName: 'PRIS' }],
+            }),
+          },
+          presentations: {
+            list: async (_eventId: number, query: URLSearchParams) => {
+              queries.push(new URLSearchParams(query));
+              const filtered = rows.filter(
+                (row) =>
+                  !query.has('participantGroup') ||
+                  (row.announcement.participantGroup ?? 'general') ===
+                    query.get('participantGroup'),
+              );
+              const page = Number(query.get('page'));
+              return {
+                data: {
+                  items: filtered.slice((page - 1) * 25, page * 25),
+                  total: filtered.length,
+                  pageSize: 25,
+                  settings: {},
+                  counts: {},
+                  capabilities: { manage: true },
+                },
+              };
+            },
+            getSettings: async () => ({ data: null }),
+          },
+        },
+      },
+      '@/lib/presentationUi': { selectablePresentationIds },
+      '@/components/presentations/PresentationTable': {
+        PresentationTable: 'presentation-table',
+        progressLabels: {},
+        matchLabels: {},
+        mailLabels: {},
+        thaiTime: (value: string) => value,
+      },
+      '@/components/presentations/PresentationEmailDialog': {
+        PresentationEmailDialog: 'email-dialog',
+      },
+      '@/components/presentations/PresentationManagementDialog': {
+        PresentationManagementDialog: 'management-dialog',
+      },
+      '@/components/presentations/PresentationHistoryViews': {
+        PresentationDeadlineHistory: 'deadline-history',
+      },
+    },
+    {
+      user: { role: 'admin', assignedEvents: [] },
+      token: 'synthetic',
+      isAdmin: true,
+      isLoading: false,
+    },
+  );
+  let rendered: ReturnType<typeof nodes> = [];
+  const settle = async () => {
+    for (let i = 0; i < 4; i++) {
+      rendered = harness.render({});
+      while (harness.effects.length) harness.effects.shift()!();
+      await new Promise((resolve) => setImmediate(resolve));
+    }
+    rendered = harness.render({});
+  };
+  const click = (label: string) => {
+    const node = rendered.find(
+      (node) => node.type === 'button' && node.props.children === label,
+    );
+    assert.ok(node, label);
+    (node.props.onClick as () => void)();
+  };
+  const table = () =>
+    rendered.find((node) => node.type === 'presentation-table')!;
+  await settle();
+  assert.equal(queries.at(-1)!.has('participantGroup'), false);
+  click('ผลงานทั่วไป');
+  await settle();
+  click('ติดตามและอีเมล');
+  await settle();
+  (
+    rendered.find((node) => node.type === 'pagination')!.props.onPageChange as (
+      page: number,
+    ) => void
+  )(2);
+  await settle();
+  assert.equal(queries.at(-1)!.get('page'), '2');
+  (table().props.onSelect as (id: number) => void)(26);
+  rendered = harness.render({});
+  assert.equal((table().props.selected as Set<number>).size, 1);
+  click('ผลงานนักศึกษา');
+  rendered = harness.render({});
+  assert.equal(
+    rendered.some(
+      (node) =>
+        node.type === 'presentation-table' || node.type === 'email-dialog',
+    ),
+    false,
+  );
+  await settle();
+  assert.equal(queries.at(-1)!.get('participantGroup'), 'student');
+  assert.equal(queries.at(-1)!.get('page'), '1');
+  assert.equal((table().props.rows as PresentationListRow[]).length, 18);
+  assert.equal((table().props.selected as Set<number>).size, 0);
+  click('เลือกที่แจ้งได้ในหน้านี้');
+  rendered = harness.render({});
+  click('ตัวอย่างแจ้งส่ง');
+  rendered = harness.render({});
+  const ids = rendered.find((node) => node.type === 'email-dialog')!.props
+    .abstractIds as number[];
+  assert.equal(ids.length, 18);
+  assert.ok(ids.every((id) => id >= 27));
+  click('ผลงานทั่วไป');
+  rendered = harness.render({});
+  assert.equal(
+    rendered.some((node) => node.type === 'email-dialog'),
+    false,
+  );
+  await settle();
+  assert.equal((table().props.selected as Set<number>).size, 0);
+});
+
+test('detail labels student works while legacy general details retain their wording', async () => {
+  for (const participantGroup of [undefined, 'student'] as const) {
+    const detail = detailFixture();
+    detail.row.announcement.participantGroup = participantGroup;
+    const harness = detailHarness(
+      {
+        user: { role: 'admin', assignedEvents: [] },
+        token: 'synthetic',
+        isAdmin: true,
+        isLoading: false,
+      },
+      { abstractId: '501', eventId: '42' },
+      async () => ({ data: detail }),
+    );
+    harness.render({});
+    while (harness.effects.length) harness.effects.shift()!();
+    await new Promise((resolve) => setImmediate(resolve));
+    const rendered = harness.render({});
+    assert.equal(
+      rendered.some(
+        (node) =>
+          node.type === 'span' && node.props.children === 'ผลงานนักศึกษา',
+      ),
+      participantGroup === 'student',
+    );
+  }
 });
 
 function presentationHarness(
