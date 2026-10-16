@@ -10,6 +10,7 @@ export type Announcement = {
   id: number;
   sequence?: number;
   trackingId: string | null;
+  participantGroup?: 'general' | 'student';
   title: string;
   presentationType: AnnouncementType;
   categoryId: number;

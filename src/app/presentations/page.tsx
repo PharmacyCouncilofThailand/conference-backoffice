@@ -51,6 +51,7 @@ export default function PresentationsPage() {
   );
   const [search, setSearch] = useState('');
   const [round, setRound] = useState('');
+  const [participantGroup, setParticipantGroup] = useState('');
   const [presentationType, setPresentationType] = useState('');
   const [status, setStatus] = useState('');
   const [matchState, setMatchState] = useState('');
@@ -112,7 +113,7 @@ export default function PresentationsPage() {
     events.find((event) => event.id === currentEvent?.id)?.id ??
     events[0]?.id;
   const tab = isAdmin ? adminTab : 'received';
-  const scope = `${isAdmin}:${eventId}:${page}:${tab}:${search}:${round}:${presentationType}:${status}:${matchState}`;
+  const scope = `${isAdmin}:${eventId}:${page}:${tab}:${search}:${round}:${participantGroup}:${presentationType}:${status}:${matchState}`;
   const selectionScope = useRef(scope);
   // Clear synchronously for rendering/handlers as well as after the scope changes.
   const visibleSelected = useMemo(
@@ -150,6 +151,7 @@ export default function PresentationsPage() {
     if (tab === 'received') query.set('received', 'true');
     for (const [key, value] of Object.entries({
       round,
+      participantGroup,
       presentationType,
       status,
       matchState: isAdmin ? matchState : '',
@@ -190,6 +192,7 @@ export default function PresentationsPage() {
     page,
     search,
     round,
+    participantGroup,
     presentationType,
     status,
     matchState,
@@ -388,6 +391,27 @@ export default function PresentationsPage() {
                         </button>
                       ))}
                   </nav>
+                  <div
+                    role="group"
+                    aria-label="กลุ่มผลงาน"
+                    className="mb-4 flex flex-wrap gap-2"
+                  >
+                    {[
+                      ['', 'ทั้งหมด'],
+                      ['general', 'ผลงานทั่วไป'],
+                      ['student', 'ผลงานนักศึกษา'],
+                    ].map(([value, label]) => (
+                      <button
+                        key={value}
+                        type="button"
+                        aria-pressed={participantGroup === value}
+                        onClick={() => filter(setParticipantGroup, value)}
+                        className={`min-h-11 rounded-lg border px-4 py-2 text-sm font-medium focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 ${participantGroup === value ? 'border-emerald-600 bg-emerald-50 text-emerald-800' : 'border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50'}`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
                   <div
                     className={`mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 ${isAdmin ? 'lg:grid-cols-5' : 'lg:grid-cols-4'}`}
                   >

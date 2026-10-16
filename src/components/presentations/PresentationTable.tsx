@@ -181,6 +181,11 @@ export function PresentationTable({
                   }
                 </span>
                 <p className="mt-2 max-w-[180px] text-xs leading-relaxed text-zinc-500">
+                  {row.announcement.participantGroup === 'student' && (
+                    <span className="mb-2 block font-medium text-emerald-700">
+                      ผลงานนักศึกษา
+                    </span>
+                  )}
                   {row.announcement.categoryName}
                 </p>
               </td>

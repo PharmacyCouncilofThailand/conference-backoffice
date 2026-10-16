@@ -183,6 +183,11 @@ function PresentationDetailContent() {
                     <span className="rounded-full bg-zinc-100 px-2.5 py-1 text-zinc-600">
                       Round {detail.row.announcement.round}
                     </span>
+                    {detail.row.announcement.participantGroup === 'student' && (
+                      <span className="rounded-full bg-emerald-50 px-2.5 py-1 font-medium text-emerald-800">
+                        ผลงานนักศึกษา
+                      </span>
+                    )}
                   </div>
                 </section>
                 <section className="card space-y-4">
