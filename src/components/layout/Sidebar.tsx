@@ -23,6 +23,7 @@ import {
   IconMailBolt,
   IconBriefcase,
   IconGift,
+  IconShoppingBag,
 } from '@tabler/icons-react';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -53,6 +54,12 @@ const menuStructure = [
     href: '/sponsors',
     label: 'Sponsor Hub',
     icon: IconBriefcase,
+  },
+  {
+    type: 'link',
+    href: '/merchandise',
+    label: 'ของที่ระลึก',
+    icon: IconShoppingBag,
   },
   {
     type: 'submenu',
@@ -222,8 +229,13 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
           ),
         };
 
-      // Sponsor Hub is admin-only.
-      if (item.href === '/sponsors' || item.href === '/booths') return null;
+      // Sponsor Hub, Booths, and Merchandise are admin-only.
+      if (
+        item.href === '/sponsors' ||
+        item.href === '/booths' ||
+        item.href === '/merchandise'
+      )
+        return null;
 
       if (role === 'team_registration_viewer') {
         if (item.href === '/team-registrations') return item;
