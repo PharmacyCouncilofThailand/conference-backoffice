@@ -30,6 +30,7 @@ import {
 } from '@/lib/merchandiseFormat';
 import type { AdminOrderDetail } from '@/types/merchandise';
 import { merchHref, useMerchandise } from './MerchandiseContext';
+import OrderEditModal from './OrderEditModal';
 import ResendNotificationModal from './ResendNotificationModal';
 import ShipmentModal from './ShipmentModal';
 
@@ -51,6 +52,7 @@ export default function OrderDetail() {
   const [error, setError] = useState('');
   const [checkingPayment, setCheckingPayment] = useState(false);
 
+  const [editModalOpen, setEditModalOpen] = useState(false);
   const [shipmentModalOpen, setShipmentModalOpen] = useState(false);
   const [resendTarget, setResendTarget] = useState<{
     type: 'paid' | 'shipped';
@@ -188,8 +190,17 @@ export default function OrderDetail() {
             </button>
             <button
               type="button"
-              disabled
-              title="เร็วๆ นี้"
+              disabled={
+                order.payment.state === 'qr_active' ||
+                order.payment.state === 'verifying'
+              }
+              title={
+                order.payment.state === 'qr_active' ||
+                order.payment.state === 'verifying'
+                  ? 'ออเดอร์นี้มี QR ที่ยังใช้งานได้หรือกำลังตรวจสอบ กรุณารอสักครู่ก่อนแก้ไข'
+                  : undefined
+              }
+              onClick={() => setEditModalOpen(true)}
               className="btn-secondary min-h-11 gap-2"
             >
               <IconPencil size={18} />
@@ -593,6 +604,17 @@ export default function OrderDetail() {
           </ul>
         )}
       </div>
+
+      {editModalOpen && (
+        <OrderEditModal
+          order={order}
+          onClose={() => setEditModalOpen(false)}
+          onSaved={(updated) => {
+            setOrder(updated);
+            setEditModalOpen(false);
+          }}
+        />
+      )}
 
       {shipmentModalOpen && (
         <ShipmentModal
