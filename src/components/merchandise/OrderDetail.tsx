@@ -609,6 +609,7 @@ export default function OrderDetail() {
         <OrderEditModal
           order={order}
           onClose={() => setEditModalOpen(false)}
+          onReload={() => load()}
           onSaved={(updated) => {
             setOrder(updated);
             setEditModalOpen(false);

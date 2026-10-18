@@ -4,6 +4,7 @@ import type { AdminOrderDetail } from '@/types/merchandise';
 import {
   buildOrderEditPayload,
   computeEditedTotal,
+  isAddableProduct,
   normalizePhone,
   type EditLine,
 } from './merchandiseOrderEdit';
@@ -321,6 +322,32 @@ describe('merchandiseOrderEdit', () => {
         contactNote: '',
       }),
       { error: 'รหัสไปรษณีย์ต้องเป็นตัวเลข 5 หลัก' },
+    );
+  });
+});
+
+describe('isAddableProduct', () => {
+  const base = {
+    publishState: 'published' as const,
+    saleEnabled: true,
+    unavailableCodes: [] as string[],
+  };
+  it('accepts a published, on-sale product even when the store is closed', () => {
+    assert.equal(isAddableProduct(base), true);
+    assert.equal(
+      isAddableProduct({ ...base, unavailableCodes: ['STORE_NOT_OPEN'] }),
+      true,
+    );
+  });
+  it('rejects drafts, products off sale and bundles with unavailable parts', () => {
+    assert.equal(isAddableProduct({ ...base, publishState: 'draft' }), false);
+    assert.equal(isAddableProduct({ ...base, saleEnabled: false }), false);
+    assert.equal(
+      isAddableProduct({
+        ...base,
+        unavailableCodes: ['STORE_NOT_OPEN', 'COMPONENT_UNAVAILABLE'],
+      }),
+      false,
     );
   });
 });

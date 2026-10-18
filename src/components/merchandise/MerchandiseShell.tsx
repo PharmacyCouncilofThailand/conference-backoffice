@@ -9,6 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@/lib/api';
 import { merchandiseApi } from '@/lib/merchandiseApi';
 import { merchErrorMessage } from '@/lib/merchandiseErrors';
+import { routeForEventSwitch } from '@/lib/merchandiseRoutes';
 import {
   badgeClassForStore,
   formatBangkok,
@@ -80,7 +81,7 @@ export default function MerchandiseShell({
     let active = true;
     setEventsLoading(true);
     api.backofficeEvents
-      .list(token, 'limit=100')
+      .list(token, 'limit=1000')
       .then((res) => {
         if (!active) return;
         const list = (res.events ?? []) as unknown as EventOption[];
@@ -157,11 +158,12 @@ export default function MerchandiseShell({
 
   function handleEventChange(nextId: number) {
     setEventId(nextId);
+    const target = routeForEventSwitch(pathname);
     if (nextId > 0) {
       writeStoredEventId(nextId);
-      router.replace(merchHref(pathname, nextId));
+      router.replace(merchHref(target, nextId));
     } else {
-      router.replace(pathname);
+      router.replace(target);
     }
   }
 

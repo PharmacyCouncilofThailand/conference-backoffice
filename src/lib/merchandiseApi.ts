@@ -63,6 +63,15 @@ export function orderFilterQuery(
   return params.toString();
 }
 
+/** Same name the API sends; used when Content-Disposition is not readable. */
+export function exportFilename(
+  kind: 'orders' | 'production',
+  eventCode?: string,
+): string {
+  const code = eventCode?.replace(/[^A-Za-z0-9._-]/g, '_');
+  return code ? `merch-${kind}-${code}.xlsx` : `merch-${kind}.xlsx`;
+}
+
 function productQueryString(query: ProductQuery): string {
   const params = new URLSearchParams();
   if (query.status) params.set('status', query.status);
@@ -479,20 +488,25 @@ export const merchandiseApi = {
     eventId: number,
     filters: OrderFilters,
     token: string,
+    eventCode?: string,
   ) => {
     const q = orderFilterQuery(filters, { paging: false });
     return downloadAPIFile(
       `${base(eventId)}/orders/export.xlsx${q ? `?${q}` : ''}`,
       token,
-      'merch-orders.xlsx',
+      exportFilename('orders', eventCode),
     );
   },
 
-  downloadProductionXlsx: (eventId: number, token: string) =>
+  downloadProductionXlsx: (
+    eventId: number,
+    token: string,
+    eventCode?: string,
+  ) =>
     downloadAPIFile(
       `${base(eventId)}/production/export.xlsx`,
       token,
-      'merch-production.xlsx',
+      exportFilename('production', eventCode),
     ),
 
   production: (eventId: number, token: string, signal?: AbortSignal) =>

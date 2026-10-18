@@ -229,16 +229,14 @@ export async function fetchAPI<T>(
 
 function defaultSaveBlob(blob: Blob, filename: string): void {
   const url = URL.createObjectURL(blob);
-  try {
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-  } finally {
-    URL.revokeObjectURL(url);
-  }
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  // Revoking synchronously can cancel the download in some browsers.
+  setTimeout(() => URL.revokeObjectURL(url), 30_000);
 }
 
 export async function downloadAPIFile(

@@ -22,6 +22,23 @@ export type EditLine =
 
 export const SHIPPING_FEE_BAHT = 50;
 
+/**
+ * Products an admin can add to an existing order: published, on sale and
+ * otherwise purchasable. A closed store does not block admin edits, so
+ * STORE_NOT_OPEN is the only unavailable reason ignored (as the API does).
+ */
+export function isAddableProduct(product: {
+  publishState: 'draft' | 'published';
+  saleEnabled: boolean;
+  unavailableCodes: string[];
+}): boolean {
+  return (
+    product.publishState === 'published' &&
+    product.saleEnabled &&
+    product.unavailableCodes.every((code) => code === 'STORE_NOT_OPEN')
+  );
+}
+
 export function computeEditedTotal(
   lines: EditLine[],
 ): { subtotalBaht: number; totalBaht: number } | null {

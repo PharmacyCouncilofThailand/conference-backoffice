@@ -9,7 +9,7 @@ import type { ProductionRow } from '@/types/merchandise';
 import { useMerchandise } from './MerchandiseContext';
 
 export default function ProductionReport() {
-  const { eventId, token } = useMerchandise();
+  const { eventId, eventCode, token } = useMerchandise();
 
   const [rows, setRows] = useState<ProductionRow[]>([]);
   const [loading, setLoading] = useState(false);
@@ -61,7 +61,7 @@ export default function ProductionReport() {
     if (!eventId || !token || downloading) return;
     setDownloading(true);
     try {
-      await merchandiseApi.downloadProductionXlsx(eventId, token);
+      await merchandiseApi.downloadProductionXlsx(eventId, token, eventCode);
       toast.success('ดาวน์โหลดไฟล์ Excel เรียบร้อยแล้ว');
     } catch (err) {
       toast.error(merchErrorMessage(err));

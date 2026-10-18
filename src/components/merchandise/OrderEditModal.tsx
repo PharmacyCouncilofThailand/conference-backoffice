@@ -10,11 +10,12 @@ import {
   IconX,
 } from '@tabler/icons-react';
 import { merchandiseApi } from '@/lib/merchandiseApi';
-import { merchErrorMessage } from '@/lib/merchandiseErrors';
+import { isVersionConflict, merchErrorMessage } from '@/lib/merchandiseErrors';
 import { formatBaht } from '@/lib/merchandiseFormat';
 import {
   buildOrderEditPayload,
   computeEditedTotal,
+  isAddableProduct,
   SHIPPING_FEE_BAHT,
   type EditLine,
 } from '@/lib/merchandiseOrderEdit';
@@ -30,6 +31,8 @@ interface OrderEditModalProps {
   order: AdminOrderDetail;
   onSaved: (updated: AdminOrderDetail) => void;
   onClose: () => void;
+  /** Reloads the order (new version) while keeping this modal's draft. */
+  onReload: () => Promise<void>;
 }
 
 function variantOptionLabel(v: {
@@ -74,6 +77,7 @@ export default function OrderEditModal({
   order,
   onSaved,
   onClose,
+  onReload,
 }: OrderEditModalProps) {
   const { eventId, token } = useMerchandise();
 
@@ -106,6 +110,19 @@ export default function OrderEditModal({
   const [loadingProducts, setLoadingProducts] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
+  const [conflict, setConflict] = useState(false);
+  const [reloading, setReloading] = useState(false);
+
+  async function handleReload() {
+    setReloading(true);
+    try {
+      await onReload();
+      setConflict(false);
+      setSubmitError('');
+    } finally {
+      setReloading(false);
+    }
+  }
 
   useEffect(() => {
     if (!eventId || !token) return;
@@ -140,8 +157,7 @@ export default function OrderEditModal({
   }, [products]);
 
   const sellablePublishedProducts = useMemo(
-    () =>
-      products.filter((p) => p.publishState === 'published' && p.saleEnabled),
+    () => products.filter(isAddableProduct),
     [products],
   );
 
@@ -346,6 +362,7 @@ export default function OrderEditModal({
     } catch (err) {
       const msg = merchErrorMessage(err);
       setSubmitError(msg);
+      setConflict(isVersionConflict(err));
       toast.error(msg);
     } finally {
       setSubmitting(false);
@@ -389,9 +406,19 @@ export default function OrderEditModal({
         {submitError && (
           <div
             role="alert"
-            className="rounded-xl bg-red-50 p-3 text-sm text-red-700"
+            className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-red-50 p-3 text-sm text-red-700"
           >
-            {submitError}
+            <span>{submitError}</span>
+            {conflict && (
+              <button
+                type="button"
+                onClick={() => void handleReload()}
+                disabled={reloading}
+                className="font-medium underline underline-offset-4 disabled:opacity-50"
+              >
+                {reloading ? 'กำลังโหลด' : 'โหลดข้อมูลล่าสุด'}
+              </button>
+            )}
           </div>
         )}
 

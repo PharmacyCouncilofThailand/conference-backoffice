@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { ApiError, downloadAPIFile } from './api';
-import { orderFilterQuery } from './merchandiseApi';
+import { exportFilename, orderFilterQuery } from './merchandiseApi';
 
 test('orderFilterQuery trims values, omits empty fields, and toggles paging', () => {
   assert.equal(
@@ -87,4 +87,16 @@ test('downloadAPIFile extracts filename from Content-Disposition and calls saveB
   });
   assert.equal(savedName, 'merch-orders-PRIS2026.xlsx');
   assert.equal(savedText, 'xlsx-bytes');
+});
+
+test('exportFilename matches the API file name and falls back without a code', () => {
+  assert.equal(
+    exportFilename('orders', 'PRIS-2026'),
+    'merch-orders-PRIS-2026.xlsx',
+  );
+  assert.equal(
+    exportFilename('production', 'A B/C'),
+    'merch-production-A_B_C.xlsx',
+  );
+  assert.equal(exportFilename('orders'), 'merch-orders.xlsx');
 });

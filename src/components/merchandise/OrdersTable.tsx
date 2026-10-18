@@ -27,7 +27,7 @@ import type { AdminOrderRow, OrderFilters, Page } from '@/types/merchandise';
 import { merchHref, useMerchandise } from './MerchandiseContext';
 
 export default function OrdersTable() {
-  const { eventId, token } = useMerchandise();
+  const { eventId, eventCode, token } = useMerchandise();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -147,6 +147,7 @@ export default function OrdersTable() {
         eventId,
         currentFilters(false),
         token,
+        eventCode,
       );
       toast.success('ดาวน์โหลดไฟล์ Excel แล้ว');
     } catch (err) {
