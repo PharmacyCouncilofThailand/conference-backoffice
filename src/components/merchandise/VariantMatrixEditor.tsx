@@ -15,13 +15,17 @@ import { isVersionConflict, merchErrorMessage } from '@/lib/merchandiseErrors';
 import {
   addOptionValue,
   buildVariantPayload,
+  colorImage,
   inferMatrix,
+  setCellImage,
+  setColorImage,
   syncCells,
   type OptionKind,
   type VariantMatrix,
 } from '@/lib/merchandiseVariants';
 import type { AdminProductDto } from '@/types/merchandise';
 import { useMerchandise } from './MerchandiseContext';
+import VariantImagePicker from './VariantImagePicker';
 
 const KIND_OPTIONS: { value: OptionKind; label: string }[] = [
   { value: 'none', label: 'ไม่มีตัวเลือก' },
@@ -324,6 +328,16 @@ export default function VariantMatrixEditor({
                   className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-white px-3 py-1 text-xs font-semibold text-zinc-800"
                 >
                   <span>{color}</span>
+                  {matrix.kind === 'size_color' && (
+                    <VariantImagePicker
+                      images={product.images}
+                      value={colorImage(matrix, color)}
+                      label={`รูปของ ${color}`}
+                      onChange={(id) =>
+                        setMatrix((prev) => setColorImage(prev, color, id))
+                      }
+                    />
+                  )}
                   <button
                     type="button"
                     disabled={idx === 0}
@@ -406,6 +420,7 @@ export default function VariantMatrixEditor({
                   <th>{matrix.kind === 'size' ? 'ไซซ์' : 'สี'}</th>
                   <th>เปิดขาย</th>
                   <th>ราคาเฉพาะ (บาท)</th>
+                  <th>รูป</th>
                 </tr>
               </thead>
               <tbody>
@@ -441,6 +456,18 @@ export default function VariantMatrixEditor({
                           }
                           placeholder={pricePlaceholder}
                           className="input-field max-w-[180px]"
+                        />
+                      </td>
+                      <td>
+                        <VariantImagePicker
+                          images={product.images}
+                          value={cell.imageId}
+                          label={`รูปของ ${label}`}
+                          onChange={(id) =>
+                            setMatrix((prev) =>
+                              setCellImage(prev, cell.sizeTh, cell.colorTh, id),
+                            )
+                          }
                         />
                       </td>
                     </tr>
