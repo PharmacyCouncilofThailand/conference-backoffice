@@ -167,6 +167,7 @@ export default function VariantMatrixEditor({
       colorTh,
       enabled: true,
       price: '',
+      imageId: null,
     };
 
   return (

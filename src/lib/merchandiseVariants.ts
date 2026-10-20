@@ -8,6 +8,7 @@ export type MatrixCell = {
   colorTh: string | null;
   enabled: boolean;
   price: string;
+  imageId: string | null;
 };
 
 export type VariantMatrix = {
@@ -66,6 +67,7 @@ export function inferMatrix(variants: AdminVariantDto[]): VariantMatrix {
     colorTh: v.colorTh,
     enabled: v.saleEnabled,
     price: v.priceBaht !== null ? String(v.priceBaht) : '',
+    imageId: v.imageId ?? null,
   }));
 
   return syncCells({
@@ -81,14 +83,28 @@ export function syncCells(matrix: VariantMatrix): VariantMatrix {
     matrix.cells.map((c) => [cellKey(c.sizeTh, c.colorTh), c]),
   );
 
+  const colorImages = new Map<string, string>();
+  for (const c of matrix.cells) {
+    if (c.colorTh !== null && c.imageId && !colorImages.has(c.colorTh)) {
+      colorImages.set(c.colorTh, c.imageId);
+    }
+  }
+
   const pickCell = (
     sizeTh: string | null,
     colorTh: string | null,
   ): MatrixCell => {
     const existing = byKey.get(cellKey(sizeTh, colorTh));
-    return existing
-      ? { ...existing, sizeTh, colorTh }
-      : { sizeTh, colorTh, enabled: true, price: '' };
+    if (existing) {
+      return { ...existing, sizeTh, colorTh, imageId: existing.imageId ?? null };
+    }
+    return {
+      sizeTh,
+      colorTh,
+      enabled: true,
+      price: '',
+      imageId: colorTh !== null ? (colorImages.get(colorTh) ?? null) : null,
+    };
   };
 
   if (matrix.kind === 'none') {
@@ -121,7 +137,8 @@ export function syncCells(matrix: VariantMatrix): VariantMatrix {
   const cells: MatrixCell[] = [];
   for (const s of matrix.sizes) {
     for (const c of matrix.colors) {
-      cells.push(pickCell(s, c));
+      const cell = pickCell(s, c);
+      cells.push({ ...cell, imageId: colorImages.get(c) ?? null });
     }
   }
   return {
@@ -157,6 +174,7 @@ export function buildVariantPayload(
       colorTh: cell.colorTh,
       priceBaht: parsedPrice,
       saleEnabled: cell.enabled,
+      imageId: cell.imageId,
     };
     variants.push(item);
   }
@@ -166,4 +184,42 @@ export function buildVariantPayload(
   }
 
   return { variants };
+}
+
+export function setCellImage(
+  matrix: VariantMatrix,
+  sizeTh: string | null,
+  colorTh: string | null,
+  imageId: string | null,
+): VariantMatrix {
+  const key = cellKey(sizeTh, colorTh);
+  return {
+    ...matrix,
+    cells: matrix.cells.map((c) =>
+      cellKey(c.sizeTh, c.colorTh) === key ? { ...c, imageId } : c,
+    ),
+  };
+}
+
+export function setColorImage(
+  matrix: VariantMatrix,
+  colorTh: string,
+  imageId: string | null,
+): VariantMatrix {
+  return {
+    ...matrix,
+    cells: matrix.cells.map((c) =>
+      c.colorTh === colorTh ? { ...c, imageId } : c,
+    ),
+  };
+}
+
+export function colorImage(
+  matrix: VariantMatrix,
+  colorTh: string,
+): string | null {
+  for (const c of matrix.cells) {
+    if (c.colorTh === colorTh && c.imageId) return c.imageId;
+  }
+  return null;
 }
