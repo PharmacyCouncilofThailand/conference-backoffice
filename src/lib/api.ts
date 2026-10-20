@@ -227,6 +227,59 @@ export async function fetchAPI<T>(
   return res.json();
 }
 
+function defaultSaveBlob(blob: Blob, filename: string): void {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  // Revoking synchronously can cancel the download in some browsers.
+  setTimeout(() => URL.revokeObjectURL(url), 30_000);
+}
+
+export async function downloadAPIFile(
+  endpoint: string,
+  token: string,
+  fallbackName: string = 'merch-orders.xlsx',
+  deps: {
+    fetch?: typeof fetch;
+    saveBlob?: (blob: Blob, filename: string) => void | Promise<void>;
+  } = {},
+): Promise<void> {
+  const fetchFn = deps.fetch ?? globalThis.fetch;
+  const saveBlob = deps.saveBlob ?? defaultSaveBlob;
+  const resolvedToken = token || getStoredBackofficeToken();
+  const headers: Record<string, string> = {};
+  if (resolvedToken) {
+    headers['Authorization'] = `Bearer ${resolvedToken}`;
+  }
+
+  const res = await fetchFn(`${API_BASE}${endpoint}`, { headers });
+  if (!res.ok) {
+    if (res.status === 401 && endpoint !== '/backoffice/login') {
+      dispatchUnauthorizedEvent();
+    }
+
+    const error = await res.json().catch(() => ({ error: 'Request failed' }));
+    const message =
+      typeof error.error === 'object' ? error.error?.message : error.error;
+    throw new ApiError(
+      message || `API Error: ${res.status}`,
+      res.status,
+      typeof error.code === 'string' ? error.code : undefined,
+      error.details,
+    );
+  }
+
+  const disposition = res.headers.get('content-disposition') ?? '';
+  const match = /filename="([^"]+)"/i.exec(disposition);
+  const filename = match?.[1] || fallbackName;
+  const blob = await res.blob();
+  await saveBlob(blob, filename);
+}
+
 // API Functions with Proper Types
 export const api = {
   presentations: {
