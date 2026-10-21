@@ -34,6 +34,7 @@ export interface VariantDto {
   colorTh: string | null;
   priceBaht: Baht | null;
   saleEnabled: boolean;
+  imageId: string | null;
 }
 
 export interface BundleComponentDto {
@@ -332,6 +333,7 @@ export interface VariantInput {
   colorTh: string | null;
   priceBaht: number | null;
   saleEnabled: boolean;
+  imageId?: string | null;
 }
 
 export interface ComponentInput {
