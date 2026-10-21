@@ -5,6 +5,7 @@ import {
   addOptionValue,
   buildVariantPayload,
   colorImage,
+  dropMissingImages,
   inferMatrix,
   normalizeOptionValue,
   setCellImage,
@@ -198,4 +199,32 @@ test('inferMatrix: disagreeing cells of a colour take the first cell image', () 
     mkVariant({ id: 'b', sizeTh: 'M', colorTh: 'ขาว', imageId: 'img2' }),
   ]);
   assert.deepEqual(m.cells.map((c) => c.imageId), ['img1', 'img1']);
+});
+
+test('dropMissingImages nulls cells whose image is gone and keeps other edits', () => {
+  const matrix = inferMatrix([
+    mkVariant({ id: 'a', sizeTh: 'S', imageId: 'img-1' }),
+    mkVariant({ id: 'b', sizeTh: 'M', imageId: 'img-2' }),
+    mkVariant({ id: 'c', sizeTh: 'L' }),
+  ]);
+  const edited = {
+    ...matrix,
+    cells: matrix.cells.map((c) =>
+      c.sizeTh === 'S' ? { ...c, price: '120' } : c,
+    ),
+  };
+  const next = dropMissingImages(edited, new Set(['img-2']));
+  assert.notEqual(next, edited);
+  assert.equal(next.cells.find((c) => c.sizeTh === 'S')?.imageId, null);
+  assert.equal(next.cells.find((c) => c.sizeTh === 'S')?.price, '120');
+  assert.equal(next.cells.find((c) => c.sizeTh === 'M')?.imageId, 'img-2');
+  assert.equal(next.cells.find((c) => c.sizeTh === 'L')?.imageId, null);
+});
+
+test('dropMissingImages returns the same matrix when nothing changes', () => {
+  const matrix = inferMatrix([
+    mkVariant({ id: 'a', sizeTh: 'S', imageId: 'img-1' }),
+    mkVariant({ id: 'b', sizeTh: 'M' }),
+  ]);
+  assert.equal(dropMissingImages(matrix, new Set(['img-1'])), matrix);
 });

@@ -16,6 +16,7 @@ import {
   addOptionValue,
   buildVariantPayload,
   colorImage,
+  dropMissingImages,
   inferMatrix,
   setCellImage,
   setColorImage,
@@ -58,6 +59,12 @@ export default function VariantMatrixEditor({
     setConflict(false);
     setError('');
   }, [product.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const imageKey = product.images.map((i) => i.id).join(',');
+  useEffect(() => {
+    const ids = new Set(product.images.map((i) => i.id));
+    setMatrix((prev) => dropMissingImages(prev, ids));
+  }, [imageKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function handleKindChange(kind: OptionKind) {
     setError('');
@@ -320,6 +327,13 @@ export default function VariantMatrixEditor({
               เพิ่มสี
             </button>
           </div>
+          {matrix.kind === 'size_color' &&
+            matrix.colors.length > 0 &&
+            product.images.length === 0 && (
+              <p className="text-xs text-zinc-500">
+                บันทึกรูปสินค้าก่อน จึงจะเลือกรูปให้ตัวเลือกได้
+              </p>
+            )}
           {matrix.colors.length > 0 && (
             <div className="flex flex-wrap gap-2 pt-1">
               {matrix.colors.map((color, idx) => (
@@ -414,67 +428,79 @@ export default function VariantMatrixEditor({
               กรุณาเพิ่มค่าตัวเลือกอย่างน้อย 1 รายการ
             </p>
           ) : (
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>{matrix.kind === 'size' ? 'ไซซ์' : 'สี'}</th>
-                  <th>เปิดขาย</th>
-                  <th>ราคาเฉพาะ (บาท)</th>
-                  <th>รูป</th>
-                </tr>
-              </thead>
-              <tbody>
-                {matrix.cells.map((cell) => {
-                  const label = cell.sizeTh ?? cell.colorTh ?? '';
-                  return (
-                    <tr key={label}>
-                      <td className="font-medium text-zinc-900">{label}</td>
-                      <td>
-                        <label className="inline-flex items-center gap-2">
+            <>
+              {product.images.length === 0 && (
+                <p className="text-xs text-zinc-500">
+                  บันทึกรูปสินค้าก่อน จึงจะเลือกรูปให้ตัวเลือกได้
+                </p>
+              )}
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>{matrix.kind === 'size' ? 'ไซซ์' : 'สี'}</th>
+                    <th>เปิดขาย</th>
+                    <th>ราคาเฉพาะ (บาท)</th>
+                    <th>รูป</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {matrix.cells.map((cell) => {
+                    const label = cell.sizeTh ?? cell.colorTh ?? '';
+                    return (
+                      <tr key={label}>
+                        <td className="font-medium text-zinc-900">{label}</td>
+                        <td>
+                          <label className="inline-flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              checked={cell.enabled}
+                              onChange={(e) =>
+                                updateCell(cell.sizeTh, cell.colorTh, {
+                                  enabled: e.target.checked,
+                                })
+                              }
+                              className="h-4 w-4 rounded border-zinc-300 text-emerald-600 focus:ring-emerald-500"
+                            />
+                            <span className="text-xs">เปิดขาย</span>
+                          </label>
+                        </td>
+                        <td>
                           <input
-                            type="checkbox"
-                            checked={cell.enabled}
+                            type="text"
+                            inputMode="numeric"
+                            value={cell.price}
                             onChange={(e) =>
                               updateCell(cell.sizeTh, cell.colorTh, {
-                                enabled: e.target.checked,
+                                price: e.target.value,
                               })
                             }
-                            className="h-4 w-4 rounded border-zinc-300 text-emerald-600 focus:ring-emerald-500"
+                            placeholder={pricePlaceholder}
+                            className="input-field max-w-[180px]"
                           />
-                          <span className="text-xs">เปิดขาย</span>
-                        </label>
-                      </td>
-                      <td>
-                        <input
-                          type="text"
-                          inputMode="numeric"
-                          value={cell.price}
-                          onChange={(e) =>
-                            updateCell(cell.sizeTh, cell.colorTh, {
-                              price: e.target.value,
-                            })
-                          }
-                          placeholder={pricePlaceholder}
-                          className="input-field max-w-[180px]"
-                        />
-                      </td>
-                      <td>
-                        <VariantImagePicker
-                          images={product.images}
-                          value={cell.imageId}
-                          label={`รูปของ ${label}`}
-                          onChange={(id) =>
-                            setMatrix((prev) =>
-                              setCellImage(prev, cell.sizeTh, cell.colorTh, id),
-                            )
-                          }
-                        />
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                        </td>
+                        <td>
+                          <VariantImagePicker
+                            images={product.images}
+                            value={cell.imageId}
+                            label={`รูปของ ${label}`}
+                            onChange={(id) =>
+                              setMatrix((prev) =>
+                                setCellImage(
+                                  prev,
+                                  cell.sizeTh,
+                                  cell.colorTh,
+                                  id,
+                                ),
+                              )
+                            }
+                          />
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </>
           )}
         </div>
       )}

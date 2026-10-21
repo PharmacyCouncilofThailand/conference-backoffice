@@ -136,12 +136,6 @@ export default function VariantImagePicker({
         )}
       </button>
 
-      {noImages && (
-        <p className="mt-1 max-w-[220px] text-xs text-zinc-500">
-          บันทึกรูปสินค้าก่อน จึงจะเลือกรูปให้ตัวเลือกได้
-        </p>
-      )}
-
       {open &&
         !isDisabled &&
         createPortal(

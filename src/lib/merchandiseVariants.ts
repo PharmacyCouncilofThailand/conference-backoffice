@@ -223,3 +223,18 @@ export function colorImage(
   }
   return null;
 }
+
+export function dropMissingImages(
+  matrix: VariantMatrix,
+  imageIds: ReadonlySet<string>,
+): VariantMatrix {
+  if (!matrix.cells.some((c) => c.imageId && !imageIds.has(c.imageId))) {
+    return matrix;
+  }
+  return {
+    ...matrix,
+    cells: matrix.cells.map((c) =>
+      c.imageId && !imageIds.has(c.imageId) ? { ...c, imageId: null } : c,
+    ),
+  };
+}
