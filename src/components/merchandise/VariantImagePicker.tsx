@@ -51,6 +51,16 @@ export default function VariantImagePicker({
   }, [open, images.length]);
 
   useEffect(() => {
+    if (!open || !pos) return;
+    const pop = popoverRef.current;
+    if (!pop || pop.contains(document.activeElement)) return;
+    const target =
+      pop.querySelector<HTMLElement>('button[aria-pressed="true"]') ??
+      pop.querySelector<HTMLElement>('button');
+    target?.focus({ preventScroll: true });
+  }, [open, pos]);
+
+  useEffect(() => {
     if (!open) return;
     function inside(target: EventTarget | null) {
       const node = target as Node | null;
@@ -66,6 +76,9 @@ export default function VariantImagePicker({
     function onScroll(e: Event) {
       if (!inside(e.target)) setOpen(false);
     }
+    function onFocusIn(e: FocusEvent) {
+      if (!inside(e.target)) setOpen(false);
+    }
     function onResize() {
       setOpen(false);
     }
@@ -77,6 +90,7 @@ export default function VariantImagePicker({
     }
     document.addEventListener('mousedown', onPointerDown);
     document.addEventListener('keydown', onKeyDown);
+    document.addEventListener('focusin', onFocusIn);
     window.addEventListener('scroll', onScroll, true);
     window.addEventListener('resize', onResize);
     return () => {
@@ -84,6 +98,7 @@ export default function VariantImagePicker({
       window.removeEventListener('resize', onResize);
       document.removeEventListener('mousedown', onPointerDown);
       document.removeEventListener('keydown', onKeyDown);
+      document.removeEventListener('focusin', onFocusIn);
     };
   }, [open]);
 
@@ -132,6 +147,21 @@ export default function VariantImagePicker({
         createPortal(
           <div
             ref={popoverRef}
+            onKeyDown={(e) => {
+              if (e.key !== 'Tab') return;
+              const btns = e.currentTarget.querySelectorAll('button');
+              const first = btns[0];
+              const last = btns[btns.length - 1];
+              const active = document.activeElement;
+              if (
+                (!e.shiftKey && active === last) ||
+                (e.shiftKey && active === first)
+              ) {
+                // leaving the popover: close and continue tabbing from the trigger
+                setOpen(false);
+                triggerRef.current?.focus();
+              }
+            }}
             id={popoverId}
             role="group"
             aria-label={label}
