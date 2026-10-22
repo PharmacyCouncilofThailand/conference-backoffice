@@ -29,6 +29,7 @@ import {
   IconDownload,
   IconUserPlus,
   IconLoader2,
+  IconSparkles,
 } from '@tabler/icons-react';
 
 interface Registration {
@@ -57,6 +58,86 @@ interface Registration {
 interface PromoCodeOption {
   id: number;
   code: string;
+}
+
+interface TicketPrice {
+  amount: number;
+  currency: string;
+  label: string;
+}
+
+const buildTicketPrices = (tickets: Record<string, unknown>[]) => {
+  const prices = new Map<string, TicketPrice>();
+  const seen = new Set<string>();
+
+  for (const ticket of tickets) {
+    if (typeof ticket.name !== 'string' || !ticket.name.trim()) continue;
+    // The registration list has no ticket ID. Only match unique names per event.
+    if (seen.has(ticket.name)) {
+      prices.delete(ticket.name);
+      continue;
+    }
+    seen.add(ticket.name);
+    if (
+      (typeof ticket.price !== 'number' && typeof ticket.price !== 'string') ||
+      String(ticket.price).trim() === '' ||
+      typeof ticket.currency !== 'string' ||
+      !ticket.currency.trim()
+    ) {
+      continue;
+    }
+
+    const price = Number(ticket.price);
+    if (!Number.isFinite(price) || price < 0) continue;
+    const amount = price.toLocaleString('th-TH', {
+      minimumFractionDigits: Number.isInteger(price) ? 0 : 2,
+      maximumFractionDigits: 2,
+    });
+    const currency = ticket.currency === 'THB' ? 'บาท' : ticket.currency;
+    prices.set(ticket.name, {
+      amount: price,
+      currency: ticket.currency,
+      label: `${amount} ${currency}`,
+    });
+  }
+
+  return prices;
+};
+
+const formatTicketType = (
+  ticketName: string | null | undefined,
+  price?: TicketPrice,
+) => {
+  const name = ticketName?.trim() || '—';
+  return ticketName?.trim() && price ? `${name} | ${price.label}` : name;
+};
+
+const getTicketPriceTier = (price?: TicketPrice) => {
+  if (!price || price.currency !== 'THB' || price.amount <= 0) return 'neutral';
+  if (price.amount >= 2000) return 'gold';
+  if (price.amount >= 1000) return 'green';
+  return 'red';
+};
+
+function TicketTypeBadge({
+  name,
+  price,
+}: {
+  name: string;
+  price?: TicketPrice;
+}) {
+  return (
+    <span
+      data-price-tier={getTicketPriceTier(price)}
+      className="group inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-zinc-50 px-2.5 py-1 text-xs font-medium text-zinc-600 tabular-nums whitespace-nowrap data-[price-tier=red]:border-red-200 data-[price-tier=red]:bg-red-50 data-[price-tier=red]:text-red-700 data-[price-tier=green]:border-emerald-200 data-[price-tier=green]:bg-emerald-50 data-[price-tier=green]:text-emerald-700 data-[price-tier=gold]:border-amber-300 data-[price-tier=gold]:bg-linear-to-br data-[price-tier=gold]:from-amber-100 data-[price-tier=gold]:via-yellow-50 data-[price-tier=gold]:to-amber-200 data-[price-tier=gold]:text-amber-900 data-[price-tier=gold]:shadow-sm data-[price-tier=gold]:shadow-amber-200/50"
+    >
+      <IconSparkles
+        aria-hidden="true"
+        className="hidden size-3.5 shrink-0 text-amber-600 group-data-[price-tier=gold]:block"
+      />
+      {formatTicketType(name, price)}
+    </span>
+  );
 }
 
 const getBackofficeToken = () =>
@@ -138,8 +219,15 @@ export default function RegistrationsPage() {
   const [sourceFilter, setSourceFilter] = useState('');
   const [eventFilter, setEventFilter] = useState('');
   const [eventOptions, setEventOptions] = useState<
-    { id: number; name: string }[]
+    { id: number; name: string; code: string }[]
   >([]);
+  const showTicketType =
+    eventOptions.find((event) => String(event.id) === eventFilter)?.code ===
+    'PRIS-2026';
+  const [ticketPrices, setTicketPrices] = useState<{
+    eventId: string;
+    prices: Map<string, TicketPrice>;
+  } | null>(null);
   const [promoCodeOptions, setPromoCodeOptions] = useState<PromoCodeOption[]>(
     [],
   );
@@ -210,6 +298,7 @@ export default function RegistrationsPage() {
           (res.events as any[]).map((e) => ({
             id: e.id as number,
             name: e.eventName as string,
+            code: e.eventCode as string,
           })),
         );
       })
@@ -222,6 +311,34 @@ export default function RegistrationsPage() {
     setEventSelected(true);
     setPage(1);
   }, [isOrganizer, eventOptions, eventFilter]);
+
+  useEffect(() => {
+    let isCurrent = true;
+    setTicketPrices(null);
+
+    if (showTicketType) {
+      api.backofficeEvents
+        .getTickets(getBackofficeToken(), Number(eventFilter))
+        .then(({ tickets }) => {
+          if (isCurrent) {
+            setTicketPrices({
+              eventId: eventFilter,
+              prices: buildTicketPrices(tickets),
+            });
+          }
+        })
+        .catch((error) => {
+          if (isCurrent) {
+            console.error('Failed to fetch ticket prices:', error);
+            toast.error('ไม่สามารถโหลดราคาประเภทตั๋วได้');
+          }
+        });
+    }
+
+    return () => {
+      isCurrent = false;
+    };
+  }, [eventFilter, showTicketType]);
 
   useEffect(() => {
     let isCurrent = true;
@@ -281,10 +398,20 @@ export default function RegistrationsPage() {
       if (eventFilter) params.eventId = eventFilter;
       if (promoCodeFilter) params.promoCodeId = promoCodeFilter;
 
-      const res = await api.registrations.list(
-        token,
-        new URLSearchParams(params).toString(),
-      );
+      const [res, exportPrices] = await Promise.all([
+        api.registrations.list(token, new URLSearchParams(params).toString()),
+        showTicketType
+          ? api.backofficeEvents
+              .getTickets(token, Number(eventFilter))
+              .then(({ tickets }) => buildTicketPrices(tickets))
+              .catch(() => {
+                toast.error(
+                  'โหลดราคาตั๋วไม่สำเร็จ ไฟล์จะแสดงเฉพาะชื่อประเภทตั๋ว',
+                );
+                return undefined;
+              })
+          : Promise.resolve(undefined),
+      ]);
       const eventName =
         eventOptions.find((e) => String(e.id) === eventFilter)?.name || 'event';
 
@@ -294,6 +421,16 @@ export default function RegistrationsPage() {
         'Last Name': r.lastName,
         Email: r.email,
         Ticket: r.ticketName,
+        ...(showTicketType
+          ? {
+              'TICKET TYPE': formatTicketType(
+                r.ticketName,
+                r.eventCode === 'PRIS-2026'
+                  ? exportPrices?.get(r.ticketName)
+                  : undefined,
+              ),
+            }
+          : {}),
         'Promo Code': r.promoCode || '',
         Status: r.status,
         Source: r.source,
@@ -828,6 +965,11 @@ export default function RegistrationsPage() {
                     <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">
                       Ticket
                     </th>
+                    {showTicketType && (
+                      <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+                        Ticket Type
+                      </th>
+                    )}
                     <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">
                       Promo Code
                     </th>
@@ -894,6 +1036,19 @@ export default function RegistrationsPage() {
                           {reg.ticketName}
                         </span>
                       </td>
+                      {showTicketType && (
+                        <td className="px-4 py-4 text-center">
+                          <TicketTypeBadge
+                            name={reg.ticketName}
+                            price={
+                              reg.eventCode === 'PRIS-2026' &&
+                              ticketPrices?.eventId === eventFilter
+                                ? ticketPrices.prices.get(reg.ticketName)
+                                : undefined
+                            }
+                          />
+                        </td>
+                      )}
                       <td className="px-4 py-4 text-center">
                         {reg.promoCode ? (
                           <span
