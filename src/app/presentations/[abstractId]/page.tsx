@@ -219,7 +219,12 @@ function PresentationDetailContent() {
                         {detail.row.currentUpload.fileName} · รับ{' '}
                         {thaiTime(detail.row.currentUpload.receivedAt)}
                       </p>
-                      {detail.row.currentUpload.storageProvider === 'drive' ? (
+                      {!detail.row.currentUpload.fileUrl ||
+                      (detail.row.currentUpload.fileStatus &&
+                        detail.row.currentUpload.fileStatus !== 'available') ? (
+                        <p className="text-zinc-500">ไม่สามารถเปิดไฟล์นี้ได้</p>
+                      ) : detail.row.currentUpload.storageProvider ===
+                        'drive' ? (
                         <a
                           className="block text-emerald-700 underline"
                           href={detail.row.currentUpload.fileUrl}
@@ -274,14 +279,28 @@ function PresentationDetailContent() {
                           ? ' · ฉบับปัจจุบัน'
                           : ''}
                       </h3>
-                      <a
-                        className="break-words text-emerald-700 underline"
-                        href={file.fileUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        {file.fileName} · ไฟล์สาธารณะ
-                      </a>
+                      {file.fileUrl &&
+                      (!file.fileStatus || file.fileStatus === 'available') ? (
+                        <a
+                          className="break-words text-emerald-700 underline"
+                          href={file.fileUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          {file.fileName} · ไฟล์สาธารณะ
+                        </a>
+                      ) : (
+                        <>
+                          <p className="break-words">{file.fileName}</p>
+                          <p className="text-sm text-zinc-500">
+                            {file.fileStatus === 'deleted'
+                              ? 'ลบไฟล์แล้วหลังได้รับฉบับใหม่'
+                              : file.fileStatus === 'deletion_pending'
+                                ? 'รอลบไฟล์หลังได้รับฉบับใหม่'
+                                : 'ไม่สามารถเปิดไฟล์นี้ได้'}
+                          </p>
+                        </>
+                      )}
                       <p className="text-sm text-zinc-500">
                         {file.mimeType} ·{' '}
                         {(file.sizeBytes / 1024 / 1024).toFixed(2)} MB · รับ{' '}

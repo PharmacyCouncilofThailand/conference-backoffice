@@ -1836,6 +1836,52 @@ test('accepted Oral opens its Drive URL without an iframe and retains original h
   assert.ok(JSON.stringify(rendered).includes('original.pdf'));
 });
 
+test('pending and deleted historical files retain names without download links', async () => {
+  for (const fileStatus of ['deletion_pending', 'deleted'] as const) {
+    const detail = detailFixture();
+    const old = {
+      ...detail.uploads[0],
+      id: 'obsolete',
+      version: 0,
+      fileName: 'obsolete.pdf',
+      fileUrl: 'https://example.invalid/obsolete.pdf',
+      fileStatus,
+    };
+    detail.uploads.push(old);
+    const harness = detailHarness(
+      {
+        user: {
+          role: 'admin',
+          assignedEvents: [{ id: 42, code: 'PRIS-2026' }],
+        },
+        token: 'synthetic',
+        isAdmin: true,
+        isLoading: false,
+      },
+      { abstractId: '501', eventId: '42' },
+      async () => ({ data: detail }),
+    );
+    harness.render({});
+    harness.effects.shift()!();
+    await new Promise((resolve) => setImmediate(resolve));
+    const rendered = harness.render({});
+    assert.equal(
+      rendered.some(
+        (node) => node.type === 'a' && node.props.href === old.fileUrl,
+      ),
+      false,
+    );
+    assert.ok(JSON.stringify(rendered).includes('obsolete.pdf'));
+    assert.ok(
+      JSON.stringify(rendered).includes(
+        fileStatus === 'deleted'
+          ? 'ลบไฟล์แล้วหลังได้รับฉบับใหม่'
+          : 'รอลบไฟล์หลังได้รับฉบับใหม่',
+      ),
+    );
+  }
+});
+
 test('real detail late responses cannot replace a new scoped work', async () => {
   const route = { abstractId: '501', eventId: '42' };
   const pending: Array<(value: unknown) => void> = [];

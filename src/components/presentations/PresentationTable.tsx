@@ -266,16 +266,24 @@ export function PresentationTable({
               <td className="px-4 py-4 text-center">
                 {row.currentUpload ? (
                   <>
-                    <a
-                      className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700 transition-colors hover:bg-emerald-50 hover:text-emerald-700"
-                      href={row.currentUpload.fileUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <IconFileText size={14} />
-                      ฉบับ {row.currentUpload.version}
-                      <IconExternalLink size={12} />
-                    </a>
+                    {row.currentUpload.fileUrl &&
+                    (!row.currentUpload.fileStatus ||
+                      row.currentUpload.fileStatus === 'available') ? (
+                      <a
+                        className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700 transition-colors hover:bg-emerald-50 hover:text-emerald-700"
+                        href={row.currentUpload.fileUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <IconFileText size={14} />
+                        ฉบับ {row.currentUpload.version}
+                        <IconExternalLink size={12} />
+                      </a>
+                    ) : (
+                      <span className="text-xs text-zinc-500">
+                        ฉบับ {row.currentUpload.version} · ไม่สามารถเปิดไฟล์ได้
+                      </span>
+                    )}
                     <p className="mt-2 text-xs leading-relaxed text-zinc-400">
                       {thaiTime(row.currentUpload.receivedAt)}
                     </p>

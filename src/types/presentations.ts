@@ -26,7 +26,9 @@ export type UploadDto = {
   storedFileName: string;
   mimeType: 'application/pdf' | 'image/png';
   sizeBytes: number;
-  fileUrl: string;
+  fileUrl: string | null;
+  fileStatus?: 'available' | 'deletion_pending' | 'deleted';
+  deletedAt?: string | null;
   storageProvider: 'drive' | 'r2';
   driveFileId: string | null;
   receivedAt: string;
