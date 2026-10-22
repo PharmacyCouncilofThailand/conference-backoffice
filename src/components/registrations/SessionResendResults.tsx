@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Pagination } from '@/components/common';
 import { useAuth } from '@/contexts/AuthContext';
-import { api } from '@/lib/api';
+import { api, ApiError } from '@/lib/api';
 import type {
   ResendOperationDto,
   ResendOperationEntry,
@@ -49,6 +49,7 @@ export function SessionResendResults({
     let polling = true;
     async function load() {
       if (!active || busy) return;
+      clearTimeout(timer);
       busy = true;
       try {
         const result = await api.sessionGrants.resendOperation(
@@ -61,19 +62,22 @@ export function SessionResendResults({
         setLoaded({ id: requestId, page, data: result });
         setError(null);
         polling = result.summary.waiting + result.summary.sending > 0;
-        if (polling) {
-          timer = setTimeout(() => {
-            if (document.visibilityState === 'visible') void load();
-          }, 3000);
-        } else if (settled.current !== requestId) {
+        if (!polling && settled.current !== requestId) {
           settled.current = requestId;
           settledCallback.current();
         }
       } catch (err) {
-        if (active)
+        if (active) {
           setError(err instanceof Error ? err.message : 'โหลดผลไม่สำเร็จ');
+          if (err instanceof ApiError && err.status < 500) polling = false;
+        }
       } finally {
         busy = false;
+        if (active && polling && document.visibilityState === 'visible') {
+          timer = setTimeout(() => {
+            if (document.visibilityState === 'visible') void load();
+          }, 3000);
+        }
       }
     }
     const visible = () => {
