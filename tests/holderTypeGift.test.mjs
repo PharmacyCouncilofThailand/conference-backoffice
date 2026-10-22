@@ -297,7 +297,7 @@ test('real HolderTypeBadge renders all full labels without price or truncation s
   assert.ok(html.includes('ยังไม่ระบุ'));
 });
 
-test('semantic gift keys color all eleven categories; VIP overrides only the type pill', () => {
+test('holder keys keep distinct stable type colors and preserve gift colors and gold precedence', () => {
   const context = { IconSparkles, exports: {}, require: () => jsxRuntime };
   vm.runInNewContext(
     transpile(
@@ -313,17 +313,17 @@ test('semantic gift keys color all eleven categories; VIP overrides only the typ
     context,
   );
   const expectedTypeTones = [
-    'green',
-    'green',
+    'indigo',
+    'fuchsia',
     'gold',
     'gold',
-    'orange',
-    'orange',
-    'orange',
-    'neutral',
+    'blue',
+    'emerald',
+    'teal',
+    'rose',
     'gold',
     'orange',
-    'green',
+    'violet',
   ];
   const expectedGiftTones = [
     'green',
@@ -339,6 +339,13 @@ test('semantic gift keys color all eleven categories; VIP overrides only the typ
     'green',
   ];
   const colorClasses = {
+    indigo: 'text-indigo-800',
+    fuchsia: 'text-fuchsia-800',
+    blue: 'text-blue-800',
+    emerald: 'text-emerald-800',
+    teal: 'text-teal-800',
+    rose: 'text-rose-800',
+    violet: 'text-violet-800',
     gold: 'text-amber-950',
     green: 'text-emerald-800',
     orange: 'text-orange-800',
@@ -396,7 +403,42 @@ test('semantic gift keys color all eleven categories; VIP overrides only the typ
         },
         kind,
       ),
-      'green',
+      kind === 'type' ? 'indigo' : 'green',
     );
   }
+  const borderTokens = new Set();
+  rows.forEach((registration, index) => {
+    const first = renderToStaticMarkup(context.Badge({ registration }));
+    assert.equal(renderToStaticMarkup(context.Badge({ registration })), first);
+    if (expectedTypeTones[index] !== 'gold') {
+      const expectedBorder = `border-${expectedTypeTones[index]}-${expectedTypeTones[index] === 'orange' ? '200' : '400'}`;
+      assert.ok(first.includes(expectedBorder), expectedBorder);
+      borderTokens.add(expectedBorder);
+    }
+  });
+  assert.equal(borderTokens.size, 8);
+  for (const index of [2, 3, 8]) {
+    assert.equal(
+      context.tone({ ...rows[index], holderGiftCode: null }, 'type'),
+      'gold',
+    );
+  }
+  for (const registration of rows) {
+    assert.equal(
+      context.tone({ ...registration, holderGiftCode: 'large_set3' }, 'type'),
+      'gold',
+    );
+    assert.equal(
+      context.tone({ ...registration, holderGiftCode: 'large_set3' }, 'gift'),
+      'gold',
+    );
+  }
+  assert.equal(
+    context.tone(
+      { ...rows[0], holderType: 'unknown', holderGiftCode: null },
+      'type',
+    ),
+    'neutral',
+  );
+  assert.ok(!declarations.getHolderBadgeTone.includes('Math.random'));
 });

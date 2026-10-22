@@ -86,12 +86,39 @@ const getHolderDisplay = (
 const getHolderBadgeTone = (
   registration: Registration,
   kind: 'type' | 'gift',
-): 'gold' | 'green' | 'orange' | 'neutral' => {
+): keyof typeof holderBadgeClasses => {
   if (registration.eventCode !== 'PRIS-2026') return 'neutral';
   const label =
     kind === 'type' ? registration.holderTypeLabel : registration.holderGift;
   if (!label?.trim()) return 'neutral';
-  if (kind === 'type' && registration.holderType === 'vip') return 'gold';
+  if (kind === 'type') {
+    // Keep each category's color stable across sorting, pages and refreshes.
+    if (registration.holderGiftCode === 'large_set3') return 'gold';
+    switch (registration.holderType) {
+      case 'vip':
+      case 'speaker':
+      case 'media':
+        return 'gold';
+      case 'council_committee':
+        return 'indigo';
+      case 'college_committee':
+        return 'fuchsia';
+      case 'presenter':
+        return 'blue';
+      case 'participant':
+        return 'emerald';
+      case 'exhibitor':
+        return 'teal';
+      case 'health_hack':
+        return 'rose';
+      case 'staff_mc':
+        return 'orange';
+      case 'reviewer':
+        return 'violet';
+      default:
+        return 'neutral';
+    }
+  }
   switch (registration.holderGiftCode) {
     case 'large_set3':
       return 'gold';
@@ -108,6 +135,13 @@ const holderBadgeClasses = {
   gold: 'border-amber-300 bg-gradient-to-br from-amber-100 via-yellow-50 to-amber-200 text-amber-950 shadow-sm',
   green: 'border-emerald-200 bg-emerald-50 text-emerald-800',
   orange: 'border-orange-200 bg-orange-50 text-orange-800',
+  indigo: 'border-indigo-400 bg-indigo-50 text-indigo-800',
+  fuchsia: 'border-fuchsia-400 bg-fuchsia-50 text-fuchsia-800',
+  blue: 'border-blue-400 bg-blue-50 text-blue-800',
+  emerald: 'border-emerald-400 bg-emerald-50 text-emerald-800',
+  teal: 'border-teal-400 bg-teal-50 text-teal-800',
+  rose: 'border-rose-400 bg-rose-50 text-rose-800',
+  violet: 'border-violet-400 bg-violet-50 text-violet-800',
   neutral: 'border-zinc-200 bg-zinc-50 text-zinc-500',
 };
 
@@ -947,10 +981,10 @@ export default function RegistrationsPage() {
                         />
                       </th>
                     )}
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+                    <th className="w-[250px] px-4 py-3 text-left text-xs font-semibold text-zinc-500 uppercase tracking-wider">
                       Code
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+                    <th className="w-[240px] px-4 py-3 text-left text-xs font-semibold text-zinc-500 uppercase tracking-wider">
                       Attendee
                     </th>
                     <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">
@@ -1012,21 +1046,21 @@ export default function RegistrationsPage() {
                           )}
                         </td>
                       )}
-                      <td className="px-4 py-4">
-                        <span className="font-mono text-sm text-zinc-500 bg-zinc-100 px-2 py-1 rounded">
+                      <td className="w-[250px] whitespace-nowrap px-4 py-4">
+                        <span className="inline-block whitespace-nowrap font-mono text-sm text-zinc-500 bg-zinc-100 px-2 py-1 rounded">
                           {reg.regCode}
                         </span>
                       </td>
-                      <td className="px-4 py-4">
-                        <div>
-                          <p className="font-medium text-zinc-900">
+                      <td className="w-[240px] max-w-[240px] px-4 py-4">
+                        <div className="w-52 max-w-full">
+                          <p className="break-words font-medium text-zinc-900">
                             {reg.firstName} {reg.lastName}
                           </p>
-                          <p className="text-sm text-zinc-400">{reg.email}</p>
+                          <p className="break-all text-sm text-zinc-400">{reg.email}</p>
                         </div>
                       </td>
                       <td className="px-4 py-4 text-center">
-                        <span className="inline-flex px-2.5 py-1 rounded-full text-xs font-medium bg-zinc-100 text-zinc-600">
+                        <span className="inline-flex whitespace-nowrap px-2.5 py-1 rounded-full text-xs font-medium bg-zinc-100 text-zinc-600">
                           {reg.eventCode}
                         </span>
                       </td>
@@ -1048,7 +1082,7 @@ export default function RegistrationsPage() {
                       <td className="px-4 py-4 text-center">
                         {reg.promoCode ? (
                           <span
-                            className="inline-flex max-w-[180px] break-all rounded bg-violet-50 px-2 py-1 font-mono text-xs font-medium text-violet-700"
+                            className="inline-flex whitespace-nowrap rounded bg-violet-50 px-2 py-1 font-mono text-xs font-medium text-violet-700"
                             title={reg.promoCode}
                           >
                             {reg.promoCode}
