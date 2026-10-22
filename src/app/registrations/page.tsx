@@ -41,6 +41,10 @@ interface Registration {
   status: string;
   createdAt: string;
   ticketName: string;
+  holderType?: string | null;
+  holderTypeLabel?: string | null;
+  holderGift?: string | null;
+  holderGiftCode?: 'mug_set1' | 'activity_set2' | 'large_set3' | 'none' | null;
   eventName: string;
   eventCode: string;
   source?: string;
@@ -60,82 +64,106 @@ interface PromoCodeOption {
   code: string;
 }
 
-interface TicketPrice {
-  amount: number;
-  currency: string;
-  label: string;
-}
-
-const buildTicketPrices = (tickets: Record<string, unknown>[]) => {
-  const prices = new Map<string, TicketPrice>();
-  const seen = new Set<string>();
-
-  for (const ticket of tickets) {
-    if (typeof ticket.name !== 'string' || !ticket.name.trim()) continue;
-    // The registration list has no ticket ID. Only match unique names per event.
-    if (seen.has(ticket.name)) {
-      prices.delete(ticket.name);
-      continue;
-    }
-    seen.add(ticket.name);
-    if (
-      (typeof ticket.price !== 'number' && typeof ticket.price !== 'string') ||
-      String(ticket.price).trim() === '' ||
-      typeof ticket.currency !== 'string' ||
-      !ticket.currency.trim()
-    ) {
-      continue;
-    }
-
-    const price = Number(ticket.price);
-    if (!Number.isFinite(price) || price < 0) continue;
-    const amount = price.toLocaleString('th-TH', {
-      minimumFractionDigits: Number.isInteger(price) ? 0 : 2,
-      maximumFractionDigits: 2,
-    });
-    const currency = ticket.currency === 'THB' ? 'บาท' : ticket.currency;
-    prices.set(ticket.name, {
-      amount: price,
-      currency: ticket.currency,
-      label: `${amount} ${currency}`,
-    });
-  }
-
-  return prices;
-};
-
-const formatTicketType = (
-  ticketName: string | null | undefined,
-  price?: TicketPrice,
+const getHolderDisplay = (
+  registration: Pick<
+    Registration,
+    'eventCode' | 'holderTypeLabel' | 'holderGift'
+  >,
 ) => {
-  const name = ticketName?.trim() || '—';
-  return ticketName?.trim() && price ? `${name} | ${price.label}` : name;
+  const isPris = registration.eventCode === 'PRIS-2026';
+  return {
+    label:
+      isPris && registration.holderTypeLabel?.trim()
+        ? registration.holderTypeLabel
+        : 'ยังไม่ระบุ',
+    gift:
+      isPris && registration.holderGift?.trim()
+        ? registration.holderGift
+        : 'ยังไม่ระบุ',
+  };
 };
 
-const getTicketPriceTier = (price?: TicketPrice) => {
-  if (!price || price.currency !== 'THB' || price.amount <= 0) return 'neutral';
-  if (price.amount >= 2000) return 'gold';
-  if (price.amount >= 1000) return 'green';
-  return 'red';
+const getHolderBadgeTone = (
+  registration: Registration,
+  kind: 'type' | 'gift',
+): keyof typeof holderBadgeClasses => {
+  if (registration.eventCode !== 'PRIS-2026') return 'neutral';
+  const label =
+    kind === 'type' ? registration.holderTypeLabel : registration.holderGift;
+  if (!label?.trim()) return 'neutral';
+  if (kind === 'type') {
+    // Keep each category's color stable across sorting, pages and refreshes.
+    if (registration.holderGiftCode === 'large_set3') return 'gold';
+    switch (registration.holderType) {
+      case 'vip':
+      case 'speaker':
+      case 'media':
+        return 'gold';
+      case 'council_committee':
+        return 'indigo';
+      case 'college_committee':
+        return 'fuchsia';
+      case 'presenter':
+        return 'blue';
+      case 'participant':
+        return 'emerald';
+      case 'exhibitor':
+        return 'teal';
+      case 'health_hack':
+        return 'rose';
+      case 'staff_mc':
+        return 'orange';
+      case 'reviewer':
+        return 'violet';
+      default:
+        return 'neutral';
+    }
+  }
+  switch (registration.holderGiftCode) {
+    case 'large_set3':
+      return 'gold';
+    case 'mug_set1':
+      return 'green';
+    case 'activity_set2':
+      return 'orange';
+    default:
+      return 'neutral';
+  }
 };
 
-function TicketTypeBadge({
-  name,
-  price,
+const holderBadgeClasses = {
+  gold: 'border-amber-300 bg-gradient-to-br from-amber-100 via-yellow-50 to-amber-200 text-amber-950 shadow-sm',
+  green: 'border-emerald-200 bg-emerald-50 text-emerald-800',
+  orange: 'border-orange-200 bg-orange-50 text-orange-800',
+  indigo: 'border-indigo-400 bg-indigo-50 text-indigo-800',
+  fuchsia: 'border-fuchsia-400 bg-fuchsia-50 text-fuchsia-800',
+  blue: 'border-blue-400 bg-blue-50 text-blue-800',
+  emerald: 'border-emerald-400 bg-emerald-50 text-emerald-800',
+  teal: 'border-teal-400 bg-teal-50 text-teal-800',
+  rose: 'border-rose-400 bg-rose-50 text-rose-800',
+  violet: 'border-violet-400 bg-violet-50 text-violet-800',
+  neutral: 'border-zinc-200 bg-zinc-50 text-zinc-500',
+};
+
+function HolderTypeBadge({
+  registration,
+  kind = 'type',
 }: {
-  name: string;
-  price?: TicketPrice;
+  registration: Registration;
+  kind?: 'type' | 'gift';
 }) {
+  const display = getHolderDisplay(registration);
+  const tone = getHolderBadgeTone(registration, kind);
   return (
     <span
-      data-price-tier={getTicketPriceTier(price)}
-      className="group inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-zinc-50 px-2.5 py-1 text-xs font-medium text-zinc-600 tabular-nums whitespace-nowrap data-[price-tier=red]:border-red-200 data-[price-tier=red]:bg-red-50 data-[price-tier=red]:text-red-700 data-[price-tier=green]:border-emerald-200 data-[price-tier=green]:bg-emerald-50 data-[price-tier=green]:text-emerald-700 data-[price-tier=gold]:border-amber-300 data-[price-tier=gold]:bg-linear-to-br data-[price-tier=gold]:from-amber-100 data-[price-tier=gold]:via-yellow-50 data-[price-tier=gold]:to-amber-200 data-[price-tier=gold]:text-amber-900 data-[price-tier=gold]:shadow-sm data-[price-tier=gold]:shadow-amber-200/50"
+      className={`inline-flex max-w-64 items-center gap-1.5 whitespace-normal rounded-full border px-2.5 py-1 text-xs font-medium leading-relaxed ${holderBadgeClasses[tone]}`}
     >
-      <IconSparkles
-        aria-hidden="true"
-        className="hidden size-3.5 shrink-0 text-amber-600 group-data-[price-tier=gold]:block"
-      />
-      {formatTicketType(name, price)}
+      {tone === 'gold' && (
+        <IconSparkles size={14} className="shrink-0" aria-hidden="true" />
+      )}
+      <span className="min-w-0 break-words">
+        {kind === 'type' ? display.label : display.gift}
+      </span>
     </span>
   );
 }
@@ -206,6 +234,39 @@ async function fetchEventPromoCodes(
   return options;
 }
 
+async function fetchRegistrationList(
+  token: string,
+  params: URLSearchParams,
+  loadAll: boolean,
+  isCurrent: () => boolean,
+) {
+  const first = await api.registrations.list(token, params.toString());
+  if (!isCurrent()) return null;
+  if (!loadAll) return first;
+
+  const rows = [...first.registrations];
+  const total = first.pagination.total;
+  for (let nextPage = 2; nextPage <= first.pagination.totalPages; nextPage++) {
+    const nextParams = new URLSearchParams(params);
+    nextParams.set('page', String(nextPage));
+    const next = await api.registrations.list(token, nextParams.toString());
+    if (!isCurrent()) return null;
+    if (next.pagination.total !== total) {
+      throw new Error('ข้อมูลเปลี่ยนระหว่างโหลด กรุณาโหลดรายการใหม่');
+    }
+    rows.push(...next.registrations);
+  }
+  // Never label a truncated or shifted offset result as the complete list.
+  if (rows.length !== total || new Set(rows.map((row) => row.id)).size !== total) {
+    throw new Error('โหลดรายการไม่ครบ กรุณาโหลดรายการใหม่');
+  }
+  return {
+    ...first,
+    registrations: rows,
+    pagination: { ...first.pagination, page: 1, totalPages: 1 },
+  };
+}
+
 export default function RegistrationsPage() {
   const { user } = useAuth();
   const router = useRouter();
@@ -224,10 +285,6 @@ export default function RegistrationsPage() {
   const showTicketType =
     eventOptions.find((event) => String(event.id) === eventFilter)?.code ===
     'PRIS-2026';
-  const [ticketPrices, setTicketPrices] = useState<{
-    eventId: string;
-    prices: Map<string, TicketPrice>;
-  } | null>(null);
   const [promoCodeOptions, setPromoCodeOptions] = useState<PromoCodeOption[]>(
     [],
   );
@@ -314,34 +371,6 @@ export default function RegistrationsPage() {
 
   useEffect(() => {
     let isCurrent = true;
-    setTicketPrices(null);
-
-    if (showTicketType) {
-      api.backofficeEvents
-        .getTickets(getBackofficeToken(), Number(eventFilter))
-        .then(({ tickets }) => {
-          if (isCurrent) {
-            setTicketPrices({
-              eventId: eventFilter,
-              prices: buildTicketPrices(tickets),
-            });
-          }
-        })
-        .catch((error) => {
-          if (isCurrent) {
-            console.error('Failed to fetch ticket prices:', error);
-            toast.error('ไม่สามารถโหลดราคาประเภทตั๋วได้');
-          }
-        });
-    }
-
-    return () => {
-      isCurrent = false;
-    };
-  }, [eventFilter, showTicketType]);
-
-  useEffect(() => {
-    let isCurrent = true;
     setPromoCodeOptions([]);
 
     if (!eventFilter) {
@@ -374,9 +403,13 @@ export default function RegistrationsPage() {
 
   useEffect(() => {
     if (!eventSelected) return;
-    fetchRegistrations();
+    void fetchRegistrations();
+    return () => {
+      registrationRequestRef.current++;
+    };
   }, [
     page,
+    limit,
     debouncedSearchTerm,
     statusFilter,
     sourceFilter,
@@ -398,20 +431,10 @@ export default function RegistrationsPage() {
       if (eventFilter) params.eventId = eventFilter;
       if (promoCodeFilter) params.promoCodeId = promoCodeFilter;
 
-      const [res, exportPrices] = await Promise.all([
-        api.registrations.list(token, new URLSearchParams(params).toString()),
-        showTicketType
-          ? api.backofficeEvents
-              .getTickets(token, Number(eventFilter))
-              .then(({ tickets }) => buildTicketPrices(tickets))
-              .catch(() => {
-                toast.error(
-                  'โหลดราคาตั๋วไม่สำเร็จ ไฟล์จะแสดงเฉพาะชื่อประเภทตั๋ว',
-                );
-                return undefined;
-              })
-          : Promise.resolve(undefined),
-      ]);
+      const res = await api.registrations.list(
+        token,
+        new URLSearchParams(params).toString(),
+      );
       const eventName =
         eventOptions.find((e) => String(e.id) === eventFilter)?.name || 'event';
 
@@ -423,12 +446,8 @@ export default function RegistrationsPage() {
         Ticket: r.ticketName,
         ...(showTicketType
           ? {
-              'TICKET TYPE': formatTicketType(
-                r.ticketName,
-                r.eventCode === 'PRIS-2026'
-                  ? exportPrices?.get(r.ticketName)
-                  : undefined,
-              ),
+              'TICKET TYPE': getHolderDisplay(r).label,
+              GIFT: getHolderDisplay(r).gift,
             }
           : {}),
         'Promo Code': r.promoCode || '',
@@ -455,25 +474,34 @@ export default function RegistrationsPage() {
     setIsLoading(true);
     try {
       const token = getBackofficeToken();
-      const params: any = { page, limit };
+      const params: Record<string, string> = {
+        page: String(limit === 0 ? 1 : page),
+        limit: String(limit === 0 ? 1000 : limit),
+      };
       if (statusFilter) params.status = statusFilter;
       if (searchTerm) params.search = searchTerm;
       if (sourceFilter) params.source = sourceFilter;
       if (eventFilter) params.eventId = eventFilter;
       if (promoCodeFilter) params.promoCodeId = promoCodeFilter;
-      if (grantSession) params.sessionId = grantSession.id;
+      if (grantSession) params.sessionId = String(grantSession.id);
 
-      const res = await api.registrations.list(
+      const res = await fetchRegistrationList(
         token,
-        new URLSearchParams(params).toString(),
+        new URLSearchParams(params),
+        limit === 0,
+        () => requestId === registrationRequestRef.current,
       );
-      if (requestId !== registrationRequestRef.current) return;
+      if (!res || requestId !== registrationRequestRef.current) return;
       setRegistrations(res.registrations as unknown as Registration[]);
       setTotalCount(res.pagination.total);
       setTotalPages(res.pagination.totalPages);
     } catch (error) {
       if (requestId === registrationRequestRef.current) {
         console.error('Failed to fetch registrations:', error);
+        setRegistrations([]);
+        setTotalCount(0);
+        setTotalPages(1);
+        toast.error(error instanceof Error ? error.message : 'โหลดรายการไม่สำเร็จ');
       }
     } finally {
       if (requestId === registrationRequestRef.current) setIsLoading(false);
@@ -953,10 +981,10 @@ export default function RegistrationsPage() {
                         />
                       </th>
                     )}
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+                    <th className="w-[250px] px-4 py-3 text-left text-xs font-semibold text-zinc-500 uppercase tracking-wider">
                       Code
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+                    <th className="w-[240px] px-4 py-3 text-left text-xs font-semibold text-zinc-500 uppercase tracking-wider">
                       Attendee
                     </th>
                     <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">
@@ -966,9 +994,14 @@ export default function RegistrationsPage() {
                       Ticket
                     </th>
                     {showTicketType && (
-                      <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">
-                        Ticket Type
-                      </th>
+                      <>
+                        <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+                          Ticket Type
+                        </th>
+                        <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+                          Gift
+                        </th>
+                      </>
                     )}
                     <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">
                       Promo Code
@@ -1013,21 +1046,21 @@ export default function RegistrationsPage() {
                           )}
                         </td>
                       )}
-                      <td className="px-4 py-4">
-                        <span className="font-mono text-sm text-zinc-500 bg-zinc-100 px-2 py-1 rounded">
+                      <td className="w-[250px] whitespace-nowrap px-4 py-4">
+                        <span className="inline-block whitespace-nowrap font-mono text-sm text-zinc-500 bg-zinc-100 px-2 py-1 rounded">
                           {reg.regCode}
                         </span>
                       </td>
-                      <td className="px-4 py-4">
-                        <div>
-                          <p className="font-medium text-zinc-900">
+                      <td className="w-[240px] max-w-[240px] px-4 py-4">
+                        <div className="w-52 max-w-full">
+                          <p className="break-words font-medium text-zinc-900">
                             {reg.firstName} {reg.lastName}
                           </p>
-                          <p className="text-sm text-zinc-400">{reg.email}</p>
+                          <p className="break-all text-sm text-zinc-400">{reg.email}</p>
                         </div>
                       </td>
                       <td className="px-4 py-4 text-center">
-                        <span className="inline-flex px-2.5 py-1 rounded-full text-xs font-medium bg-zinc-100 text-zinc-600">
+                        <span className="inline-flex whitespace-nowrap px-2.5 py-1 rounded-full text-xs font-medium bg-zinc-100 text-zinc-600">
                           {reg.eventCode}
                         </span>
                       </td>
@@ -1037,22 +1070,19 @@ export default function RegistrationsPage() {
                         </span>
                       </td>
                       {showTicketType && (
-                        <td className="px-4 py-4 text-center">
-                          <TicketTypeBadge
-                            name={reg.ticketName}
-                            price={
-                              reg.eventCode === 'PRIS-2026' &&
-                              ticketPrices?.eventId === eventFilter
-                                ? ticketPrices.prices.get(reg.ticketName)
-                                : undefined
-                            }
-                          />
-                        </td>
+                        <>
+                          <td className="px-4 py-4 text-center">
+                            <HolderTypeBadge registration={reg} />
+                          </td>
+                          <td className="px-4 py-4 text-center">
+                            <HolderTypeBadge registration={reg} kind="gift" />
+                          </td>
+                        </>
                       )}
                       <td className="px-4 py-4 text-center">
                         {reg.promoCode ? (
                           <span
-                            className="inline-flex max-w-[180px] break-all rounded bg-violet-50 px-2 py-1 font-mono text-xs font-medium text-violet-700"
+                            className="inline-flex whitespace-nowrap rounded bg-violet-50 px-2 py-1 font-mono text-xs font-medium text-violet-700"
                             title={reg.promoCode}
                           >
                             {reg.promoCode}
@@ -1132,6 +1162,7 @@ export default function RegistrationsPage() {
                 totalPages={totalPages}
                 totalCount={totalCount}
                 pageSize={limit}
+                allowAll
                 onPageChange={setPage}
                 onPageSizeChange={setLimit}
                 itemName="registrations"

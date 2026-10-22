@@ -10,6 +10,7 @@ interface PaginationProps {
   totalPages: number;
   totalCount: number;
   pageSize?: number;
+  allowAll?: boolean;
   onPageChange: (page: number) => void;
   onPageSizeChange?: (size: number) => void;
   itemName?: string;
@@ -21,8 +22,10 @@ interface PaginationProps {
 function RowsDropdown({
   value,
   onChange,
+  allowAll = false,
 }: {
   value: number;
+  allowAll?: boolean;
   onChange: (size: number) => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -40,11 +43,14 @@ function RowsDropdown({
   return (
     <div ref={ref} className="relative">
       <button
+        type="button"
+        aria-expanded={open}
+        aria-label={`Rows ${value === 0 ? 'ทั้งหมด' : value}`}
         onClick={() => setOpen((v) => !v)}
         className="flex items-center gap-1.5 text-[13px] font-medium text-zinc-600 bg-zinc-100 rounded-lg px-2.5 py-1 hover:bg-zinc-200 transition-colors"
       >
         <span className="text-[12px] text-zinc-400 font-normal">Rows</span>
-        {value}
+        {value === 0 ? 'ทั้งหมด' : value}
         <IconChevronDown
           size={14}
           className={`text-zinc-400 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
@@ -53,23 +59,26 @@ function RowsDropdown({
 
       {open && (
         <div className="absolute bottom-full left-0 mb-1 bg-white rounded-xl shadow-lg border border-zinc-100 py-1 min-w-[80px] z-50 animate-in fade-in slide-in-from-bottom-2 duration-150">
-          {PAGE_SIZE_OPTIONS.map((size) => (
-            <button
-              key={size}
-              onClick={() => {
-                onChange(size);
-                setOpen(false);
-              }}
-              className={`w-full flex items-center justify-between px-3 py-1.5 text-[13px] transition-colors ${
-                value === size
-                  ? 'text-emerald-600 font-semibold bg-emerald-50'
-                  : 'text-zinc-600 hover:bg-zinc-50'
-              }`}
-            >
-              {size}
-              {value === size && <IconCheck size={14} />}
-            </button>
-          ))}
+          {(allowAll ? [...PAGE_SIZE_OPTIONS, 0] : PAGE_SIZE_OPTIONS).map(
+            (size) => (
+              <button
+                type="button"
+                key={size}
+                onClick={() => {
+                  onChange(size);
+                  setOpen(false);
+                }}
+                className={`w-full flex items-center justify-between px-3 py-1.5 text-[13px] transition-colors ${
+                  value === size
+                    ? 'text-emerald-600 font-semibold bg-emerald-50'
+                    : 'text-zinc-600 hover:bg-zinc-50'
+                }`}
+              >
+                {size === 0 ? 'ทั้งหมด' : size}
+                {value === size && <IconCheck size={14} />}
+              </button>
+            ),
+          )}
         </div>
       )}
     </div>
@@ -81,6 +90,7 @@ export default function Pagination({
   totalPages,
   totalCount,
   pageSize = 10,
+  allowAll = false,
   onPageChange,
   onPageSizeChange,
   itemName = 'items',
@@ -88,8 +98,14 @@ export default function Pagination({
   hideIfSinglePage = false,
   className = '',
 }: PaginationProps) {
-  const startItem = totalCount === 0 ? 0 : (currentPage - 1) * pageSize + 1;
-  const endItem = Math.min(currentPage * pageSize, totalCount);
+  const startItem =
+    totalCount === 0
+      ? 0
+      : pageSize === 0
+        ? 1
+        : (currentPage - 1) * pageSize + 1;
+  const endItem =
+    pageSize === 0 ? totalCount : Math.min(currentPage * pageSize, totalCount);
 
   if (hideIfSinglePage && totalPages <= 1 && !onPageSizeChange) {
     return null;
@@ -118,6 +134,7 @@ export default function Pagination({
         {onPageSizeChange && (
           <RowsDropdown
             value={pageSize}
+            allowAll={allowAll}
             onChange={(size) => {
               onPageSizeChange(size);
               onPageChange(1);

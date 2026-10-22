@@ -77,3 +77,9 @@ __pycache__/
 *.swo
 *~
 Thumbs.db
+
+# Private registration workbooks and import/export working files
+registrations_*.xlsx
+registrations_*.csv
+/imports/
+/exports/
