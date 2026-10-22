@@ -878,6 +878,15 @@ export default function RegistrationDetailPage() {
                       : 'ข้าม'}{' '}
                   · อีเมล: {entry.emailStatus} · Attempts: {entry.attemptCount}
                 </p>
+                {entry.outcome === 'invited' &&
+                  entry.invitation?.invitationStatus === 'pending' && (
+                    <Link
+                      className="mt-2 inline-block text-sm text-emerald-700 underline"
+                      href={`/session-grants?eventId=${entry.eventId}&sessionId=${entry.sessionId}&responseStatus=pending&search=${encodeURIComponent(registration?.regCode || '')}`}
+                    >
+                      ติดตาม / ส่งคำเชิญซ้ำ
+                    </Link>
+                  )}
                 {entry.invitation && (
                   <p className="mt-1 text-xs text-amber-700">
                     {invitationLabels[entry.invitation.invitationStatus]} · ก่อน{' '}

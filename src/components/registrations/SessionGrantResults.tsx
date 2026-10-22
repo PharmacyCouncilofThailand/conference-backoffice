@@ -10,6 +10,7 @@ import {
 } from 'react';
 import { IconLoader2, IconRefresh, IconSend } from '@tabler/icons-react';
 import { api } from '@/lib/api';
+import { attemptPurposeLabels } from '@/lib/session-invitation-resend';
 import type {
   GrantBatchDto,
   GrantOutcome,
@@ -282,7 +283,7 @@ export function SessionGrantResults({
             ) : (
               <IconSend size={16} />
             )}
-            ส่งซ้ำ ({selectedRetryIds.size})
+            ลองส่งใหม่หลังล้มเหลว ({selectedRetryIds.size})
           </button>
         </div>
       )}
@@ -376,7 +377,18 @@ export function SessionGrantResults({
                                 className="rounded border border-zinc-200 bg-white p-2"
                               >
                                 #{attempt.attemptNo} · {attempt.result} ·{' '}
-                                {bangkokDateTime(attempt.startedAt)}
+                                {bangkokDateTime(attempt.startedAt)} ·{' '}
+                                {
+                                  attemptPurposeLabels[
+                                    attempt.purpose || 'initial'
+                                  ]
+                                }{' '}
+                                · ผู้ดำเนินการ{' '}
+                                {attempt.triggeredBy ?? attempt.trigger} ·{' '}
+                                {attempt.templateVersion}
+                                {attempt.resendRequestId && (
+                                  <> · คำขอ {attempt.resendRequestId}</>
+                                )}
                                 {attempt.errorCode
                                   ? ` · ${attempt.errorCode}`
                                   : ''}
