@@ -41,6 +41,10 @@ interface Registration {
   status: string;
   createdAt: string;
   ticketName: string;
+  holderType?: string | null;
+  holderTypeLabel?: string | null;
+  holderGift?: string | null;
+  holderGiftCode?: 'mug_set1' | 'activity_set2' | 'large_set3' | 'none' | null;
   eventName: string;
   eventCode: string;
   source?: string;
@@ -60,82 +64,72 @@ interface PromoCodeOption {
   code: string;
 }
 
-interface TicketPrice {
-  amount: number;
-  currency: string;
-  label: string;
-}
-
-const buildTicketPrices = (tickets: Record<string, unknown>[]) => {
-  const prices = new Map<string, TicketPrice>();
-  const seen = new Set<string>();
-
-  for (const ticket of tickets) {
-    if (typeof ticket.name !== 'string' || !ticket.name.trim()) continue;
-    // The registration list has no ticket ID. Only match unique names per event.
-    if (seen.has(ticket.name)) {
-      prices.delete(ticket.name);
-      continue;
-    }
-    seen.add(ticket.name);
-    if (
-      (typeof ticket.price !== 'number' && typeof ticket.price !== 'string') ||
-      String(ticket.price).trim() === '' ||
-      typeof ticket.currency !== 'string' ||
-      !ticket.currency.trim()
-    ) {
-      continue;
-    }
-
-    const price = Number(ticket.price);
-    if (!Number.isFinite(price) || price < 0) continue;
-    const amount = price.toLocaleString('th-TH', {
-      minimumFractionDigits: Number.isInteger(price) ? 0 : 2,
-      maximumFractionDigits: 2,
-    });
-    const currency = ticket.currency === 'THB' ? 'บาท' : ticket.currency;
-    prices.set(ticket.name, {
-      amount: price,
-      currency: ticket.currency,
-      label: `${amount} ${currency}`,
-    });
-  }
-
-  return prices;
-};
-
-const formatTicketType = (
-  ticketName: string | null | undefined,
-  price?: TicketPrice,
+const getHolderDisplay = (
+  registration: Pick<
+    Registration,
+    'eventCode' | 'holderTypeLabel' | 'holderGift'
+  >,
 ) => {
-  const name = ticketName?.trim() || '—';
-  return ticketName?.trim() && price ? `${name} | ${price.label}` : name;
+  const isPris = registration.eventCode === 'PRIS-2026';
+  return {
+    label:
+      isPris && registration.holderTypeLabel?.trim()
+        ? registration.holderTypeLabel
+        : 'ยังไม่ระบุ',
+    gift:
+      isPris && registration.holderGift?.trim()
+        ? registration.holderGift
+        : 'ยังไม่ระบุ',
+  };
 };
 
-const getTicketPriceTier = (price?: TicketPrice) => {
-  if (!price || price.currency !== 'THB' || price.amount <= 0) return 'neutral';
-  if (price.amount >= 2000) return 'gold';
-  if (price.amount >= 1000) return 'green';
-  return 'red';
+const getHolderBadgeTone = (
+  registration: Registration,
+  kind: 'type' | 'gift',
+): 'gold' | 'green' | 'orange' | 'neutral' => {
+  if (registration.eventCode !== 'PRIS-2026') return 'neutral';
+  const label =
+    kind === 'type' ? registration.holderTypeLabel : registration.holderGift;
+  if (!label?.trim()) return 'neutral';
+  if (kind === 'type' && registration.holderType === 'vip') return 'gold';
+  switch (registration.holderGiftCode) {
+    case 'large_set3':
+      return 'gold';
+    case 'mug_set1':
+      return 'green';
+    case 'activity_set2':
+      return 'orange';
+    default:
+      return 'neutral';
+  }
 };
 
-function TicketTypeBadge({
-  name,
-  price,
+const holderBadgeClasses = {
+  gold: 'border-amber-300 bg-gradient-to-br from-amber-100 via-yellow-50 to-amber-200 text-amber-950 shadow-sm',
+  green: 'border-emerald-200 bg-emerald-50 text-emerald-800',
+  orange: 'border-orange-200 bg-orange-50 text-orange-800',
+  neutral: 'border-zinc-200 bg-zinc-50 text-zinc-500',
+};
+
+function HolderTypeBadge({
+  registration,
+  kind = 'type',
 }: {
-  name: string;
-  price?: TicketPrice;
+  registration: Registration;
+  kind?: 'type' | 'gift';
 }) {
+  const display = getHolderDisplay(registration);
+  const tone = getHolderBadgeTone(registration, kind);
   return (
     <span
-      data-price-tier={getTicketPriceTier(price)}
-      className="group inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-zinc-50 px-2.5 py-1 text-xs font-medium text-zinc-600 tabular-nums whitespace-nowrap data-[price-tier=red]:border-red-200 data-[price-tier=red]:bg-red-50 data-[price-tier=red]:text-red-700 data-[price-tier=green]:border-emerald-200 data-[price-tier=green]:bg-emerald-50 data-[price-tier=green]:text-emerald-700 data-[price-tier=gold]:border-amber-300 data-[price-tier=gold]:bg-linear-to-br data-[price-tier=gold]:from-amber-100 data-[price-tier=gold]:via-yellow-50 data-[price-tier=gold]:to-amber-200 data-[price-tier=gold]:text-amber-900 data-[price-tier=gold]:shadow-sm data-[price-tier=gold]:shadow-amber-200/50"
+      className={`inline-flex max-w-64 items-center gap-1.5 whitespace-normal rounded-full border px-2.5 py-1 text-xs font-medium leading-relaxed ${holderBadgeClasses[tone]}`}
     >
-      <IconSparkles
-        aria-hidden="true"
-        className="hidden size-3.5 shrink-0 text-amber-600 group-data-[price-tier=gold]:block"
-      />
-      {formatTicketType(name, price)}
+      {tone === 'gold' && (
+        <IconSparkles size={14} className="shrink-0" aria-hidden="true" />
+      )}
+      <span className="min-w-0 break-words">
+        {kind === 'type' ? display.label : display.gift}
+      </span>
     </span>
   );
 }
@@ -224,10 +218,6 @@ export default function RegistrationsPage() {
   const showTicketType =
     eventOptions.find((event) => String(event.id) === eventFilter)?.code ===
     'PRIS-2026';
-  const [ticketPrices, setTicketPrices] = useState<{
-    eventId: string;
-    prices: Map<string, TicketPrice>;
-  } | null>(null);
   const [promoCodeOptions, setPromoCodeOptions] = useState<PromoCodeOption[]>(
     [],
   );
@@ -314,34 +304,6 @@ export default function RegistrationsPage() {
 
   useEffect(() => {
     let isCurrent = true;
-    setTicketPrices(null);
-
-    if (showTicketType) {
-      api.backofficeEvents
-        .getTickets(getBackofficeToken(), Number(eventFilter))
-        .then(({ tickets }) => {
-          if (isCurrent) {
-            setTicketPrices({
-              eventId: eventFilter,
-              prices: buildTicketPrices(tickets),
-            });
-          }
-        })
-        .catch((error) => {
-          if (isCurrent) {
-            console.error('Failed to fetch ticket prices:', error);
-            toast.error('ไม่สามารถโหลดราคาประเภทตั๋วได้');
-          }
-        });
-    }
-
-    return () => {
-      isCurrent = false;
-    };
-  }, [eventFilter, showTicketType]);
-
-  useEffect(() => {
-    let isCurrent = true;
     setPromoCodeOptions([]);
 
     if (!eventFilter) {
@@ -398,20 +360,10 @@ export default function RegistrationsPage() {
       if (eventFilter) params.eventId = eventFilter;
       if (promoCodeFilter) params.promoCodeId = promoCodeFilter;
 
-      const [res, exportPrices] = await Promise.all([
-        api.registrations.list(token, new URLSearchParams(params).toString()),
-        showTicketType
-          ? api.backofficeEvents
-              .getTickets(token, Number(eventFilter))
-              .then(({ tickets }) => buildTicketPrices(tickets))
-              .catch(() => {
-                toast.error(
-                  'โหลดราคาตั๋วไม่สำเร็จ ไฟล์จะแสดงเฉพาะชื่อประเภทตั๋ว',
-                );
-                return undefined;
-              })
-          : Promise.resolve(undefined),
-      ]);
+      const res = await api.registrations.list(
+        token,
+        new URLSearchParams(params).toString(),
+      );
       const eventName =
         eventOptions.find((e) => String(e.id) === eventFilter)?.name || 'event';
 
@@ -423,12 +375,8 @@ export default function RegistrationsPage() {
         Ticket: r.ticketName,
         ...(showTicketType
           ? {
-              'TICKET TYPE': formatTicketType(
-                r.ticketName,
-                r.eventCode === 'PRIS-2026'
-                  ? exportPrices?.get(r.ticketName)
-                  : undefined,
-              ),
+              'TICKET TYPE': getHolderDisplay(r).label,
+              GIFT: getHolderDisplay(r).gift,
             }
           : {}),
         'Promo Code': r.promoCode || '',
@@ -966,9 +914,14 @@ export default function RegistrationsPage() {
                       Ticket
                     </th>
                     {showTicketType && (
-                      <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">
-                        Ticket Type
-                      </th>
+                      <>
+                        <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+                          Ticket Type
+                        </th>
+                        <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+                          Gift
+                        </th>
+                      </>
                     )}
                     <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">
                       Promo Code
@@ -1037,17 +990,14 @@ export default function RegistrationsPage() {
                         </span>
                       </td>
                       {showTicketType && (
-                        <td className="px-4 py-4 text-center">
-                          <TicketTypeBadge
-                            name={reg.ticketName}
-                            price={
-                              reg.eventCode === 'PRIS-2026' &&
-                              ticketPrices?.eventId === eventFilter
-                                ? ticketPrices.prices.get(reg.ticketName)
-                                : undefined
-                            }
-                          />
-                        </td>
+                        <>
+                          <td className="px-4 py-4 text-center">
+                            <HolderTypeBadge registration={reg} />
+                          </td>
+                          <td className="px-4 py-4 text-center">
+                            <HolderTypeBadge registration={reg} kind="gift" />
+                          </td>
+                        </>
                       )}
                       <td className="px-4 py-4 text-center">
                         {reg.promoCode ? (
