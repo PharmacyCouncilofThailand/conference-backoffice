@@ -40,3 +40,40 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Graft local context graph (regenerable cache)
+/graft/
+
+# Local graph outputs and agent tooling
+/graphify-out/
+/.graphify_cache/
+/AGENTS.md
+/.ignore
+/.codex/
+/.claude/
+
+# Private keys and local credentials
+*.key
+*.p12
+*.pfx
+/.ssh/
+id_rsa
+id_ed25519
+
+# Local caches, logs, and test artifacts
+/.cache/
+/.turbo/
+/test-results/
+/playwright-report/
+*.log
+__pycache__/
+*.pyc
+/.venv/
+
+# Editor and temporary files
+/.idea/
+/.vscode/
+*.swp
+*.swo
+*~
+Thumbs.db
