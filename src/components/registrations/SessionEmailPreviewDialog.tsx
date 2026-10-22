@@ -6,23 +6,42 @@ import { api } from '@/lib/api';
 import type {
   GrantEmailPreview,
   GrantPreviewRequest,
+  ResendInput,
+  ResendPreviewDto,
 } from '@/types/session-grants';
 
-interface Props {
-  request: GrantPreviewRequest;
+type Props = {
   submitting: boolean;
   onClose: () => void;
-  onConfirm: (request: GrantPreviewRequest) => Promise<void>;
+} & (
+  | {
+      mode?: 'create';
+      request: GrantPreviewRequest;
+      onConfirm: (request: GrantPreviewRequest) => Promise<void>;
+    }
+  | {
+      mode: 'resend';
+      request: ResendInput;
+      onConfirm: (request: ResendInput) => Promise<void>;
+    }
+);
+
+export function SessionEmailPreviewDialog(props: Props) {
+  return (
+    <PreviewContent
+      key={JSON.stringify([props.mode, props.request])}
+      {...props}
+    />
+  );
 }
 
-export function SessionEmailPreviewDialog({
-  request,
-  submitting,
-  onClose,
-  onConfirm,
-}: Props) {
+function PreviewContent(props: Props) {
+  const { submitting, onClose } = props;
+  const resend = props.mode === 'resend';
   const dialogRef = useRef<HTMLDialogElement>(null);
-  const [preview, setPreview] = useState<GrantEmailPreview | null>(null);
+  const [preview, setPreview] = useState<
+    GrantEmailPreview | ResendPreviewDto | null
+  >(null);
   const [error, setError] = useState<string | null>(null);
   const [index, setIndex] = useState(0);
   const [reload, setReload] = useState(0);
@@ -43,11 +62,14 @@ export function SessionEmailPreviewDialog({
       localStorage.getItem('backoffice_token') ||
       sessionStorage.getItem('backoffice_token') ||
       '';
-    void api.sessionGrants
-      .preview(token, {
-        sessionId: request.sessionId,
-        registrationIds: request.registrationIds,
-      })
+    const loading =
+      props.mode === 'resend'
+        ? api.sessionGrants.resendPreview(token, props.request)
+        : api.sessionGrants.preview(token, {
+            sessionId: props.request.sessionId,
+            registrationIds: props.request.registrationIds,
+          });
+    void loading
       .then((result) => {
         if (active) setPreview(result);
       })
@@ -60,7 +82,7 @@ export function SessionEmailPreviewDialog({
     return () => {
       active = false;
     };
-  }, [request, reload]);
+  }, [props.request, props.mode, reload]);
 
   const email = preview?.emails[index];
   return (
@@ -79,11 +101,12 @@ export function SessionEmailPreviewDialog({
             id="session-email-preview-title"
             className="text-lg font-semibold text-zinc-900"
           >
-            ตัวอย่างอีเมลก่อนส่ง
+            {resend ? 'ส่งคำเชิญซ้ำ' : 'ตัวอย่างอีเมลก่อนส่ง'}
           </h2>
           <p className="mt-1 text-sm text-zinc-600">
-            ตรวจผู้รับและเนื้อหา
-            แล้วกดยืนยันเพื่อเพิ่มสิทธิ์หรือสร้างคำเชิญและส่งอีเมล
+            {resend
+              ? 'ส่งคำเชิญเดิมอีกครั้ง ระบบตรวจสิทธิ์อีกครั้งเมื่อยืนยัน'
+              : 'ตรวจผู้รับและเนื้อหา แล้วกดยืนยันเพื่อเพิ่มสิทธิ์หรือสร้างคำเชิญและส่งอีเมล'}
           </p>
         </div>
         <button
@@ -120,6 +143,11 @@ export function SessionEmailPreviewDialog({
               ลองโหลดอีกครั้ง
             </button>
           </div>
+        )}
+        {preview && (
+          <p className="mb-3 text-sm">
+            พร้อมส่ง {preview.emails.length} · ข้าม {preview.skipped.length}
+          </p>
         )}
         {preview && preview.skipped.length > 0 && (
           <p className="mb-4 text-sm text-amber-800">
@@ -158,7 +186,7 @@ export function SessionEmailPreviewDialog({
                 )}
               className="h-[38dvh] min-h-56 w-full rounded-lg border border-zinc-200 bg-white"
             />
-            {email.html.includes('<a ') && (
+            {(resend || email.html.includes('<a ')) && (
               <p className="mt-2 text-xs text-zinc-600">
                 ลิงก์ตอบรับในตัวอย่างใช้งานไม่ได้
                 ผู้รับจะได้รับลิงก์จริงทางอีเมล
@@ -206,17 +234,21 @@ export function SessionEmailPreviewDialog({
           disabled={!email || submitting || !!error}
           onClick={() => {
             if (!preview || !email || submitting || error) return;
-            void onConfirm({
-              ...request,
-              registrationIds: preview.emails.map(
-                (item) => item.registrationId,
-              ),
-            });
+            if (props.mode === 'resend') void props.onConfirm(props.request);
+            else
+              void props.onConfirm({
+                ...props.request,
+                registrationIds: preview.emails.map(
+                  (item) => item.registrationId,
+                ),
+              });
           }}
         >
           {submitting
             ? 'กำลังดำเนินการ...'
-            : `ยืนยันและส่งทั้งหมด ${preview?.emails.length ?? 0} ฉบับ`}
+            : resend
+              ? `ยืนยันส่งคำเชิญซ้ำ ${preview?.emails.length ?? 0} ฉบับ`
+              : `ยืนยันและส่งทั้งหมด ${preview?.emails.length ?? 0} ฉบับ`}
         </button>
       </div>
     </dialog>

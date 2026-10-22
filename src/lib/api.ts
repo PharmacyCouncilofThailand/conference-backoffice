@@ -867,6 +867,42 @@ export const api = {
   },
 
   sessionGrants: {
+    resendPreview: (
+      token: string,
+      body: import('@/types/session-grants').ResendInput,
+    ) =>
+      fetchAPI<import('@/types/session-grants').ResendPreviewDto>(
+        '/api/backoffice/session-grants/resend-preview',
+        {
+          method: 'POST',
+          body: JSON.stringify(body),
+          token,
+        },
+      ),
+    resend: (
+      token: string,
+      key: string,
+      body: import('@/types/session-grants').ResendInput,
+    ) =>
+      fetchAPI<import('@/types/session-grants').ResendResult>(
+        '/api/backoffice/session-grants/resend',
+        {
+          method: 'POST',
+          body: JSON.stringify(body),
+          headers: { 'Idempotency-Key': key },
+          token,
+        },
+      ),
+    resendOperation: (
+      token: string,
+      requestId: string,
+      page = 1,
+      limit = 100,
+    ) =>
+      fetchAPI<import('@/types/session-grants').ResendOperationDto>(
+        `/api/backoffice/session-grants/resends/${encodeURIComponent(requestId)}?page=${page}&limit=${Math.min(100, Math.max(1, limit))}`,
+        { token },
+      ),
     preview: (token: string, body: SessionGrantCreateInput) =>
       fetchAPI<import('@/types/session-grants').GrantEmailPreview>(
         '/api/backoffice/session-grants/preview',
@@ -883,9 +919,12 @@ export const api = {
       ),
 
     status: (token: string) =>
-      fetchAPI<{ enabled: boolean }>('/api/backoffice/session-grants/status', {
-        token,
-      }),
+      fetchAPI<{ enabled: boolean; resendSupported?: true }>(
+        '/api/backoffice/session-grants/status',
+        {
+          token,
+        },
+      ),
     create: (
       token: string,
       idempotencyKey: string,

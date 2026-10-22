@@ -115,6 +115,8 @@ export interface SessionGrantEmailAttemptDto {
   attemptNo: number;
   trigger: 'system' | 'admin';
   triggeredBy: number | null;
+  purpose?: 'initial' | 'retry' | 'resend';
+  resendRequestId?: string | null;
   recipientEmail: string;
   templateVersion: string;
   subject: string;
@@ -177,6 +179,12 @@ export interface GrantTrackingItemDto extends Omit<
   recipientEmail: string | null;
   sentAt: string | null;
   lastAttemptAt: string | null;
+  lastSuccessfulSentAt?: string | null;
+  lastResendQueuedAt?: string | null;
+  resendEligibleAt?: string | null;
+  successfulResendCount?: number;
+  resendEligible?: boolean;
+  resendDisabledReason?: string | null;
 }
 
 export interface GrantTrackingDto {
@@ -187,5 +195,68 @@ export interface GrantTrackingDto {
     outcomeCounts: Record<GrantOutcome, number>;
     invitationCounts: Record<InvitationStatus, number>;
     emailCounts: Record<SessionGrantEmailStatus, number>;
+  };
+}
+
+export interface ResendInput {
+  sessionId: number;
+  invitationIds: string[];
+}
+export type ResendSkipCode =
+  | 'INVITATION_NOT_FOUND'
+  | 'INVITATION_NOT_PENDING'
+  | 'EMAIL_BUSY'
+  | 'EMAIL_NOT_RESENDABLE'
+  | 'RESEND_COOLDOWN'
+  | 'INVITATION_PAYLOAD_INVALID';
+export interface ResendSkip {
+  invitationId: string;
+  reasonCode: ResendSkipCode;
+  retryAfter?: string;
+}
+export interface ResendQueued {
+  invitationId: string;
+  itemId: string;
+}
+export interface ResendResult {
+  requestId: string;
+  sessionId: number;
+  requestedCount: number;
+  queued: ResendQueued[];
+  skipped: ResendSkip[];
+}
+export interface ResendPreviewDto {
+  emails: {
+    invitationId: string;
+    registrationId: number;
+    name: string;
+    recipient: string;
+    subject: string;
+    html: string;
+  }[];
+  skipped: ResendSkip[];
+}
+export type ResendDeliveryState =
+  'waiting' | 'sending' | 'sent' | 'failed' | 'unknown' | 'suppressed';
+export interface ResendOperationEntry extends ResendQueued {
+  batchId: string;
+  recipient: string | null;
+  name: string | null;
+  state: ResendDeliveryState;
+  attemptNo: number | null;
+  finishedAt: string | null;
+  errorCode: string | null;
+}
+export interface ResendOperationDto {
+  result: ResendResult;
+  actorId: number;
+  createdAt: string;
+  entries: ResendOperationEntry[];
+  summary: Record<ResendDeliveryState, number>;
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
   };
 }
