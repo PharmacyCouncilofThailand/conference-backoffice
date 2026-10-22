@@ -18,6 +18,21 @@ import { Pagination } from '@/components/common';
 import { AdminLayout } from '@/components/layout/AdminLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@/lib/api';
+import { SessionEmailPreviewDialog } from '@/components/registrations/SessionEmailPreviewDialog';
+import { SessionResendResults } from '@/components/registrations/SessionResendResults';
+import {
+  attemptPurposeLabels,
+  resendDisabledReason,
+  selectResends,
+  readPendingResend,
+  persistPendingResend,
+  resendStorageKey,
+} from '@/lib/session-invitation-resend';
+import type {
+  PendingResend,
+  ResendSelection,
+} from '@/lib/session-invitation-resend';
+import type { ResendInput } from '@/types/session-grants';
 import {
   emailLabels,
   invitationLabels,
@@ -70,7 +85,7 @@ const badgeClass =
   'inline-flex items-center whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium';
 
 function TrackingPage() {
-  const { token, isAdmin, isLoading } = useAuth();
+  const { token, user, isAdmin, isLoading } = useAuth();
   const router = useRouter();
   const params = useSearchParams();
   const urlQuery = params.toString();
@@ -87,6 +102,35 @@ function TrackingPage() {
   const page = Number(query.get('page') || '1');
   const limit = Number(query.get('limit') || '50');
   const eventId = query.get('eventId') || '';
+  const sessionId = Number(query.get('sessionId') || 0);
+  const resendScope = `${user?.id}:${eventId}:${sessionId}`;
+  const resendScopeRef = useRef(resendScope);
+  resendScopeRef.current = resendScope;
+  const [resendSupported, setResendSupported] = useState(false);
+  const [selection, setSelection] = useState<ResendSelection>({
+    scope: '',
+    rows: new Map(),
+  });
+  const selected =
+    selection.scope === resendScope
+      ? selection.rows
+      : new Map<string, GrantTrackingItemDto>();
+  const [previewRequest, setPreviewRequest] = useState<{
+    scope: string;
+    input: ResendInput;
+  } | null>(null);
+  const [pendingResend, setPendingResend] = useState<{
+    scope: string;
+    value: PendingResend;
+  } | null>(null);
+  const activePending =
+    pendingResend?.scope === resendScope ? pendingResend.value : null;
+  const [resendResult, setResendResult] = useState<{
+    scope: string;
+    requestId: string;
+  } | null>(null);
+  const [resendSubmitting, setResendSubmitting] = useState(false);
+  const resendBusy = useRef(false);
   const [events, setEvents] = useState<Array<{ id: number; name: string }>>([]);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [choicesError, setChoicesError] = useState<string | null>(null);
@@ -241,6 +285,7 @@ function TrackingPage() {
       .then((result) => {
         if (current) {
           setEnabled(result.enabled);
+          setResendSupported(result.resendSupported === true);
           setFlagError(null);
         }
       })
@@ -310,6 +355,92 @@ function TrackingPage() {
     };
   }, [isAdmin, token, historyRequest, scope, refresh]);
 
+  useEffect(() => {
+    setSelection({ scope: resendScope, rows: new Map() });
+    setPreviewRequest(null);
+    setPendingResend(null);
+    setResendResult(null);
+    if (!user || !sessionId || !isAdmin) return;
+    try {
+      const value = readPendingResend(sessionStorage, user.id, sessionId);
+      if (value) {
+        setPendingResend({ scope: resendScope, value });
+        if (value.requestId)
+          setResendResult({ scope: resendScope, requestId: value.requestId });
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'อ่านคำขอเดิมไม่สำเร็จ');
+    }
+  }, [resendScope, user, sessionId, isAdmin]);
+
+  const openResendPreview = (rows: GrantTrackingItemDto[]) => {
+    if (!sessionId || activePending || resendBusy.current) return;
+    const eligible = rows.filter(
+      (item) =>
+        item.sessionId === sessionId &&
+        !resendDisabledReason(item, enabled === true, resendSupported),
+    );
+    if (!eligible.length) return;
+    setPreviewRequest({
+      scope: resendScope,
+      input: {
+        sessionId,
+        invitationIds: eligible.map((item) => item.invitation!.invitationId),
+      },
+    });
+  };
+  const submitResend = async (input: ResendInput, recovery?: PendingResend) => {
+    if (
+      !token ||
+      !user ||
+      !isAdmin ||
+      resendBusy.current ||
+      !enabled ||
+      !resendSupported
+    )
+      return;
+    const requestedScope = resendScope;
+    resendBusy.current = true;
+    setResendSubmitting(true);
+    setError(null);
+    try {
+      const stored = readPendingResend(
+        sessionStorage,
+        user.id,
+        input.sessionId,
+      );
+      if (stored && !recovery) throw new Error('มีคำขอเดิมที่ต้องกู้คืนก่อน');
+      const pending = stored || recovery || { key: crypto.randomUUID(), input };
+      persistPendingResend(sessionStorage, user.id, pending);
+      setPendingResend({ scope: requestedScope, value: pending });
+      const result = await api.sessionGrants.resend(
+        token,
+        pending.key,
+        pending.input,
+      );
+      const completed = { ...pending, requestId: result.requestId };
+      persistPendingResend(sessionStorage, user.id, completed);
+      if (resendScopeRef.current === requestedScope) {
+        setPendingResend({ scope: requestedScope, value: completed });
+        setResendResult({ scope: requestedScope, requestId: result.requestId });
+        setPreviewRequest(null);
+        setSelection({ scope: requestedScope, rows: new Map() });
+        setNotice(
+          `เข้าคิวแล้ว ${result.queued.length} · ข้าม ${result.skipped.length}`,
+        );
+        setRefresh((value) => value + 1);
+      }
+    } catch (err) {
+      if (resendScopeRef.current === requestedScope)
+        setError(
+          `${err instanceof Error ? err.message : 'ส่งคำขอไม่สำเร็จ'} · หากไม่ทราบผล ให้กู้คืนคำขอเดิมด้วยปุ่มด้านล่าง`,
+        );
+    } finally {
+      resendBusy.current = false;
+      setResendSubmitting(false);
+    }
+  };
+
   const changeQuery = (key: (typeof queryKeys)[number], value: string) => {
     const next = new URLSearchParams(filtersRef.current);
     if (value) next.set(key, value);
@@ -321,6 +452,11 @@ function TrackingPage() {
     setFilters(next.toString());
     setNotice(null);
     setHistoryRequest(null);
+    if (key === 'eventId' || key === 'sessionId') {
+      setSelection({ scope: '', rows: new Map() });
+      setPreviewRequest(null);
+      setPendingResend(null);
+    }
     router.replace(`/session-grants${next.size ? `?${next}` : ''}`, {
       scroll: false,
     });
@@ -600,6 +736,124 @@ function TrackingPage() {
                 กำลังโหลดรายการ…
               </p>
             )}
+            {enabled && resendSupported && sessionId > 0 && (
+              <section className="card space-y-3" aria-label="ส่งคำเชิญซ้ำ">
+                <p>
+                  เลือกข้ามหน้า {selected.size} / 500 รายการ · เฉพาะ Session
+                  ที่เลือก
+                </p>
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  disabled={!data || !!activePending || resendSubmitting}
+                  onClick={() => {
+                    const eligible = (data?.items || []).filter(
+                      (item) => !resendDisabledReason(item, true, true),
+                    );
+                    const allSelected =
+                      eligible.length > 0 &&
+                      eligible.every((item) =>
+                        selected.has(item.invitation!.invitationId),
+                      );
+                    setSelection((current) =>
+                      selectResends(
+                        current,
+                        resendScope,
+                        eligible,
+                        !allSelected,
+                      ),
+                    );
+                  }}
+                >
+                  เลือก/ยกเลิกเฉพาะรายการที่พร้อมในหน้านี้ (
+                  {data?.items.filter(
+                    (item) => !resendDisabledReason(item, true, true),
+                  ).length || 0}
+                  )
+                </button>
+                <button
+                  type="button"
+                  className="btn-primary ml-2"
+                  disabled={
+                    !selected.size || !!activePending || resendSubmitting
+                  }
+                  onClick={() => openResendPreview([...selected.values()])}
+                >
+                  ส่งคำเชิญซ้ำ ({selected.size})
+                </button>
+                <button
+                  type="button"
+                  className="btn-secondary ml-2"
+                  onClick={() =>
+                    setSelection({ scope: resendScope, rows: new Map() })
+                  }
+                >
+                  ล้างที่เลือก
+                </button>
+              </section>
+            )}
+            {activePending && !activePending.requestId && (
+              <section className="card space-y-3">
+                <p role="status">
+                  มีคำขอที่ยังไม่ทราบผล (
+                  {activePending.input.invitationIds.length} รายการ)
+                  กู้คืนโดยส่งคำขอเดิมอีกครั้ง
+                </p>
+                <button
+                  type="button"
+                  className="btn-primary"
+                  disabled={resendSubmitting || !enabled || !resendSupported}
+                  onClick={() =>
+                    void submitResend(activePending.input, activePending)
+                  }
+                >
+                  กู้คืนคำขอเดิม
+                </button>
+                <button
+                  type="button"
+                  className="btn-secondary ml-2"
+                  disabled={resendSubmitting}
+                  onClick={() => {
+                    if (
+                      !user ||
+                      !window.confirm(
+                        'คำขอเดิมอาจเข้าคิวแล้ว การยกเลิกการกู้คืนไม่ยกเลิกอีเมล ยืนยันลบคำขอที่บันทึกไว้หรือไม่?',
+                      )
+                    )
+                      return;
+                    sessionStorage.removeItem(
+                      resendStorageKey(user.id, sessionId),
+                    );
+                    setPendingResend(null);
+                  }}
+                >
+                  ยกเลิกการกู้คืน
+                </button>
+              </section>
+            )}
+            {resendResult?.scope === resendScope && (
+              <SessionResendResults
+                key={resendResult.requestId}
+                requestId={resendResult.requestId}
+                onSettled={() => {
+                  if (user)
+                    sessionStorage.removeItem(
+                      resendStorageKey(user.id, sessionId),
+                    );
+                  setPendingResend(null);
+                  setRefresh((value) => value + 1);
+                }}
+              />
+            )}
+            {previewRequest?.scope === resendScope && (
+              <SessionEmailPreviewDialog
+                mode="resend"
+                request={previewRequest.input}
+                submitting={resendSubmitting}
+                onClose={() => setPreviewRequest(null)}
+                onConfirm={submitResend}
+              />
+            )}
             {data && (
               <>
                 <div className="space-y-3 text-xs text-zinc-500">
@@ -794,7 +1048,10 @@ function TrackingPage() {
                                   {emailLabels[item.emailStatus]}
                                 </span>
                                 <div className="mt-2 text-xs text-zinc-500">
-                                  ส่งเมื่อ {thaiTime(item.sentAt)}
+                                  ส่งสำเร็จล่าสุด{' '}
+                                  {thaiTime(
+                                    item.lastSuccessfulSentAt ?? item.sentAt,
+                                  )}
                                 </div>
                                 <div className="mt-1 text-xs text-zinc-500">
                                   ลองส่งล่าสุด {thaiTime(item.lastAttemptAt)}
@@ -842,6 +1099,89 @@ function TrackingPage() {
                                   />
                                   ผลการเพิ่มครั้งนี้
                                 </Link>
+                                {enabled &&
+                                  resendSupported &&
+                                  sessionId > 0 &&
+                                  item.outcome === 'invited' && (
+                                    <div className="mt-2 space-y-2">
+                                      <label className="flex gap-2 text-xs">
+                                        <input
+                                          type="checkbox"
+                                          aria-label={`เลือกส่งคำเชิญซ้ำ ${item.name || item.registrationId}`}
+                                          disabled={
+                                            !!resendDisabledReason(
+                                              item,
+                                              true,
+                                              true,
+                                            ) ||
+                                            !!activePending ||
+                                            resendSubmitting ||
+                                            (selected.size >= 500 &&
+                                              !selected.has(
+                                                item.invitation?.invitationId ||
+                                                  '',
+                                              ))
+                                          }
+                                          checked={selected.has(
+                                            item.invitation?.invitationId || '',
+                                          )}
+                                          onChange={(event) =>
+                                            setSelection((current) =>
+                                              selectResends(
+                                                current,
+                                                resendScope,
+                                                [item],
+                                                event.target.checked,
+                                              ),
+                                            )
+                                          }
+                                        />
+                                        เลือก
+                                      </label>
+                                      <button
+                                        type="button"
+                                        className="btn-secondary text-xs"
+                                        disabled={
+                                          !!resendDisabledReason(
+                                            item,
+                                            true,
+                                            true,
+                                          ) ||
+                                          !!activePending ||
+                                          resendSubmitting
+                                        }
+                                        onClick={() =>
+                                          openResendPreview([item])
+                                        }
+                                      >
+                                        ส่งคำเชิญซ้ำ
+                                      </button>
+                                      {resendDisabledReason(
+                                        item,
+                                        true,
+                                        true,
+                                      ) && (
+                                        <p className="text-xs text-zinc-500">
+                                          {resendDisabledReason(
+                                            item,
+                                            true,
+                                            true,
+                                          )}
+                                          {item.resendEligibleAt && (
+                                            <>
+                                              {' '}
+                                              · พร้อมหลัง{' '}
+                                              {thaiTime(item.resendEligibleAt)}
+                                            </>
+                                          )}
+                                        </p>
+                                      )}
+                                      <p className="text-xs text-zinc-500">
+                                        ส่งซ้ำสำเร็จ{' '}
+                                        {item.successfulResendCount ?? 0} ครั้ง
+                                      </p>
+                                    </div>
+                                  )}
                                 {(item.emailStatus === 'failed' ||
                                   item.emailStatus === 'unknown') && (
                                   <div className="mt-2">
@@ -867,7 +1207,7 @@ function TrackingPage() {
                                       />
                                       {retrying === item.id
                                         ? 'กำลังเข้าคิว…'
-                                        : 'ส่งอีเมลซ้ำ'}
+                                        : 'ลองส่งใหม่หลังล้มเหลว'}
                                     </button>
                                     {reason && (
                                       <p
@@ -962,7 +1302,18 @@ function TrackingPage() {
                               </span>
                             </div>
                             <p className="mt-2 text-xs text-zinc-500">
-                              เริ่ม {thaiTime(attempt.startedAt)} · สิ้นสุด{' '}
+                              {
+                                attemptPurposeLabels[
+                                  attempt.purpose || 'initial'
+                                ]
+                              }{' '}
+                              · ผู้ดำเนินการ{' '}
+                              {attempt.triggeredBy ?? attempt.trigger} ·{' '}
+                              {attempt.templateVersion}
+                              {attempt.resendRequestId && (
+                                <> · คำขอ {attempt.resendRequestId}</>
+                              )}{' '}
+                              · เริ่ม {thaiTime(attempt.startedAt)} · สิ้นสุด{' '}
                               {thaiTime(attempt.finishedAt)}
                             </p>
                             {attempt.errorCode && (
