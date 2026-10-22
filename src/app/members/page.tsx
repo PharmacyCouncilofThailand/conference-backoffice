@@ -26,6 +26,7 @@ import {
 interface Member {
   id: number;
   email: string;
+  namePrefix?: string | null;
   firstName: string;
   lastName: string;
   role:
@@ -413,6 +414,9 @@ export default function MembersPage() {
                       ID
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+                      คำนำหน้า
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-500 uppercase tracking-wider">
                       Member
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-500 uppercase tracking-wider">
@@ -439,7 +443,7 @@ export default function MembersPage() {
                   {members.length === 0 ? (
                     <tr>
                       <td
-                        colSpan={8}
+                        colSpan={9}
                         className="text-center py-8 text-zinc-400"
                       >
                         No members found
@@ -455,6 +459,9 @@ export default function MembersPage() {
                           <span className="font-mono text-sm text-zinc-500 bg-zinc-100 px-2 py-1 rounded">
                             {member.id}
                           </span>
+                        </td>
+                        <td className="px-4 py-4 text-sm text-zinc-500">
+                          {member.namePrefix?.trim() || '—'}
                         </td>
                         <td className="px-4 py-4">
                           <div className="flex items-center gap-3">

@@ -35,6 +35,7 @@ import {
 interface Registration {
   id: number;
   regCode: string;
+  namePrefix?: string | null;
   firstName: string;
   lastName: string;
   email: string;
@@ -984,6 +985,9 @@ export default function RegistrationsPage() {
                     <th className="w-[250px] px-4 py-3 text-left text-xs font-semibold text-zinc-500 uppercase tracking-wider">
                       Code
                     </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+                      คำนำหน้า
+                    </th>
                     <th className="w-[240px] px-4 py-3 text-left text-xs font-semibold text-zinc-500 uppercase tracking-wider">
                       Attendee
                     </th>
@@ -1050,6 +1054,9 @@ export default function RegistrationsPage() {
                         <span className="inline-block whitespace-nowrap font-mono text-sm text-zinc-500 bg-zinc-100 px-2 py-1 rounded">
                           {reg.regCode}
                         </span>
+                      </td>
+                      <td className="px-4 py-4 text-sm text-zinc-500">
+                        {reg.namePrefix?.trim() || '—'}
                       </td>
                       <td className="w-[240px] max-w-[240px] px-4 py-4">
                         <div className="w-52 max-w-full">
