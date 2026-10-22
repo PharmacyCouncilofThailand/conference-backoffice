@@ -200,6 +200,39 @@ async function fetchEventPromoCodes(
   return options;
 }
 
+async function fetchRegistrationList(
+  token: string,
+  params: URLSearchParams,
+  loadAll: boolean,
+  isCurrent: () => boolean,
+) {
+  const first = await api.registrations.list(token, params.toString());
+  if (!isCurrent()) return null;
+  if (!loadAll) return first;
+
+  const rows = [...first.registrations];
+  const total = first.pagination.total;
+  for (let nextPage = 2; nextPage <= first.pagination.totalPages; nextPage++) {
+    const nextParams = new URLSearchParams(params);
+    nextParams.set('page', String(nextPage));
+    const next = await api.registrations.list(token, nextParams.toString());
+    if (!isCurrent()) return null;
+    if (next.pagination.total !== total) {
+      throw new Error('ข้อมูลเปลี่ยนระหว่างโหลด กรุณาโหลดรายการใหม่');
+    }
+    rows.push(...next.registrations);
+  }
+  // Never label a truncated or shifted offset result as the complete list.
+  if (rows.length !== total || new Set(rows.map((row) => row.id)).size !== total) {
+    throw new Error('โหลดรายการไม่ครบ กรุณาโหลดรายการใหม่');
+  }
+  return {
+    ...first,
+    registrations: rows,
+    pagination: { ...first.pagination, page: 1, totalPages: 1 },
+  };
+}
+
 export default function RegistrationsPage() {
   const { user } = useAuth();
   const router = useRouter();
@@ -336,9 +369,13 @@ export default function RegistrationsPage() {
 
   useEffect(() => {
     if (!eventSelected) return;
-    fetchRegistrations();
+    void fetchRegistrations();
+    return () => {
+      registrationRequestRef.current++;
+    };
   }, [
     page,
+    limit,
     debouncedSearchTerm,
     statusFilter,
     sourceFilter,
@@ -403,25 +440,34 @@ export default function RegistrationsPage() {
     setIsLoading(true);
     try {
       const token = getBackofficeToken();
-      const params: any = { page, limit };
+      const params: Record<string, string> = {
+        page: String(limit === 0 ? 1 : page),
+        limit: String(limit === 0 ? 1000 : limit),
+      };
       if (statusFilter) params.status = statusFilter;
       if (searchTerm) params.search = searchTerm;
       if (sourceFilter) params.source = sourceFilter;
       if (eventFilter) params.eventId = eventFilter;
       if (promoCodeFilter) params.promoCodeId = promoCodeFilter;
-      if (grantSession) params.sessionId = grantSession.id;
+      if (grantSession) params.sessionId = String(grantSession.id);
 
-      const res = await api.registrations.list(
+      const res = await fetchRegistrationList(
         token,
-        new URLSearchParams(params).toString(),
+        new URLSearchParams(params),
+        limit === 0,
+        () => requestId === registrationRequestRef.current,
       );
-      if (requestId !== registrationRequestRef.current) return;
+      if (!res || requestId !== registrationRequestRef.current) return;
       setRegistrations(res.registrations as unknown as Registration[]);
       setTotalCount(res.pagination.total);
       setTotalPages(res.pagination.totalPages);
     } catch (error) {
       if (requestId === registrationRequestRef.current) {
         console.error('Failed to fetch registrations:', error);
+        setRegistrations([]);
+        setTotalCount(0);
+        setTotalPages(1);
+        toast.error(error instanceof Error ? error.message : 'โหลดรายการไม่สำเร็จ');
       }
     } finally {
       if (requestId === registrationRequestRef.current) setIsLoading(false);
@@ -1082,6 +1128,7 @@ export default function RegistrationsPage() {
                 totalPages={totalPages}
                 totalCount={totalCount}
                 pageSize={limit}
+                allowAll
                 onPageChange={setPage}
                 onPageSizeChange={setLimit}
                 itemName="registrations"
