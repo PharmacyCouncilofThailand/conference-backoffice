@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { IconAlertTriangle, IconLoader2, IconX } from '@tabler/icons-react';
 import { merchandiseApi } from '@/lib/merchandiseApi';
@@ -27,6 +27,23 @@ export default function ResendNotificationModal({
   const [reason, setReason] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [preview, setPreview] = useState<{
+    recipient: string;
+    subject: string;
+    html: string;
+  } | null>(null);
+  const [previewError, setPreviewError] = useState('');
+
+  useEffect(() => {
+    const controller = new AbortController();
+    merchandiseApi
+      .previewNotification(eventId, orderId, type, token, controller.signal)
+      .then(setPreview)
+      .catch((err) => {
+        if (!controller.signal.aborted) setPreviewError(merchErrorMessage(err));
+      });
+    return () => controller.abort();
+  }, [eventId, orderId, type, token]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -60,7 +77,7 @@ export default function ResendNotificationModal({
 
   return (
     <div className="modal-overlay">
-      <div className="modal-content max-w-md p-6">
+      <div className="modal-content max-w-2xl p-6">
         <div className="flex items-start justify-between gap-3">
           <div>
             <h2 className="text-lg font-bold text-zinc-900">
@@ -98,6 +115,32 @@ export default function ResendNotificationModal({
           </div>
         )}
 
+        <div className="mt-4 space-y-2">
+          <span className="text-sm font-medium text-zinc-700">ตัวอย่างอีเมลที่จะส่ง</span>
+          {preview ? (
+            <>
+              <div className="text-xs text-zinc-600">
+                <div>ถึง: {preview.recipient}</div>
+                <div>หัวเรื่อง: {preview.subject}</div>
+              </div>
+              <iframe
+                title="ตัวอย่างอีเมล"
+                sandbox=""
+                srcDoc={`<!doctype html><meta charset="utf-8"><body style="margin:16px;background:#fff">${preview.html}</body>`}
+                className="h-80 w-full rounded-xl border border-zinc-200 bg-white"
+              />
+            </>
+          ) : previewError ? (
+            <div role="alert" className="rounded-xl bg-red-50 p-3 text-xs text-red-700">
+              โหลดตัวอย่างไม่สำเร็จ: {previewError}
+            </div>
+          ) : (
+            <div className="flex h-24 items-center justify-center text-zinc-400">
+              <IconLoader2 size={20} className="animate-spin" />
+            </div>
+          )}
+        </div>
+
         <form onSubmit={(e) => void handleSubmit(e)} className="mt-4 space-y-4">
           <label className="block space-y-1.5">
             <span className="text-sm font-medium text-zinc-700">
@@ -126,7 +169,7 @@ export default function ResendNotificationModal({
             </button>
             <button
               type="submit"
-              disabled={saving}
+              disabled={saving || !preview}
               className="btn-primary min-h-11 gap-2"
             >
               {saving && <IconLoader2 size={18} className="animate-spin" />}
