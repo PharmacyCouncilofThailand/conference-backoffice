@@ -436,6 +436,18 @@ export const merchandiseApi = {
       signal,
     }),
 
+  previewNotification: (
+    eventId: number,
+    id: string,
+    type: 'paid' | 'shipped',
+    token: string,
+    signal?: AbortSignal,
+  ) =>
+    unwrap<{ recipient: string; subject: string; html: string }>(
+      `${base(eventId)}/orders/${id}/notifications/${type}/preview`,
+      { token, signal },
+    ),
+
   resendNotification: (
     eventId: number,
     id: string,
