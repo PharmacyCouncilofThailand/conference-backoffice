@@ -76,6 +76,7 @@ interface PrisExportSource {
   holderTypeLabel?: string | null;
   holderGift?: string | null;
   booth?: { mealCouponEligible: boolean | null } | null;
+  mealCouponEligible?: boolean | null;
   attendanceDate?: string | null;
   scannedAt: string;
   scannedBy: { firstName: string | null; lastName: string | null } | null;
@@ -92,7 +93,10 @@ export function toPrisExportRow(row: PrisExportSource) {
     Ticket: row.ticketName ?? '',
     'Ticket Type': row.holderTypeLabel || 'ยังไม่ระบุ',
     Gift: row.holderGift === 'ให้' ? 'ให้' : '',
-    คูปองอาหาร: row.booth?.mealCouponEligible === true ? MEAL_COUPON_LABEL : '',
+    คูปองอาหาร:
+      (row.mealCouponEligible ?? row.booth?.mealCouponEligible) === true
+        ? MEAL_COUPON_LABEL
+        : '',
     วันที่เข้างาน: row.attendanceDate ?? '',
     'เวลาสแกน': formatBangkokStamp(row.scannedAt),
     ผู้สแกน: row.scannedBy

@@ -10,6 +10,8 @@ export interface DeskRegistration {
   regCode: string;
   ticketName?: string | null;
   booth?: { mealCouponEligible: boolean | null } | null;
+  /** Booth quota or VIP (from the API). */
+  mealCouponEligible?: boolean | null;
   holderType?: string | null;
   holderTypeLabel?: string | null;
   holderGift?: string | null;
@@ -162,7 +164,7 @@ export function PrisScanResultModal({
                 )}
               </Field>
               <Field label="คูปองอาหาร">
-                {reg.booth?.mealCouponEligible === true ? (
+                {(reg.mealCouponEligible ?? reg.booth?.mealCouponEligible) === true ? (
                   <span className={`${pill} border-emerald-300 bg-emerald-50 text-emerald-800`}>
                     ได้รับ 2 ใบ
                   </span>
