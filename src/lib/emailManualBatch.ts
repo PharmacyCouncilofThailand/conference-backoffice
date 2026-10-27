@@ -15,3 +15,23 @@ export function chunkIds(ids: number[], size: number): number[][] {
 export function estimateSendSeconds(count: number): number {
   return Math.ceil(count * 1.5);
 }
+
+/**
+ * Applies a chunk's results to the loaded recipient list so "sent" badges and
+ * "select unsent" reflect emails sent in this page session without a reload.
+ */
+export function markSentRecipients<
+  T extends { id: number; lastSentAt?: string | null },
+>(
+  recipients: T[],
+  results: { id: number; status: string }[],
+  sentAt: string,
+): T[] {
+  const sentIds = new Set(
+    results.filter((r) => r.status === 'sent').map((r) => r.id),
+  );
+  if (sentIds.size === 0) return recipients;
+  return recipients.map((r) =>
+    sentIds.has(r.id) ? { ...r, lastSentAt: sentAt } : r,
+  );
+}

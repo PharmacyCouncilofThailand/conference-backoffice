@@ -19,6 +19,7 @@ import {
   EMAIL_MANUAL_CHUNK_SIZE,
   chunkIds,
   estimateSendSeconds,
+  markSentRecipients,
 } from '@/lib/emailManualBatch';
 import { SendHistory } from './SendHistory';
 
@@ -452,6 +453,13 @@ export default function EmailManualPage() {
         }
 
         collected.push(...(json.results || []));
+        if (!dryRun) {
+          const chunkResults = json.results || [];
+          const sentAt = new Date().toISOString();
+          setRecipients((prev) =>
+            markSentRecipients(prev, chunkResults, sentAt),
+          );
+        }
         totals.pending += json.summary.pending;
         totals.sent += json.summary.sent;
         totals.skipped += json.summary.skipped;
