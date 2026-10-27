@@ -20,6 +20,7 @@ import {
   testRegistration,
   testSessions,
 } from '@/lib/checkin-test-mode';
+import { usesPrisDesk } from '@/lib/checkin-desk-route';
 import {
   IconScan,
   IconCheck,
@@ -54,10 +55,7 @@ type ScanResult = null | {
 interface EventOption {
   id: number;
   eventName: string;
-  eventCode?: string;
 }
-
-const PRIS_EVENT_CODE = 'PRIS-2026';
 
 interface SessionBreakdownItem {
   sessionId: number;
@@ -219,8 +217,12 @@ export default function CheckinPage() {
     }
   }, [hasAssignedSessions, assignedSessions.length]);
 
-  // Staff landing in a PRIS 2026 session go to the desk instead.
-  const [prisEventId, setPrisEventId] = useState<number | null>(null);
+  // Only the PRIS 2026 main session opens the desk; other sessions keep the
+  // regular scanner.
+  const [deskSession, setDeskSession] = useState<{
+    eventId: number;
+    sessionId: number;
+  } | null>(null);
   const [resolvingDesk, setResolvingDesk] = useState(false);
   useEffect(() => {
     if (!activeSession) {
@@ -233,10 +235,14 @@ export default function CheckinPage() {
       .deskSummary(getBackofficeToken(), activeSession.eventId)
       .then((d) => {
         if (!cancelled)
-          setPrisEventId(d.eventCode === PRIS_EVENT_CODE ? d.eventId : null);
+          setDeskSession(
+            usesPrisDesk(d, activeSession.sessionId)
+              ? { eventId: d.eventId, sessionId: activeSession.sessionId }
+              : null,
+          );
       })
       .catch(() => {
-        if (!cancelled) setPrisEventId(null);
+        if (!cancelled) setDeskSession(null);
       })
       .finally(() => {
         if (!cancelled) setResolvingDesk(false);
@@ -245,38 +251,6 @@ export default function CheckinPage() {
       cancelled = true;
     };
   }, [activeSession]);
-
-  // Non-admin staff whose sessions all belong to one PRIS 2026 event skip the
-  // assigned-session picker and go straight to the desk.
-  const staffEventIds = Array.from(
-    new Set(assignedSessions.map((x) => x.eventId)),
-  );
-  const staffCandidateEventId =
-    !isAdmin && staffEventIds.length === 1 ? staffEventIds[0] : null;
-  const [staffChecked, setStaffChecked] = useState<{
-    eventId: number;
-    isPris: boolean;
-  } | null>(null);
-  useEffect(() => {
-    if (staffCandidateEventId === null) return;
-    let cancelled = false;
-    api.checkins
-      .deskSummary(getBackofficeToken(), staffCandidateEventId)
-      .then((d) => {
-        if (!cancelled)
-          setStaffChecked({
-            eventId: staffCandidateEventId,
-            isPris: d.eventCode === PRIS_EVENT_CODE,
-          });
-      })
-      .catch(() => {
-        if (!cancelled)
-          setStaffChecked({ eventId: staffCandidateEventId, isPris: false });
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [staffCandidateEventId]);
 
   // ─── Fetch events for admin/multi-event roles ───
   useEffect(() => {
@@ -290,16 +264,7 @@ export default function CheckinPage() {
             (res.events || []).flatMap((event) =>
               typeof event.id === 'number' &&
               typeof event.eventName === 'string'
-                ? [
-                    {
-                      id: event.id,
-                      eventName: event.eventName,
-                      eventCode:
-                        typeof event.eventCode === 'string'
-                          ? event.eventCode
-                          : undefined,
-                    },
-                  ]
+                ? [{ id: event.id, eventName: event.eventName }]
                 : [],
             ),
           );
@@ -824,29 +789,7 @@ export default function CheckinPage() {
     setShowSessionPicker(false);
   };
 
-  // ─── PRIS 2026: single desk screen (no session picker) ───
-  if (isAdmin && selectedEvent?.eventCode === PRIS_EVENT_CODE && !activeSession) {
-    return (
-      <PrisCheckinDesk
-        eventId={selectedEvent.id}
-        onExit={() => setSelectedEvent(null)}
-      />
-    );
-  }
-  if (staffCandidateEventId !== null) {
-    if (staffChecked?.eventId !== staffCandidateEventId) {
-      return (
-        <AdminLayout title="Check-in Scanner">
-          <div className="flex items-center justify-center py-16 text-zinc-400">
-            <IconLoader2 size={24} className="animate-spin mr-2" /> Loading...
-          </div>
-        </AdminLayout>
-      );
-    }
-    if (staffChecked.isPris) {
-      return <PrisCheckinDesk eventId={staffCandidateEventId} />;
-    }
-  }
+  // ─── PRIS 2026 main session: desk screen ───
   if (activeSession && resolvingDesk) {
     return (
       <AdminLayout title="Check-in Scanner">
@@ -856,14 +799,14 @@ export default function CheckinPage() {
       </AdminLayout>
     );
   }
-  if (activeSession && prisEventId === activeSession.eventId) {
+  if (activeSession && deskSession?.sessionId === activeSession.sessionId) {
     return (
       <PrisCheckinDesk
-        eventId={prisEventId}
+        eventId={deskSession.eventId}
         onExit={
           isAdmin || hasAssignedSessions
             ? () => {
-                setPrisEventId(null);
+                setDeskSession(null);
                 setActiveSession(null);
                 setShowSessionPicker(true);
               }
