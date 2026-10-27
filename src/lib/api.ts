@@ -1059,6 +1059,15 @@ export const api = {
   },
 
   checkins: {
+    // Scanner self-test: random real registration, read-only (nothing is checked in).
+    testSample: (token: string, eventId: number, sessionId?: number) =>
+      fetchAPI<{
+        registration: BackofficeCheckinRegistration;
+        sessions: BackofficeCheckinSession[];
+      }>(
+        `/api/backoffice/checkins/test-sample?eventId=${eventId}${sessionId ? `&sessionId=${sessionId}` : ''}`,
+        { token },
+      ),
     list: (token: string, query?: string) =>
       fetchAPI<{
         checkins: BackofficeCheckinRow[];
