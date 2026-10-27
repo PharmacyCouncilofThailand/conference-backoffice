@@ -1764,19 +1764,11 @@ test('real detail page restricts viewer controls, invalid IDs and unassigned eve
       JSON.stringify(rendered).includes('ยกเลิกคำขอแก้ไข'),
       role === 'admin',
     );
-    assert.equal(reads, role === 'admin' ? 1 : 0);
-    if (role === 'admin')
-      assert.equal(
-        rendered.find((node) => node.type === 'iframe')!.props.src,
-        'http://127.0.0.1:53018/fixture.pdf',
-      );
-    else {
-      assert.equal(
-        rendered.some((node) => node.type === 'iframe'),
-        false,
-      );
-      assert.ok(JSON.stringify(rendered).includes('ไม่มีสิทธิ์ดูไฟล์นำเสนอ'));
-    }
+    assert.equal(reads, 1);
+    assert.equal(
+      rendered.find((node) => node.type === 'iframe')!.props.src,
+      'http://127.0.0.1:53018/fixture.pdf',
+    );
   }
   for (const route of [
     { abstractId: '-1', eventId: '42' },
@@ -1805,6 +1797,141 @@ test('real detail page restricts viewer controls, invalid IDs and unassigned eve
     assert.equal(reads, 0);
     assert.ok(rendered.some((node) => node.props.role === 'alert'));
   }
+});
+
+test('viewer detail renders only current file even if a payload contains history', async () => {
+  for (const role of ['organizer', 'reviewer']) {
+    const detail = detailFixture();
+    detail.uploads.push({
+      ...detail.uploads[0], id: 'private-old', version: 0,
+      fileName: 'private-old.pdf', fileUrl: 'https://example.invalid/private-old.pdf',
+    });
+    detail.audit = [{ action: 'revision_created', reason: 'private-audit' }];
+    const harness = detailHarness({
+      user: { id: 7, role, assignedEvents: [{ id: 42, code: 'PRIS-2026' }] },
+      token: 'viewer', isAdmin: false, isLoading: false,
+    }, { abstractId: '501', eventId: '42' }, async () => ({ data: detail }));
+    harness.render({});
+    while (harness.effects.length) harness.effects.shift()!();
+    await new Promise(resolve => setImmediate(resolve));
+    const rendered = harness.render({});
+    assert.equal(rendered.find(node => node.type === 'iframe')?.props.src,
+      detail.row.currentUpload?.fileUrl);
+    const text = JSON.stringify(rendered);
+    assert.ok(text.includes('ได้รับไฟล์แล้ว'));
+    for (const hidden of [
+      'private-old', 'private-audit', 'Fix legend', 'request-open',
+      'คำขอแก้ไข', 'ประวัติอีเมล', 'ประวัติการจัดการ', 'ไฟล์ทุกฉบับ',
+      'Revision pending', 'Stored', 'ผลตรวจและการรับรอง',
+    ]) assert.equal(text.includes(hidden), false, hidden);
+    assert.equal(rendered.some(node =>
+      ['email-dialog', 'revision-dialog', 'dialog'].includes(String(node.type))), false);
+  }
+});
+
+test('viewer detail preserves current Drive and PNG rendering and unavailable file behavior', async () => {
+  const cases = [
+    { storageProvider: 'drive', mimeType: 'application/pdf', fileUrl: 'https://drive.google.com/file/d/current/view', fileStatus: 'available' },
+    { storageProvider: 'r2', mimeType: 'image/png', fileUrl: 'https://example.invalid/current.png', fileStatus: 'available' },
+    { storageProvider: 'r2', mimeType: 'application/pdf', fileUrl: null, fileStatus: 'available' },
+    { storageProvider: 'r2', mimeType: 'application/pdf', fileUrl: 'https://example.invalid/unavailable.pdf', fileStatus: 'deletion_pending' },
+  ] as const;
+  for (const role of ['organizer', 'reviewer']) {
+    for (const file of cases) {
+      const detail = detailFixture();
+      const current = { ...detail.uploads[0], ...file };
+      detail.row.currentUpload = current;
+      detail.uploads = [current, {
+        ...detail.uploads[0], id: 'private-old', version: 0,
+        fileName: 'private-old.pdf', fileUrl: 'https://example.invalid/private-old.pdf',
+      }];
+      const harness = detailHarness({
+        user: { id: 7, role, assignedEvents: [{ id: 42, code: 'PRIS-2026' }] },
+        token: 'viewer', isAdmin: false, isLoading: false,
+      }, { abstractId: '501', eventId: '42' }, async () => ({ data: detail }));
+      harness.render({});
+      while (harness.effects.length) harness.effects.shift()!();
+      await new Promise(resolve => setImmediate(resolve));
+      const rendered = harness.render({});
+      const available = !!file.fileUrl && file.fileStatus === 'available';
+      assert.equal(rendered.some(node => node.type === 'iframe'),
+        available && file.storageProvider !== 'drive');
+      assert.equal(rendered.some(node => node.type === 'a' && node.props.href === file.fileUrl), available);
+      assert.equal(JSON.stringify(rendered).includes('ไม่สามารถเปิดไฟล์นี้ได้'), !available);
+      assert.equal(JSON.stringify(rendered).includes('private-old'), false);
+      if (available && file.storageProvider !== 'drive') {
+        assert.equal(rendered.find(node => node.type === 'iframe')?.props.src, file.fileUrl);
+      }
+      if (!available && file.fileUrl) assert.equal(JSON.stringify(rendered).includes(file.fileUrl), false);
+    }
+  }
+});
+
+test('detail clears current file immediately when session or grants change', async () => {
+  const auth = {
+    user: { id: 1, role: 'organizer', assignedEvents: [{ id: 42, code: 'PRIS-2026' }], assignedPresentationTypes: ['poster'] },
+    token: 'first-session', isAdmin: false, isLoading: false,
+  };
+  const harness = detailHarness(auth, { abstractId: '501', eventId: '42' },
+    async () => ({ data: detailFixture('First session work') }));
+  const load = async () => {
+    while (harness.effects.length) harness.effects.shift()!();
+    await new Promise(resolve => setImmediate(resolve));
+    assert.ok(harness.render({}).some(node => node.type === 'iframe'));
+  };
+  harness.render({});
+  await load();
+  for (const change of [
+    () => { auth.token = 'second-session'; },
+    () => { auth.user.id = 2; },
+    () => { auth.user.role = 'reviewer'; },
+    () => { auth.user.assignedPresentationTypes = ['oral']; },
+  ]) {
+    change();
+    assert.equal(harness.render({}).some(node => node.type === 'iframe'), false);
+    await load();
+  }
+  auth.user.assignedEvents = [];
+  assert.equal(harness.render({}).some(node => node.type === 'iframe'), false);
+  while (harness.effects.length) harness.effects.shift()!();
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(harness.render({}).some(node => node.type === 'iframe'), false);
+});
+
+test('detail keeps successful Admin refresh notice and clears it for a new access scope', async () => {
+  const auth = {
+    user: { id: 1, role: 'admin', assignedEvents: [{ id: 42, code: 'PRIS-2026' }] },
+    token: 'admin-session', isAdmin: true, isLoading: false,
+  };
+  const detail = detailFixture();
+  detail.requests = [];
+  const harness = detailHarness(auth, { abstractId: '501', eventId: '42' },
+    async () => ({ data: detail }));
+  const load = async () => {
+    while (harness.effects.length) harness.effects.shift()!();
+    await new Promise(resolve => setImmediate(resolve));
+    return harness.render({});
+  };
+  harness.render({});
+  let rendered = await load();
+  const open = rendered.find(node => node.type === 'button' &&
+    node.props.children === 'ขอแก้ไขไฟล์นำเสนอ');
+  assert.ok(open);
+  (open.props.onClick as () => void)();
+  rendered = harness.render({});
+  const dialog = rendered.find(node => node.type === 'revision-dialog');
+  assert.ok(dialog);
+  (dialog.props.onCreated as (request: { status: string }) => void)({ status: 'open' });
+  harness.render({});
+  rendered = await load();
+  const notice = 'สร้างสิทธิ์แก้ไขและงานอีเมลแล้ว';
+  assert.ok(JSON.stringify(rendered).includes(notice));
+  auth.user.role = 'reviewer';
+  auth.isAdmin = false;
+  assert.equal(JSON.stringify(harness.render({})).includes(notice), false);
+  rendered = await load();
+  assert.equal(JSON.stringify(rendered).includes(notice), false);
+  assert.equal(rendered.some(node => node.type === 'revision-dialog'), false);
 });
 
 test('accepted Oral opens its Drive URL without an iframe and retains original history names', async () => {
@@ -1922,10 +2049,11 @@ test('real detail late responses cannot replace a new scoped work', async () => 
   );
   harness.render({});
   const cleanup = harness.effects.shift()!() as () => void;
+  while (harness.effects.length) harness.effects.shift()!();
   route.abstractId = '502';
   cleanup();
   harness.render({});
-  harness.effects.shift()!();
+  while (harness.effects.length) harness.effects.shift()!();
   pending[1]({ data: detailFixture('New work') });
   await new Promise((resolve) => setImmediate(resolve));
   pending[0]({ data: detailFixture('Old work') });
