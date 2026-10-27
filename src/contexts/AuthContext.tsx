@@ -47,7 +47,7 @@ export interface User {
   role: UserRole;
   assignedEvents: AssignedEvent[];
   assignedSessions?: AssignedSession[]; // For staff/verifier: sessions they can check-in
-  assignedCategories?: string[]; // For reviewers: abstract categories they can review
+  assignedCategories?: string[]; // Organizer/Reviewer presentation scope; also Reviewer abstract assignments
   assignedPresentationTypes?: string[]; // For organizers/reviewers: assigned presentation types
 }
 
