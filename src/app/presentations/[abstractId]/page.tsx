@@ -64,6 +64,7 @@ function PresentationDetailContent() {
     token,
     user?.assignedEvents,
     user?.assignedPresentationTypes,
+    user?.assignedCategories,
   ]);
   const scope = `${accessScope}:${eventId}:${abstractId}`;
   const [loaded, setLoaded] = useState<{

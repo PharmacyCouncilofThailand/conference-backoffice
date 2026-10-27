@@ -702,6 +702,178 @@ test('group tabs request scoped server pagination and clear selected email recip
   assert.equal((table().props.selected as Set<number>).size, 0);
 });
 
+test('category filter uses authorized options beyond the page, resets selection and never carries IDs to another Event', async () => {
+  const queries: Array<{ eventId: number; query: URLSearchParams }> = [];
+  const auth = {
+    user: {
+      id: 1,
+      role: 'admin',
+      assignedEvents: [],
+      assignedCategories: ['Clinical', 'Research'],
+    },
+    token: 'synthetic',
+    isAdmin: true,
+    isLoading: false,
+  };
+  const harness = presentationHarness(
+    'src/app/presentations/page.tsx',
+    'default',
+    {
+      '@/components/layout/AdminLayout': { AdminLayout: 'main' },
+      '@/components/common': { Pagination: 'pagination' },
+      '@/lib/api': {
+        api: {
+          events: {
+            list: async () => ({
+              events: [42, 43].map((id) => ({
+                id,
+                eventCode: 'PRIS-2026',
+                eventName: `PRIS ${id}`,
+              })),
+            }),
+          },
+          presentations: {
+            list: async (eventId: number, query: URLSearchParams) => {
+              queries.push({ eventId, query: new URLSearchParams(query) });
+              return {
+                data: {
+                  items: [
+                    {
+                      ...detailFixture().row,
+                      abstractId: 501,
+                      canNotify: true,
+                    },
+                  ],
+                  categories:
+                    eventId === 42
+                      ? [
+                          { id: 7, name: 'Clinical' },
+                          { id: 9, name: 'Research beyond this page' },
+                        ]
+                      : [{ id: 12, name: 'Next Event category' }],
+                  total: 40,
+                  pageSize: 25,
+                  settings: {},
+                  counts: {},
+                  capabilities: { manage: true },
+                },
+              };
+            },
+            getSettings: async () => ({ data: null }),
+          },
+        },
+      },
+      '@/lib/presentationUi': { selectablePresentationIds },
+      '@/components/presentations/PresentationTable': {
+        PresentationTable: 'presentation-table',
+        progressLabels: {},
+        matchLabels: {},
+        mailLabels: {},
+        thaiTime: (value: string) => value,
+      },
+      '@/components/presentations/PresentationEmailDialog': {
+        PresentationEmailDialog: 'email-dialog',
+      },
+      '@/components/presentations/PresentationManagementDialog': {
+        PresentationManagementDialog: 'management-dialog',
+      },
+      '@/components/presentations/PresentationHistoryViews': {
+        PresentationDeadlineHistory: 'deadline-history',
+      },
+    },
+    auth,
+  );
+  let rendered: ReturnType<typeof nodes> = [];
+  const settle = async () => {
+    for (let i = 0; i < 4; i++) {
+      rendered = harness.render({});
+      while (harness.effects.length) harness.effects.shift()!();
+      await new Promise((resolve) => setImmediate(resolve));
+    }
+    rendered = harness.render({});
+  };
+  const change = (label: string, value: string) => {
+    const select = rendered.find(
+      (node) => node.type === 'select' && node.props['aria-label'] === label,
+    );
+    assert.ok(select, label);
+    (select.props.onChange as (event: { target: { value: string } }) => void)({
+      target: { value },
+    });
+  };
+  const click = (label: string) => {
+    const button = rendered.find(
+      (node) => node.type === 'button' && node.props.children === label,
+    );
+    assert.ok(button, label);
+    (button.props.onClick as () => void)();
+  };
+  await settle();
+  assert.ok(
+    rendered.some((node) => node.type === 'option' && node.props.value === 9),
+  );
+  click('ติดตามและอีเมล');
+  await settle();
+  (
+    rendered.find((node) => node.type === 'pagination')!.props.onPageChange as (
+      page: number,
+    ) => void
+  )(2);
+  await settle();
+  click('เลือกที่แจ้งได้ในหน้านี้');
+  rendered = harness.render({});
+  click('ตัวอย่างแจ้งส่ง');
+  rendered = harness.render({});
+  assert.ok(rendered.some((node) => node.type === 'email-dialog'));
+  change('หมวดผลงาน', '9');
+  rendered = harness.render({});
+  assert.equal(
+    rendered.some(
+      (node) =>
+        node.type === 'email-dialog' || node.type === 'presentation-table',
+    ),
+    false,
+  );
+  await settle();
+  assert.equal(queries.at(-1)!.query.get('categoryId'), '9');
+  assert.equal(queries.at(-1)!.query.get('page'), '1');
+  assert.equal(
+    (
+      rendered.find((node) => node.type === 'presentation-table')!.props
+        .selected as Set<number>
+    ).size,
+    0,
+  );
+  change('Event', '43');
+  rendered = harness.render({});
+  assert.equal(
+    rendered.some((node) => node.type === 'option' && node.props.value === 9),
+    false,
+  );
+  assert.equal(
+    rendered.find((node) => node.props['aria-label'] === 'หมวดผลงาน')!.props
+      .value,
+    '',
+  );
+  await settle();
+  assert.ok(queries.some(({ eventId }) => eventId === 43));
+  assert.ok(
+    queries
+      .filter(({ eventId }) => eventId === 43)
+      .every(({ query }) => !query.has('categoryId')),
+  );
+  auth.user.assignedCategories = [];
+  rendered = harness.render({});
+  assert.equal(
+    rendered.some((node) => node.type === 'presentation-table'),
+    false,
+  );
+  assert.equal(
+    rendered.some((node) => node.type === 'option' && node.props.value === 12),
+    false,
+  );
+});
+
 test('detail labels student works while legacy general details retain their wording', async () => {
   for (const participantGroup of [undefined, 'student'] as const) {
     const detail = detailFixture();
@@ -815,6 +987,7 @@ test('Organizer and Reviewer read received files without management history', as
       user: {
         id: 1,
         role,
+        assignedCategories: ['Clinical'],
         assignedEvents: [{ id: 42, code: 'PRIS-2026', name: 'PRIS' }],
       },
       token: 'synthetic',
@@ -839,6 +1012,7 @@ test('Organizer and Reviewer read received files without management history', as
                 return {
                   data: {
                     items: [],
+                    categories: [{ id: 7, name: 'Clinical' }],
                     counts: {},
                     total: 0,
                     pageSize: 25,
@@ -881,6 +1055,16 @@ test('Organizer and Reviewer read received files without management history', as
     await new Promise((resolve) => setImmediate(resolve));
     const rendered = harness.render({});
     assert.ok(reads > 0);
+    assert.ok(
+      rendered.some(
+        (node) =>
+          node.type === 'option' &&
+          node.props.children === 'ทุกหมวดที่มีสิทธิ์',
+      ),
+    );
+    assert.ok(
+      rendered.some((node) => node.type === 'option' && node.props.value === 7),
+    );
     assert.equal(settingsReads, 0);
     assert.ok(rendered.some((node) => node.type === 'presentation-table'));
     assert.equal(
@@ -909,6 +1093,16 @@ test('Organizer and Reviewer read received files without management history', as
     }
     assert.ok(
       harness.render({}).some((node) => node.type === 'presentation-table'),
+    );
+    auth.user.assignedCategories = [];
+    const revoked = harness.render({});
+    assert.equal(
+      revoked.some((node) => node.type === 'presentation-table'),
+      false,
+    );
+    assert.equal(
+      revoked.some((node) => node.type === 'option' && node.props.value === 7),
+      false,
     );
     auth.user.assignedEvents = [];
     assert.equal(
@@ -1737,6 +1931,7 @@ test('Admin management data stays scoped across session and Event changes', asyn
               list: async () => ({
                 data: {
                   items: [{ ...detailFixture().row, canNotify: true }],
+                  categories: [{ id: 7, name: 'Clinical' }],
                   total: 1,
                   pageSize: 25,
                   counts: {},
@@ -1859,7 +2054,12 @@ test('Admin management data stays scoped across session and Event changes', asyn
         'first-admin-session-42-private-history',
       ),
     );
-    click('ผลงานนักศึกษา');
+    const category = rendered.find(
+      (node) => node.props['aria-label'] === 'หมวดผลงาน',
+    )!;
+    (category.props.onChange as (event: unknown) => void)({
+      target: { value: '7' },
+    });
     rendered = harness.render({});
     assert.ok(
       JSON.stringify(rendered).includes('old-admin-recipient@example.invalid'),
@@ -2208,6 +2408,7 @@ test('detail clears current file immediately when session or grants change', asy
       role: 'organizer',
       assignedEvents: [{ id: 42, code: 'PRIS-2026' }],
       assignedPresentationTypes: ['poster'],
+      assignedCategories: ['Clinical'],
     },
     token: 'first-session',
     isAdmin: false,
@@ -2237,6 +2438,9 @@ test('detail clears current file immediately when session or grants change', asy
     },
     () => {
       auth.user.assignedPresentationTypes = ['oral'];
+    },
+    () => {
+      auth.user.assignedCategories = [];
     },
   ]) {
     change();

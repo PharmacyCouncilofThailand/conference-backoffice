@@ -54,6 +54,10 @@ export default function PresentationsPage() {
   const [round, setRound] = useState('');
   const [participantGroup, setParticipantGroup] = useState('');
   const [presentationType, setPresentationType] = useState('');
+  const [categoryChoice, setCategoryChoice] = useState<{
+    eventId: number | undefined;
+    value: string;
+  } | null>(null);
   const [status, setStatus] = useState('');
   const [matchState, setMatchState] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -83,6 +87,7 @@ export default function PresentationsPage() {
     token,
     user?.assignedEvents,
     user?.assignedPresentationTypes,
+    user?.assignedCategories,
   ]);
   useEffect(() => {
     let current = true;
@@ -122,13 +127,18 @@ export default function PresentationsPage() {
     events.find((event) => event.id === eventChoice)?.id ??
     events.find((event) => event.id === currentEvent?.id)?.id ??
     events[0]?.id;
+  const categoryId =
+    categoryChoice?.eventId === eventId ? (categoryChoice?.value ?? '') : '';
+  useEffect(() => {
+    setCategoryChoice(null);
+  }, [eventId]);
   const managementScope = `${accessScope}:${eventId}`;
   const activeManagementScope = useRef(managementScope);
   const history =
     loadedHistory?.scope === managementScope ? loadedHistory.data : null;
   const batch = loadedBatch?.scope === managementScope ? loadedBatch : null;
   const tab = isAdmin ? adminTab : 'received';
-  const scope = `${accessScope}:${isAdmin}:${eventId}:${page}:${tab}:${search}:${round}:${participantGroup}:${presentationType}:${status}:${matchState}`;
+  const scope = `${accessScope}:${isAdmin}:${eventId}:${page}:${tab}:${search}:${round}:${participantGroup}:${presentationType}:${categoryId}:${status}:${matchState}`;
   const selectionScope = useRef(scope);
   // Clear synchronously for rendering/handlers as well as after the scope changes.
   const visibleSelected = useMemo(
@@ -140,6 +150,7 @@ export default function PresentationsPage() {
     [visibleSelected],
   );
   const data = loaded?.scope === scope && readable ? loaded.data : null;
+  const categories = data?.categories ?? [];
   useEffect(() => {
     selectionScope.current = scope;
     setSelected(new Set());
@@ -171,6 +182,7 @@ export default function PresentationsPage() {
       round,
       participantGroup,
       presentationType,
+      categoryId,
       status: isAdmin ? status : '',
       matchState: isAdmin ? matchState : '',
     }))
@@ -213,6 +225,7 @@ export default function PresentationsPage() {
     round,
     participantGroup,
     presentationType,
+    categoryId,
     status,
     matchState,
     refresh,
@@ -446,7 +459,7 @@ export default function PresentationsPage() {
                     ))}
                   </div>
                   <div
-                    className={`mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 ${isAdmin ? 'lg:grid-cols-5' : 'lg:grid-cols-4'}`}
+                    className={`mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 ${isAdmin ? 'lg:grid-cols-6' : 'lg:grid-cols-4'}`}
                   >
                     <select
                       aria-label="Event"
@@ -486,6 +499,26 @@ export default function PresentationsPage() {
                       <option value="highlighted-poster">
                         Highlighted Poster
                       </option>
+                    </select>
+                    <select
+                      aria-label="หมวดผลงาน"
+                      className="input-field w-full"
+                      value={categoryId}
+                      onChange={(event) =>
+                        filter(
+                          (value) => setCategoryChoice({ eventId, value }),
+                          event.target.value,
+                        )
+                      }
+                    >
+                      <option value="">
+                        {isAdmin ? 'ทุกหมวด' : 'ทุกหมวดที่มีสิทธิ์'}
+                      </option>
+                      {categories.map((category) => (
+                        <option key={category.id} value={category.id}>
+                          {category.name}
+                        </option>
+                      ))}
                     </select>
                     {isAdmin && (
                       <select
