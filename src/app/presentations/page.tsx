@@ -73,7 +73,15 @@ export default function PresentationsPage() {
   const [rechecking, setRechecking] = useState(false);
   const recheckKey = useRef<string | null>(null);
   const recheckLock = useRef(false);
-  const readable = isAdmin;
+  const readable =
+    isAdmin || user?.role === 'organizer' || user?.role === 'reviewer';
+  const accessScope = JSON.stringify([
+    user?.id,
+    user?.role,
+    token,
+    user?.assignedEvents,
+    user?.assignedPresentationTypes,
+  ]);
   useEffect(() => {
     let current = true;
     setEvents([]);
@@ -107,13 +115,13 @@ export default function PresentationsPage() {
     return () => {
       current = false;
     };
-  }, [isAdmin, user, token, readable]);
+  }, [isAdmin, user, token, readable, accessScope]);
   const eventId =
     events.find((event) => event.id === eventChoice)?.id ??
     events.find((event) => event.id === currentEvent?.id)?.id ??
     events[0]?.id;
   const tab = isAdmin ? adminTab : 'received';
-  const scope = `${isAdmin}:${eventId}:${page}:${tab}:${search}:${round}:${participantGroup}:${presentationType}:${status}:${matchState}`;
+  const scope = `${accessScope}:${isAdmin}:${eventId}:${page}:${tab}:${search}:${round}:${participantGroup}:${presentationType}:${status}:${matchState}`;
   const selectionScope = useRef(scope);
   // Clear synchronously for rendering/handlers as well as after the scope changes.
   const visibleSelected = useMemo(
@@ -124,7 +132,7 @@ export default function PresentationsPage() {
     () => Array.from(visibleSelected),
     [visibleSelected],
   );
-  const data = loaded?.scope === scope ? loaded.data : null;
+  const data = loaded?.scope === scope && readable ? loaded.data : null;
   useEffect(() => {
     selectionScope.current = scope;
     setSelected(new Set());
@@ -134,9 +142,10 @@ export default function PresentationsPage() {
   }, [scope]);
   useEffect(() => {
     setBatch(null);
+    setNotice(null);
     setPage(1);
     recheckKey.current = null;
-  }, [eventId]);
+  }, [eventId, accessScope]);
   useEffect(() => {
     let current = true;
     setLoaded(null);
@@ -153,7 +162,7 @@ export default function PresentationsPage() {
       round,
       participantGroup,
       presentationType,
-      status,
+      status: isAdmin ? status : '',
       matchState: isAdmin ? matchState : '',
     }))
       if (value) query.set(key, value);
@@ -265,7 +274,7 @@ export default function PresentationsPage() {
         <p className="text-sm text-zinc-500">
           {isAdmin
             ? 'ตรวจรายชื่อ ติดตามการส่ง และอีเมลรายผลงาน'
-            : 'ดูไฟล์นำเสนอ ที่ได้รับและประวัติคำขอแก้ไข'}
+            : 'ดูไฟล์นำเสนอฉบับล่าสุดที่ได้รับ'}
         </p>
         {isLoading ? (
           <p role="status">กำลังโหลดสิทธิ์…</p>
@@ -282,7 +291,9 @@ export default function PresentationsPage() {
               <p role="status">ไม่พบ Event PRIS-2026 ที่มีสิทธิ์เข้าถึง</p>
             ) : (
               <>
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                <div
+                  className={`grid grid-cols-1 gap-4 ${isAdmin ? 'sm:grid-cols-2 xl:grid-cols-4' : ''}`}
+                >
                   {[
                     {
                       label: 'ผลงานตามตัวกรอง',
@@ -310,23 +321,27 @@ export default function PresentationsPage() {
                       icon: IconCircleCheck,
                       color: 'bg-blue-50 text-blue-600',
                     },
-                  ].map((stat) => (
-                    <div key={stat.label} className="card py-4">
-                      <div className="flex items-center gap-4">
-                        <div
-                          className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${stat.color}`}
-                        >
-                          <stat.icon size={24} stroke={1.5} />
-                        </div>
-                        <div>
-                          <p className="text-2xl font-bold text-zinc-800">
-                            {stat.value ?? '—'}
-                          </p>
-                          <p className="text-sm text-zinc-400">{stat.label}</p>
+                  ]
+                    .filter(
+                      (stat) => isAdmin || stat.label === 'ไฟล์นำเสนอที่ได้รับ',
+                    )
+                    .map((stat) => (
+                      <div key={stat.label} className="card py-4">
+                        <div className="flex items-center gap-4">
+                          <div
+                            className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${stat.color}`}
+                          >
+                            <stat.icon size={24} stroke={1.5} />
+                          </div>
+                          <div>
+                            <p className="text-2xl font-bold text-zinc-800">
+                              {stat.value ?? '—'}
+                            </p>
+                            <p className="text-sm text-zinc-400">{stat.label}</p>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
                 </div>
                 <section className="card">
                   <div className="mb-6 flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
@@ -454,21 +469,23 @@ export default function PresentationsPage() {
                         Highlighted Poster
                       </option>
                     </select>
-                    <select
-                      aria-label="สถานะไฟล์นำเสนอ"
-                      className="input-field w-full"
-                      value={status}
-                      onChange={(event) =>
-                        filter(setStatus, event.target.value)
-                      }
-                    >
-                      <option value="">ทุกสถานะ</option>
-                      {Object.entries(progressLabels).map(([value, label]) => (
-                        <option key={value} value={value}>
-                          {label}
-                        </option>
-                      ))}
-                    </select>
+                    {isAdmin && (
+                      <select
+                        aria-label="สถานะไฟล์นำเสนอ"
+                        className="input-field w-full"
+                        value={status}
+                        onChange={(event) =>
+                          filter(setStatus, event.target.value)
+                        }
+                      >
+                        <option value="">ทุกสถานะ</option>
+                        {Object.entries(progressLabels).map(([value, label]) => (
+                          <option key={value} value={value}>
+                            {label}
+                          </option>
+                        ))}
+                      </select>
+                    )}
                     {isAdmin && (
                       <select
                         aria-label="ผลตรวจ"

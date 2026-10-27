@@ -528,9 +528,21 @@ test('real table gates conflict approval, invalid selection and read-only contro
     1,
     'only alias pending can approve',
   );
+  const readonlyRows = rows.map((row) => ({
+    ...row,
+    currentUpload: detailFixture().row.currentUpload,
+    activeRequest: detailFixture().requests[0],
+    progress: 'revision_pending',
+  }));
   const readonly = nodes(
-    PresentationTable({ ...props, manage: false, view: 'verify' }),
+    PresentationTable({
+      ...props, rows: readonlyRows, manage: false, view: 'verify',
+    }),
   );
+  for (const label of ['คำขอแก้ไข:', 'วันสุดท้าย', 'ดูรายละเอียดและประวัติ']) {
+    assert.equal(JSON.stringify(readonly).includes(label), false, label);
+  }
+  assert.ok(JSON.stringify(readonly).includes('ได้รับไฟล์แล้ว'));
   assert.equal(JSON.stringify(readonly).includes('ผลตรวจรายชื่อ'), false);
   assert.equal(JSON.stringify(readonly).includes('Poster / Email'), false);
   assert.equal(JSON.stringify(readonly).includes('ยังไม่แจ้ง'), false);
@@ -788,12 +800,13 @@ function emailHarness(mockApi: unknown) {
   );
 }
 
-test('Organizer and Reviewer cannot read the Presentation page or trigger its API reads', async () => {
+test('Organizer and Reviewer read received files without management history', async () => {
   for (const role of ['organizer', 'reviewer']) {
     let reads = 0,
       settingsReads = 0;
     const auth = {
       user: {
+        id: 1,
         role,
         assignedEvents: [{ id: 42, code: 'PRIS-2026', name: 'PRIS' }],
       },
@@ -815,6 +828,7 @@ test('Organizer and Reviewer cannot read the Presentation page or trigger its AP
                 assert.equal(eventId, 42);
                 assert.equal(query.get('received'), 'true');
                 assert.equal(query.has('matchState'), false);
+                assert.equal(query.has('status'), false);
                 return {
                   data: {
                     items: [],
@@ -859,15 +873,35 @@ test('Organizer and Reviewer cannot read the Presentation page or trigger its AP
     while (harness.effects.length) harness.effects.shift()!();
     await new Promise((resolve) => setImmediate(resolve));
     const rendered = harness.render({});
-    assert.ok(
-      JSON.stringify(rendered).includes('ไม่มีสิทธิ์เข้าถึงไฟล์นำเสนอ'),
-    );
+    assert.ok(reads > 0);
     assert.equal(settingsReads, 0);
-    assert.equal(reads, 0);
+    assert.ok(rendered.some((node) => node.type === 'presentation-table'));
     assert.equal(
-      rendered.some(
-        (node) => node.type === 'presentation-table' || node.type === 'nav',
-      ),
+      rendered.some((node) => node.props['aria-label'] === 'สถานะไฟล์นำเสนอ'),
+      false,
+    );
+    for (const label of [
+      'รอแก้ไข', 'แก้ไขแล้ว', 'กำหนดส่งและประวัติ', 'ติดตามและอีเมล', 'ตรวจรายชื่อ',
+    ]) {
+      assert.equal(JSON.stringify(rendered).includes(label), false, label);
+    }
+    auth.token = 'second-viewer-session';
+    auth.user.id = 2;
+    assert.equal(
+      harness.render({}).some((node) => node.type === 'presentation-table'),
+      false,
+    );
+    for (let turn = 0; turn < 4; turn++) {
+      while (harness.effects.length) harness.effects.shift()!();
+      await new Promise((resolve) => setImmediate(resolve));
+      harness.render({});
+    }
+    assert.ok(
+      harness.render({}).some((node) => node.type === 'presentation-table'),
+    );
+    auth.user.assignedEvents = [];
+    assert.equal(
+      harness.render({}).some((node) => node.type === 'presentation-table'),
       false,
     );
   }
