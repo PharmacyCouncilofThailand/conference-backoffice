@@ -47,22 +47,33 @@ test('only admins manage posters', () => {
   assert.equal(canManagePresentations('admin'), true);
 });
 
-test('Organizer and Reviewer share type grants; categories remain Reviewer-only', () => {
-  assert.deepEqual(
-    presentationUserAssignments('organizer', ['oral'], ['clinical']),
-    { assignedPresentationTypes: ['oral'] },
-  );
-  assert.deepEqual(
-    presentationUserAssignments('reviewer', ['poster'], ['clinical']),
-    { assignedCategories: ['clinical'], assignedPresentationTypes: ['poster'] },
-  );
-  assert.deepEqual(presentationUserAssignments('organizer', [], []), {
-    assignedPresentationTypes: [],
-  });
-  assert.deepEqual(
-    presentationUserAssignments('admin', ['oral'], ['clinical']),
-    {},
-  );
+test('Organizer and Reviewer send selected categories and types, including empty grants', () => {
+  for (const role of ['organizer', 'reviewer']) {
+    assert.deepEqual(
+      presentationUserAssignments(role, ['oral'], ['Clinical']),
+      {
+        assignedCategories: ['Clinical'],
+        assignedPresentationTypes: ['oral'],
+      },
+    );
+    assert.deepEqual(presentationUserAssignments(role, [], []), {
+      assignedCategories: [],
+      assignedPresentationTypes: [],
+    });
+  }
+  for (const role of [
+    'admin',
+    'staff',
+    'verifier',
+    'team_registration_viewer',
+    '',
+    'Organizer',
+  ]) {
+    assert.deepEqual(
+      presentationUserAssignments(role, ['oral'], ['Clinical']),
+      {},
+    );
+  }
 });
 
 test('Thai inclusive seconds map to the exclusive UTC close independently of host timezone', () => {
@@ -2882,4 +2893,161 @@ test('shared reconciliation, attempt and deadline views expose business fields w
       false,
       path,
     );
+});
+
+test('Organizer and Reviewer create/edit forms load Event categories and save selected category names', async () => {
+  const text = (value: unknown): string => {
+    if (Array.isArray(value)) return value.map(text).join('');
+    if (React.isValidElement<{ children?: unknown }>(value))
+      return text(value.props.children);
+    return typeof value === 'string' || typeof value === 'number'
+      ? String(value)
+      : '';
+  };
+  for (const role of ['organizer', 'reviewer']) {
+    for (const edit of [false, true]) {
+      const categoryRequests: string[] = [];
+      const saves: Record<string, unknown>[] = [];
+      const eventAssignments: unknown[] = [];
+      const existing = {
+        id: 7,
+        firstName: 'Existing',
+        lastName: 'Viewer',
+        email: 'viewer@example.invalid',
+        role,
+        isActive: true,
+        assignedEventIds: [42],
+        assignedCategories: ['Clinical'],
+        assignedPresentationTypes: ['oral'],
+        createdAt: '2026-01-01',
+      };
+      const harness = presentationHarness(
+        'src/app/users/page.tsx',
+        'default',
+        {
+          '@/components/layout': { AdminLayout: 'admin-layout' },
+          '@/components/common': { Pagination: 'pagination' },
+          '@/lib/presentationUi': { presentationUserAssignments },
+          'react-hot-toast': {
+            __esModule: true,
+            default: { success: () => {}, error: () => {} },
+          },
+          '@/lib/api': {
+            api: {
+              users: {
+                list: async () => ({
+                  users: edit ? [existing] : [],
+                  pagination: { total: edit ? 1 : 0, totalPages: 1 },
+                }),
+                create: async (
+                  _token: string,
+                  payload: Record<string, unknown>,
+                ) => {
+                  saves.push(payload);
+                  return { user: { id: 8 } };
+                },
+                update: async (
+                  _token: string,
+                  _id: number,
+                  payload: Record<string, unknown>,
+                ) => {
+                  saves.push(payload);
+                },
+                assignEvents: async (
+                  _token: string,
+                  _id: number,
+                  ids: number[],
+                ) => {
+                  eventAssignments.push([...ids]);
+                },
+              },
+              backofficeEvents: {
+                list: async () => ({
+                  events: [
+                    { id: 42, eventCode: 'TEST', eventName: 'Test Event' },
+                  ],
+                }),
+              },
+              abstractCategories: {
+                list: async (_token: string, query: string) => {
+                  categoryRequests.push(query);
+                  return { categories: [{ id: 3, name: 'Clinical' }] };
+                },
+              },
+            },
+          },
+        },
+        { token: 'token' },
+      );
+      let rendered = harness.render({});
+      const settle = async () => {
+        for (let i = 0; i < 6; i++) {
+          while (harness.effects.length) harness.effects.shift()!();
+          await Promise.resolve();
+          rendered = harness.render({});
+        }
+      };
+      const find = (
+        type: string,
+        predicate: (
+          node: React.ReactElement<Record<string, unknown>>,
+        ) => boolean,
+      ) => {
+        const found = rendered.find(
+          (node) => node.type === type && predicate(node),
+        );
+        assert.ok(
+          found,
+          `${role} ${edit ? 'edit' : 'create'}: expected ${type}`,
+        );
+        return found;
+      };
+      const click = (node: React.ReactElement<Record<string, unknown>>) =>
+        (node.props.onClick as () => unknown)();
+      const toggleLabel = (label: string) => {
+        const parent = find('label', (node) => text(node).includes(label));
+        const checkbox = nodes(parent).find((node) => node.type === 'input');
+        assert.ok(checkbox, `${label} checkbox`);
+        (checkbox.props.onChange as () => void)();
+        rendered = harness.render({});
+      };
+      await settle();
+      click(
+        find('button', (node) =>
+          edit ? node.props.title === 'Edit' : text(node).includes('Add User'),
+        ),
+      );
+      rendered = harness.render({});
+      if (!edit) {
+        const select = find('select', (node) => node.props.value === 'staff');
+        (select.props.onChange as (event: unknown) => void)({
+          target: { value: role },
+        });
+        rendered = harness.render({});
+        toggleLabel('TEST');
+      }
+      await settle();
+      assert.deepEqual(categoryRequests, ['eventId=42']);
+      const category = find('label', (node) => text(node).includes('Clinical'));
+      const checkbox = nodes(category).find((node) => node.type === 'input')!;
+      assert.equal(checkbox.props.checked, edit);
+      toggleLabel('Clinical');
+      if (!edit) toggleLabel('Oral');
+      const save = find('button', (node) =>
+        text(node).includes(edit ? 'Save Changes' : 'Create User'),
+      );
+      await click(save);
+      assert.equal(saves.length, 1);
+      assert.equal(saves[0].role, role);
+      assert.equal(
+        JSON.stringify(saves[0].assignedCategories),
+        JSON.stringify(edit ? [] : ['Clinical']),
+      );
+      assert.equal(
+        JSON.stringify(saves[0].assignedPresentationTypes),
+        JSON.stringify(['oral']),
+      );
+      assert.deepEqual(eventAssignments, [[42]]);
+    }
+  }
 });
