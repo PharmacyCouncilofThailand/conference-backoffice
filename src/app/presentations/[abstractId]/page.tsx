@@ -171,7 +171,9 @@ function PresentationDetailContent() {
                     <span
                       className={`rounded-full px-3 py-1 text-sm font-medium ${isAdmin ? progressColors[detail.row.progress] : 'bg-emerald-100 text-emerald-800'}`}
                     >
-                      {isAdmin ? progressLabels[detail.row.progress] : 'ได้รับไฟล์แล้ว'}
+                      {isAdmin
+                        ? progressLabels[detail.row.progress]
+                        : 'ได้รับไฟล์แล้ว'}
                     </span>
                   </div>
                   <h1 className="mb-4 text-2xl font-bold leading-relaxed text-zinc-800">
@@ -288,7 +290,8 @@ function PresentationDetailContent() {
                             : ''}
                         </h3>
                         {file.fileUrl &&
-                        (!file.fileStatus || file.fileStatus === 'available') ? (
+                        (!file.fileStatus ||
+                          file.fileStatus === 'available') ? (
                           <a
                             className="break-words text-emerald-700 underline"
                             href={file.fileUrl}
@@ -371,7 +374,9 @@ function PresentationDetailContent() {
                           <p>รับฉบับแก้ไข {thaiTime(request.submittedAt)}</p>
                         )}
                         {detail.uploads
-                          .filter((file) => file.revisionRequestId === request.id)
+                          .filter(
+                            (file) => file.revisionRequestId === request.id,
+                          )
                           .map((file) => (
                             <a
                               key={file.id}
@@ -601,7 +606,9 @@ function PresentationDetailContent() {
                           ? thaiTime(entry.createdAt)
                           : 'ไม่ระบุเวลา'}
                       </p>
-                      {entry.change && <p className="text-sm">{entry.change}</p>}
+                      {entry.change && (
+                        <p className="text-sm">{entry.change}</p>
+                      )}
                       {entry.closesAt && (
                         <p className="text-sm">
                           ปิดรับฉบับแก้ไข {thaiTime(entry.closesAt)}{' '}
