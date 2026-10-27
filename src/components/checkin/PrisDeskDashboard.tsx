@@ -176,7 +176,7 @@ export function PrisDeskDashboard({ token, eventId, refreshKey }: { token: strin
           />
           <GiftRow
             title="คูปองอาหาร"
-            caption="คนละ 2 ใบ · นับเมื่อผู้มีสิทธิ์เช็คอินเข้างาน"
+            caption="คนละ 1 ใบ · นับเมื่อผู้มีสิทธิ์เช็คอินเข้างาน"
             given={data.mealCoupon.given}
             eligible={data.mealCoupon.eligible}
             percentage={data.mealCoupon.percentage}

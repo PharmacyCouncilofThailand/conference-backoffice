@@ -18,7 +18,6 @@ import { exportToExcel } from '@/lib/exportExcel';
 import { useDebounce } from '@/hooks/useDebounce';
 import { Pagination } from '@/components/common';
 import toast from 'react-hot-toast';
-import { MealCouponNote } from '@/components/booths/MealCouponNote';
 import {
   IconArrowBackUp,
   IconChartBar,
@@ -98,13 +97,25 @@ const formatDateTime = (iso: string | null | undefined) => {
   });
 };
 
-function todayBangkok() {
+const STAT_TONES = [
+  'bg-blue-50 text-blue-600',
+  'bg-emerald-50 text-emerald-600',
+  'bg-emerald-50 text-emerald-600',
+  'bg-blue-50 text-blue-600',
+  'bg-amber-50 text-amber-600',
+];
+
+function bangkokDay(value: string | Date = new Date()) {
   return new Intl.DateTimeFormat('en-CA', {
     timeZone: 'Asia/Bangkok',
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
-  }).format(new Date());
+  }).format(new Date(value));
+}
+
+function todayBangkok() {
+  return bangkokDay();
 }
 
 export default function CheckinsListPage() {
@@ -127,6 +138,7 @@ export default function CheckinsListPage() {
   >([]);
   const [eventDays, setEventDays] = useState<string[]>([]);
   const [sessionOptions, setSessionOptions] = useState<SessionOption[]>([]);
+  const [mainSessionId, setMainSessionId] = useState<number | null>(null);
   const [universityOptions, setUniversityOptions] = useState<string[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
   const [isExporting, setIsExporting] = useState(false);
@@ -175,7 +187,6 @@ export default function CheckinsListPage() {
           : [today];
         setEventDays(days);
         setDateFilter(today);
-        setSessionFilter(String(summary.mainSession.id));
       })
       .catch((error) => {
         if (cancelled) return;
@@ -203,17 +214,32 @@ export default function CheckinsListPage() {
       return;
     }
     const token = getBackofficeToken();
-    api.backofficeEvents
-      .getSessions(token, Number(eventFilter))
-      .then((res) => {
-        setSessionOptions(
-          (res.sessions as Record<string, unknown>[]).map((session) => ({
+    let cancelled = false;
+    // Sessions plus the event main session, which is selected by default.
+    Promise.all([
+      api.backofficeEvents.getSessions(token, Number(eventFilter)),
+      api.checkins.deskSummary(token, Number(eventFilter)).catch(() => null),
+    ])
+      .then(([res, desk]) => {
+        if (cancelled) return;
+        const options = (res.sessions as Record<string, unknown>[]).map(
+          (session) => ({
             id: session.id as number,
             name: session.sessionName as string,
-          })),
+          }),
         );
+        const mainId = desk?.mainSession.id ?? null;
+        setSessionOptions(options);
+        setMainSessionId(mainId);
+        const initial =
+          options.find((option) => option.id === mainId) ?? options[0];
+        setSessionFilter(initial ? String(initial.id) : '');
       })
-      .catch(() => setSessionOptions([]));
+      .catch(() => {
+        if (cancelled) return;
+        setSessionOptions([]);
+        setMainSessionId(null);
+      });
     api.checkins
       .universities(token, Number(eventFilter))
       .then((res) => {
@@ -222,6 +248,9 @@ export default function CheckinsListPage() {
       .catch(() => setUniversityOptions([]));
     setSessionFilter('');
     setUniversityFilter('');
+    return () => {
+      cancelled = true;
+    };
   }, [eventFilter]);
 
   useEffect(
@@ -272,8 +301,8 @@ export default function CheckinsListPage() {
       setStats(null);
       return;
     }
-    // PRIS: wait until the main session is selected (never show the legacy view)
-    if (isPris && !sessionFilter) {
+    // Always one session at a time: wait until a session is selected
+    if (!sessionFilter) {
       setRows([]);
       setStats(null);
       return;
@@ -399,142 +428,142 @@ export default function CheckinsListPage() {
   return (
     <AdminLayout title="Check-in History">
       <div className="min-w-0 space-y-6">
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-6">
-          <select
-            value={eventFilter}
-            onChange={(event) => setEventFilter(event.target.value)}
-            className="input"
-          >
-            <option value="">Select event</option>
-            {eventOptions.map((event) => (
-              <option key={event.id} value={event.id}>
-                {event.name}
-              </option>
-            ))}
-          </select>
-          {isPris ? (
-            <div className="flex min-h-[40px] items-center rounded-lg border border-emerald-200 bg-emerald-50 px-3 text-sm font-medium text-emerald-800">
-              PRIS 2026 · เช็คอินรายวัน
-            </div>
-          ) : (
+        <div className="card space-y-4">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-6">
+            <select
+              value={eventFilter}
+              onChange={(event) => setEventFilter(event.target.value)}
+              className="input-field"
+            >
+              <option value="">Select event</option>
+              {eventOptions.map((event) => (
+                <option key={event.id} value={event.id}>
+                  {event.name}
+                </option>
+              ))}
+            </select>
             <select
               value={sessionFilter}
               onChange={(event) => setSessionFilter(event.target.value)}
-              className="input"
-              disabled={!eventFilter}
+              className="input-field"
+              disabled={!eventFilter || sessionOptions.length === 0}
+              aria-label="Session"
             >
-              <option value="">All sessions (legacy view)</option>
+              {sessionOptions.length === 0 && (
+                <option value="">Select session</option>
+              )}
               {sessionOptions.map((session) => (
                 <option key={session.id} value={session.id}>
                   {session.name}
+                  {session.id === mainSessionId ? ' — Main Session' : ''}
                 </option>
               ))}
             </select>
-          )}
-          <input
-            type="date"
-            value={dateFilter}
-            onChange={(event) => setDateFilter(event.target.value)}
-            className="input"
-            disabled={!sessionFilter}
-            aria-label="Attendance date"
-          />
-          <select
-            value={historyFilter}
-            onChange={(event) =>
-              setHistoryFilter(
-                event.target.value as 'active' | 'cancelled' | 'all',
-              )
-            }
-            className="input"
-            disabled={!sessionFilter}
-          >
-            <option value="active">Active attendance</option>
-            <option value="cancelled">Cancelled history</option>
-            <option value="all">All history</option>
-          </select>
-          <select
-            value={universityFilter}
-            onChange={(event) => setUniversityFilter(event.target.value)}
-            className="input"
-            disabled={!eventFilter}
-          >
-            <option value="">All universities</option>
-            {universityOptions.map((university) => (
-              <option key={university} value={university}>
-                {university}
-              </option>
-            ))}
-          </select>
-          {isPris && (
-            <select
-              value={holderTypeFilter}
-              onChange={(event) => setHolderTypeFilter(event.target.value)}
-              className="input"
-              aria-label="Ticket Type"
-            >
-              <option value="">ทุก Ticket Type</option>
-              {holderTypeOptions.map((type) => (
-                <option key={type.key} value={type.key}>
-                  {type.label}
-                </option>
-              ))}
-              <option value="unassigned">ยังไม่ระบุ</option>
-            </select>
-          )}
-          <div className="relative">
-            <IconSearch
-              size={18}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400"
-            />
             <input
-              value={searchTerm}
-              onChange={(event) => setSearchTerm(event.target.value)}
-              className="input pl-10"
-              placeholder="Name / Reg code"
+              type="date"
+              value={dateFilter}
+              onChange={(event) => setDateFilter(event.target.value)}
+              className="input-field"
+              disabled={!sessionFilter}
+              aria-label="Attendance date"
             />
+            <select
+              value={historyFilter}
+              onChange={(event) =>
+                setHistoryFilter(
+                  event.target.value as 'active' | 'cancelled' | 'all',
+                )
+              }
+              className="input-field"
+              disabled={!sessionFilter}
+            >
+              <option value="active">Active attendance</option>
+              <option value="cancelled">Cancelled history</option>
+              <option value="all">All history</option>
+            </select>
+            <select
+              value={universityFilter}
+              onChange={(event) => setUniversityFilter(event.target.value)}
+              className="input-field"
+              disabled={!eventFilter}
+            >
+              <option value="">All universities</option>
+              {universityOptions.map((university) => (
+                <option key={university} value={university}>
+                  {university}
+                </option>
+              ))}
+            </select>
+            {isPris && (
+              <select
+                value={holderTypeFilter}
+                onChange={(event) => setHolderTypeFilter(event.target.value)}
+                className="input-field"
+                aria-label="Ticket Type"
+              >
+                <option value="">ทุก Ticket Type</option>
+                {holderTypeOptions.map((type) => (
+                  <option key={type.key} value={type.key}>
+                    {type.label}
+                  </option>
+                ))}
+                <option value="unassigned">ยังไม่ระบุ</option>
+              </select>
+            )}
+            <div className="relative">
+              <IconSearch
+                size={18}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400"
+              />
+              <input
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
+                className="input-field !pl-10"
+                placeholder="Name / Reg code"
+              />
+            </div>
           </div>
-        </div>
 
-        {isPris && sessionFilter && (
-          <div
-            className="flex flex-wrap items-center gap-2"
-            role="group"
-            aria-label="วันที่เข้างาน"
-          >
-            {eventDays.map((day) => (
+          {isPris && sessionFilter && (
+            <div
+              className="flex flex-wrap items-center gap-2"
+              role="group"
+              aria-label="วันที่เข้างาน"
+            >
+              {eventDays.map((day) => (
+                <button
+                  key={day}
+                  type="button"
+                  onClick={() => setDateFilter(day)}
+                  aria-pressed={dateFilter === day}
+                  className={`min-h-[40px] rounded-full border px-4 text-sm font-medium ${
+                    dateFilter === day
+                      ? 'border-emerald-600 bg-emerald-600 text-white'
+                      : 'border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50'
+                  }`}
+                >
+                  {formatThaiDayMonth(day)}
+                </button>
+              ))}
               <button
-                key={day}
                 type="button"
-                onClick={() => setDateFilter(day)}
-                aria-pressed={dateFilter === day}
-                className={`min-h-[40px] rounded-lg border px-4 text-sm font-medium ${
-                  dateFilter === day
+                onClick={() => setDateFilter('')}
+                aria-pressed={dateFilter === ''}
+                className={`min-h-[40px] rounded-full border px-4 text-sm font-medium ${
+                  dateFilter === ''
                     ? 'border-emerald-600 bg-emerald-600 text-white'
                     : 'border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50'
                 }`}
               >
-                {formatThaiDayMonth(day)}
+                ทุกวัน
               </button>
-            ))}
-            <button
-              type="button"
-              onClick={() => setDateFilter('')}
-              aria-pressed={dateFilter === ''}
-              className={`min-h-[40px] rounded-lg border px-4 text-sm font-medium ${
-                dateFilter === ''
-                  ? 'border-emerald-600 bg-emerald-600 text-white'
-                  : 'border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50'
-              }`}
-            >
-              ทุกวัน
-            </button>
-          </div>
-        )}
+            </div>
+          )}
+        </div>
 
         {/* Stats are per day; hide them for the PRIS all-days view. */}
         {sessionFilter && stats && !(isPris && !dateFilter) && (
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
             {(
               [
                 [
@@ -563,13 +592,21 @@ export default function CheckinsListPage() {
                   IconChartBar,
                 ],
               ] as Array<[string, number, typeof IconUsers]>
-            ).map(([label, value, Icon]) => (
+            ).map(([label, value, Icon], index) => (
               <div className="card py-4" key={String(label)}>
-                <Icon size={20} className="mb-2 text-emerald-600" />
-                <p className="text-2xl font-bold text-zinc-900">
-                  {String(value)}
-                </p>
-                <p className="text-xs text-zinc-500">{String(label)}</p>
+                <div className="flex items-center gap-4">
+                  <div
+                    className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${STAT_TONES[index]}`}
+                  >
+                    <Icon size={24} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-2xl font-bold text-zinc-800">
+                      {String(value)}
+                    </p>
+                    <p className="text-sm text-zinc-400">{String(label)}</p>
+                  </div>
+                </div>
               </div>
             ))}
           </div>
@@ -578,21 +615,21 @@ export default function CheckinsListPage() {
         <div className="card min-w-0">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h2 className="font-semibold text-zinc-900">
+              <h2 className="text-lg font-semibold text-zinc-800">
                 {sessionFilter
                   ? `Attendance for ${dateFilter || (isPris ? 'all days' : dateFilter)}`
-                  : 'Legacy session check-ins'}
+                  : 'Check-ins'}
               </h2>
-              <p className="text-sm text-zinc-500">
+              <p className="text-sm text-zinc-400">
                 {sessionFilter
                   ? `${historyFilter} history · ${totalCount} matching rows`
-                  : `${totalCount} rows · choose a session for daily attendance semantics`}
+                  : 'Select an event and a session'}
               </p>
             </div>
             <button
               onClick={handleExport}
               disabled={isExporting || !eventFilter}
-              className="btn btn-secondary"
+              className="btn-secondary gap-2"
             >
               {isExporting ? (
                 <IconLoader2 size={18} className="animate-spin" />
@@ -604,158 +641,176 @@ export default function CheckinsListPage() {
           </div>
 
           {isLoading ? (
-            <div className="flex justify-center py-16">
-              <IconLoader2 className="animate-spin text-emerald-600" />
+            <div className="flex items-center justify-center py-12">
+              <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-teal-700"></div>
+              <span className="ml-3 text-zinc-400">Loading check-ins...</span>
             </div>
           ) : rows.length === 0 ? (
-            <div className="py-16 text-center text-zinc-400">
-              No matching attendance records
+            <div className="py-12 text-center text-zinc-400">
+              No check-ins match these filters. Try another date or session.
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table
-                className={`w-full text-sm ${isPris ? 'min-w-[1180px]' : 'min-w-[980px]'}`}
-              >
-                <thead>
-                  <tr className="border-b border-zinc-200 text-left text-zinc-500">
-                    <th className="py-3 pr-4">{isPris ? 'ชื่อ' : 'Person'}</th>
-                    {isPris ? (
-                      <>
-                        <th className="py-3 pr-4">Ticket</th>
-                        <th className="py-3 pr-4">Ticket Type</th>
-                        <th className="py-3 pr-4">Gift</th>
-                        <th className="py-3 pr-4">คูปองอาหาร</th>
-                      </>
-                    ) : (
-                      <th className="py-3 pr-4">Session</th>
-                    )}
-                    <th className="py-3 pr-4">
-                      {isPris ? 'วันที่เข้างาน' : 'Attendance day'}
-                    </th>
-                    <th className="py-3 pr-4">
-                      {isPris ? 'เวลาสแกน' : 'Scan time'}
-                    </th>
-                    <th className="py-3 pr-4">{isPris ? 'ผู้สแกน' : 'Actor'}</th>
-                    <th className="py-3 pr-4">{isPris ? 'สถานะ' : 'State'}</th>
-                    <th className="py-3 text-right">Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rows.map((row) => (
-                    <tr
-                      key={`${row.kind || 'single'}-${row.id}`}
-                      className="border-b border-zinc-100 align-top"
-                    >
-                      <td className="py-4 pr-4">
-                        <p className="font-medium text-zinc-900">
-                          {row.firstName} {row.lastName}
-                        </p>
-                        {isPris ? (
-                          <p className="font-mono text-xs text-zinc-500">
-                            {row.regCode}
+            <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm">
+              <div className="overflow-x-auto">
+                <table
+                  className={`w-full text-sm ${isPris ? 'min-w-[1180px]' : 'min-w-[980px]'}`}
+                >
+                  <thead>
+                    <tr className="border-b border-zinc-200 bg-zinc-50">
+                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-500">
+                        {isPris ? 'ชื่อ' : 'Person'}
+                      </th>
+                      {isPris ? (
+                        <>
+                          <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-500">
+                            Ticket
+                          </th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-500">
+                            Ticket Type
+                          </th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-500">
+                            Gift
+                          </th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-500">
+                            คูปองอาหาร
+                          </th>
+                        </>
+                      ) : (
+                        <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-500">
+                          Session
+                        </th>
+                      )}
+                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-500">
+                        {isPris ? 'วันที่เข้างาน' : 'Attendance day'}
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-500">
+                        {isPris ? 'เวลาสแกน' : 'Scan time'}
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-500">
+                        {isPris ? 'ผู้สแกน' : 'Actor'}
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-500">
+                        {isPris ? 'สถานะ' : 'State'}
+                      </th>
+                      <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-zinc-500">
+                        Action
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-zinc-100">
+                    {rows.map((row) => (
+                      <tr
+                        key={`${row.kind || 'single'}-${row.id}`}
+                        className="align-top transition-colors hover:bg-zinc-50"
+                      >
+                        <td className="px-4 py-4">
+                          <p className="font-medium text-zinc-900">
+                            {row.firstName} {row.lastName}
                           </p>
-                        ) : (
-                          <>
-                            <MealCouponNote
-                              eligible={row.booth?.mealCouponEligible}
-                            />
+                          {isPris ? (
+                            <p className="font-mono text-xs text-zinc-500">
+                              {row.regCode}
+                            </p>
+                          ) : (
                             <p className="text-xs text-zinc-500">
                               {row.regCode} ·{' '}
                               {row.university || 'No university'}
                             </p>
-                          </>
-                        )}
-                      </td>
-                      {isPris ? (
-                        <>
-                          <td className="py-4 pr-4 text-zinc-700">
-                            {row.ticketName || '-'}
-                          </td>
-                          <td className="py-4 pr-4">
-                            <span
-                              className={`inline-block whitespace-nowrap rounded-full border px-2 py-1 text-xs font-medium ${holderTypeTone(row.holderType).badge}`}
-                            >
-                              {row.holderType && row.holderTypeLabel
-                                ? row.holderTypeLabel
-                                : 'ยังไม่ระบุ'}
-                            </span>
-                          </td>
-                          <td className="py-4 pr-4">
-                            {row.holderGiftCode === 'gift' ? (
-                              <span className="inline-block rounded-full border border-amber-300 bg-gradient-to-br from-amber-100 via-yellow-50 to-amber-200 px-2 py-1 text-xs font-medium text-amber-950">
-                                ให้
-                              </span>
-                            ) : (
-                              <span className="text-zinc-400">-</span>
-                            )}
-                          </td>
-                          <td className="py-4 pr-4">
-                            {(row.mealCouponEligible ?? row.booth?.mealCouponEligible) === true ? (
-                              <span className="inline-block whitespace-nowrap rounded-full border border-emerald-200 bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700">
-                                {MEAL_COUPON_LABEL}
-                              </span>
-                            ) : (
-                              <span className="text-zinc-400">-</span>
-                            )}
-                          </td>
-                        </>
-                      ) : (
-                        <td className="py-4 pr-4 text-zinc-700">
-                          {row.sessionName || '-'}
+                          )}
                         </td>
-                      )}
-                      <td className="py-4 pr-4 whitespace-nowrap">
-                        {isPris
-                          ? formatThaiShortDate(row.attendanceDate)
-                          : row.attendanceDate || 'single-session'}
-                      </td>
-                      <td className="py-4 pr-4 whitespace-nowrap">
-                        {isPris
-                          ? formatBangkokTime(row.scannedAt)
-                          : formatDateTime(row.scannedAt)}
-                      </td>
-                      <td className="py-4 pr-4">
-                        {row.scannedBy
-                          ? `${row.scannedBy.firstName ?? ''} ${row.scannedBy.lastName ?? ''}`.trim() ||
-                            '-'
-                          : '-'}
-                      </td>
-                      <td className="py-4 pr-4">
-                        {row.cancelledAt ? (
-                          <div>
-                            <span className="rounded-full bg-rose-50 px-2 py-1 text-xs font-medium text-rose-700">
-                              Cancelled
-                            </span>
-                            <p className="mt-1 max-w-xs text-xs text-zinc-500">
-                              {row.cancellationReason || '-'}
-                            </p>
-                          </div>
+                        {isPris ? (
+                          <>
+                            <td className="px-4 py-4 text-zinc-700">
+                              {row.ticketName || '-'}
+                            </td>
+                            <td className="px-4 py-4">
+                              <span
+                                className={`badge whitespace-nowrap border ${holderTypeTone(row.holderType).badge}`}
+                              >
+                                {row.holderType && row.holderTypeLabel
+                                  ? row.holderTypeLabel
+                                  : 'ยังไม่ระบุ'}
+                              </span>
+                            </td>
+                            <td className="px-4 py-4">
+                              {row.holderGiftCode === 'gift' ? (
+                                <span className="badge badge-warning">ให้</span>
+                              ) : (
+                                <span className="text-zinc-400">-</span>
+                              )}
+                            </td>
+                            <td className="px-4 py-4">
+                              {(row.mealCouponEligible ??
+                                row.booth?.mealCouponEligible) === true ? (
+                                <span className="badge badge-success whitespace-nowrap">
+                                  {MEAL_COUPON_LABEL}
+                                </span>
+                              ) : (
+                                <span className="text-zinc-400">-</span>
+                              )}
+                            </td>
+                          </>
                         ) : (
-                          <span className="rounded-full bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700">
-                            Active
-                          </span>
+                          <td className="px-4 py-4 text-zinc-700">
+                            {row.sessionName || '-'}
+                          </td>
                         )}
-                      </td>
-                      <td className="py-4 text-right">
-                        {!row.cancelledAt && (
-                          <button
-                            onClick={() => void handleUndo(row)}
-                            disabled={undoingId === row.id}
-                            className="inline-flex min-h-[40px] items-center gap-1 px-2 text-sm font-medium text-amber-700 hover:text-amber-800"
-                          >
-                            {undoingId === row.id ? (
-                              <IconLoader2 size={16} className="animate-spin" />
-                            ) : (
-                              <IconArrowBackUp size={16} />
-                            )}
-                            Undo
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                        <td className="px-4 py-4 whitespace-nowrap">
+                          {isPris
+                            ? formatThaiShortDate(
+                                row.attendanceDate ?? bangkokDay(row.scannedAt),
+                              )
+                            : row.attendanceDate || 'single-session'}
+                        </td>
+                        <td className="px-4 py-4 whitespace-nowrap">
+                          {isPris
+                            ? formatBangkokTime(row.scannedAt)
+                            : formatDateTime(row.scannedAt)}
+                        </td>
+                        <td className="px-4 py-4">
+                          {row.scannedBy
+                            ? `${row.scannedBy.firstName ?? ''} ${row.scannedBy.lastName ?? ''}`.trim() ||
+                              '-'
+                            : '-'}
+                        </td>
+                        <td className="px-4 py-4">
+                          {row.cancelledAt ? (
+                            <div>
+                              <span className="badge badge-error">
+                                Cancelled
+                              </span>
+                              <p className="mt-1 max-w-xs text-xs text-zinc-500">
+                                {row.cancellationReason || '-'}
+                              </p>
+                            </div>
+                          ) : (
+                            <span className="badge badge-success">Active</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-4 text-right">
+                          {!row.cancelledAt && (
+                            <button
+                              onClick={() => void handleUndo(row)}
+                              disabled={undoingId === row.id}
+                              className="btn-secondary gap-1 !px-3 !py-1.5 !text-amber-700"
+                            >
+                              {undoingId === row.id ? (
+                                <IconLoader2
+                                  size={16}
+                                  className="animate-spin"
+                                />
+                              ) : (
+                                <IconArrowBackUp size={16} />
+                              )}
+                              Undo
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
 

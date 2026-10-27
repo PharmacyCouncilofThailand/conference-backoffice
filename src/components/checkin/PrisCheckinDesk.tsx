@@ -128,7 +128,7 @@ export function PrisCheckinDesk({
   const [token, setToken] = useState('');
   const [desk, setDesk] = useState<CheckinDeskSummary | null>(null);
   const [deskError, setDeskError] = useState(false);
-  const [scanMode, setScanMode] = useState<'camera' | 'manual'>('manual');
+  const [scanMode, setScanMode] = useState<'camera' | 'manual'>('camera');
   const [manualCode, setManualCode] = useState('');
   const [result, setResult] = useState<DeskResult | null>(null);
   const [isTest, setIsTest] = useState(false);
@@ -146,11 +146,9 @@ export function PrisCheckinDesk({
   useEffect(() => {
     setToken(getBackofficeToken());
     if (typeof window !== 'undefined' && !window.isSecureContext) {
+      // Camera needs HTTPS: fall back to the manual field.
       setCameraSupported(false);
-    } else if (window.matchMedia?.('(pointer: coarse)').matches) {
-      // Phones and tablets scan with the camera; desks with a USB scanner
-      // (fine pointer) keep the manual field focused.
-      setScanMode('camera');
+      setScanMode('manual');
     }
   }, []);
 
