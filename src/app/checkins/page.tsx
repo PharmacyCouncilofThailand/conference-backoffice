@@ -3,6 +3,17 @@
 import { useCallback, useEffect, useState } from 'react';
 import { AdminLayout } from '@/components/layout';
 import { api } from '@/lib/api';
+import type { HolderTypeOption } from '@/lib/holder-types';
+import { holderTypeTone } from '@/lib/holder-type-colors';
+import {
+  MEAL_COUPON_LABEL,
+  PRIS_EVENT_CODE,
+  formatBangkokTime,
+  formatThaiDayMonth,
+  formatThaiShortDate,
+  listEventDays,
+  toPrisExportRow,
+} from '@/lib/checkin-history';
 import { exportToExcel } from '@/lib/exportExcel';
 import { useDebounce } from '@/hooks/useDebounce';
 import { Pagination } from '@/components/common';
@@ -35,6 +46,11 @@ interface CheckinRow {
   email: string;
   university: string | null;
   institution: string | null;
+  ticketName?: string | null;
+  holderType?: string | null;
+  holderTypeLabel?: string | null;
+  holderGift?: string | null;
+  holderGiftCode?: 'gift' | 'none' | null;
   sessionName: string | null;
   eventName: string | null;
   scannedBy: {
@@ -102,8 +118,13 @@ export default function CheckinsListPage() {
     'active' | 'cancelled' | 'all'
   >('active');
   const [eventOptions, setEventOptions] = useState<
-    { id: number; name: string }[]
+    { id: number; name: string; code: string | null }[]
   >([]);
+  const [holderTypeFilter, setHolderTypeFilter] = useState('');
+  const [holderTypeOptions, setHolderTypeOptions] = useState<
+    HolderTypeOption[]
+  >([]);
+  const [eventDays, setEventDays] = useState<string[]>([]);
   const [sessionOptions, setSessionOptions] = useState<SessionOption[]>([]);
   const [universityOptions, setUniversityOptions] = useState<string[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
@@ -125,11 +146,52 @@ export default function CheckinsListPage() {
           (res.events as Record<string, unknown>[]).map((event) => ({
             id: event.id as number,
             name: event.eventName as string,
+            code: (event.eventCode as string | null | undefined) ?? null,
           })),
         );
       })
       .catch(() => undefined);
   }, []);
+
+  const isPris =
+    eventOptions.find((event) => String(event.id) === eventFilter)?.code ===
+    PRIS_EVENT_CODE;
+
+  useEffect(() => {
+    setHolderTypeFilter('');
+    setHolderTypeOptions([]);
+    setEventDays([]);
+    if (!eventFilter || !isPris) return;
+    const token = getBackofficeToken();
+    let cancelled = false;
+    api.checkins
+      .deskSummary(token, Number(eventFilter))
+      .then((summary) => {
+        if (cancelled) return;
+        const today = summary.serverDate;
+        const days = summary.eventDays
+          ? listEventDays(summary.eventDays.first, summary.eventDays.last)
+          : [today];
+        setEventDays(days);
+        setDateFilter(today);
+        setSessionFilter(String(summary.mainSession.id));
+      })
+      .catch((error) => {
+        if (cancelled) return;
+        toast.error(
+          error instanceof Error ? error.message : 'โหลดข้อมูลวันงานไม่สำเร็จ',
+        );
+      });
+    api.registrations
+      .holderTypes(token)
+      .then((res) => {
+        if (!cancelled) setHolderTypeOptions(res.holderTypes ?? []);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [eventFilter, isPris]);
 
   useEffect(() => {
     if (!eventFilter) {
@@ -168,6 +230,7 @@ export default function CheckinsListPage() {
       eventFilter,
       sessionFilter,
       universityFilter,
+      holderTypeFilter,
       dateFilter,
       historyFilter,
     ],
@@ -182,11 +245,12 @@ export default function CheckinsListPage() {
       };
       if (sessionFilter) {
         params.sessionId = sessionFilter;
-        params.date = dateFilter;
+        if (dateFilter || !isPris) params.date = dateFilter;
         params.history = historyFilter;
       }
       if (debouncedSearch) params.search = debouncedSearch;
       if (universityFilter) params.university = universityFilter;
+      if (isPris && holderTypeFilter) params.holderType = holderTypeFilter;
       return new URLSearchParams(params).toString();
     },
     [
@@ -196,11 +260,19 @@ export default function CheckinsListPage() {
       historyFilter,
       debouncedSearch,
       universityFilter,
+      holderTypeFilter,
+      isPris,
     ],
   );
 
   const fetchData = useCallback(async () => {
     if (!eventFilter) {
+      setRows([]);
+      setStats(null);
+      return;
+    }
+    // PRIS: wait until the main session is selected (never show the legacy view)
+    if (isPris && !sessionFilter) {
       setRows([]);
       setStats(null);
       return;
@@ -212,7 +284,10 @@ export default function CheckinsListPage() {
       const statsParams = new URLSearchParams({
         eventId: eventFilter,
         ...(sessionFilter
-          ? { sessionId: sessionFilter, date: dateFilter }
+          ? {
+              sessionId: sessionFilter,
+              ...(dateFilter || !isPris ? { date: dateFilter } : {}),
+            }
           : {}),
       });
       const [listRes, statsRes] = await Promise.all([
@@ -231,7 +306,7 @@ export default function CheckinsListPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [eventFilter, sessionFilter, dateFilter, page, limit, buildQuery]);
+  }, [eventFilter, sessionFilter, dateFilter, page, limit, buildQuery, isPris]);
 
   useEffect(() => {
     void fetchData();
@@ -259,6 +334,14 @@ export default function CheckinsListPage() {
       const eventName =
         eventOptions.find((event) => String(event.id) === eventFilter)?.name ||
         'event';
+      if (isPris) {
+        exportToExcel(
+          allRows.map((row) => toPrisExportRow(row)),
+          `checkins_${eventName}_${dateFilter || 'all-days'}_${historyFilter}`,
+        );
+        toast.success(`Exported ${allRows.length} rows`);
+        return;
+      }
       exportToExcel(
         allRows.map((row) => ({
           'Reg Code': row.regCode,
@@ -314,8 +397,8 @@ export default function CheckinsListPage() {
 
   return (
     <AdminLayout title="Check-in History">
-      <div className="space-y-6">
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-6">
+      <div className="min-w-0 space-y-6">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-6">
           <select
             value={eventFilter}
             onChange={(event) => setEventFilter(event.target.value)}
@@ -328,19 +411,25 @@ export default function CheckinsListPage() {
               </option>
             ))}
           </select>
-          <select
-            value={sessionFilter}
-            onChange={(event) => setSessionFilter(event.target.value)}
-            className="input"
-            disabled={!eventFilter}
-          >
-            <option value="">All sessions (legacy view)</option>
-            {sessionOptions.map((session) => (
-              <option key={session.id} value={session.id}>
-                {session.name}
-              </option>
-            ))}
-          </select>
+          {isPris ? (
+            <div className="flex min-h-[40px] items-center rounded-lg border border-emerald-200 bg-emerald-50 px-3 text-sm font-medium text-emerald-800">
+              PRIS 2026 · เช็คอินรายวัน
+            </div>
+          ) : (
+            <select
+              value={sessionFilter}
+              onChange={(event) => setSessionFilter(event.target.value)}
+              className="input"
+              disabled={!eventFilter}
+            >
+              <option value="">All sessions (legacy view)</option>
+              {sessionOptions.map((session) => (
+                <option key={session.id} value={session.id}>
+                  {session.name}
+                </option>
+              ))}
+            </select>
+          )}
           <input
             type="date"
             value={dateFilter}
@@ -376,6 +465,22 @@ export default function CheckinsListPage() {
               </option>
             ))}
           </select>
+          {isPris && (
+            <select
+              value={holderTypeFilter}
+              onChange={(event) => setHolderTypeFilter(event.target.value)}
+              className="input"
+              aria-label="Ticket Type"
+            >
+              <option value="">ทุก Ticket Type</option>
+              {holderTypeOptions.map((type) => (
+                <option key={type.key} value={type.key}>
+                  {type.label}
+                </option>
+              ))}
+              <option value="unassigned">ยังไม่ระบุ</option>
+            </select>
+          )}
           <div className="relative">
             <IconSearch
               size={18}
@@ -390,7 +495,44 @@ export default function CheckinsListPage() {
           </div>
         </div>
 
-        {sessionFilter && stats && (
+        {isPris && sessionFilter && (
+          <div
+            className="flex flex-wrap items-center gap-2"
+            role="group"
+            aria-label="วันที่เข้างาน"
+          >
+            {eventDays.map((day) => (
+              <button
+                key={day}
+                type="button"
+                onClick={() => setDateFilter(day)}
+                aria-pressed={dateFilter === day}
+                className={`min-h-[40px] rounded-lg border px-4 text-sm font-medium ${
+                  dateFilter === day
+                    ? 'border-emerald-600 bg-emerald-600 text-white'
+                    : 'border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50'
+                }`}
+              >
+                {formatThaiDayMonth(day)}
+              </button>
+            ))}
+            <button
+              type="button"
+              onClick={() => setDateFilter('')}
+              aria-pressed={dateFilter === ''}
+              className={`min-h-[40px] rounded-lg border px-4 text-sm font-medium ${
+                dateFilter === ''
+                  ? 'border-emerald-600 bg-emerald-600 text-white'
+                  : 'border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50'
+              }`}
+            >
+              ทุกวัน
+            </button>
+          </div>
+        )}
+
+        {/* Stats are per day; hide them for the PRIS all-days view. */}
+        {sessionFilter && stats && !(isPris && !dateFilter) && (
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
             {(
               [
@@ -432,12 +574,12 @@ export default function CheckinsListPage() {
           </div>
         )}
 
-        <div className="card">
+        <div className="card min-w-0">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <div>
               <h2 className="font-semibold text-zinc-900">
                 {sessionFilter
-                  ? `Attendance for ${dateFilter}`
+                  ? `Attendance for ${dateFilter || (isPris ? 'all days' : dateFilter)}`
                   : 'Legacy session check-ins'}
               </h2>
               <p className="text-sm text-zinc-500">
@@ -470,15 +612,30 @@ export default function CheckinsListPage() {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[980px] text-sm">
+              <table
+                className={`w-full text-sm ${isPris ? 'min-w-[1180px]' : 'min-w-[980px]'}`}
+              >
                 <thead>
                   <tr className="border-b border-zinc-200 text-left text-zinc-500">
-                    <th className="py-3 pr-4">Person</th>
-                    <th className="py-3 pr-4">Session</th>
-                    <th className="py-3 pr-4">Attendance day</th>
-                    <th className="py-3 pr-4">Scan time</th>
-                    <th className="py-3 pr-4">Actor</th>
-                    <th className="py-3 pr-4">State</th>
+                    <th className="py-3 pr-4">{isPris ? 'ชื่อ' : 'Person'}</th>
+                    {isPris ? (
+                      <>
+                        <th className="py-3 pr-4">Ticket</th>
+                        <th className="py-3 pr-4">Ticket Type</th>
+                        <th className="py-3 pr-4">Gift</th>
+                        <th className="py-3 pr-4">คูปองอาหาร</th>
+                      </>
+                    ) : (
+                      <th className="py-3 pr-4">Session</th>
+                    )}
+                    <th className="py-3 pr-4">
+                      {isPris ? 'วันที่เข้างาน' : 'Attendance day'}
+                    </th>
+                    <th className="py-3 pr-4">
+                      {isPris ? 'เวลาสแกน' : 'Scan time'}
+                    </th>
+                    <th className="py-3 pr-4">{isPris ? 'ผู้สแกน' : 'Actor'}</th>
+                    <th className="py-3 pr-4">{isPris ? 'สถานะ' : 'State'}</th>
                     <th className="py-3 text-right">Action</th>
                   </tr>
                 </thead>
@@ -492,21 +649,69 @@ export default function CheckinsListPage() {
                         <p className="font-medium text-zinc-900">
                           {row.firstName} {row.lastName}
                         </p>
-                        <MealCouponNote
-                          eligible={row.booth?.mealCouponEligible}
-                        />
-                        <p className="text-xs text-zinc-500">
-                          {row.regCode} · {row.university || 'No university'}
-                        </p>
+                        {isPris ? (
+                          <p className="font-mono text-xs text-zinc-500">
+                            {row.regCode}
+                          </p>
+                        ) : (
+                          <>
+                            <MealCouponNote
+                              eligible={row.booth?.mealCouponEligible}
+                            />
+                            <p className="text-xs text-zinc-500">
+                              {row.regCode} ·{' '}
+                              {row.university || 'No university'}
+                            </p>
+                          </>
+                        )}
                       </td>
-                      <td className="py-4 pr-4 text-zinc-700">
-                        {row.sessionName || '-'}
+                      {isPris ? (
+                        <>
+                          <td className="py-4 pr-4 text-zinc-700">
+                            {row.ticketName || '-'}
+                          </td>
+                          <td className="py-4 pr-4">
+                            <span
+                              className={`inline-block whitespace-nowrap rounded-full border px-2 py-1 text-xs font-medium ${holderTypeTone(row.holderType).badge}`}
+                            >
+                              {row.holderType && row.holderTypeLabel
+                                ? row.holderTypeLabel
+                                : 'ยังไม่ระบุ'}
+                            </span>
+                          </td>
+                          <td className="py-4 pr-4">
+                            {row.holderGiftCode === 'gift' ? (
+                              <span className="inline-block rounded-full border border-amber-300 bg-gradient-to-br from-amber-100 via-yellow-50 to-amber-200 px-2 py-1 text-xs font-medium text-amber-950">
+                                ให้
+                              </span>
+                            ) : (
+                              <span className="text-zinc-400">-</span>
+                            )}
+                          </td>
+                          <td className="py-4 pr-4">
+                            {row.booth?.mealCouponEligible === true ? (
+                              <span className="inline-block whitespace-nowrap rounded-full border border-emerald-200 bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700">
+                                {MEAL_COUPON_LABEL}
+                              </span>
+                            ) : (
+                              <span className="text-zinc-400">-</span>
+                            )}
+                          </td>
+                        </>
+                      ) : (
+                        <td className="py-4 pr-4 text-zinc-700">
+                          {row.sessionName || '-'}
+                        </td>
+                      )}
+                      <td className="py-4 pr-4 whitespace-nowrap">
+                        {isPris
+                          ? formatThaiShortDate(row.attendanceDate)
+                          : row.attendanceDate || 'single-session'}
                       </td>
-                      <td className="py-4 pr-4">
-                        {row.attendanceDate || 'single-session'}
-                      </td>
-                      <td className="py-4 pr-4">
-                        {formatDateTime(row.scannedAt)}
+                      <td className="py-4 pr-4 whitespace-nowrap">
+                        {isPris
+                          ? formatBangkokTime(row.scannedAt)
+                          : formatDateTime(row.scannedAt)}
                       </td>
                       <td className="py-4 pr-4">
                         {row.scannedBy
@@ -535,7 +740,7 @@ export default function CheckinsListPage() {
                           <button
                             onClick={() => void handleUndo(row)}
                             disabled={undoingId === row.id}
-                            className="inline-flex items-center gap-1 text-sm font-medium text-amber-700 hover:text-amber-800"
+                            className="inline-flex min-h-[40px] items-center gap-1 px-2 text-sm font-medium text-amber-700 hover:text-amber-800"
                           >
                             {undoingId === row.id ? (
                               <IconLoader2 size={16} className="animate-spin" />

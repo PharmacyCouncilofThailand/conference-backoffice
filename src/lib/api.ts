@@ -188,6 +188,11 @@ interface BackofficeCheckinRow {
   university: string | null;
   institution: string | null;
   ticketName: string | null;
+  eventCode?: string | null;
+  holderType?: string | null;
+  holderTypeLabel?: string | null;
+  holderGift?: string | null;
+  holderGiftCode?: 'gift' | 'none' | null;
   source: string;
   addedAt: string;
   sessionName: string | null;
