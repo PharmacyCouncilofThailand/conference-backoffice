@@ -399,7 +399,7 @@ test('page access, real sidebar links and assigned-event scope agree for every r
       ]) as typeof React.useState,
     });
     const context = Provider({ children: null }).props.value;
-    const readable = role === 'admin';
+    const readable = ['admin', 'organizer', 'reviewer'].includes(role);
     assert.equal(context.hasAccess('/presentations'), readable, role);
     assert.equal(context.hasAccess('/presentations/501'), readable, role);
     assert.equal(context.canAccessEvent(42), true, role);
@@ -452,17 +452,8 @@ test('page access, real sidebar links and assigned-event scope agree for every r
           },
         },
       );
-      assert.equal(
-        Guard({ children: React.createElement('div') }) === null,
-        role !== 'admin',
-        role,
-      );
-      assert.deepEqual(
-        redirects,
-        role === 'admin'
-          ? []
-          : [role === 'organizer' ? '/members' : '/abstracts'],
-      );
+      assert.notEqual(Guard({ children: React.createElement('div') }), null, role);
+      assert.deepEqual(redirects, []);
     }
   }
 });
