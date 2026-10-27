@@ -76,6 +76,48 @@ function duplicateDetails(error: unknown): {
   };
 }
 
+const THAI_MONTHS = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+
+/** "2026-10-29" → "29 ต.ค. 2569" */
+function thaiDate(iso: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
+  return m ? `${Number(m[3])} ${THAI_MONTHS[Number(m[2]) - 1]} ${Number(m[1]) + 543}` : iso;
+}
+
+/** Event days as "29–30 ต.ค." (or a single day). */
+function eventDayRange(first: string, last: string): string {
+  const a = /^(\d{4})-(\d{2})-(\d{2})/.exec(first);
+  const b = /^(\d{4})-(\d{2})-(\d{2})/.exec(last);
+  if (!a || !b) return `${first}–${last}`;
+  if (first === last) return `${Number(a[3])} ${THAI_MONTHS[Number(a[2]) - 1]}`;
+  if (a[2] === b[2]) return `${Number(a[3])}–${Number(b[3])} ${THAI_MONTHS[Number(a[2]) - 1]}`;
+  return `${Number(a[3])} ${THAI_MONTHS[Number(a[2]) - 1]}–${Number(b[3])} ${THAI_MONTHS[Number(b[2]) - 1]}`;
+}
+
+function ScanStatusPill({ desk }: { desk: CheckinDeskSummary }) {
+  const hours = desk.window ? `${desk.window.open}–${desk.window.close} น.` : '';
+  const days = desk.eventDays ? eventDayRange(desk.eventDays.first, desk.eventDays.last) : '';
+  const tone = {
+    open: { dot: 'bg-emerald-500', pill: 'bg-emerald-50 text-emerald-800', text: `เปิดสแกนอยู่${hours ? ` · ถึง ${desk.window!.close} น.` : ''}` },
+    before_event: { dot: 'bg-amber-400', pill: 'bg-amber-50 text-amber-900', text: `ยังไม่ถึงวันงาน · สแกนได้ ${days} ${hours}`.trim() },
+    before_open: { dot: 'bg-amber-400', pill: 'bg-amber-50 text-amber-900', text: `ยังไม่เปิดสแกน · เปิด ${hours}`.trim() },
+    after_close: { dot: 'bg-zinc-400', pill: 'bg-zinc-100 text-zinc-700', text: `ปิดสแกนแล้ววันนี้ · เปิด ${hours}`.trim() },
+    after_event: { dot: 'bg-zinc-400', pill: 'bg-zinc-100 text-zinc-700', text: 'จบงานแล้ว' },
+  }[desk.scanStatus ?? 'open'];
+  // Older API without scanStatus: show the plain opening hours only.
+  if (!desk.scanStatus) {
+    return hours ? (
+      <span className="rounded-full bg-zinc-100 px-3 py-1 font-medium text-zinc-600">เปิดสแกน {hours}</span>
+    ) : null;
+  }
+  return (
+    <span className={`inline-flex items-center gap-2 rounded-full px-3 py-1 font-medium ${tone.pill}`}>
+      <span className={`h-2 w-2 rounded-full ${tone.dot}`} aria-hidden="true" />
+      {tone.text}
+    </span>
+  );
+}
+
 export function PrisCheckinDesk({
   eventId,
   onExit,
@@ -111,16 +153,25 @@ export function PrisCheckinDesk({
   useEffect(() => {
     if (!token) return;
     let cancelled = false;
-    api.checkins
-      .deskSummary(token, eventId)
-      .then((d) => {
-        if (!cancelled) setDesk(d);
-      })
-      .catch(() => {
-        if (!cancelled) setDeskError(true);
-      });
+    let loaded = false;
+    const load = () =>
+      api.checkins
+        .deskSummary(token, eventId)
+        .then((d) => {
+          if (cancelled) return;
+          loaded = true;
+          setDesk(d);
+        })
+        .catch(() => {
+          // Only block the screen if the very first load fails.
+          if (!cancelled && !loaded) setDeskError(true);
+        });
+    void load();
+    // Keep the date and open/closed status current across 06:00 / 18:00.
+    const timer = setInterval(() => void load(), 60000);
     return () => {
       cancelled = true;
+      clearInterval(timer);
     };
   }, [token, eventId]);
 
@@ -345,14 +396,10 @@ export function PrisCheckinDesk({
             <IconArrowBack size={18} />
           </button>
         )}
-        <span className="rounded-full bg-emerald-50 px-3 py-1 font-medium text-emerald-700">
-          วันที่ {desk?.serverDate ?? 'กำลังโหลด'}
+        <span className="rounded-full bg-zinc-100 px-3 py-1 font-medium text-zinc-700">
+          วันนี้ {desk ? thaiDate(desk.serverDate) : 'กำลังโหลด'}
         </span>
-        {desk?.window && (
-          <span className="rounded-full bg-zinc-100 px-3 py-1 font-medium text-zinc-600">
-            เปิดสแกน {desk.window.open}–{desk.window.close} น.
-          </span>
-        )}
+        {desk && <ScanStatusPill desk={desk} />}
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
