@@ -147,6 +147,10 @@ export function PrisCheckinDesk({
     setToken(getBackofficeToken());
     if (typeof window !== 'undefined' && !window.isSecureContext) {
       setCameraSupported(false);
+    } else if (window.matchMedia?.('(pointer: coarse)').matches) {
+      // Phones and tablets scan with the camera; desks with a USB scanner
+      // (fine pointer) keep the manual field focused.
+      setScanMode('camera');
     }
   }, []);
 
@@ -455,17 +459,25 @@ export function PrisCheckinDesk({
               </div>
             )}
 
-            {(!desk || isLoading) && (
+            {(!desk || (isLoading && scanMode === 'manual')) && (
               <div className="flex flex-1 flex-col items-center justify-center text-emerald-600">
                 <IconLoader2 size={48} className="mb-4 animate-spin" />
                 <p className="text-lg font-medium">กำลังดำเนินการ...</p>
               </div>
             )}
 
-            {desk && scanning && scanMode === 'camera' && (
+            {/* Camera stays mounted and is only paused behind the popup, so it
+                is ready the moment staff tap "ถัดไป". */}
+            {desk && scanMode === 'camera' && (
               <div className="flex flex-1 flex-col items-center justify-center">
-                <div className="mx-auto w-full max-w-sm overflow-hidden rounded-xl">
+                <div className="relative mx-auto w-full max-w-sm overflow-hidden rounded-xl">
+                  {isLoading && (
+                    <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/40 text-white">
+                      <IconLoader2 size={40} className="animate-spin" />
+                    </div>
+                  )}
                   <Scanner
+                    paused={!scanning}
                     onScan={handleQrScan}
                     onError={(err: unknown) => {
                       console.error('Scanner error:', err);
