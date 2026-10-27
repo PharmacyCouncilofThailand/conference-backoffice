@@ -15,6 +15,12 @@ import {
   IconX,
 } from '@tabler/icons-react';
 import toast from 'react-hot-toast';
+import {
+  EMAIL_MANUAL_CHUNK_SIZE,
+  chunkIds,
+  estimateSendSeconds,
+} from '@/lib/emailManualBatch';
+import { SendHistory } from './SendHistory';
 
 interface EventOption {
   id: number;
@@ -37,6 +43,7 @@ interface RecipientRow {
   email: string;
   detail: string;
   tag: string;
+  lastSentAt?: string | null;
 }
 
 interface ManualEmailResult {
@@ -50,6 +57,7 @@ interface ManualEmailResult {
 
 interface ManualEmailResponse {
   success: boolean;
+  batchId?: string;
   results: ManualEmailResult[];
   summary: {
     pending: number;
@@ -83,6 +91,7 @@ const TEMPLATE_GROUPS = [
       'pris-early-bird-reminder',
       'manual-registration',
       'event-reminder',
+      'pris-pre-event',
     ],
   },
 ];
@@ -221,6 +230,22 @@ export default function EmailManualPage() {
   const [sending, setSending] = useState(false);
   const [previewTarget, setPreviewTarget] = useState<RecipientRow | null>(null);
   const [results, setResults] = useState<ManualEmailResult[] | null>(null);
+  const [progress, setProgress] = useState<{
+    done: number;
+    total: number;
+  } | null>(null);
+  const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
+
+  // Remaining chunks are only sent while this page stays open.
+  useEffect(() => {
+    if (!sending) return;
+    const warn = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = '';
+    };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [sending]);
 
   const selectedTemplate = useMemo(
     () =>
@@ -350,56 +375,105 @@ export default function EmailManualPage() {
     });
   }
 
+  function selectUnsent() {
+    setSelected(
+      new Set(
+        recipients
+          .filter((recipient) => !recipient.lastSentAt)
+          .map((recipient) => recipient.id),
+      ),
+    );
+  }
+
   async function submitManualEmail(dryRun: boolean) {
     if (!eventId || !selectedTemplate || selectedCount === 0) return;
-    if (
-      !dryRun &&
-      !confirm(
-        `Send "${selectedTemplate.label}" to ${selectedCount} recipients?`,
-      )
-    ) {
-      return;
+    const chosen = recipients.filter((recipient) => selected.has(recipient.id));
+    if (!dryRun) {
+      const minutes = Math.max(
+        1,
+        Math.ceil(estimateSendSeconds(chosen.length) / 60),
+      );
+      const alreadySent = chosen.filter((r) => r.lastSentAt).length;
+      const warning =
+        alreadySent > 0
+          ? `\n\n${alreadySent} คนในรายการนี้เคยได้รับอีเมลนี้แล้ว`
+          : '';
+      if (
+        !confirm(
+          `Send "${selectedTemplate.label}" to ${chosen.length} recipients? (~${minutes} นาที)${warning}`,
+        )
+      ) {
+        return;
+      }
     }
 
     const token = getBackofficeToken();
-    const recipientIds = recipients
-      .filter((recipient) => selected.has(recipient.id))
-      .map((r) => r.id);
+    const chunks = chunkIds(
+      chosen.map((r) => r.id),
+      EMAIL_MANUAL_CHUNK_SIZE,
+    );
+    const batchId = crypto.randomUUID();
+    const collected: ManualEmailResult[] = [];
+    const totals = { pending: 0, sent: 0, skipped: 0, failed: 0 };
+    let done = 0;
     setSending(true);
+    setResults([]);
+    setProgress({ done: 0, total: chosen.length });
 
     try {
-      const res = await fetch(`${API_BASE}/api/backoffice/email-manual`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          eventId,
-          template: selectedTemplate.id,
-          recipientIds,
-          dryRun,
-          comment: comment || undefined,
-        }),
-      });
-      const json: ManualEmailResponse = await res.json();
-      if (!res.ok || !json.success)
-        throw new Error(json.error || 'Manual email request failed');
+      for (let i = 0; i < chunks.length; i++) {
+        let json: ManualEmailResponse;
+        try {
+          const res = await fetch(`${API_BASE}/api/backoffice/email-manual`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              eventId,
+              template: selectedTemplate.id,
+              recipientIds: chunks[i],
+              dryRun,
+              batchId,
+              comment: comment || undefined,
+            }),
+          });
+          json = await res.json();
+          if (!res.ok || !json.success)
+            throw new Error(json.error || 'Manual email request failed');
+        } catch (err) {
+          const detail = err instanceof Error ? err.message : 'request failed';
+          toast.error(
+            `หยุดที่ชุด ${i + 1}: ส่ง/ตรวจแล้ว ${done} จาก ${chosen.length} คน — ตรวจประวัติการส่งก่อนส่งต่อ (${detail})`,
+            { duration: 12000 },
+          );
+          return;
+        }
 
-      setResults(json.results || []);
-      if (dryRun) {
-        toast.success(
-          `Validated ${json.summary.pending + json.summary.skipped} recipients`,
-        );
-      } else {
-        toast.success(`Sent ${json.summary.sent} emails`);
+        collected.push(...(json.results || []));
+        totals.pending += json.summary.pending;
+        totals.sent += json.summary.sent;
+        totals.skipped += json.summary.skipped;
+        totals.failed += json.summary.failed;
+        done += chunks[i].length;
+        setResults([...collected]);
+        setProgress({ done, total: chosen.length });
       }
-    } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : 'Manual email request failed',
-      );
+
+      if (dryRun) {
+        toast.success(`Validated ${totals.pending + totals.skipped} recipients`);
+      } else {
+        toast.success(
+          `Sent ${totals.sent} emails` +
+            (totals.failed ? `, ${totals.failed} failed` : '') +
+            (totals.skipped ? `, ${totals.skipped} skipped` : ''),
+        );
+      }
     } finally {
       setSending(false);
+      setProgress(null);
+      if (!dryRun) setHistoryRefreshKey((key) => key + 1);
     }
   }
 
@@ -449,7 +523,7 @@ export default function EmailManualPage() {
                   setResults(null);
                 }}
                 className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
-                disabled={loadingEvents}
+                disabled={loadingEvents || sending}
               >
                 <option value="">Select event</option>
                 {events.map((event) => (
@@ -487,7 +561,7 @@ export default function EmailManualPage() {
                             setComment('');
                             setResults(null);
                           }}
-                          disabled={!eventId || loadingTemplates}
+                          disabled={!eventId || loadingTemplates || sending}
                           className={`px-3 py-2 rounded-lg text-sm border transition-colors ${
                             active
                               ? 'bg-sky-600 border-sky-600 text-white'
@@ -557,7 +631,19 @@ export default function EmailManualPage() {
                 />
               )}
 
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2 items-center">
+                {progress && (
+                  <span className="text-xs font-medium text-sky-700">
+                    กำลังส่ง {progress.done} / {progress.total}
+                  </span>
+                )}
+                <button
+                  onClick={selectUnsent}
+                  disabled={sending || recipients.length === 0}
+                  className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+                >
+                  เลือกเฉพาะที่ยังไม่เคยส่ง
+                </button>
                 <button
                   onClick={() => submitManualEmail(true)}
                   disabled={sending || selectedCount === 0}
@@ -580,6 +666,13 @@ export default function EmailManualPage() {
                 </button>
               </div>
             </div>
+
+            {sending && (
+              <div className="px-4 py-2 border-b border-amber-200 bg-amber-50 text-xs text-amber-800">
+                กรุณาเปิดหน้านี้ค้างไว้จนกว่าจะส่งเสร็จ — ระบบส่งทีละชุด{' '}
+                {EMAIL_MANUAL_CHUNK_SIZE} คน และเว้น 700ms ระหว่างอีเมลแต่ละฉบับ
+              </div>
+            )}
 
             {loadingRecipients ? (
               <div className="h-72 flex items-center justify-center gap-2 text-slate-500">
@@ -642,6 +735,19 @@ export default function EmailManualPage() {
                           <span className="px-2 py-1 rounded-md bg-slate-100 text-slate-600 text-xs">
                             {recipient.tag}
                           </span>
+                          {recipient.lastSentAt && (
+                            <span className="ml-1 px-2 py-1 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs whitespace-nowrap">
+                              ส่งแล้ว{' '}
+                              {new Date(recipient.lastSentAt).toLocaleString(
+                                'th-TH',
+                                {
+                                  dateStyle: 'short',
+                                  timeStyle: 'short',
+                                  timeZone: 'Asia/Bangkok',
+                                },
+                              )}
+                            </span>
+                          )}
                         </td>
                         <td className="px-4 py-3 text-right">
                           <button
@@ -707,6 +813,18 @@ export default function EmailManualPage() {
               </table>
             </div>
           </div>
+        )}
+
+        {eventId && (
+          <SendHistory
+            key={`${eventId}-${selectedTemplateId}`}
+            apiBase={API_BASE}
+            token={getBackofficeToken()}
+            eventId={eventId}
+            templateOptions={templates.map((t) => ({ id: t.id, label: t.label }))}
+            defaultTemplate={selectedTemplateId}
+            refreshKey={historyRefreshKey}
+          />
         )}
       </div>
 
