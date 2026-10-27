@@ -47,22 +47,33 @@ test('only admins manage posters', () => {
   assert.equal(canManagePresentations('admin'), true);
 });
 
-test('Organizer and Reviewer share type grants; categories remain Reviewer-only', () => {
-  assert.deepEqual(
-    presentationUserAssignments('organizer', ['oral'], ['clinical']),
-    { assignedPresentationTypes: ['oral'] },
-  );
-  assert.deepEqual(
-    presentationUserAssignments('reviewer', ['poster'], ['clinical']),
-    { assignedCategories: ['clinical'], assignedPresentationTypes: ['poster'] },
-  );
-  assert.deepEqual(presentationUserAssignments('organizer', [], []), {
-    assignedPresentationTypes: [],
-  });
-  assert.deepEqual(
-    presentationUserAssignments('admin', ['oral'], ['clinical']),
-    {},
-  );
+test('Organizer and Reviewer send selected categories and types, including empty grants', () => {
+  for (const role of ['organizer', 'reviewer']) {
+    assert.deepEqual(
+      presentationUserAssignments(role, ['oral'], ['Clinical']),
+      {
+        assignedCategories: ['Clinical'],
+        assignedPresentationTypes: ['oral'],
+      },
+    );
+    assert.deepEqual(presentationUserAssignments(role, [], []), {
+      assignedCategories: [],
+      assignedPresentationTypes: [],
+    });
+  }
+  for (const role of [
+    'admin',
+    'staff',
+    'verifier',
+    'team_registration_viewer',
+    '',
+    'Organizer',
+  ]) {
+    assert.deepEqual(
+      presentationUserAssignments(role, ['oral'], ['Clinical']),
+      {},
+    );
+  }
 });
 
 test('Thai inclusive seconds map to the exclusive UTC close independently of host timezone', () => {
@@ -399,7 +410,7 @@ test('page access, real sidebar links and assigned-event scope agree for every r
       ]) as typeof React.useState,
     });
     const context = Provider({ children: null }).props.value;
-    const readable = role === 'admin';
+    const readable = ['admin', 'organizer', 'reviewer'].includes(role);
     assert.equal(context.hasAccess('/presentations'), readable, role);
     assert.equal(context.hasAccess('/presentations/501'), readable, role);
     assert.equal(context.canAccessEvent(42), true, role);
@@ -452,17 +463,12 @@ test('page access, real sidebar links and assigned-event scope agree for every r
           },
         },
       );
-      assert.equal(
-        Guard({ children: React.createElement('div') }) === null,
-        role !== 'admin',
+      assert.notEqual(
+        Guard({ children: React.createElement('div') }),
+        null,
         role,
       );
-      assert.deepEqual(
-        redirects,
-        role === 'admin'
-          ? []
-          : [role === 'organizer' ? '/members' : '/abstracts'],
-      );
+      assert.deepEqual(redirects, []);
     }
   }
 });
@@ -537,9 +543,24 @@ test('real table gates conflict approval, invalid selection and read-only contro
     1,
     'only alias pending can approve',
   );
+  const readonlyRows = rows.map((row) => ({
+    ...row,
+    currentUpload: detailFixture().row.currentUpload,
+    activeRequest: detailFixture().requests[0],
+    progress: 'revision_pending',
+  }));
   const readonly = nodes(
-    PresentationTable({ ...props, manage: false, view: 'verify' }),
+    PresentationTable({
+      ...props,
+      rows: readonlyRows,
+      manage: false,
+      view: 'verify',
+    }),
   );
+  for (const label of ['คำขอแก้ไข:', 'วันสุดท้าย', 'ดูรายละเอียดและประวัติ']) {
+    assert.equal(JSON.stringify(readonly).includes(label), false, label);
+  }
+  assert.ok(JSON.stringify(readonly).includes('ได้รับไฟล์แล้ว'));
   assert.equal(JSON.stringify(readonly).includes('ผลตรวจรายชื่อ'), false);
   assert.equal(JSON.stringify(readonly).includes('Poster / Email'), false);
   assert.equal(JSON.stringify(readonly).includes('ยังไม่แจ้ง'), false);
@@ -692,6 +713,178 @@ test('group tabs request scoped server pagination and clear selected email recip
   assert.equal((table().props.selected as Set<number>).size, 0);
 });
 
+test('category filter uses authorized options beyond the page, resets selection and never carries IDs to another Event', async () => {
+  const queries: Array<{ eventId: number; query: URLSearchParams }> = [];
+  const auth = {
+    user: {
+      id: 1,
+      role: 'admin',
+      assignedEvents: [],
+      assignedCategories: ['Clinical', 'Research'],
+    },
+    token: 'synthetic',
+    isAdmin: true,
+    isLoading: false,
+  };
+  const harness = presentationHarness(
+    'src/app/presentations/page.tsx',
+    'default',
+    {
+      '@/components/layout/AdminLayout': { AdminLayout: 'main' },
+      '@/components/common': { Pagination: 'pagination' },
+      '@/lib/api': {
+        api: {
+          events: {
+            list: async () => ({
+              events: [42, 43].map((id) => ({
+                id,
+                eventCode: 'PRIS-2026',
+                eventName: `PRIS ${id}`,
+              })),
+            }),
+          },
+          presentations: {
+            list: async (eventId: number, query: URLSearchParams) => {
+              queries.push({ eventId, query: new URLSearchParams(query) });
+              return {
+                data: {
+                  items: [
+                    {
+                      ...detailFixture().row,
+                      abstractId: 501,
+                      canNotify: true,
+                    },
+                  ],
+                  categories:
+                    eventId === 42
+                      ? [
+                          { id: 7, name: 'Clinical' },
+                          { id: 9, name: 'Research beyond this page' },
+                        ]
+                      : [{ id: 12, name: 'Next Event category' }],
+                  total: 40,
+                  pageSize: 25,
+                  settings: {},
+                  counts: {},
+                  capabilities: { manage: true },
+                },
+              };
+            },
+            getSettings: async () => ({ data: null }),
+          },
+        },
+      },
+      '@/lib/presentationUi': { selectablePresentationIds },
+      '@/components/presentations/PresentationTable': {
+        PresentationTable: 'presentation-table',
+        progressLabels: {},
+        matchLabels: {},
+        mailLabels: {},
+        thaiTime: (value: string) => value,
+      },
+      '@/components/presentations/PresentationEmailDialog': {
+        PresentationEmailDialog: 'email-dialog',
+      },
+      '@/components/presentations/PresentationManagementDialog': {
+        PresentationManagementDialog: 'management-dialog',
+      },
+      '@/components/presentations/PresentationHistoryViews': {
+        PresentationDeadlineHistory: 'deadline-history',
+      },
+    },
+    auth,
+  );
+  let rendered: ReturnType<typeof nodes> = [];
+  const settle = async () => {
+    for (let i = 0; i < 4; i++) {
+      rendered = harness.render({});
+      while (harness.effects.length) harness.effects.shift()!();
+      await new Promise((resolve) => setImmediate(resolve));
+    }
+    rendered = harness.render({});
+  };
+  const change = (label: string, value: string) => {
+    const select = rendered.find(
+      (node) => node.type === 'select' && node.props['aria-label'] === label,
+    );
+    assert.ok(select, label);
+    (select.props.onChange as (event: { target: { value: string } }) => void)({
+      target: { value },
+    });
+  };
+  const click = (label: string) => {
+    const button = rendered.find(
+      (node) => node.type === 'button' && node.props.children === label,
+    );
+    assert.ok(button, label);
+    (button.props.onClick as () => void)();
+  };
+  await settle();
+  assert.ok(
+    rendered.some((node) => node.type === 'option' && node.props.value === 9),
+  );
+  click('ติดตามและอีเมล');
+  await settle();
+  (
+    rendered.find((node) => node.type === 'pagination')!.props.onPageChange as (
+      page: number,
+    ) => void
+  )(2);
+  await settle();
+  click('เลือกที่แจ้งได้ในหน้านี้');
+  rendered = harness.render({});
+  click('ตัวอย่างแจ้งส่ง');
+  rendered = harness.render({});
+  assert.ok(rendered.some((node) => node.type === 'email-dialog'));
+  change('หมวดผลงาน', '9');
+  rendered = harness.render({});
+  assert.equal(
+    rendered.some(
+      (node) =>
+        node.type === 'email-dialog' || node.type === 'presentation-table',
+    ),
+    false,
+  );
+  await settle();
+  assert.equal(queries.at(-1)!.query.get('categoryId'), '9');
+  assert.equal(queries.at(-1)!.query.get('page'), '1');
+  assert.equal(
+    (
+      rendered.find((node) => node.type === 'presentation-table')!.props
+        .selected as Set<number>
+    ).size,
+    0,
+  );
+  change('Event', '43');
+  rendered = harness.render({});
+  assert.equal(
+    rendered.some((node) => node.type === 'option' && node.props.value === 9),
+    false,
+  );
+  assert.equal(
+    rendered.find((node) => node.props['aria-label'] === 'หมวดผลงาน')!.props
+      .value,
+    '',
+  );
+  await settle();
+  assert.ok(queries.some(({ eventId }) => eventId === 43));
+  assert.ok(
+    queries
+      .filter(({ eventId }) => eventId === 43)
+      .every(({ query }) => !query.has('categoryId')),
+  );
+  auth.user.assignedCategories = [];
+  rendered = harness.render({});
+  assert.equal(
+    rendered.some((node) => node.type === 'presentation-table'),
+    false,
+  );
+  assert.equal(
+    rendered.some((node) => node.type === 'option' && node.props.value === 12),
+    false,
+  );
+});
+
 test('detail labels student works while legacy general details retain their wording', async () => {
   for (const participantGroup of [undefined, 'student'] as const) {
     const detail = detailFixture();
@@ -797,13 +990,15 @@ function emailHarness(mockApi: unknown) {
   );
 }
 
-test('Organizer and Reviewer cannot read the Presentation page or trigger its API reads', async () => {
+test('Organizer and Reviewer read received files without management history', async () => {
   for (const role of ['organizer', 'reviewer']) {
     let reads = 0,
       settingsReads = 0;
     const auth = {
       user: {
+        id: 1,
         role,
+        assignedCategories: ['Clinical'],
         assignedEvents: [{ id: 42, code: 'PRIS-2026', name: 'PRIS' }],
       },
       token: 'synthetic',
@@ -824,9 +1019,11 @@ test('Organizer and Reviewer cannot read the Presentation page or trigger its AP
                 assert.equal(eventId, 42);
                 assert.equal(query.get('received'), 'true');
                 assert.equal(query.has('matchState'), false);
+                assert.equal(query.has('status'), false);
                 return {
                   data: {
                     items: [],
+                    categories: [{ id: 7, name: 'Clinical' }],
                     counts: {},
                     total: 0,
                     pageSize: 25,
@@ -868,15 +1065,59 @@ test('Organizer and Reviewer cannot read the Presentation page or trigger its AP
     while (harness.effects.length) harness.effects.shift()!();
     await new Promise((resolve) => setImmediate(resolve));
     const rendered = harness.render({});
+    assert.ok(reads > 0);
     assert.ok(
-      JSON.stringify(rendered).includes('ไม่มีสิทธิ์เข้าถึงไฟล์นำเสนอ'),
+      rendered.some(
+        (node) =>
+          node.type === 'option' &&
+          node.props.children === 'ทุกหมวดที่มีสิทธิ์',
+      ),
+    );
+    assert.ok(
+      rendered.some((node) => node.type === 'option' && node.props.value === 7),
     );
     assert.equal(settingsReads, 0);
-    assert.equal(reads, 0);
+    assert.ok(rendered.some((node) => node.type === 'presentation-table'));
     assert.equal(
-      rendered.some(
-        (node) => node.type === 'presentation-table' || node.type === 'nav',
-      ),
+      rendered.some((node) => node.props['aria-label'] === 'สถานะไฟล์นำเสนอ'),
+      false,
+    );
+    for (const label of [
+      'รอแก้ไข',
+      'แก้ไขแล้ว',
+      'กำหนดส่งและประวัติ',
+      'ติดตามและอีเมล',
+      'ตรวจรายชื่อ',
+    ]) {
+      assert.equal(JSON.stringify(rendered).includes(label), false, label);
+    }
+    auth.token = 'second-viewer-session';
+    auth.user.id = 2;
+    assert.equal(
+      harness.render({}).some((node) => node.type === 'presentation-table'),
+      false,
+    );
+    for (let turn = 0; turn < 4; turn++) {
+      while (harness.effects.length) harness.effects.shift()!();
+      await new Promise((resolve) => setImmediate(resolve));
+      harness.render({});
+    }
+    assert.ok(
+      harness.render({}).some((node) => node.type === 'presentation-table'),
+    );
+    auth.user.assignedCategories = [];
+    const revoked = harness.render({});
+    assert.equal(
+      revoked.some((node) => node.type === 'presentation-table'),
+      false,
+    );
+    assert.equal(
+      revoked.some((node) => node.type === 'option' && node.props.value === 7),
+      false,
+    );
+    auth.user.assignedEvents = [];
+    assert.equal(
+      harness.render({}).some((node) => node.type === 'presentation-table'),
       false,
     );
   }
@@ -1668,6 +1909,259 @@ function detailFixture(title = 'Synthetic detail'): PresentationDetailDto {
   } as unknown as PresentationDetailDto;
 }
 
+test('Admin management data stays scoped across session and Event changes', async () => {
+  for (const change of ['session', 'event']) {
+    const auth = {
+      user: { id: 1, role: 'admin', assignedEvents: [] },
+      token: 'first-admin-session',
+      isAdmin: true,
+      isLoading: false,
+    };
+    let resolveOldBatch: (value: unknown) => void = () => {};
+    let batchReads = 0;
+    let deferHistory = false;
+    let resolveOldHistory: (value: unknown) => void = () => {};
+    const harness = presentationHarness(
+      'src/app/presentations/page.tsx',
+      'default',
+      {
+        '@/components/layout/AdminLayout': { AdminLayout: 'main' },
+        '@/components/common': { Pagination: 'pagination' },
+        '@/lib/api': {
+          api: {
+            events: {
+              list: async () => ({
+                events: [42, 43].map((id) => ({
+                  id,
+                  eventCode: 'PRIS-2026',
+                  eventName: `Event ${id}`,
+                })),
+              }),
+            },
+            presentations: {
+              list: async () => ({
+                data: {
+                  items: [{ ...detailFixture().row, canNotify: true }],
+                  categories: [{ id: 7, name: 'Clinical' }],
+                  total: 1,
+                  pageSize: 25,
+                  counts: {},
+                  settings: {},
+                  capabilities: { manage: true },
+                },
+              }),
+              getSettings: async (eventId: number, token: string) => {
+                if (deferHistory) {
+                  deferHistory = false;
+                  return new Promise((resolve) => {
+                    resolveOldHistory = resolve;
+                  });
+                }
+                return {
+                  data: {
+                    settings: {
+                      closesAt: '2026-10-20T17:00:00.000Z',
+                      version: 1,
+                    },
+                    history: [
+                      {
+                        id: 'history',
+                        actorId: 1,
+                        reason: `${token}-${eventId}-private-history`,
+                        createdAt: '2026-10-07T00:00:00.000Z',
+                      },
+                    ],
+                    capabilities: { manage: true },
+                  },
+                };
+              },
+              batchResult: async () => {
+                if (++batchReads === 2)
+                  return new Promise((resolve) => {
+                    resolveOldBatch = resolve;
+                  });
+                return {
+                  data: {
+                    jobs: [
+                      {
+                        id: 'job',
+                        abstractId: 501,
+                        recipient: 'old-admin-recipient@example.invalid',
+                        state: 'sent',
+                      },
+                    ],
+                  },
+                };
+              },
+            },
+          },
+        },
+        '@/lib/presentationUi': { selectablePresentationIds },
+        '@/components/presentations/PresentationTable': {
+          PresentationTable: 'presentation-table',
+          progressLabels: {},
+          matchLabels: {},
+          mailLabels: {},
+          thaiTime: (value: string) => value,
+        },
+        '@/components/presentations/PresentationEmailDialog': {
+          PresentationEmailDialog: 'email-dialog',
+        },
+        '@/components/presentations/PresentationManagementDialog': {
+          PresentationManagementDialog: 'management-dialog',
+        },
+        '@/components/presentations/PresentationHistoryViews': {
+          PresentationDeadlineHistory: 'deadline-history',
+        },
+      },
+      auth,
+    );
+    let rendered: ReturnType<typeof nodes> = [];
+    const settle = async () => {
+      for (let turn = 0; turn < 4; turn++) {
+        rendered = harness.render({});
+        while (harness.effects.length) harness.effects.shift()!();
+        await new Promise((resolve) => setImmediate(resolve));
+      }
+      rendered = harness.render({});
+    };
+    const click = (label: string) => {
+      const button = rendered.find(
+        (node) =>
+          node.type === 'button' &&
+          (Array.isArray(node.props.children)
+            ? node.props.children
+                .filter((child) => typeof child === 'string')
+                .join('')
+                .trim()
+            : node.props.children) === label,
+      );
+      assert.ok(button, label);
+      return (button.props.onClick as () => void | Promise<void>)();
+    };
+    const queue = () => {
+      click('ตัวอย่างแจ้งส่ง');
+      rendered = harness.render({});
+      const dialog = rendered.find((node) => node.type === 'email-dialog')!;
+      const onQueued = dialog.props.onQueued as (
+        id: string,
+        count: number,
+      ) => void;
+      onQueued('same-batch-id', 1);
+      return onQueued;
+    };
+    await settle();
+    click('ติดตามและอีเมล');
+    await settle();
+    const oldOnQueued = queue();
+    await settle();
+    await click('โหลดผลส่งล่าสุด');
+    rendered = harness.render({});
+    assert.ok(
+      JSON.stringify(rendered).includes('old-admin-recipient@example.invalid'),
+    );
+    assert.ok(
+      JSON.stringify(rendered).includes(
+        'first-admin-session-42-private-history',
+      ),
+    );
+    const category = rendered.find(
+      (node) => node.props['aria-label'] === 'หมวดผลงาน',
+    )!;
+    (category.props.onChange as (event: unknown) => void)({
+      target: { value: '7' },
+    });
+    rendered = harness.render({});
+    assert.ok(
+      JSON.stringify(rendered).includes('old-admin-recipient@example.invalid'),
+    );
+    await settle();
+    const oldRequest = click('โหลดผลส่งล่าสุด');
+    click('เปลี่ยนกำหนดส่ง');
+    rendered = harness.render({});
+    assert.ok(rendered.some((node) => node.type === 'management-dialog'));
+    if (change === 'session') {
+      auth.user.id = 2;
+      auth.token = 'second-admin-session';
+    } else {
+      const event = rendered.find(
+        (node) => node.props['aria-label'] === 'Event',
+      )!;
+      (event.props.onChange as (event: unknown) => void)({
+        target: { value: '43' },
+      });
+    }
+    rendered = harness.render({});
+    for (const hidden of [
+      'old-admin-recipient@example.invalid',
+      'first-admin-session-42-private-history',
+      'same-batch-id',
+    ]) {
+      assert.equal(
+        JSON.stringify(rendered).includes(hidden),
+        false,
+        `${change}: ${hidden}`,
+      );
+    }
+    assert.equal(
+      rendered.some((node) =>
+        ['management-dialog', 'email-dialog'].includes(String(node.type)),
+      ),
+      false,
+    );
+    await settle();
+    queue();
+    await settle();
+    resolveOldBatch({
+      data: {
+        jobs: [
+          {
+            id: 'late',
+            abstractId: 501,
+            recipient: 'late-old-recipient@example.invalid',
+            state: 'sent',
+          },
+        ],
+      },
+    });
+    await oldRequest;
+    rendered = harness.render({});
+    assert.equal(
+      JSON.stringify(rendered).includes('late-old-recipient@example.invalid'),
+      false,
+    );
+    assert.ok(JSON.stringify(rendered).includes('same-batch-id'));
+    oldOnQueued('late-old-batch', 1);
+    rendered = harness.render({});
+    assert.ok(JSON.stringify(rendered).includes('same-batch-id'));
+    assert.equal(JSON.stringify(rendered).includes('late-old-batch'), false);
+    deferHistory = true;
+    click('โหลดข้อมูลใหม่');
+    await settle();
+    auth.token = 'third-admin-session';
+    harness.render({});
+    await settle();
+    resolveOldHistory({
+      data: {
+        settings: { closesAt: '2026-10-20T17:00:00.000Z', version: 1 },
+        history: [
+          {
+            id: 'late-history',
+            actorId: 1,
+            reason: 'late-old-history',
+            createdAt: '2026-10-07T00:00:00.000Z',
+          },
+        ],
+        capabilities: { manage: true },
+      },
+    });
+    await new Promise((resolve) => setImmediate(resolve));
+    rendered = harness.render({});
+    assert.equal(JSON.stringify(rendered).includes('late-old-history'), false);
+    assert.ok(JSON.stringify(rendered).includes('third-admin-session'));
+  }
+});
+
 test('real detail page restricts viewer controls, invalid IDs and unassigned event reads', async () => {
   for (const role of ['admin', 'organizer', 'reviewer']) {
     let reads = 0;
@@ -1739,19 +2233,11 @@ test('real detail page restricts viewer controls, invalid IDs and unassigned eve
       JSON.stringify(rendered).includes('ยกเลิกคำขอแก้ไข'),
       role === 'admin',
     );
-    assert.equal(reads, role === 'admin' ? 1 : 0);
-    if (role === 'admin')
-      assert.equal(
-        rendered.find((node) => node.type === 'iframe')!.props.src,
-        'http://127.0.0.1:53018/fixture.pdf',
-      );
-    else {
-      assert.equal(
-        rendered.some((node) => node.type === 'iframe'),
-        false,
-      );
-      assert.ok(JSON.stringify(rendered).includes('ไม่มีสิทธิ์ดูไฟล์นำเสนอ'));
-    }
+    assert.equal(reads, 1);
+    assert.equal(
+      rendered.find((node) => node.type === 'iframe')!.props.src,
+      'http://127.0.0.1:53018/fixture.pdf',
+    );
   }
   for (const route of [
     { abstractId: '-1', eventId: '42' },
@@ -1780,6 +2266,264 @@ test('real detail page restricts viewer controls, invalid IDs and unassigned eve
     assert.equal(reads, 0);
     assert.ok(rendered.some((node) => node.props.role === 'alert'));
   }
+});
+
+test('viewer detail renders only current file even if a payload contains history', async () => {
+  for (const role of ['organizer', 'reviewer']) {
+    const detail = detailFixture();
+    detail.uploads.push({
+      ...detail.uploads[0],
+      id: 'private-old',
+      version: 0,
+      fileName: 'private-old.pdf',
+      fileUrl: 'https://example.invalid/private-old.pdf',
+    });
+    detail.audit = [{ action: 'revision_created', reason: 'private-audit' }];
+    const harness = detailHarness(
+      {
+        user: { id: 7, role, assignedEvents: [{ id: 42, code: 'PRIS-2026' }] },
+        token: 'viewer',
+        isAdmin: false,
+        isLoading: false,
+      },
+      { abstractId: '501', eventId: '42' },
+      async () => ({ data: detail }),
+    );
+    harness.render({});
+    while (harness.effects.length) harness.effects.shift()!();
+    await new Promise((resolve) => setImmediate(resolve));
+    const rendered = harness.render({});
+    assert.equal(
+      rendered.find((node) => node.type === 'iframe')?.props.src,
+      detail.row.currentUpload?.fileUrl,
+    );
+    const text = JSON.stringify(rendered);
+    assert.ok(text.includes('ได้รับไฟล์แล้ว'));
+    for (const hidden of [
+      'private-old',
+      'private-audit',
+      'Fix legend',
+      'request-open',
+      'คำขอแก้ไข',
+      'ประวัติอีเมล',
+      'ประวัติการจัดการ',
+      'ไฟล์ทุกฉบับ',
+      'Revision pending',
+      'Stored',
+      'ผลตรวจและการรับรอง',
+    ])
+      assert.equal(text.includes(hidden), false, hidden);
+    assert.equal(
+      rendered.some((node) =>
+        ['email-dialog', 'revision-dialog', 'dialog'].includes(
+          String(node.type),
+        ),
+      ),
+      false,
+    );
+  }
+});
+
+test('viewer detail preserves current Drive and PNG rendering and unavailable file behavior', async () => {
+  const cases = [
+    {
+      storageProvider: 'drive',
+      mimeType: 'application/pdf',
+      fileUrl: 'https://drive.google.com/file/d/current/view',
+      fileStatus: 'available',
+    },
+    {
+      storageProvider: 'r2',
+      mimeType: 'image/png',
+      fileUrl: 'https://example.invalid/current.png',
+      fileStatus: 'available',
+    },
+    {
+      storageProvider: 'r2',
+      mimeType: 'application/pdf',
+      fileUrl: null,
+      fileStatus: 'available',
+    },
+    {
+      storageProvider: 'r2',
+      mimeType: 'application/pdf',
+      fileUrl: 'https://example.invalid/unavailable.pdf',
+      fileStatus: 'deletion_pending',
+    },
+  ] as const;
+  for (const role of ['organizer', 'reviewer']) {
+    for (const file of cases) {
+      const detail = detailFixture();
+      const current = { ...detail.uploads[0], ...file };
+      detail.row.currentUpload = current;
+      detail.uploads = [
+        current,
+        {
+          ...detail.uploads[0],
+          id: 'private-old',
+          version: 0,
+          fileName: 'private-old.pdf',
+          fileUrl: 'https://example.invalid/private-old.pdf',
+        },
+      ];
+      const harness = detailHarness(
+        {
+          user: {
+            id: 7,
+            role,
+            assignedEvents: [{ id: 42, code: 'PRIS-2026' }],
+          },
+          token: 'viewer',
+          isAdmin: false,
+          isLoading: false,
+        },
+        { abstractId: '501', eventId: '42' },
+        async () => ({ data: detail }),
+      );
+      harness.render({});
+      while (harness.effects.length) harness.effects.shift()!();
+      await new Promise((resolve) => setImmediate(resolve));
+      const rendered = harness.render({});
+      const available = !!file.fileUrl && file.fileStatus === 'available';
+      assert.equal(
+        rendered.some((node) => node.type === 'iframe'),
+        available && file.storageProvider !== 'drive',
+      );
+      assert.equal(
+        rendered.some(
+          (node) => node.type === 'a' && node.props.href === file.fileUrl,
+        ),
+        available,
+      );
+      assert.equal(
+        JSON.stringify(rendered).includes('ไม่สามารถเปิดไฟล์นี้ได้'),
+        !available,
+      );
+      assert.equal(JSON.stringify(rendered).includes('private-old'), false);
+      if (available && file.storageProvider !== 'drive') {
+        assert.equal(
+          rendered.find((node) => node.type === 'iframe')?.props.src,
+          file.fileUrl,
+        );
+      }
+      if (!available && file.fileUrl)
+        assert.equal(JSON.stringify(rendered).includes(file.fileUrl), false);
+    }
+  }
+});
+
+test('detail clears current file immediately when session or grants change', async () => {
+  const auth = {
+    user: {
+      id: 1,
+      role: 'organizer',
+      assignedEvents: [{ id: 42, code: 'PRIS-2026' }],
+      assignedPresentationTypes: ['poster'],
+      assignedCategories: ['Clinical'],
+    },
+    token: 'first-session',
+    isAdmin: false,
+    isLoading: false,
+  };
+  const harness = detailHarness(
+    auth,
+    { abstractId: '501', eventId: '42' },
+    async () => ({ data: detailFixture('First session work') }),
+  );
+  const load = async () => {
+    while (harness.effects.length) harness.effects.shift()!();
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.ok(harness.render({}).some((node) => node.type === 'iframe'));
+  };
+  harness.render({});
+  await load();
+  for (const change of [
+    () => {
+      auth.token = 'second-session';
+    },
+    () => {
+      auth.user.id = 2;
+    },
+    () => {
+      auth.user.role = 'reviewer';
+    },
+    () => {
+      auth.user.assignedPresentationTypes = ['oral'];
+    },
+    () => {
+      auth.user.assignedCategories = [];
+    },
+  ]) {
+    change();
+    assert.equal(
+      harness.render({}).some((node) => node.type === 'iframe'),
+      false,
+    );
+    await load();
+  }
+  auth.user.assignedEvents = [];
+  assert.equal(
+    harness.render({}).some((node) => node.type === 'iframe'),
+    false,
+  );
+  while (harness.effects.length) harness.effects.shift()!();
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(
+    harness.render({}).some((node) => node.type === 'iframe'),
+    false,
+  );
+});
+
+test('detail keeps successful Admin refresh notice and clears it for a new access scope', async () => {
+  const auth = {
+    user: {
+      id: 1,
+      role: 'admin',
+      assignedEvents: [{ id: 42, code: 'PRIS-2026' }],
+    },
+    token: 'admin-session',
+    isAdmin: true,
+    isLoading: false,
+  };
+  const detail = detailFixture();
+  detail.requests = [];
+  const harness = detailHarness(
+    auth,
+    { abstractId: '501', eventId: '42' },
+    async () => ({ data: detail }),
+  );
+  const load = async () => {
+    while (harness.effects.length) harness.effects.shift()!();
+    await new Promise((resolve) => setImmediate(resolve));
+    return harness.render({});
+  };
+  harness.render({});
+  let rendered = await load();
+  const open = rendered.find(
+    (node) =>
+      node.type === 'button' && node.props.children === 'ขอแก้ไขไฟล์นำเสนอ',
+  );
+  assert.ok(open);
+  (open.props.onClick as () => void)();
+  rendered = harness.render({});
+  const dialog = rendered.find((node) => node.type === 'revision-dialog');
+  assert.ok(dialog);
+  (dialog.props.onCreated as (request: { status: string }) => void)({
+    status: 'open',
+  });
+  harness.render({});
+  rendered = await load();
+  const notice = 'สร้างสิทธิ์แก้ไขและงานอีเมลแล้ว';
+  assert.ok(JSON.stringify(rendered).includes(notice));
+  auth.user.role = 'reviewer';
+  auth.isAdmin = false;
+  assert.equal(JSON.stringify(harness.render({})).includes(notice), false);
+  rendered = await load();
+  assert.equal(JSON.stringify(rendered).includes(notice), false);
+  assert.equal(
+    rendered.some((node) => node.type === 'revision-dialog'),
+    false,
+  );
 });
 
 test('accepted Oral opens its Drive URL without an iframe and retains original history names', async () => {
@@ -1897,10 +2641,11 @@ test('real detail late responses cannot replace a new scoped work', async () => 
   );
   harness.render({});
   const cleanup = harness.effects.shift()!() as () => void;
+  while (harness.effects.length) harness.effects.shift()!();
   route.abstractId = '502';
   cleanup();
   harness.render({});
-  harness.effects.shift()!();
+  while (harness.effects.length) harness.effects.shift()!();
   pending[1]({ data: detailFixture('New work') });
   await new Promise((resolve) => setImmediate(resolve));
   pending[0]({ data: detailFixture('Old work') });
@@ -2148,4 +2893,161 @@ test('shared reconciliation, attempt and deadline views expose business fields w
       false,
       path,
     );
+});
+
+test('Organizer and Reviewer create/edit forms load Event categories and save selected category names', async () => {
+  const text = (value: unknown): string => {
+    if (Array.isArray(value)) return value.map(text).join('');
+    if (React.isValidElement<{ children?: unknown }>(value))
+      return text(value.props.children);
+    return typeof value === 'string' || typeof value === 'number'
+      ? String(value)
+      : '';
+  };
+  for (const role of ['organizer', 'reviewer']) {
+    for (const edit of [false, true]) {
+      const categoryRequests: string[] = [];
+      const saves: Record<string, unknown>[] = [];
+      const eventAssignments: unknown[] = [];
+      const existing = {
+        id: 7,
+        firstName: 'Existing',
+        lastName: 'Viewer',
+        email: 'viewer@example.invalid',
+        role,
+        isActive: true,
+        assignedEventIds: [42],
+        assignedCategories: ['Clinical'],
+        assignedPresentationTypes: ['oral'],
+        createdAt: '2026-01-01',
+      };
+      const harness = presentationHarness(
+        'src/app/users/page.tsx',
+        'default',
+        {
+          '@/components/layout': { AdminLayout: 'admin-layout' },
+          '@/components/common': { Pagination: 'pagination' },
+          '@/lib/presentationUi': { presentationUserAssignments },
+          'react-hot-toast': {
+            __esModule: true,
+            default: { success: () => {}, error: () => {} },
+          },
+          '@/lib/api': {
+            api: {
+              users: {
+                list: async () => ({
+                  users: edit ? [existing] : [],
+                  pagination: { total: edit ? 1 : 0, totalPages: 1 },
+                }),
+                create: async (
+                  _token: string,
+                  payload: Record<string, unknown>,
+                ) => {
+                  saves.push(payload);
+                  return { user: { id: 8 } };
+                },
+                update: async (
+                  _token: string,
+                  _id: number,
+                  payload: Record<string, unknown>,
+                ) => {
+                  saves.push(payload);
+                },
+                assignEvents: async (
+                  _token: string,
+                  _id: number,
+                  ids: number[],
+                ) => {
+                  eventAssignments.push([...ids]);
+                },
+              },
+              backofficeEvents: {
+                list: async () => ({
+                  events: [
+                    { id: 42, eventCode: 'TEST', eventName: 'Test Event' },
+                  ],
+                }),
+              },
+              abstractCategories: {
+                list: async (_token: string, query: string) => {
+                  categoryRequests.push(query);
+                  return { categories: [{ id: 3, name: 'Clinical' }] };
+                },
+              },
+            },
+          },
+        },
+        { token: 'token' },
+      );
+      let rendered = harness.render({});
+      const settle = async () => {
+        for (let i = 0; i < 6; i++) {
+          while (harness.effects.length) harness.effects.shift()!();
+          await Promise.resolve();
+          rendered = harness.render({});
+        }
+      };
+      const find = (
+        type: string,
+        predicate: (
+          node: React.ReactElement<Record<string, unknown>>,
+        ) => boolean,
+      ) => {
+        const found = rendered.find(
+          (node) => node.type === type && predicate(node),
+        );
+        assert.ok(
+          found,
+          `${role} ${edit ? 'edit' : 'create'}: expected ${type}`,
+        );
+        return found;
+      };
+      const click = (node: React.ReactElement<Record<string, unknown>>) =>
+        (node.props.onClick as () => unknown)();
+      const toggleLabel = (label: string) => {
+        const parent = find('label', (node) => text(node).includes(label));
+        const checkbox = nodes(parent).find((node) => node.type === 'input');
+        assert.ok(checkbox, `${label} checkbox`);
+        (checkbox.props.onChange as () => void)();
+        rendered = harness.render({});
+      };
+      await settle();
+      click(
+        find('button', (node) =>
+          edit ? node.props.title === 'Edit' : text(node).includes('Add User'),
+        ),
+      );
+      rendered = harness.render({});
+      if (!edit) {
+        const select = find('select', (node) => node.props.value === 'staff');
+        (select.props.onChange as (event: unknown) => void)({
+          target: { value: role },
+        });
+        rendered = harness.render({});
+        toggleLabel('TEST');
+      }
+      await settle();
+      assert.deepEqual(categoryRequests, ['eventId=42']);
+      const category = find('label', (node) => text(node).includes('Clinical'));
+      const checkbox = nodes(category).find((node) => node.type === 'input')!;
+      assert.equal(checkbox.props.checked, edit);
+      toggleLabel('Clinical');
+      if (!edit) toggleLabel('Oral');
+      const save = find('button', (node) =>
+        text(node).includes(edit ? 'Save Changes' : 'Create User'),
+      );
+      await click(save);
+      assert.equal(saves.length, 1);
+      assert.equal(saves[0].role, role);
+      assert.equal(
+        JSON.stringify(saves[0].assignedCategories),
+        JSON.stringify(edit ? [] : ['Clinical']),
+      );
+      assert.equal(
+        JSON.stringify(saves[0].assignedPresentationTypes),
+        JSON.stringify(['oral']),
+      );
+      assert.deepEqual(eventAssignments, [[42]]);
+    }
+  }
 });

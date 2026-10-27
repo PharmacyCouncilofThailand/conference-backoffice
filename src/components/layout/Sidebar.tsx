@@ -279,7 +279,8 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
           return {
             ...item,
             children: item.children.filter(
-              (child) => child.href === '/abstracts',
+              (child) =>
+                child.href === '/abstracts' || child.href === '/presentations',
             ),
           };
         }
@@ -293,7 +294,8 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
           return {
             ...item,
             children: item.children.filter(
-              (child) => child.href === '/abstracts',
+              (child) =>
+                child.href === '/abstracts' || child.href === '/presentations',
             ),
           };
         }

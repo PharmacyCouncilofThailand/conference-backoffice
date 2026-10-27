@@ -13,8 +13,8 @@ export function presentationUserAssignments(
   categories: string[],
 ) {
   return {
-    ...(role === 'reviewer' && { assignedCategories: categories }),
     ...(['organizer', 'reviewer'].includes(role) && {
+      assignedCategories: categories,
       assignedPresentationTypes: types,
     }),
   };

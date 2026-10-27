@@ -65,7 +65,7 @@ const roles = [
 // `api.abstractCategories.list(token, "eventId=X")` rather than being hardcoded
 // here. The previous enum-style list was removed.
 
-// Presentation types for reviewer assignment
+// Presentation types for organizer/reviewer assignment
 const presentationTypes = [
   { id: 'poster', label: 'Poster', color: 'bg-cyan-100 text-cyan-800' },
   {
@@ -86,7 +86,7 @@ interface User {
   createdAt: string;
   assignedEventIds: number[];
   assignments?: { eventId: number; sessionIds: number[] }[]; // Session-level assignments
-  assignedCategories?: string[]; // For reviewers: abstract categories they can review
+  assignedCategories?: string[]; // Organizer/Reviewer presentation scope; also Reviewer abstract assignments
   assignedPresentationTypes?: string[]; // For organizers/reviewers: assigned presentation types
 }
 
@@ -323,13 +323,13 @@ export default function UsersPage() {
       (e.eventName || '').toLowerCase().includes(eventSearchTerm.toLowerCase()),
   );
 
-  // Reviewer: abstract categories fetched per selected event
+  // Organizer/Reviewer: abstract categories fetched per selected event
   const [eventCategories, setEventCategories] = useState<
     Record<number, { id: number; name: string }[]>
   >({});
 
   // Deduplicated list of categories across the events selected in the form
-  const availableReviewerCategories = useMemo<
+  const availableCategories = useMemo<
     { name: string; eventNames: string[] }[]
   >(() => {
     const map = new Map<string, { name: string; eventNames: string[] }>();
@@ -351,10 +351,10 @@ export default function UsersPage() {
     return Array.from(map.values());
   }, [formData.assignedEventIds, eventCategories, events]);
 
-  // Fetch abstract categories for newly selected events when role is reviewer
+  // Fetch categories for Organizer/Reviewer assignments from selected events
   useEffect(() => {
     if (!token) return;
-    if (formData.role !== 'reviewer') return;
+    if (!['organizer', 'reviewer'].includes(formData.role)) return;
     const missing = formData.assignedEventIds.filter(
       (id) => !(id in eventCategories),
     );
@@ -403,7 +403,7 @@ export default function UsersPage() {
       const firstName = nameParts[0] || '-';
       const lastName = nameParts.slice(1).join(' ') || '-';
 
-      // 1. Create user with assignedCategories if reviewer
+      // 1. Create user with presentation assignments for Organizer/Reviewer
       const result = await api.users.create(token, {
         email: formData.email,
         password: formData.password,
@@ -1073,26 +1073,28 @@ export default function UsersPage() {
                 </div>
               )}
 
-              {/* 3️⃣ Abstract Category Assignment (only for reviewer, dynamic from selected events) */}
-              {formData.role === 'reviewer' && (
+              {/* 3️⃣ Abstract Category Assignment (organizer/reviewer, dynamic from selected events) */}
+              {['organizer', 'reviewer'].includes(formData.role) && (
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-zinc-600 mb-2">
                     3. Assign Abstract Categories *
                   </label>
                   <p className="text-xs text-zinc-400 mb-2">
-                    Categories are sourced from the events selected above
+                    Categories come from the selected events. Presentations
+                    require an assigned event, presentation type, and category.
+                    No categories selected means no presentation files.
                   </p>
                   {formData.assignedEventIds.length === 0 ? (
                     <div className="border border-dashed border-zinc-200 rounded-lg p-4 text-center text-sm text-zinc-400 italic">
                       Please select at least one event first
                     </div>
-                  ) : availableReviewerCategories.length === 0 ? (
+                  ) : availableCategories.length === 0 ? (
                     <div className="border border-dashed border-zinc-200 rounded-lg p-4 text-center text-sm text-zinc-400 italic">
                       No abstract categories defined for the selected event(s)
                     </div>
                   ) : (
                     <div className="border border-zinc-200 rounded-xl p-3 space-y-2 max-h-60 overflow-y-auto">
-                      {availableReviewerCategories.map((cat) => (
+                      {availableCategories.map((cat) => (
                         <label
                           key={cat.name}
                           className="flex items-center gap-3 py-1.5 hover:bg-zinc-50 cursor-pointer rounded px-2"
@@ -1483,26 +1485,28 @@ export default function UsersPage() {
                 </div>
               )}
 
-              {/* 3️⃣ Abstract Category Assignment (only for reviewer, dynamic from selected events) */}
-              {formData.role === 'reviewer' && (
+              {/* 3️⃣ Abstract Category Assignment (organizer/reviewer, dynamic from selected events) */}
+              {['organizer', 'reviewer'].includes(formData.role) && (
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-zinc-600 mb-2">
                     3. Assigned Abstract Categories
                   </label>
                   <p className="text-xs text-zinc-400 mb-2">
-                    Categories are sourced from the events selected above
+                    Categories come from the selected events. Presentations
+                    require an assigned event, presentation type, and category.
+                    No categories selected means no presentation files.
                   </p>
                   {formData.assignedEventIds.length === 0 ? (
                     <div className="border border-dashed border-zinc-200 rounded-lg p-4 text-center text-sm text-zinc-400 italic">
                       Please select at least one event first
                     </div>
-                  ) : availableReviewerCategories.length === 0 ? (
+                  ) : availableCategories.length === 0 ? (
                     <div className="border border-dashed border-zinc-200 rounded-lg p-4 text-center text-sm text-zinc-400 italic">
                       No abstract categories defined for the selected event(s)
                     </div>
                   ) : (
                     <div className="border border-zinc-200 rounded-xl p-3 space-y-2 max-h-60 overflow-y-auto">
-                      {availableReviewerCategories.map((cat) => (
+                      {availableCategories.map((cat) => (
                         <label
                           key={cat.name}
                           className="flex items-center gap-3 py-1.5 hover:bg-zinc-50 cursor-pointer rounded px-2"

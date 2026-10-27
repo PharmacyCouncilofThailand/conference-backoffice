@@ -101,6 +101,7 @@ export type PresentationReconciliationDto = {
   counts: Record<string, number>;
 };
 export type PresentationListDto = {
+  categories?: Array<{ id: number; name: string }>;
   items: PresentationListRow[];
   total: number;
   page: number;

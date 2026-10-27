@@ -47,7 +47,7 @@ export interface User {
   role: UserRole;
   assignedEvents: AssignedEvent[];
   assignedSessions?: AssignedSession[]; // For staff/verifier: sessions they can check-in
-  assignedCategories?: string[]; // For reviewers: abstract categories they can review
+  assignedCategories?: string[]; // Organizer/Reviewer presentation scope; also Reviewer abstract assignments
   assignedPresentationTypes?: string[]; // For organizers/reviewers: assigned presentation types
 }
 
@@ -76,8 +76,9 @@ const rolePageAccess: Record<UserRole, string[]> = {
     '/registrations',
     '/promo-code-abstracts',
     '/abstracts',
+    '/presentations',
   ],
-  reviewer: ['/abstracts'],
+  reviewer: ['/abstracts', '/presentations'],
   staff: ['/checkin', '/reward-collection'],
   verifier: ['/verification', '/student-eligibility'],
   team_registration_viewer: ['/team-registrations'],

@@ -229,9 +229,11 @@ export function PresentationTable({
               )}
               <td className="px-4 py-4 text-center">
                 <span
-                  className={`inline-flex whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium ${progressColors[row.progress]}`}
+                  className={`inline-flex whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium ${showAdminDetails ? progressColors[row.progress] : 'bg-emerald-100 text-emerald-800'}`}
                 >
-                  {progressLabels[row.progress]}
+                  {showAdminDetails
+                    ? progressLabels[row.progress]
+                    : 'ได้รับไฟล์แล้ว'}
                 </span>
                 {showAdminDetails && (
                   <>
@@ -245,22 +247,22 @@ export function PresentationTable({
                         {thaiTime(row.lastEmail.createdAt)}
                       </p>
                     )}
+                    <p className="mt-3 text-xs leading-relaxed text-zinc-400">
+                      วันสุดท้าย{' '}
+                      {thaiTime(
+                        new Date(
+                          Date.parse(row.activeRequest?.closesAt ?? closesAt) -
+                            1000,
+                        ).toISOString(),
+                      )}{' '}
+                      (ไทย)
+                    </p>
+                    {row.activeRequest && (
+                      <p className="mt-1 text-xs text-amber-700">
+                        คำขอแก้ไข: {row.activeRequest.status}
+                      </p>
+                    )}
                   </>
-                )}
-                <p className="mt-3 text-xs leading-relaxed text-zinc-400">
-                  วันสุดท้าย{' '}
-                  {thaiTime(
-                    new Date(
-                      Date.parse(row.activeRequest?.closesAt ?? closesAt) -
-                        1000,
-                    ).toISOString(),
-                  )}{' '}
-                  (ไทย)
-                </p>
-                {row.activeRequest && (
-                  <p className="mt-1 text-xs text-amber-700">
-                    คำขอแก้ไข: {row.activeRequest.status}
-                  </p>
                 )}
               </td>
               <td className="px-4 py-4 text-center">
@@ -297,7 +299,11 @@ export function PresentationTable({
                   <Link
                     className="inline-flex rounded-lg p-2 text-zinc-400 transition-colors hover:bg-emerald-50 hover:text-emerald-600 focus-visible:outline-2 focus-visible:outline-emerald-600"
                     href={`/presentations/${row.abstractId}?eventId=${eventId}`}
-                    title="ดูรายละเอียดและประวัติ"
+                    title={
+                      showAdminDetails
+                        ? 'ดูรายละเอียดและประวัติ'
+                        : 'ดูรายละเอียดไฟล์'
+                    }
                     aria-label={`ดูรายละเอียด ${row.announcement.trackingId ?? row.sourceKey}`}
                   >
                     <IconEye size={18} />

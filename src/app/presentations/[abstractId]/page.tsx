@@ -20,7 +20,6 @@ import { api } from '@/lib/api';
 import {
   activePresentationRequest,
   canResendPresentationJob,
-  isPresentationActionAudit,
   presentationAuditSummary,
   presentationRouteId,
 } from '@/lib/presentationUi';
@@ -50,7 +49,8 @@ function PresentationDetailContent() {
     query.getAll('eventId').length === 1
       ? presentationRouteId(query.get('eventId'))
       : null;
-  const readable = isAdmin;
+  const readable =
+    isAdmin || user?.role === 'organizer' || user?.role === 'reviewer';
   const allowed =
     readable &&
     !!eventId &&
@@ -58,7 +58,15 @@ function PresentationDetailContent() {
       !!user?.assignedEvents.some(
         (event) => event.id === eventId && event.code === 'PRIS-2026',
       ));
-  const scope = `${isAdmin}:${eventId}:${abstractId}:${token}`;
+  const accessScope = JSON.stringify([
+    user?.id,
+    user?.role,
+    token,
+    user?.assignedEvents,
+    user?.assignedPresentationTypes,
+    user?.assignedCategories,
+  ]);
+  const scope = `${accessScope}:${eventId}:${abstractId}`;
   const [loaded, setLoaded] = useState<{
     scope: string;
     detail: PresentationDetailDto;
@@ -99,14 +107,14 @@ function PresentationDetailContent() {
       current = false;
     };
   }, [eventId, abstractId, token, allowed, scope, refresh]);
+  useEffect(() => {
+    setNotice(null);
+  }, [scope]);
   const detail = loaded?.scope === scope && allowed ? loaded.detail : null;
   const manage = isAdmin && detail?.capabilities.manage === true;
-  const audit = detail
-    ? isAdmin
-      ? detail.audit
-      : detail.audit.filter(isPresentationActionAudit)
-    : [];
-  const active = detail ? activePresentationRequest(detail.requests) : null;
+  const audit = isAdmin && detail ? detail.audit : [];
+  const active =
+    isAdmin && detail ? activePresentationRequest(detail.requests) : null;
   const reload = (message?: string) => {
     if (message) setNotice(message);
     setRefresh((value) => value + 1);
@@ -162,9 +170,11 @@ function PresentationDetailContent() {
                       {detail.row.announcement.trackingId ?? 'ข้อมูลรหัสไม่ครบ'}
                     </span>
                     <span
-                      className={`rounded-full px-3 py-1 text-sm font-medium ${progressColors[detail.row.progress]}`}
+                      className={`rounded-full px-3 py-1 text-sm font-medium ${isAdmin ? progressColors[detail.row.progress] : 'bg-emerald-100 text-emerald-800'}`}
                     >
-                      {progressLabels[detail.row.progress]}
+                      {isAdmin
+                        ? progressLabels[detail.row.progress]
+                        : 'ได้รับไฟล์แล้ว'}
                     </span>
                   </div>
                   <h1 className="mb-4 text-2xl font-bold leading-relaxed text-zinc-800">
@@ -262,126 +272,133 @@ function PresentationDetailContent() {
                     </p>
                   )}
                 </section>
-                <section className="card">
-                  <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-zinc-800">
-                    <IconFileText size={20} className="text-emerald-600" />
-                    ไฟล์ทุกฉบับ ({detail.uploads.length})
-                  </h2>
-                  {detail.uploads.map((file) => (
-                    <article
-                      id={`presentation-file-${file.id}`}
-                      key={file.id}
-                      className="mb-3 space-y-2 rounded-lg border border-zinc-200 bg-zinc-50 p-4 last:mb-0"
-                    >
-                      <h3 className="font-semibold text-zinc-800">
-                        ฉบับที่ {file.version}
-                        {detail.row.currentUpload?.id === file.id
-                          ? ' · ฉบับปัจจุบัน'
-                          : ''}
-                      </h3>
-                      {file.fileUrl &&
-                      (!file.fileStatus || file.fileStatus === 'available') ? (
-                        <a
-                          className="break-words text-emerald-700 underline"
-                          href={file.fileUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          {file.fileName} · ไฟล์สาธารณะ
-                        </a>
-                      ) : (
-                        <>
-                          <p className="break-words">{file.fileName}</p>
-                          <p className="text-sm text-zinc-500">
-                            {file.fileStatus === 'deleted'
-                              ? 'ลบไฟล์แล้วหลังได้รับฉบับใหม่'
-                              : file.fileStatus === 'deletion_pending'
-                                ? 'รอลบไฟล์หลังได้รับฉบับใหม่'
-                                : 'ไม่สามารถเปิดไฟล์นี้ได้'}
-                          </p>
-                        </>
-                      )}
-                      <p className="text-sm text-zinc-500">
-                        {file.mimeType} ·{' '}
-                        {(file.sizeBytes / 1024 / 1024).toFixed(2)} MB · รับ{' '}
-                        {thaiTime(file.receivedAt)}
-                      </p>
-                      {file.revisionRequestId ? (
-                        <a
-                          className="text-sm text-emerald-700 underline"
-                          href={`#presentation-request-${file.revisionRequestId}`}
-                        >
-                          ตอบคำขอแก้ไข {file.revisionRequestId}
-                        </a>
-                      ) : (
-                        <p className="text-sm">ไฟล์ครั้งแรก</p>
-                      )}
-                    </article>
-                  ))}
-                </section>
-                <section className="card">
-                  <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-zinc-800">
-                    <IconPencil size={20} className="text-amber-600" />
-                    คำขอแก้ไข ({detail.requests.length})
-                  </h2>
-                  <p className="mb-4 text-sm text-zinc-500">
-                    รายละเอียดและกำหนดส่งของคำขอเดิมเปลี่ยนไม่ได้
-                    ต้องยกเลิกพร้อมเหตุผลแล้วสร้างใหม่
-                  </p>
-                  {detail.requests.map((request) => (
-                    <article
-                      id={`presentation-request-${request.id}`}
-                      key={request.id}
-                      className="mb-4 space-y-2 rounded-xl border border-amber-100 bg-amber-50/40 p-4 last:mb-0"
-                    >
-                      <h3 className="font-semibold text-zinc-800">
-                        {request.status} · {request.id}
-                      </h3>
-                      <p className="text-sm text-zinc-500">
-                        ผู้ขอ {request.requestedBy} ·{' '}
-                        {thaiTime(request.createdAt)}
-                      </p>
-                      <p className="whitespace-pre-wrap">{request.details}</p>
-                      <p>
-                        วันสุดท้ายเวลาไทย{' '}
-                        {thaiTime(
-                          new Date(
-                            Date.parse(request.closesAt) - 1000,
-                          ).toISOString(),
-                        )}
-                      </p>
-                      {request.cancelledAt && (
-                        <p>
-                          ยกเลิกโดย {request.cancelledBy} ·{' '}
-                          {thaiTime(request.cancelledAt)} ·{' '}
-                          {request.cancellationReason}
-                        </p>
-                      )}
-                      {request.submittedAt && (
-                        <p>รับฉบับแก้ไข {thaiTime(request.submittedAt)}</p>
-                      )}
-                      {detail.uploads
-                        .filter((file) => file.revisionRequestId === request.id)
-                        .map((file) => (
+                {isAdmin && (
+                  <section className="card">
+                    <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-zinc-800">
+                      <IconFileText size={20} className="text-emerald-600" />
+                      ไฟล์ทุกฉบับ ({detail.uploads.length})
+                    </h2>
+                    {detail.uploads.map((file) => (
+                      <article
+                        id={`presentation-file-${file.id}`}
+                        key={file.id}
+                        className="mb-3 space-y-2 rounded-lg border border-zinc-200 bg-zinc-50 p-4 last:mb-0"
+                      >
+                        <h3 className="font-semibold text-zinc-800">
+                          ฉบับที่ {file.version}
+                          {detail.row.currentUpload?.id === file.id
+                            ? ' · ฉบับปัจจุบัน'
+                            : ''}
+                        </h3>
+                        {file.fileUrl &&
+                        (!file.fileStatus ||
+                          file.fileStatus === 'available') ? (
                           <a
-                            key={file.id}
-                            className="block text-sm text-emerald-700 underline"
-                            href={`#presentation-file-${file.id}`}
+                            className="break-words text-emerald-700 underline"
+                            href={file.fileUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
                           >
-                            ไฟล์ตอบคำขอนี้ · ฉบับ {file.version}
+                            {file.fileName} · ไฟล์สาธารณะ
                           </a>
-                        ))}
-                      {manage && request.status === 'open' && (
-                        <button
-                          className="btn-danger"
-                          onClick={() => setCancelRequest(request)}
-                        >
-                          ยกเลิกคำขอ
-                        </button>
-                      )}
-                    </article>
-                  ))}
-                </section>
+                        ) : (
+                          <>
+                            <p className="break-words">{file.fileName}</p>
+                            <p className="text-sm text-zinc-500">
+                              {file.fileStatus === 'deleted'
+                                ? 'ลบไฟล์แล้วหลังได้รับฉบับใหม่'
+                                : file.fileStatus === 'deletion_pending'
+                                  ? 'รอลบไฟล์หลังได้รับฉบับใหม่'
+                                  : 'ไม่สามารถเปิดไฟล์นี้ได้'}
+                            </p>
+                          </>
+                        )}
+                        <p className="text-sm text-zinc-500">
+                          {file.mimeType} ·{' '}
+                          {(file.sizeBytes / 1024 / 1024).toFixed(2)} MB · รับ{' '}
+                          {thaiTime(file.receivedAt)}
+                        </p>
+                        {file.revisionRequestId ? (
+                          <a
+                            className="text-sm text-emerald-700 underline"
+                            href={`#presentation-request-${file.revisionRequestId}`}
+                          >
+                            ตอบคำขอแก้ไข {file.revisionRequestId}
+                          </a>
+                        ) : (
+                          <p className="text-sm">ไฟล์ครั้งแรก</p>
+                        )}
+                      </article>
+                    ))}
+                  </section>
+                )}
+                {isAdmin && (
+                  <section className="card">
+                    <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-zinc-800">
+                      <IconPencil size={20} className="text-amber-600" />
+                      คำขอแก้ไข ({detail.requests.length})
+                    </h2>
+                    <p className="mb-4 text-sm text-zinc-500">
+                      รายละเอียดและกำหนดส่งของคำขอเดิมเปลี่ยนไม่ได้
+                      ต้องยกเลิกพร้อมเหตุผลแล้วสร้างใหม่
+                    </p>
+                    {detail.requests.map((request) => (
+                      <article
+                        id={`presentation-request-${request.id}`}
+                        key={request.id}
+                        className="mb-4 space-y-2 rounded-xl border border-amber-100 bg-amber-50/40 p-4 last:mb-0"
+                      >
+                        <h3 className="font-semibold text-zinc-800">
+                          {request.status} · {request.id}
+                        </h3>
+                        <p className="text-sm text-zinc-500">
+                          ผู้ขอ {request.requestedBy} ·{' '}
+                          {thaiTime(request.createdAt)}
+                        </p>
+                        <p className="whitespace-pre-wrap">{request.details}</p>
+                        <p>
+                          วันสุดท้ายเวลาไทย{' '}
+                          {thaiTime(
+                            new Date(
+                              Date.parse(request.closesAt) - 1000,
+                            ).toISOString(),
+                          )}
+                        </p>
+                        {request.cancelledAt && (
+                          <p>
+                            ยกเลิกโดย {request.cancelledBy} ·{' '}
+                            {thaiTime(request.cancelledAt)} ·{' '}
+                            {request.cancellationReason}
+                          </p>
+                        )}
+                        {request.submittedAt && (
+                          <p>รับฉบับแก้ไข {thaiTime(request.submittedAt)}</p>
+                        )}
+                        {detail.uploads
+                          .filter(
+                            (file) => file.revisionRequestId === request.id,
+                          )
+                          .map((file) => (
+                            <a
+                              key={file.id}
+                              className="block text-sm text-emerald-700 underline"
+                              href={`#presentation-file-${file.id}`}
+                            >
+                              ไฟล์ตอบคำขอนี้ · ฉบับ {file.version}
+                            </a>
+                          ))}
+                        {manage && request.status === 'open' && (
+                          <button
+                            className="btn-danger"
+                            onClick={() => setCancelRequest(request)}
+                          >
+                            ยกเลิกคำขอ
+                          </button>
+                        )}
+                      </article>
+                    ))}
+                  </section>
+                )}
               </div>
               <aside className="space-y-6">
                 <section className="card">
@@ -557,96 +574,100 @@ function PresentationDetailContent() {
                 ))}
               </section>
             )}
-            <section className="card">
-              <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-zinc-800">
-                <IconHistory size={20} className="text-emerald-600" />
-                ประวัติการจัดการ ({audit.length})
-              </h2>
-              {!audit.length && (
-                <p className="text-zinc-500">
-                  ยังไม่มีประวัติการจัดการของผลงานนี้
-                </p>
-              )}
-              {audit.map((item, index) => {
-                const entry = presentationAuditSummary(item);
-                return (
-                  <article
-                    key={index}
-                    className="relative ml-2 space-y-3 border-l-2 border-emerald-100 py-5 pl-6"
-                  >
-                    <span
-                      aria-hidden="true"
-                      className="absolute -left-[7px] top-6 h-3 w-3 rounded-full border-2 border-white bg-emerald-500"
-                    />
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="font-semibold">{entry.action}</h3>
-                      <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-xs text-emerald-800">
-                        {entry.actor}
-                      </span>
-                    </div>
-                    <p className="text-sm text-zinc-500">
-                      {entry.createdAt
-                        ? thaiTime(entry.createdAt)
-                        : 'ไม่ระบุเวลา'}
-                    </p>
-                    {entry.change && <p className="text-sm">{entry.change}</p>}
-                    {entry.closesAt && (
-                      <p className="text-sm">
-                        ปิดรับฉบับแก้ไข {thaiTime(entry.closesAt)}{' '}
-                        (เวลาประเทศไทย)
+            {isAdmin && (
+              <section className="card">
+                <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-zinc-800">
+                  <IconHistory size={20} className="text-emerald-600" />
+                  ประวัติการจัดการ ({audit.length})
+                </h2>
+                {!audit.length && (
+                  <p className="text-zinc-500">
+                    ยังไม่มีประวัติการจัดการของผลงานนี้
+                  </p>
+                )}
+                {audit.map((item, index) => {
+                  const entry = presentationAuditSummary(item);
+                  return (
+                    <article
+                      key={index}
+                      className="relative ml-2 space-y-3 border-l-2 border-emerald-100 py-5 pl-6"
+                    >
+                      <span
+                        aria-hidden="true"
+                        className="absolute -left-[7px] top-6 h-3 w-3 rounded-full border-2 border-white bg-emerald-500"
+                      />
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="font-semibold">{entry.action}</h3>
+                        <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-xs text-emerald-800">
+                          {entry.actor}
+                        </span>
+                      </div>
+                      <p className="text-sm text-zinc-500">
+                        {entry.createdAt
+                          ? thaiTime(entry.createdAt)
+                          : 'ไม่ระบุเวลา'}
                       </p>
-                    )}
-                    {entry.reason && (
-                      <p className="whitespace-pre-wrap break-words text-sm">
-                        เหตุผล: {entry.reason}
-                      </p>
-                    )}
-                    {entry.changes.length > 0 && (
-                      <details>
-                        <summary className="cursor-pointer text-sm font-medium text-emerald-700">
-                          ดูรายละเอียดการเปลี่ยนแปลง ({entry.changes.length})
-                        </summary>
-                        <div className="mt-3 max-h-80 space-y-4 overflow-auto rounded-lg bg-zinc-50 p-4">
-                          {entry.changes.map((field) => (
-                            <div key={field.label}>
-                              <h4 className="mb-1 text-xs font-semibold text-zinc-500">
-                                {field.label}
-                              </h4>
-                              <div className="grid gap-2 text-sm sm:grid-cols-[1fr_auto_1fr]">
-                                <p className="whitespace-pre-wrap break-words text-zinc-500">
-                                  <span className="mr-2 text-xs">เดิม</span>
-                                  {field.before
-                                    ? field.date
-                                      ? thaiTime(field.before)
-                                      : field.before
-                                    : '—'}
-                                </p>
-                                <span
-                                  aria-hidden="true"
-                                  className="text-emerald-600"
-                                >
-                                  →
-                                </span>
-                                <p className="whitespace-pre-wrap break-words text-zinc-900">
-                                  <span className="mr-2 text-xs text-emerald-700">
-                                    ใหม่
+                      {entry.change && (
+                        <p className="text-sm">{entry.change}</p>
+                      )}
+                      {entry.closesAt && (
+                        <p className="text-sm">
+                          ปิดรับฉบับแก้ไข {thaiTime(entry.closesAt)}{' '}
+                          (เวลาประเทศไทย)
+                        </p>
+                      )}
+                      {entry.reason && (
+                        <p className="whitespace-pre-wrap break-words text-sm">
+                          เหตุผล: {entry.reason}
+                        </p>
+                      )}
+                      {entry.changes.length > 0 && (
+                        <details>
+                          <summary className="cursor-pointer text-sm font-medium text-emerald-700">
+                            ดูรายละเอียดการเปลี่ยนแปลง ({entry.changes.length})
+                          </summary>
+                          <div className="mt-3 max-h-80 space-y-4 overflow-auto rounded-lg bg-zinc-50 p-4">
+                            {entry.changes.map((field) => (
+                              <div key={field.label}>
+                                <h4 className="mb-1 text-xs font-semibold text-zinc-500">
+                                  {field.label}
+                                </h4>
+                                <div className="grid gap-2 text-sm sm:grid-cols-[1fr_auto_1fr]">
+                                  <p className="whitespace-pre-wrap break-words text-zinc-500">
+                                    <span className="mr-2 text-xs">เดิม</span>
+                                    {field.before
+                                      ? field.date
+                                        ? thaiTime(field.before)
+                                        : field.before
+                                      : '—'}
+                                  </p>
+                                  <span
+                                    aria-hidden="true"
+                                    className="text-emerald-600"
+                                  >
+                                    →
                                   </span>
-                                  {field.after
-                                    ? field.date
-                                      ? thaiTime(field.after)
-                                      : field.after
-                                    : '—'}
-                                </p>
+                                  <p className="whitespace-pre-wrap break-words text-zinc-900">
+                                    <span className="mr-2 text-xs text-emerald-700">
+                                      ใหม่
+                                    </span>
+                                    {field.after
+                                      ? field.date
+                                        ? thaiTime(field.after)
+                                        : field.after
+                                      : '—'}
+                                  </p>
+                                </div>
                               </div>
-                            </div>
-                          ))}
-                        </div>
-                      </details>
-                    )}
-                  </article>
-                );
-              })}
-            </section>
+                            ))}
+                          </div>
+                        </details>
+                      )}
+                    </article>
+                  );
+                })}
+              </section>
+            )}
             {eventId &&
               abstractId &&
               token &&

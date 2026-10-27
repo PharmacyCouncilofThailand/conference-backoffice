@@ -41,9 +41,10 @@ export default function PresentationsPage() {
     scope: string;
     data: PresentationListDto;
   } | null>(null);
-  const [history, setHistory] = useState<PresentationSettingsHistoryDto | null>(
-    null,
-  );
+  const [loadedHistory, setHistory] = useState<{
+    scope: string;
+    data: PresentationSettingsHistoryDto;
+  } | null>(null);
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [page, setPage] = useState(1);
   const [adminTab, setTab] = useState<'verify' | 'notifications' | 'received'>(
@@ -53,6 +54,10 @@ export default function PresentationsPage() {
   const [round, setRound] = useState('');
   const [participantGroup, setParticipantGroup] = useState('');
   const [presentationType, setPresentationType] = useState('');
+  const [categoryChoice, setCategoryChoice] = useState<{
+    eventId: number | undefined;
+    value: string;
+  } | null>(null);
   const [status, setStatus] = useState('');
   const [matchState, setMatchState] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -63,7 +68,8 @@ export default function PresentationsPage() {
   const [emailKind, setEmailKind] = useState<'initial' | 'reminder' | null>(
     null,
   );
-  const [batch, setBatch] = useState<{
+  const [loadedBatch, setBatch] = useState<{
+    scope: string;
     eventId: number;
     id: string;
     queued: number;
@@ -73,7 +79,16 @@ export default function PresentationsPage() {
   const [rechecking, setRechecking] = useState(false);
   const recheckKey = useRef<string | null>(null);
   const recheckLock = useRef(false);
-  const readable = isAdmin;
+  const readable =
+    isAdmin || user?.role === 'organizer' || user?.role === 'reviewer';
+  const accessScope = JSON.stringify([
+    user?.id,
+    user?.role,
+    token,
+    user?.assignedEvents,
+    user?.assignedPresentationTypes,
+    user?.assignedCategories,
+  ]);
   useEffect(() => {
     let current = true;
     setEvents([]);
@@ -107,13 +122,23 @@ export default function PresentationsPage() {
     return () => {
       current = false;
     };
-  }, [isAdmin, user, token, readable]);
+  }, [isAdmin, user, token, readable, accessScope]);
   const eventId =
     events.find((event) => event.id === eventChoice)?.id ??
     events.find((event) => event.id === currentEvent?.id)?.id ??
     events[0]?.id;
+  const categoryId =
+    categoryChoice?.eventId === eventId ? (categoryChoice?.value ?? '') : '';
+  useEffect(() => {
+    setCategoryChoice(null);
+  }, [eventId]);
+  const managementScope = `${accessScope}:${eventId}`;
+  const activeManagementScope = useRef(managementScope);
+  const history =
+    loadedHistory?.scope === managementScope ? loadedHistory.data : null;
+  const batch = loadedBatch?.scope === managementScope ? loadedBatch : null;
   const tab = isAdmin ? adminTab : 'received';
-  const scope = `${isAdmin}:${eventId}:${page}:${tab}:${search}:${round}:${participantGroup}:${presentationType}:${status}:${matchState}`;
+  const scope = `${accessScope}:${isAdmin}:${eventId}:${page}:${tab}:${search}:${round}:${participantGroup}:${presentationType}:${categoryId}:${status}:${matchState}`;
   const selectionScope = useRef(scope);
   // Clear synchronously for rendering/handlers as well as after the scope changes.
   const visibleSelected = useMemo(
@@ -124,7 +149,8 @@ export default function PresentationsPage() {
     () => Array.from(visibleSelected),
     [visibleSelected],
   );
-  const data = loaded?.scope === scope ? loaded.data : null;
+  const data = loaded?.scope === scope && readable ? loaded.data : null;
+  const categories = data?.categories ?? [];
   useEffect(() => {
     selectionScope.current = scope;
     setSelected(new Set());
@@ -133,10 +159,13 @@ export default function PresentationsPage() {
     setSettingsOpen(false);
   }, [scope]);
   useEffect(() => {
+    activeManagementScope.current = managementScope;
     setBatch(null);
+    setBatchBusy(false);
+    setNotice(null);
     setPage(1);
     recheckKey.current = null;
-  }, [eventId]);
+  }, [managementScope]);
   useEffect(() => {
     let current = true;
     setLoaded(null);
@@ -153,7 +182,8 @@ export default function PresentationsPage() {
       round,
       participantGroup,
       presentationType,
-      status,
+      categoryId,
+      status: isAdmin ? status : '',
       matchState: isAdmin ? matchState : '',
     }))
       if (value) query.set(key, value);
@@ -172,7 +202,8 @@ export default function PresentationsPage() {
       api.presentations
         .getSettings(eventId, token)
         .then((result) => {
-          if (current) setHistory(result.data);
+          if (current && activeManagementScope.current === managementScope)
+            setHistory({ scope: managementScope, data: result.data });
         })
         .catch((error) => {
           if (current)
@@ -194,10 +225,12 @@ export default function PresentationsPage() {
     round,
     participantGroup,
     presentationType,
+    categoryId,
     status,
     matchState,
     refresh,
     scope,
+    managementScope,
   ]);
   const manage = isAdmin && data?.capabilities.manage === true;
   const reload = () => {
@@ -245,14 +278,19 @@ export default function PresentationsPage() {
         token,
       );
       setBatch((current) =>
-        current?.id === requested.id && current.eventId === requested.eventId
+        activeManagementScope.current === requested.scope &&
+        current?.scope === requested.scope &&
+        current.id === requested.id &&
+        current.eventId === requested.eventId
           ? { ...current, result: result.data }
           : current,
       );
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'โหลดผลส่งไม่สำเร็จ');
+      if (activeManagementScope.current === requested.scope)
+        setError(error instanceof Error ? error.message : 'โหลดผลส่งไม่สำเร็จ');
     } finally {
-      setBatchBusy(false);
+      if (activeManagementScope.current === requested.scope)
+        setBatchBusy(false);
     }
   };
   const filter = (setter: (value: string) => void, value: string) => {
@@ -265,7 +303,7 @@ export default function PresentationsPage() {
         <p className="text-sm text-zinc-500">
           {isAdmin
             ? 'ตรวจรายชื่อ ติดตามการส่ง และอีเมลรายผลงาน'
-            : 'ดูไฟล์นำเสนอ ที่ได้รับและประวัติคำขอแก้ไข'}
+            : 'ดูไฟล์นำเสนอฉบับล่าสุดที่ได้รับ'}
         </p>
         {isLoading ? (
           <p role="status">กำลังโหลดสิทธิ์…</p>
@@ -282,7 +320,9 @@ export default function PresentationsPage() {
               <p role="status">ไม่พบ Event PRIS-2026 ที่มีสิทธิ์เข้าถึง</p>
             ) : (
               <>
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                <div
+                  className={`grid grid-cols-1 gap-4 ${isAdmin ? 'sm:grid-cols-2 xl:grid-cols-4' : ''}`}
+                >
                   {[
                     {
                       label: 'ผลงานตามตัวกรอง',
@@ -310,23 +350,29 @@ export default function PresentationsPage() {
                       icon: IconCircleCheck,
                       color: 'bg-blue-50 text-blue-600',
                     },
-                  ].map((stat) => (
-                    <div key={stat.label} className="card py-4">
-                      <div className="flex items-center gap-4">
-                        <div
-                          className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${stat.color}`}
-                        >
-                          <stat.icon size={24} stroke={1.5} />
-                        </div>
-                        <div>
-                          <p className="text-2xl font-bold text-zinc-800">
-                            {stat.value ?? '—'}
-                          </p>
-                          <p className="text-sm text-zinc-400">{stat.label}</p>
+                  ]
+                    .filter(
+                      (stat) => isAdmin || stat.label === 'ไฟล์นำเสนอที่ได้รับ',
+                    )
+                    .map((stat) => (
+                      <div key={stat.label} className="card py-4">
+                        <div className="flex items-center gap-4">
+                          <div
+                            className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${stat.color}`}
+                          >
+                            <stat.icon size={24} stroke={1.5} />
+                          </div>
+                          <div>
+                            <p className="text-2xl font-bold text-zinc-800">
+                              {stat.value ?? '—'}
+                            </p>
+                            <p className="text-sm text-zinc-400">
+                              {stat.label}
+                            </p>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
                 </div>
                 <section className="card">
                   <div className="mb-6 flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
@@ -413,7 +459,7 @@ export default function PresentationsPage() {
                     ))}
                   </div>
                   <div
-                    className={`mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 ${isAdmin ? 'lg:grid-cols-5' : 'lg:grid-cols-4'}`}
+                    className={`mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 ${isAdmin ? 'lg:grid-cols-6' : 'lg:grid-cols-4'}`}
                   >
                     <select
                       aria-label="Event"
@@ -455,20 +501,44 @@ export default function PresentationsPage() {
                       </option>
                     </select>
                     <select
-                      aria-label="สถานะไฟล์นำเสนอ"
+                      aria-label="หมวดผลงาน"
                       className="input-field w-full"
-                      value={status}
+                      value={categoryId}
                       onChange={(event) =>
-                        filter(setStatus, event.target.value)
+                        filter(
+                          (value) => setCategoryChoice({ eventId, value }),
+                          event.target.value,
+                        )
                       }
                     >
-                      <option value="">ทุกสถานะ</option>
-                      {Object.entries(progressLabels).map(([value, label]) => (
-                        <option key={value} value={value}>
-                          {label}
+                      <option value="">
+                        {isAdmin ? 'ทุกหมวด' : 'ทุกหมวดที่มีสิทธิ์'}
+                      </option>
+                      {categories.map((category) => (
+                        <option key={category.id} value={category.id}>
+                          {category.name}
                         </option>
                       ))}
                     </select>
+                    {isAdmin && (
+                      <select
+                        aria-label="สถานะไฟล์นำเสนอ"
+                        className="input-field w-full"
+                        value={status}
+                        onChange={(event) =>
+                          filter(setStatus, event.target.value)
+                        }
+                      >
+                        <option value="">ทุกสถานะ</option>
+                        {Object.entries(progressLabels).map(
+                          ([value, label]) => (
+                            <option key={value} value={value}>
+                              {label}
+                            </option>
+                          ),
+                        )}
+                      </select>
+                    )}
                     {isAdmin && (
                       <select
                         aria-label="ผลตรวจ"
@@ -684,7 +754,9 @@ export default function PresentationsPage() {
                     abstractIds={abstractIds}
                     onClose={() => setEmailKind(null)}
                     onQueued={(id, queued) => {
-                      setBatch({ eventId, id, queued });
+                      if (activeManagementScope.current !== managementScope)
+                        return;
+                      setBatch({ scope: managementScope, eventId, id, queued });
                       reload();
                     }}
                   />
