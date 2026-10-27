@@ -9,6 +9,12 @@ import toast from 'react-hot-toast';
 import { MealCouponNote } from '@/components/booths/MealCouponNote';
 import { couponRegistrationFromError } from '@/lib/boothCheckin';
 import {
+  CHECKIN_TEST_NOTICE,
+  isCheckinTestCode,
+  testRegistration,
+  testSessions,
+} from '@/lib/checkin-test-mode';
+import {
   IconScan,
   IconCheck,
   IconX,
@@ -37,6 +43,7 @@ type ScanResult = null | {
   eventName?: string;
   registrationSessionId?: number;
   mealCouponEligible?: boolean | null;
+  isTest?: boolean;
 };
 
 interface EventOption {
@@ -433,8 +440,35 @@ export default function CheckinPage() {
     }
   }, [scanMode, scanResult, pendingSessions, showSessionPicker]);
 
+  // ─── Scanner self-test (any event): never calls the API ───
+  const simulateTestScan = () => {
+    setScanResult(null);
+    const registration = testRegistration(selectedEvent?.eventName);
+    if (activeSession) {
+      if (soundEnabled) playSuccessSound();
+      setScanResult({
+        status: 'success',
+        code: registration.regCode,
+        name: `${registration.firstName} ${registration.lastName}`,
+        ticketType: registration.ticketName,
+        eventName: registration.eventName,
+        message: `Checked in: ${activeSession.sessionName}`,
+        isTest: true,
+      });
+      return;
+    }
+    setPendingRegistration(registration);
+    setPendingSessions(testSessions());
+  };
+
   // ─── Process scan ───
   const processScan = async (code: string) => {
+    if (isCheckinTestCode(code)) {
+      setPendingSessions(null);
+      setPendingRegistration(null);
+      simulateTestScan();
+      return;
+    }
     setIsLoading(true);
     setScanResult(null);
     setPendingSessions(null);
@@ -544,6 +578,20 @@ export default function CheckinPage() {
   // ─── Check-in specific session (from session picker) ───
   const checkInSession = async (sessionId: number) => {
     if (!pendingRegistration) return;
+    if (isCheckinTestCode(pendingRegistration.regCode)) {
+      if (soundEnabled) playSuccessSound();
+      const session = pendingSessions?.find((s) => s.sessionId === sessionId);
+      setPendingSessions(
+        (prev) =>
+          prev?.map((s) =>
+            s.sessionId === sessionId
+              ? { ...s, checkedInAt: new Date().toISOString() }
+              : s,
+          ) || null,
+      );
+      toast.success(`ทดสอบ: Checked in ${session?.sessionName ?? ''}`);
+      return;
+    }
     setIsLoading(true);
     try {
       const token = getBackofficeToken();
@@ -580,6 +628,21 @@ export default function CheckinPage() {
 
   const checkInAllSessions = async () => {
     if (!pendingRegistration) return;
+    if (isCheckinTestCode(pendingRegistration.regCode)) {
+      if (soundEnabled) playSuccessSound();
+      setScanResult({
+        status: 'success',
+        code: pendingRegistration.regCode,
+        name: `${pendingRegistration.firstName} ${pendingRegistration.lastName}`,
+        ticketType: pendingRegistration.ticketName,
+        eventName: pendingRegistration.eventName,
+        message: `Checked in ${pendingSessions?.filter((s) => !s.checkedInAt).length ?? 0} sessions!`,
+        isTest: true,
+      });
+      setPendingSessions(null);
+      setPendingRegistration(null);
+      return;
+    }
     setIsLoading(true);
     try {
       const token = getBackofficeToken();
@@ -1117,6 +1180,11 @@ export default function CheckinPage() {
                     </div>
                   </div>
 
+                  {isCheckinTestCode(pendingRegistration.regCode) && (
+                    <p className="mb-4 rounded-lg border border-amber-300 bg-amber-50 px-4 py-2 text-center text-sm font-semibold text-amber-800">
+                      {CHECKIN_TEST_NOTICE}
+                    </p>
+                  )}
                   <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
                     <IconDoor size={20} className="text-emerald-600" />
                     Select Session to Check-in
@@ -1249,6 +1317,11 @@ export default function CheckinPage() {
                   >
                     {scanResult.message}
                   </p>
+                  {scanResult.isTest && (
+                    <p className="mb-4 rounded-lg border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-800">
+                      {CHECKIN_TEST_NOTICE}
+                    </p>
+                  )}
                   <MealCouponNote eligible={scanResult.mealCouponEligible} />
 
                   {scanResult.name && (
