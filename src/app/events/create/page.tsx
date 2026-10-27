@@ -2552,6 +2552,7 @@ export default function CreateEventPage() {
                       { value: 'general', label: 'General' },
                       { value: 'healthhack', label: 'HealthHack' },
                       { value: 'booth', label: 'Booth' },
+                      { value: 'speaker', label: 'Speaker' },
                     ].map((role) => (
                       <label
                         key={role.value}

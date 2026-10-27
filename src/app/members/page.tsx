@@ -35,7 +35,8 @@ interface Member {
     | 'student'
     | 'general'
     | 'healthhack'
-    | 'booth';
+    | 'booth'
+    | 'speaker';
   status: 'pending_approval' | 'active' | 'rejected';
   phone: string | null;
   country: string | null;
@@ -56,6 +57,7 @@ interface Pagination {
 const roleLabels: Record<string, { label: string; className: string }> = {
   healthhack: { label: 'HealthHack', className: 'bg-sky-100 text-sky-800' },
   booth: { label: 'Booth', className: 'bg-amber-100 text-amber-800' },
+  speaker: { label: 'Speaker', className: 'bg-violet-100 text-violet-800' },
   pharmacist: { label: 'Pharmacist', className: 'bg-green-100 text-green-800' },
   medical_professional: {
     label: 'Medical Professional',
@@ -372,6 +374,7 @@ export default function MembersPage() {
             <option value="general">General</option>
             <option value="healthhack">HealthHack</option>
             <option value="booth">Booth</option>
+            <option value="speaker">Speaker</option>
           </select>
 
           <select

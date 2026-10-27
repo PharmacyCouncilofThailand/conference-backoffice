@@ -113,6 +113,7 @@ const roleOptions = [
   { value: 'general', label: 'General' },
   { value: 'healthhack', label: 'HealthHack' },
   { value: 'booth', label: 'Booth' },
+  { value: 'speaker', label: 'Speaker' },
 ];
 
 // Helper to convert ISO date (UTC) to datetime-local string in local browser timezone
@@ -2579,6 +2580,7 @@ export default function EditEventPage() {
                       { value: 'general', label: 'General' },
                       { value: 'healthhack', label: 'HealthHack' },
                       { value: 'booth', label: 'Booth' },
+                      { value: 'speaker', label: 'Speaker' },
                     ].map((role) => (
                       <label
                         key={role.value}

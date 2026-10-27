@@ -33,6 +33,7 @@ const roleOptions = [
   { value: 'general', label: 'General' },
   { value: 'healthhack', label: 'HealthHack' },
   { value: 'booth', label: 'Booth' },
+  { value: 'speaker', label: 'Speaker' },
 ];
 
 const studentLevelOptions = [
@@ -47,6 +48,7 @@ const typeColors: { [key: string]: string } = {
   general: 'bg-zinc-100 text-zinc-800',
   healthhack: 'bg-sky-100 text-sky-800',
   booth: 'bg-amber-100 text-amber-800',
+  speaker: 'bg-violet-100 text-violet-800',
   thstd: 'bg-green-100 text-green-800',
   thpro: 'bg-emerald-50 text-teal-900',
   interstd: 'bg-yellow-100 text-yellow-800',
@@ -61,6 +63,7 @@ const roleLabels: Record<string, string> = {
   general: 'General',
   healthhack: 'HealthHack',
   booth: 'Booth',
+  speaker: 'Speaker',
   thstd: 'Thai Student',
   thpro: 'Thai Professional',
   interstd: 'International Student',
