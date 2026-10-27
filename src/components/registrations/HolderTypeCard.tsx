@@ -107,7 +107,7 @@ export function HolderTypeCard({
         </p>
         <p className="flex items-center gap-1.5 text-base text-zinc-700">
           <IconGift size={18} className="text-zinc-400" aria-hidden="true" />
-          {current?.giftLabel ?? 'ยังไม่ระบุ'}
+          {current ? current.giftLabel || '-' : 'ยังไม่ระบุ'}
         </p>
         <p className="text-sm text-zinc-500">
           {holderSourceLabel(holderTypeSource)}
@@ -133,15 +133,20 @@ export function HolderTypeCard({
               {options.map((option) => (
                 <option key={option.key} value={option.key}>
                   {option.label}
+                  {option.giftCode === 'gift' ? ' (ได้ Gift)' : ''}
                 </option>
               ))}
             </select>
           </label>
           {changed && (
             <p className="text-sm text-zinc-600">
-              Gift จะเป็น{' '}
+              Gift:{' '}
               <span className="font-semibold text-zinc-900">
-                {preview?.giftLabel ?? 'ยังไม่ระบุ'}
+                {preview
+                  ? preview.giftCode === 'gift'
+                    ? 'ให้'
+                    : 'ไม่ได้ Gift'
+                  : 'ยังไม่ระบุ'}
               </span>
             </p>
           )}
