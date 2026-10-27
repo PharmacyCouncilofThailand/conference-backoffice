@@ -21,6 +21,7 @@ import type {
   GrantPreviewRequest,
 } from '@/types/session-grants';
 import { useAuth } from '@/contexts/AuthContext';
+import { holderReviewReason, type HolderTypeOption } from '@/lib/holder-types';
 import toast from 'react-hot-toast';
 import {
   IconUsers,
@@ -43,6 +44,7 @@ interface Registration {
   createdAt: string;
   ticketName: string;
   holderType?: string | null;
+  holderTypeSource?: string | null;
   holderTypeLabel?: string | null;
   holderGift?: string | null;
   holderGiftCode?: 'mug_set1' | 'activity_set2' | 'large_set3' | 'none' | null;
@@ -68,19 +70,23 @@ interface PromoCodeOption {
 const getHolderDisplay = (
   registration: Pick<
     Registration,
-    'eventCode' | 'holderTypeLabel' | 'holderGift'
+    'eventCode' | 'holderTypeLabel' | 'holderGift' | 'holderTypeSource'
   >,
 ) => {
   const isPris = registration.eventCode === 'PRIS-2026';
+  const pending =
+    isPris && holderReviewReason(registration.holderTypeSource)
+      ? 'รอตรวจ'
+      : 'ยังไม่ระบุ';
   return {
     label:
       isPris && registration.holderTypeLabel?.trim()
         ? registration.holderTypeLabel
-        : 'ยังไม่ระบุ',
+        : pending,
     gift:
       isPris && registration.holderGift?.trim()
         ? registration.holderGift
-        : 'ยังไม่ระบุ',
+        : pending,
   };
 };
 
@@ -290,6 +296,10 @@ export default function RegistrationsPage() {
     [],
   );
   const [promoCodeFilter, setPromoCodeFilter] = useState('');
+  const [holderTypeFilter, setHolderTypeFilter] = useState('');
+  const [holderTypeOptions, setHolderTypeOptions] = useState<
+    HolderTypeOption[]
+  >([]);
   const [isLoadingPromoCodes, setIsLoadingPromoCodes] = useState(false);
   const [eventSelected, setEventSelected] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
@@ -364,6 +374,18 @@ export default function RegistrationsPage() {
   }, []);
 
   useEffect(() => {
+    if (!showTicketType) {
+      setHolderTypeFilter('');
+      return;
+    }
+    if (holderTypeOptions.length > 0) return;
+    api.registrations
+      .holderTypes(getBackofficeToken())
+      .then((res) => setHolderTypeOptions(res.holderTypes))
+      .catch(() => {});
+  }, [showTicketType, holderTypeOptions.length]);
+
+  useEffect(() => {
     if (!isOrganizer || eventOptions.length !== 1 || eventFilter) return;
     setEventFilter(String(eventOptions[0].id));
     setEventSelected(true);
@@ -416,6 +438,7 @@ export default function RegistrationsPage() {
     sourceFilter,
     eventFilter,
     promoCodeFilter,
+    holderTypeFilter,
     eventSelected,
     grantSession?.id,
   ]);
@@ -431,6 +454,8 @@ export default function RegistrationsPage() {
       if (sourceFilter) params.source = sourceFilter;
       if (eventFilter) params.eventId = eventFilter;
       if (promoCodeFilter) params.promoCodeId = promoCodeFilter;
+      if (showTicketType && holderTypeFilter)
+        params.holderType = holderTypeFilter;
 
       const res = await api.registrations.list(
         token,
@@ -449,6 +474,7 @@ export default function RegistrationsPage() {
           ? {
               'TICKET TYPE': getHolderDisplay(r).label,
               GIFT: getHolderDisplay(r).gift,
+              'TICKET TYPE NOTE': holderReviewReason(r.holderTypeSource) ?? '',
             }
           : {}),
         'Promo Code': r.promoCode || '',
@@ -484,6 +510,8 @@ export default function RegistrationsPage() {
       if (sourceFilter) params.source = sourceFilter;
       if (eventFilter) params.eventId = eventFilter;
       if (promoCodeFilter) params.promoCodeId = promoCodeFilter;
+      if (showTicketType && holderTypeFilter)
+        params.holderType = holderTypeFilter;
       if (grantSession) params.sessionId = String(grantSession.id);
 
       const res = await fetchRegistrationList(
@@ -681,6 +709,7 @@ export default function RegistrationsPage() {
     sourceFilter,
     eventFilter,
     promoCodeFilter,
+    holderTypeFilter,
     grantSession?.id,
   ]);
 
@@ -810,6 +839,27 @@ export default function RegistrationsPage() {
               <option value="free">Free</option>
               <option value="quick">Quick</option>
             </select>
+
+            {showTicketType && (
+              <select
+                value={holderTypeFilter}
+                onChange={(e) => {
+                  setHolderTypeFilter(e.target.value);
+                  setPage(1);
+                }}
+                className="input-field w-auto"
+                aria-label="Ticket Type"
+              >
+                <option value="">All Ticket Types</option>
+                <option value="review">รอตรวจ</option>
+                <option value="unassigned">ยังไม่ระบุทั้งหมด</option>
+                {holderTypeOptions.map((option) => (
+                  <option key={option.key} value={option.key}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
 
           <div className="flex flex-wrap gap-2">
@@ -1080,6 +1130,12 @@ export default function RegistrationsPage() {
                         <>
                           <td className="px-4 py-4 text-center">
                             <HolderTypeBadge registration={reg} />
+                            {!reg.holderType &&
+                              holderReviewReason(reg.holderTypeSource) && (
+                                <p className="mx-auto mt-1 max-w-48 text-xs leading-snug text-amber-700">
+                                  {holderReviewReason(reg.holderTypeSource)}
+                                </p>
+                              )}
                           </td>
                           <td className="px-4 py-4 text-center">
                             <HolderTypeBadge registration={reg} kind="gift" />

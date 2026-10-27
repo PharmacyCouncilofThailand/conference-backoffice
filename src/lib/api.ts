@@ -65,6 +65,8 @@ import type {
   RevisionDto,
 } from '@/types/presentations';
 
+import type { HolderTypeHistoryEntry, HolderTypeOption } from './holder-types';
+
 const API_BASE = process.env.NEXT_PUBLIC_API_URL;
 const AUTH_UNAUTHORIZED_EVENT = 'accp-backoffice-auth:unauthorized';
 
@@ -812,6 +814,29 @@ export const api = {
         `/api/backoffice/registrations/${id}`,
         { method: 'PATCH', body: JSON.stringify(data), token },
       ),
+    holderTypes: (token: string) =>
+      fetchAPI<{ holderTypes: HolderTypeOption[] }>(
+        '/api/backoffice/registrations/holder-types',
+        { token },
+      ),
+    updateHolderType: (
+      token: string,
+      id: number,
+      data: {
+        holderType: string | null;
+        expectedHolderType: string | null;
+        reason?: string;
+      },
+    ) =>
+      fetchAPI<{ registration: Record<string, unknown> }>(
+        `/api/backoffice/registrations/${id}/holder-type`,
+        { method: 'PATCH', body: JSON.stringify(data), token },
+      ),
+    holderTypeHistory: (token: string, id: number) =>
+      fetchAPI<{ history: HolderTypeHistoryEntry[] }>(
+        `/api/backoffice/registrations/${id}/holder-type/history`,
+        { token },
+      ),
     manualAdd: (
       token: string,
       data: {
@@ -820,6 +845,7 @@ export const api = {
         ticketTypeId: number;
         sessionIds?: number[];
         note?: string;
+        holderType?: string;
       },
     ) =>
       fetchAPI<{ success: boolean; registration: Record<string, unknown> }>(
@@ -834,6 +860,7 @@ export const api = {
         ticketTypeId: number;
         sessionIds?: number[];
         note?: string;
+        holderType?: string;
       },
     ) =>
       fetchAPI<{

@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { AdminLayout } from '@/components/layout';
 import { api } from '@/lib/api';
 import { useDebounce } from '@/hooks/useDebounce';
+import type { HolderTypeOption } from '@/lib/holder-types';
 import {
   IconSearch,
   IconArrowLeft,
@@ -36,7 +37,11 @@ export default function AddRegistrationPage() {
     ticketTypeId: 0,
     sessionIds: [] as number[],
     note: '',
+    holderType: '',
   });
+  const [holderTypeOptions, setHolderTypeOptions] = useState<
+    HolderTypeOption[]
+  >([]);
 
   // Data states
   const [userSearch, setUserSearch] = useState('');
@@ -51,6 +56,19 @@ export default function AddRegistrationPage() {
   const [sessionsList, setSessionsList] = useState<any[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
   const [selectedTicket, setSelectedTicket] = useState<any>(null);
+  const isPris = selectedEvent?.eventCode === 'PRIS-2026';
+
+  useEffect(() => {
+    if (!isPris) {
+      setForm((prev) => (prev.holderType ? { ...prev, holderType: '' } : prev));
+      return;
+    }
+    if (holderTypeOptions.length > 0) return;
+    api.registrations
+      .holderTypes(getBackofficeToken())
+      .then((res) => setHolderTypeOptions(res.holderTypes))
+      .catch(() => {});
+  }, [isPris, holderTypeOptions.length]);
   const [ticketSearch, setTicketSearch] = useState('');
   const [isTicketDropdownOpen, setIsTicketDropdownOpen] = useState(false);
   const ticketDropdownRef = useRef<HTMLDivElement>(null);
@@ -204,6 +222,7 @@ export default function AddRegistrationPage() {
         ticketTypeId: form.ticketTypeId,
         sessionIds: form.sessionIds.length > 0 ? form.sessionIds : undefined,
         note: form.note || undefined,
+        holderType: isPris && form.holderType ? form.holderType : undefined,
       });
 
       if (result.addedCount > 0) {
@@ -733,6 +752,29 @@ export default function AddRegistrationPage() {
             </div>
           )}
 
+          {isPris && (
+            <div className="card">
+              <h2 className="text-lg font-semibold mb-1">Ticket Type (PRIS)</h2>
+              <p className="mb-4 text-sm text-zinc-500">
+                ประเภทผู้ถือบัตร ใช้กำหนด Gift ไม่ใช่ตั๋วที่ซื้อ
+              </p>
+              <select
+                value={form.holderType}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, holderType: e.target.value }))
+                }
+                className="input-field w-full"
+              >
+                <option value="">ให้ระบบเลือกอัตโนมัติ (ไม่ชัดเจนจะเข้ารอตรวจ)</option>
+                {holderTypeOptions.map((option) => (
+                  <option key={option.key} value={option.key}>
+                    {option.label} — {option.giftLabel}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
           {/* Note */}
           <div className="card">
             <h2 className="text-lg font-semibold mb-4">Note</h2>
@@ -798,6 +840,15 @@ export default function AddRegistrationPage() {
                     <span className="text-zinc-500">Sessions:</span>
                     <span className="font-medium">
                       {form.sessionIds.length} selected
+                    </span>
+                  </div>
+                )}
+                {isPris && (
+                  <div className="flex justify-between py-2 border-b border-zinc-100">
+                    <span className="text-zinc-500">Ticket Type:</span>
+                    <span className="font-medium">
+                      {holderTypeOptions.find((o) => o.key === form.holderType)
+                        ?.label ?? 'ระบบเลือกอัตโนมัติ'}
                     </span>
                   </div>
                 )}
