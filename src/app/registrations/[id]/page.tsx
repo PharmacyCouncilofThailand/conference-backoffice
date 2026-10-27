@@ -8,6 +8,7 @@ import { api } from '@/lib/api';
 import { AddSessionDialog } from '@/components/registrations/AddSessionDialog';
 import { SessionGrantResults } from '@/components/registrations/SessionGrantResults';
 import { SessionEmailPreviewDialog } from '@/components/registrations/SessionEmailPreviewDialog';
+import { HolderTypeCard } from '@/components/registrations/HolderTypeCard';
 import type {
   GrantSessionChoiceDto,
   GrantPreviewRequest,
@@ -109,6 +110,9 @@ interface RegistrationDetail {
   eventId: number;
   eventName: string;
   eventCode: string;
+  holderType: string | null;
+  holderTypeSource: string | null;
+  holderTypeUpdatedAt: string | null;
   ticketTypeId: number;
   ticketName: string;
   ticketCategory: string;
@@ -638,6 +642,17 @@ export default function RegistrationDetailPage() {
 
         {/* Right Column - Attendee Info */}
         <div className="space-y-6">
+          {registration.eventCode === 'PRIS-2026' && (
+            <HolderTypeCard
+              token={getBackofficeToken()}
+              registrationId={registration.id}
+              holderType={registration.holderType}
+              holderTypeSource={registration.holderTypeSource}
+              holderTypeUpdatedAt={registration.holderTypeUpdatedAt}
+              canEdit={user?.role === 'admin'}
+              onSaved={fetchRegistration}
+            />
+          )}
           {/* Attendee Card */}
           <div className="card">
             <h2 className="text-lg font-semibold mb-4">Attendee Information</h2>
