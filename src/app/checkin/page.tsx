@@ -43,7 +43,6 @@ type ScanResult = null | {
   eventName?: string;
   registrationSessionId?: number;
   mealCouponEligible?: boolean | null;
-  isTest?: boolean;
 };
 
 interface EventOption {
@@ -229,6 +228,8 @@ export default function CheckinPage() {
 
   // QR scanner
   const lastScannedRef = useRef<string>('');
+  // True while the screen shows a "test" scan; every action is simulated.
+  const [testMode, setTestMode] = useState(false);
 
   // Data stats
   const [stats, setStats] = useState({
@@ -416,12 +417,15 @@ export default function CheckinPage() {
   }, [showSessionPicker, fetchData]);
 
   // ─── QR Scanner handler ───
+  // The scanner keeps the first onScan it gets, so read the latest
+  // processScan (active session, sound setting) through a ref.
+  const processScanRef = useRef<(code: string) => void>(() => {});
   const handleQrScan = useCallback((results: { rawValue: string }[]) => {
     if (!results || results.length === 0) return;
     const scannedCode = results[0].rawValue.trim().toUpperCase();
     if (scannedCode && scannedCode !== lastScannedRef.current) {
       lastScannedRef.current = scannedCode;
-      processScan(scannedCode);
+      processScanRef.current(scannedCode);
       setTimeout(() => {
         lastScannedRef.current = '';
       }, 3000);
@@ -440,25 +444,70 @@ export default function CheckinPage() {
     }
   }, [scanMode, scanResult, pendingSessions, showSessionPicker]);
 
-  // ─── Scanner self-test (any event): never calls the API ───
-  const simulateTestScan = () => {
+  // ─── Scanner self-test (any event) ───
+  // Shows a random real registration exactly like a real scan. The sample is
+  // read-only and every check-in on it is simulated, so nothing is saved.
+  const simulateTestScan = async () => {
     setScanResult(null);
-    const registration = testRegistration(selectedEvent?.eventName);
+    setTestMode(true);
+    const eventId = activeSession?.eventId ?? selectedEvent?.id;
+    let registration: PendingRegistration = testRegistration(
+      selectedEvent?.eventName,
+    );
+    let sessions: SessionInfo[] = testSessions();
+    if (eventId) {
+      setIsLoading(true);
+      try {
+        const sample = await api.checkins.testSample(
+          getBackofficeToken(),
+          eventId,
+          activeSession?.sessionId,
+        );
+        registration = sample.registration;
+        sessions = sample.sessions;
+      } catch {
+        // No registrations to sample: fall back to the built-in test attendee.
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    const name = `${registration.firstName} ${registration.lastName}`;
     if (activeSession) {
+      const target = sessions.find(
+        (s) => s.sessionId === activeSession.sessionId,
+      );
+      if (target?.checkedInAt) {
+        if (soundEnabled) playDuplicateSound();
+        toast.error(ALREADY_CHECKED_IN_MESSAGE);
+        setScanResult({
+          status: 'duplicate',
+          code: registration.regCode,
+          message: ALREADY_CHECKED_IN_MESSAGE,
+          name,
+          ticketType: registration.ticketName,
+          eventName: registration.eventName,
+          mealCouponEligible: registration.booth?.mealCouponEligible,
+        });
+        return;
+      }
       if (soundEnabled) playSuccessSound();
       setScanResult({
         status: 'success',
         code: registration.regCode,
-        name: `${registration.firstName} ${registration.lastName}`,
+        name,
         ticketType: registration.ticketName,
         eventName: registration.eventName,
+        mealCouponEligible: registration.booth?.mealCouponEligible,
         message: `Checked in: ${activeSession.sessionName}`,
-        isTest: true,
       });
       return;
     }
+    if (sessions.length > 0 && sessions.every((s) => !!s.checkedInAt)) {
+      if (soundEnabled) playDuplicateSound();
+      toast.error(ALREADY_CHECKED_IN_MESSAGE);
+    }
     setPendingRegistration(registration);
-    setPendingSessions(testSessions());
+    setPendingSessions(sessions);
   };
 
   // ─── Process scan ───
@@ -466,9 +515,10 @@ export default function CheckinPage() {
     if (isCheckinTestCode(code)) {
       setPendingSessions(null);
       setPendingRegistration(null);
-      simulateTestScan();
+      await simulateTestScan();
       return;
     }
+    setTestMode(false);
     setIsLoading(true);
     setScanResult(null);
     setPendingSessions(null);
@@ -578,7 +628,7 @@ export default function CheckinPage() {
   // ─── Check-in specific session (from session picker) ───
   const checkInSession = async (sessionId: number) => {
     if (!pendingRegistration) return;
-    if (isCheckinTestCode(pendingRegistration.regCode)) {
+    if (testMode) {
       if (soundEnabled) playSuccessSound();
       const session = pendingSessions?.find((s) => s.sessionId === sessionId);
       setPendingSessions(
@@ -589,7 +639,7 @@ export default function CheckinPage() {
               : s,
           ) || null,
       );
-      toast.success(`ทดสอบ: Checked in ${session?.sessionName ?? ''}`);
+      toast.success(`Checked in: ${session?.sessionName ?? ''}`);
       return;
     }
     setIsLoading(true);
@@ -628,7 +678,7 @@ export default function CheckinPage() {
 
   const checkInAllSessions = async () => {
     if (!pendingRegistration) return;
-    if (isCheckinTestCode(pendingRegistration.regCode)) {
+    if (testMode) {
       if (soundEnabled) playSuccessSound();
       setScanResult({
         status: 'success',
@@ -636,8 +686,8 @@ export default function CheckinPage() {
         name: `${pendingRegistration.firstName} ${pendingRegistration.lastName}`,
         ticketType: pendingRegistration.ticketName,
         eventName: pendingRegistration.eventName,
+        mealCouponEligible: pendingRegistration.booth?.mealCouponEligible,
         message: `Checked in ${pendingSessions?.filter((s) => !s.checkedInAt).length ?? 0} sessions!`,
-        isTest: true,
       });
       setPendingSessions(null);
       setPendingRegistration(null);
@@ -711,7 +761,10 @@ export default function CheckinPage() {
     }
   };
 
+  processScanRef.current = processScan;
+
   const clearResult = () => {
+    setTestMode(false);
     setScanResult(null);
     setPendingSessions(null);
     setPendingRegistration(null);
@@ -720,6 +773,7 @@ export default function CheckinPage() {
   };
 
   const handleScanNext = () => {
+    setTestMode(false);
     setScanMode('camera');
     setScanResult(null);
     setPendingSessions(null);
@@ -1180,11 +1234,6 @@ export default function CheckinPage() {
                     </div>
                   </div>
 
-                  {isCheckinTestCode(pendingRegistration.regCode) && (
-                    <p className="mb-4 rounded-lg border border-amber-300 bg-amber-50 px-4 py-2 text-center text-sm font-semibold text-amber-800">
-                      {CHECKIN_TEST_NOTICE}
-                    </p>
-                  )}
                   <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
                     <IconDoor size={20} className="text-emerald-600" />
                     Select Session to Check-in
@@ -1317,11 +1366,6 @@ export default function CheckinPage() {
                   >
                     {scanResult.message}
                   </p>
-                  {scanResult.isTest && (
-                    <p className="mb-4 rounded-lg border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-800">
-                      {CHECKIN_TEST_NOTICE}
-                    </p>
-                  )}
                   <MealCouponNote eligible={scanResult.mealCouponEligible} />
 
                   {scanResult.name && (
@@ -1530,6 +1574,14 @@ export default function CheckinPage() {
           </div>
         </div>
       </div>
+      {testMode && (scanResult || pendingSessions) && (
+        <div
+          role="status"
+          className="pointer-events-none fixed bottom-4 right-4 z-50 rounded-full border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-800 shadow-lg"
+        >
+          {CHECKIN_TEST_NOTICE}
+        </div>
+      )}
     </AdminLayout>
   );
 }
