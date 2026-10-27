@@ -9,6 +9,12 @@ import toast from 'react-hot-toast';
 import { MealCouponNote } from '@/components/booths/MealCouponNote';
 import { couponRegistrationFromError } from '@/lib/boothCheckin';
 import {
+  playSuccessSound,
+  playErrorSound,
+  playDuplicateSound,
+} from '@/lib/checkin-sounds';
+import { PrisCheckinDesk } from '@/components/checkin/PrisCheckinDesk';
+import {
   CHECKIN_TEST_NOTICE,
   isCheckinTestCode,
   testRegistration,
@@ -48,7 +54,10 @@ type ScanResult = null | {
 interface EventOption {
   id: number;
   eventName: string;
+  eventCode?: string;
 }
+
+const PRIS_EVENT_CODE = 'PRIS-2026';
 
 interface SessionBreakdownItem {
   sessionId: number;
@@ -97,58 +106,6 @@ interface RecentCheckin {
   ticketName: string;
   sessionName?: string;
   scannedAt: string;
-}
-
-// ─── Sound helpers ───
-function playSuccessSound() {
-  try {
-    const ctx = new AudioContext();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.frequency.value = 880;
-    osc.type = 'sine';
-    gain.gain.value = 0.3;
-    osc.start();
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
-    osc.stop(ctx.currentTime + 0.15);
-  } catch {}
-}
-
-function playErrorSound() {
-  try {
-    const ctx = new AudioContext();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.frequency.value = 200;
-    osc.type = 'square';
-    gain.gain.value = 0.2;
-    osc.start();
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
-    osc.stop(ctx.currentTime + 0.3);
-  } catch {}
-}
-
-function playDuplicateSound() {
-  try {
-    const ctx = new AudioContext();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.frequency.value = 440;
-    osc.type = 'triangle';
-    gain.gain.value = 0.2;
-    osc.start();
-    setTimeout(() => {
-      osc.frequency.value = 440;
-    }, 100);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
-    osc.stop(ctx.currentTime + 0.25);
-  } catch {}
 }
 
 const getBackofficeToken = () =>
@@ -262,6 +219,65 @@ export default function CheckinPage() {
     }
   }, [hasAssignedSessions, assignedSessions.length]);
 
+  // Staff landing in a PRIS 2026 session go to the desk instead.
+  const [prisEventId, setPrisEventId] = useState<number | null>(null);
+  const [resolvingDesk, setResolvingDesk] = useState(false);
+  useEffect(() => {
+    if (!activeSession) {
+      setResolvingDesk(false);
+      return;
+    }
+    let cancelled = false;
+    setResolvingDesk(true);
+    api.checkins
+      .deskSummary(getBackofficeToken(), activeSession.eventId)
+      .then((d) => {
+        if (!cancelled)
+          setPrisEventId(d.eventCode === PRIS_EVENT_CODE ? d.eventId : null);
+      })
+      .catch(() => {
+        if (!cancelled) setPrisEventId(null);
+      })
+      .finally(() => {
+        if (!cancelled) setResolvingDesk(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [activeSession]);
+
+  // Non-admin staff whose sessions all belong to one PRIS 2026 event skip the
+  // assigned-session picker and go straight to the desk.
+  const staffEventIds = Array.from(
+    new Set(assignedSessions.map((x) => x.eventId)),
+  );
+  const staffCandidateEventId =
+    !isAdmin && staffEventIds.length === 1 ? staffEventIds[0] : null;
+  const [staffChecked, setStaffChecked] = useState<{
+    eventId: number;
+    isPris: boolean;
+  } | null>(null);
+  useEffect(() => {
+    if (staffCandidateEventId === null) return;
+    let cancelled = false;
+    api.checkins
+      .deskSummary(getBackofficeToken(), staffCandidateEventId)
+      .then((d) => {
+        if (!cancelled)
+          setStaffChecked({
+            eventId: staffCandidateEventId,
+            isPris: d.eventCode === PRIS_EVENT_CODE,
+          });
+      })
+      .catch(() => {
+        if (!cancelled)
+          setStaffChecked({ eventId: staffCandidateEventId, isPris: false });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [staffCandidateEventId]);
+
   // ─── Fetch events for admin/multi-event roles ───
   useEffect(() => {
     if (isAdmin && showSessionPicker) {
@@ -274,7 +290,16 @@ export default function CheckinPage() {
             (res.events || []).flatMap((event) =>
               typeof event.id === 'number' &&
               typeof event.eventName === 'string'
-                ? [{ id: event.id, eventName: event.eventName }]
+                ? [
+                    {
+                      id: event.id,
+                      eventName: event.eventName,
+                      eventCode:
+                        typeof event.eventCode === 'string'
+                          ? event.eventCode
+                          : undefined,
+                    },
+                  ]
                 : [],
             ),
           );
@@ -798,6 +823,55 @@ export default function CheckinPage() {
     setActiveSession(null);
     setShowSessionPicker(false);
   };
+
+  // ─── PRIS 2026: single desk screen (no session picker) ───
+  if (isAdmin && selectedEvent?.eventCode === PRIS_EVENT_CODE && !activeSession) {
+    return (
+      <PrisCheckinDesk
+        eventId={selectedEvent.id}
+        onExit={() => setSelectedEvent(null)}
+      />
+    );
+  }
+  if (staffCandidateEventId !== null) {
+    if (staffChecked?.eventId !== staffCandidateEventId) {
+      return (
+        <AdminLayout title="Check-in Scanner">
+          <div className="flex items-center justify-center py-16 text-zinc-400">
+            <IconLoader2 size={24} className="animate-spin mr-2" /> Loading...
+          </div>
+        </AdminLayout>
+      );
+    }
+    if (staffChecked.isPris) {
+      return <PrisCheckinDesk eventId={staffCandidateEventId} />;
+    }
+  }
+  if (activeSession && resolvingDesk) {
+    return (
+      <AdminLayout title="Check-in Scanner">
+        <div className="flex items-center justify-center py-16 text-zinc-400">
+          <IconLoader2 size={24} className="animate-spin mr-2" /> Loading...
+        </div>
+      </AdminLayout>
+    );
+  }
+  if (activeSession && prisEventId === activeSession.eventId) {
+    return (
+      <PrisCheckinDesk
+        eventId={prisEventId}
+        onExit={
+          isAdmin || hasAssignedSessions
+            ? () => {
+                setPrisEventId(null);
+                setActiveSession(null);
+                setShowSessionPicker(true);
+              }
+            : undefined
+        }
+      />
+    );
+  }
 
   // ─── SESSION PICKER SCREEN ───
   if (showSessionPicker) {

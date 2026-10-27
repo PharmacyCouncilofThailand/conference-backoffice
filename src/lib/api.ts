@@ -101,6 +101,36 @@ interface BackofficeCheckinRegistration {
   email: string;
   ticketName: string;
   eventName: string;
+  // PRIS holder type and gift (null outside PRIS-2026).
+  eventCode?: string | null;
+  holderType?: string | null;
+  holderTypeLabel?: string | null;
+  holderGift?: string | null;
+  holderGiftCode?: 'gift' | 'none' | null;
+}
+
+export interface CheckinDeskSummary {
+  eventId: number;
+  eventName: string;
+  eventCode: string;
+  mainSession: { id: number; sessionName: string };
+  attendanceMode: 'daily' | 'single';
+  window: { open: string; close: string } | null;
+  serverDate: string;
+  total: number;
+  checkedIn: number;
+  remaining: number;
+  percentage: number;
+  byHolderType: Array<{
+    key: string | null;
+    label: string;
+    giftCode: 'gift' | 'none' | null;
+    total: number;
+    checkedIn: number;
+    percentage: number;
+  }>;
+  gift: { eligible: number; given: number; percentage: number };
+  mealCoupon: { eligible: number; given: number; percentage: number };
 }
 
 interface BackofficeCheckinSession {
@@ -1059,6 +1089,12 @@ export const api = {
   },
 
   checkins: {
+    // PRIS check-in desk dashboard (people-based, today). Read-only.
+    deskSummary: (token: string, eventId: number) =>
+      fetchAPI<CheckinDeskSummary>(
+        `/api/backoffice/checkins/desk-summary?eventId=${eventId}`,
+        { token },
+      ),
     // Scanner self-test: random real registration, read-only (nothing is checked in).
     testSample: (token: string, eventId: number, sessionId?: number) =>
       fetchAPI<{
