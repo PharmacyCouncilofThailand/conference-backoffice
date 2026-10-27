@@ -47,7 +47,7 @@ interface Registration {
   holderTypeSource?: string | null;
   holderTypeLabel?: string | null;
   holderGift?: string | null;
-  holderGiftCode?: 'mug_set1' | 'activity_set2' | 'large_set3' | 'none' | null;
+  holderGiftCode?: 'gift' | 'none' | null;
   eventName: string;
   eventCode: string;
   source?: string;
@@ -83,10 +83,14 @@ const getHolderDisplay = (
       isPris && registration.holderTypeLabel?.trim()
         ? registration.holderTypeLabel
         : pending,
-    gift:
-      isPris && registration.holderGift?.trim()
+    // Typed but no gift is blank in the API/Excel and shown as "-" here.
+    gift: !isPris
+      ? pending
+      : registration.holderGift?.trim()
         ? registration.holderGift
-        : pending,
+        : registration.holderTypeLabel?.trim()
+          ? '-'
+          : pending,
   };
 };
 
@@ -100,12 +104,13 @@ const getHolderBadgeTone = (
   if (!label?.trim()) return 'neutral';
   if (kind === 'type') {
     // Keep each category's color stable across sorting, pages and refreshes.
-    if (registration.holderGiftCode === 'large_set3') return 'gold';
     switch (registration.holderType) {
       case 'vip':
-      case 'speaker':
-      case 'media':
         return 'gold';
+      case 'speaker':
+        return 'sky';
+      case 'media':
+        return 'slate';
       case 'council_committee':
         return 'indigo';
       case 'college_committee':
@@ -126,21 +131,13 @@ const getHolderBadgeTone = (
         return 'neutral';
     }
   }
-  switch (registration.holderGiftCode) {
-    case 'large_set3':
-      return 'gold';
-    case 'mug_set1':
-      return 'green';
-    case 'activity_set2':
-      return 'orange';
-    default:
-      return 'neutral';
-  }
+  return registration.holderGiftCode === 'gift' ? 'gold' : 'neutral';
 };
 
 const holderBadgeClasses = {
   gold: 'border-amber-300 bg-gradient-to-br from-amber-100 via-yellow-50 to-amber-200 text-amber-950 shadow-sm',
-  green: 'border-emerald-200 bg-emerald-50 text-emerald-800',
+  sky: 'border-sky-400 bg-sky-50 text-sky-800',
+  slate: 'border-slate-400 bg-slate-50 text-slate-700',
   orange: 'border-orange-200 bg-orange-50 text-orange-800',
   indigo: 'border-indigo-400 bg-indigo-50 text-indigo-800',
   fuchsia: 'border-fuchsia-400 bg-fuchsia-50 text-fuchsia-800',
@@ -161,9 +158,12 @@ function HolderTypeBadge({
 }) {
   const display = getHolderDisplay(registration);
   const tone = getHolderBadgeTone(registration, kind);
+  if (kind === 'gift' && display.gift === '-') {
+    return <span className="text-sm text-zinc-400">-</span>;
+  }
   return (
     <span
-      className={`inline-flex max-w-64 items-center gap-1.5 whitespace-normal rounded-full border px-2.5 py-1 text-xs font-medium leading-relaxed ${holderBadgeClasses[tone]}`}
+      className={`inline-flex max-w-64 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium leading-relaxed ${kind === 'gift' ? 'whitespace-nowrap' : 'whitespace-normal'} ${holderBadgeClasses[tone]}`}
     >
       {tone === 'gold' && (
         <IconSparkles size={14} className="shrink-0" aria-hidden="true" />
@@ -473,7 +473,7 @@ export default function RegistrationsPage() {
         ...(showTicketType
           ? {
               'TICKET TYPE': getHolderDisplay(r).label,
-              GIFT: getHolderDisplay(r).gift,
+              GIFT: r.holderGift ?? '',
               'TICKET TYPE NOTE': holderReviewReason(r.holderTypeSource) ?? '',
             }
           : {}),
@@ -853,6 +853,7 @@ export default function RegistrationsPage() {
                 <option value="">All Ticket Types</option>
                 <option value="review">รอตรวจ</option>
                 <option value="unassigned">ยังไม่ระบุทั้งหมด</option>
+                <option value="gift">ได้ Gift</option>
                 {holderTypeOptions.map((option) => (
                   <option key={option.key} value={option.key}>
                     {option.label}

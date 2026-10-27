@@ -768,7 +768,8 @@ export default function AddRegistrationPage() {
                 <option value="">ให้ระบบเลือกอัตโนมัติ (ไม่ชัดเจนจะเข้ารอตรวจ)</option>
                 {holderTypeOptions.map((option) => (
                   <option key={option.key} value={option.key}>
-                    {option.label} — {option.giftLabel}
+                    {option.label}
+                    {option.giftCode === 'gift' ? ' (ได้ Gift)' : ''}
                   </option>
                 ))}
               </select>

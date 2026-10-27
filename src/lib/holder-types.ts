@@ -1,7 +1,7 @@
 // PRIS-2026 holder types. The list and gift labels come from the API
 // catalog; only the review reasons are described here.
 
-export type HolderGiftCode = 'mug_set1' | 'activity_set2' | 'large_set3' | 'none';
+export type HolderGiftCode = 'gift' | 'none';
 
 export interface HolderTypeOption {
   key: string;
