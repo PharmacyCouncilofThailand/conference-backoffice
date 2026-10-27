@@ -109,6 +109,13 @@ interface BackofficeCheckinRegistration {
   holderGiftCode?: 'gift' | 'none' | null;
 }
 
+export type CheckinScanStatus =
+  | 'open'
+  | 'before_event'
+  | 'before_open'
+  | 'after_close'
+  | 'after_event';
+
 export interface CheckinDeskSummary {
   eventId: number;
   eventName: string;
@@ -117,6 +124,8 @@ export interface CheckinDeskSummary {
   attendanceMode: 'daily' | 'single';
   window: { open: string; close: string } | null;
   serverDate: string;
+  eventDays?: { first: string; last: string };
+  scanStatus?: CheckinScanStatus;
   total: number;
   checkedIn: number;
   remaining: number;
