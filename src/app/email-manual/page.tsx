@@ -93,6 +93,7 @@ const TEMPLATE_GROUPS = [
       'manual-registration',
       'event-reminder',
       'pris-pre-event',
+      'pris-ticket-reminder',
     ],
   },
 ];
