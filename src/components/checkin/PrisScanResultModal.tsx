@@ -166,7 +166,7 @@ export function PrisScanResultModal({
               <Field label="คูปองอาหาร">
                 {(reg.mealCouponEligible ?? reg.booth?.mealCouponEligible) === true ? (
                   <span className={`${pill} border-emerald-300 bg-emerald-50 text-emerald-800`}>
-                    ได้รับ 2 ใบ
+                    ได้รับ 1 ใบ
                   </span>
                 ) : (
                   <span className="text-base text-zinc-400">-</span>

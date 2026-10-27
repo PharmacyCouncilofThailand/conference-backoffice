@@ -1,7 +1,7 @@
 // Formatting + export helpers for the PRIS daily check-in history view.
 
 export const PRIS_EVENT_CODE = 'PRIS-2026';
-export const MEAL_COUPON_LABEL = 'ได้รับ 2 ใบ';
+export const MEAL_COUPON_LABEL = 'ได้รับ 1 ใบ';
 
 const TZ = 'Asia/Bangkok';
 

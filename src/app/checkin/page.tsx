@@ -6,7 +6,6 @@ import { AdminLayout } from '@/components/layout';
 import { useAuth, type AssignedSession } from '@/contexts/AuthContext';
 import { api, ApiError } from '@/lib/api';
 import toast from 'react-hot-toast';
-import { MealCouponNote } from '@/components/booths/MealCouponNote';
 import { couponRegistrationFromError } from '@/lib/boothCheckin';
 import {
   playSuccessSound,
@@ -21,6 +20,12 @@ import {
   testSessions,
 } from '@/lib/checkin-test-mode';
 import { usesPrisDesk } from '@/lib/checkin-desk-route';
+import {
+  eventLevelEventIds,
+  isMainSession,
+  toAssignedSession,
+  type MainSessionIds,
+} from '@/lib/checkin-session-picker';
 import {
   IconScan,
   IconCheck,
@@ -49,7 +54,6 @@ type ScanResult = null | {
   message: string;
   eventName?: string;
   registrationSessionId?: number;
-  mealCouponEligible?: boolean | null;
 };
 
 interface EventOption {
@@ -146,6 +150,52 @@ const duplicateMessage = (error: unknown) => {
   return ALREADY_CHECKED_IN_MESSAGE;
 };
 
+function SessionCard({
+  session,
+  isMain,
+  onSelect,
+}: {
+  session: AssignedSession;
+  isMain: boolean;
+  onSelect: (session: AssignedSession) => void;
+}) {
+  return (
+    <button
+      onClick={() => onSelect(session)}
+      className={`w-full p-4 rounded-xl border-2 text-left transition-all group hover:border-blue-400 hover:bg-emerald-50 ${
+        isMain ? 'border-emerald-400 bg-emerald-50' : 'border-zinc-200'
+      }`}
+    >
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="font-semibold text-zinc-800 group-hover:text-emerald-700">
+              {session.sessionName}
+            </p>
+            {isMain && (
+              <span className="rounded-full bg-emerald-600 px-2 py-0.5 text-xs font-semibold text-white">
+                Main Session
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-3 mt-1 text-xs text-zinc-400">
+            {session.room && <span>Room: {session.room}</span>}
+            {session.sessionType && (
+              <span className="capitalize">
+                {session.sessionType.replace('_', ' ')}
+              </span>
+            )}
+          </div>
+        </div>
+        <IconDoor
+          size={24}
+          className="text-gray-300 group-hover:text-emerald-600"
+        />
+      </div>
+    </button>
+  );
+}
+
 export default function CheckinPage() {
   const { user, isAdmin } = useAuth();
 
@@ -160,7 +210,7 @@ export default function CheckinPage() {
   const [loadingEvents, setLoadingEvents] = useState(false);
 
   // ─── Scanner state ───
-  const [scanMode, setScanMode] = useState<'camera' | 'manual'>('manual');
+  const [scanMode, setScanMode] = useState<'camera' | 'manual'>('camera');
   const [manualCode, setManualCode] = useState('');
   const [scanResult, setScanResult] = useState<ScanResult>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -171,6 +221,7 @@ export default function CheckinPage() {
   useEffect(() => {
     if (typeof window !== 'undefined' && !window.isSecureContext) {
       setCameraSupported(false);
+      setScanMode('manual');
     }
   }, []);
 
@@ -206,8 +257,90 @@ export default function CheckinPage() {
   const manualInputRef = useRef<HTMLInputElement>(null);
 
   // ─── Determine assigned sessions for current user ───
-  const assignedSessions = user?.assignedSessions || [];
+  // Whole-event assignments have no session list at login, so load the
+  // sessions of those events; everyone then picks one session to scan.
+  const [eventLevelSessions, setEventLevelSessions] = useState<
+    AssignedSession[]
+  >([]);
+  const [loadingEventLevel, setLoadingEventLevel] = useState(false);
+  const eventLevelIdsKey = isAdmin
+    ? ''
+    : eventLevelEventIds(
+        user?.assignedEvents || [],
+        user?.assignedSessions || [],
+      ).join(',');
+  useEffect(() => {
+    if (!eventLevelIdsKey) {
+      setEventLevelSessions([]);
+      return;
+    }
+    let cancelled = false;
+    setLoadingEventLevel(true);
+    const token = getBackofficeToken();
+    Promise.all(
+      eventLevelIdsKey.split(',').map(async (id) => {
+        const eventId = Number(id);
+        const res = await api.backofficeEvents.getSessions(token, eventId);
+        return (res.sessions || []).flatMap((session) => {
+          const picked = toAssignedSession(
+            session as Record<string, unknown>,
+            eventId,
+          );
+          return picked ? [picked] : [];
+        });
+      }),
+    )
+      .then((lists) => {
+        if (!cancelled) setEventLevelSessions(lists.flat());
+      })
+      .catch((error) => {
+        console.error('Failed to fetch event sessions:', error);
+        if (!cancelled) setEventLevelSessions([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingEventLevel(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [eventLevelIdsKey]);
+  const assignedSessions = [
+    ...(user?.assignedSessions || []),
+    ...eventLevelSessions,
+  ];
   const hasAssignedSessions = assignedSessions.length > 0;
+
+  // Main session per event, so the picker can mark it.
+  const [mainSessionIds, setMainSessionIds] = useState<MainSessionIds>({});
+  const pickerEventIdsKey = Array.from(
+    new Set([
+      ...assignedSessions.map((s) => s.eventId),
+      ...eventSessions.map((s) => s.eventId),
+    ]),
+  ).join(',');
+  useEffect(() => {
+    if (!pickerEventIdsKey) return;
+    let cancelled = false;
+    const token = getBackofficeToken();
+    pickerEventIdsKey.split(',').forEach((id) => {
+      const eventId = Number(id);
+      api.checkins
+        .deskSummary(token, eventId)
+        .then((d) => {
+          if (!cancelled)
+            setMainSessionIds((prev) => ({
+              ...prev,
+              [eventId]: d.mainSession.id,
+            }));
+        })
+        .catch(() => {
+          // Event without a main session: no badge.
+        });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [pickerEventIdsKey]);
 
   // Auto-select if staff has exactly 1 session
   useEffect(() => {
@@ -290,31 +423,11 @@ export default function CheckinPage() {
           );
           setEventSessions(
             (res.sessions || []).flatMap((session) => {
-              const record = session as Record<string, unknown>;
-              if (
-                typeof record.id !== 'number' ||
-                typeof record.sessionName !== 'string'
-              )
-                return [];
-              return [
-                {
-                  sessionId: record.id,
-                  sessionName: record.sessionName,
-                  sessionType:
-                    typeof record.sessionType === 'string'
-                      ? record.sessionType
-                      : null,
-                  room: typeof record.room === 'string' ? record.room : null,
-                  startTime:
-                    typeof record.startTime === 'string'
-                      ? record.startTime
-                      : '',
-                  endTime:
-                    typeof record.endTime === 'string' ? record.endTime : '',
-                  eventId: selectedEvent.id,
-                  eventName: selectedEvent.eventName,
-                },
-              ];
+              const picked = toAssignedSession(
+                session as Record<string, unknown>,
+                selectedEvent.id,
+              );
+              return picked ? [picked] : [];
             }),
           );
         } catch (error) {
@@ -476,7 +589,6 @@ export default function CheckinPage() {
           name,
           ticketType: registration.ticketName,
           eventName: registration.eventName,
-          mealCouponEligible: registration.booth?.mealCouponEligible,
         });
         return;
       }
@@ -487,7 +599,6 @@ export default function CheckinPage() {
         name,
         ticketType: registration.ticketName,
         eventName: registration.eventName,
-        mealCouponEligible: registration.booth?.mealCouponEligible,
         message: `Checked in: ${activeSession.sessionName}`,
       });
       return;
@@ -531,7 +642,6 @@ export default function CheckinPage() {
             name: `${res.registration.firstName} ${res.registration.lastName}`,
             ticketType: res.registration.ticketName,
             eventName: res.registration.eventName,
-            mealCouponEligible: res.registration.booth?.mealCouponEligible,
             message: `Checked in: ${res.checkedInSession?.sessionName}`,
             registrationSessionId: undefined,
           });
@@ -563,7 +673,6 @@ export default function CheckinPage() {
             name: `${res.registration.firstName} ${res.registration.lastName}`,
             ticketType: res.registration.ticketName,
             eventName: res.registration.eventName,
-            mealCouponEligible: res.registration.booth?.mealCouponEligible,
             message: res.checkedInCount
               ? `Checked in ${res.checkedInCount} sessions!`
               : 'Check-in successful!',
@@ -582,7 +691,7 @@ export default function CheckinPage() {
           status: 'duplicate',
           code,
           message,
-          ...(coupon ?? {}),
+          ...(coupon ? { name: coupon.name } : {}),
         });
       } else if (
         msg.includes('ไม่มีสิทธิ์') ||
@@ -666,59 +775,6 @@ export default function CheckinPage() {
     }
   };
 
-  const checkInAllSessions = async () => {
-    if (!pendingRegistration) return;
-    if (testMode) {
-      if (soundEnabled) playSuccessSound();
-      setScanResult({
-        status: 'success',
-        code: pendingRegistration.regCode,
-        name: `${pendingRegistration.firstName} ${pendingRegistration.lastName}`,
-        ticketType: pendingRegistration.ticketName,
-        eventName: pendingRegistration.eventName,
-        mealCouponEligible: pendingRegistration.booth?.mealCouponEligible,
-        message: `Checked in ${pendingSessions?.filter((s) => !s.checkedInAt).length ?? 0} sessions!`,
-      });
-      setPendingSessions(null);
-      setPendingRegistration(null);
-      return;
-    }
-    setIsLoading(true);
-    try {
-      const token = getBackofficeToken();
-      const res = await api.checkins.create(token, {
-        regCode: pendingRegistration.regCode,
-        checkInAll: true,
-      });
-      if (res.success) {
-        if (soundEnabled) playSuccessSound();
-        setScanResult({
-          status: 'success',
-          code: pendingRegistration.regCode,
-          name: `${pendingRegistration.firstName} ${pendingRegistration.lastName}`,
-          ticketType: pendingRegistration.ticketName,
-          eventName: pendingRegistration.eventName,
-          mealCouponEligible: pendingRegistration.booth?.mealCouponEligible,
-          message: `Checked in ${res.checkedInCount} sessions!`,
-        });
-        setPendingSessions(null);
-        setPendingRegistration(null);
-        fetchData();
-      }
-    } catch (error) {
-      const msg = errorMessage(error, 'Check-in failed');
-      if (isAlreadyCheckedInMessage(msg)) {
-        if (soundEnabled) playDuplicateSound();
-        toast.error(ALREADY_CHECKED_IN_MESSAGE);
-      } else {
-        if (soundEnabled) playErrorSound();
-        toast.error(msg);
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   // ─── Undo check-in ───
   const handleUndo = async (checkin: RecentCheckin) => {
     try {
@@ -784,11 +840,6 @@ export default function CheckinPage() {
     setShowSessionPicker(false);
   };
 
-  const handleEnterFreeMode = () => {
-    setActiveSession(null);
-    setShowSessionPicker(false);
-  };
-
   // ─── PRIS 2026 main session: desk screen ───
   if (activeSession && resolvingDesk) {
     return (
@@ -842,31 +893,12 @@ export default function CheckinPage() {
               </h3>
               <div className="space-y-3">
                 {assignedSessions.map((session) => (
-                  <button
+                  <SessionCard
                     key={session.sessionId}
-                    onClick={() => handleSelectSession(session)}
-                    className="w-full p-4 rounded-xl border-2 border-zinc-200 hover:border-blue-400 hover:bg-emerald-50 text-left transition-all group"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-semibold text-zinc-800 group-hover:text-emerald-700">
-                          {session.sessionName}
-                        </p>
-                        <div className="flex items-center gap-3 mt-1 text-xs text-zinc-400">
-                          {session.room && <span>Room: {session.room}</span>}
-                          {session.sessionType && (
-                            <span className="capitalize">
-                              {session.sessionType.replace('_', ' ')}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <IconDoor
-                        size={24}
-                        className="text-gray-300 group-hover:text-emerald-600"
-                      />
-                    </div>
-                  </button>
+                    session={session}
+                    isMain={isMainSession(mainSessionIds, session)}
+                    onSelect={handleSelectSession}
+                  />
                 ))}
               </div>
             </div>
@@ -937,73 +969,36 @@ export default function CheckinPage() {
                 </h3>
               </div>
 
-              {/* All Sessions option (event-level scan) */}
-              <button
-                onClick={() => {
-                  setActiveSession(null);
-                  setShowSessionPicker(false);
-                }}
-                className="w-full p-4 rounded-xl border-2 border-emerald-200 bg-emerald-50 hover:border-blue-400 text-left transition-all group mb-3"
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-semibold text-emerald-700">
-                      All Sessions
-                    </p>
-                    <p className="text-xs text-emerald-600 mt-1">
-                      Scan and choose sessions manually
-                    </p>
-                  </div>
-                  <IconCalendarEvent size={24} className="text-teal-400" />
-                </div>
-              </button>
-
               {/* Individual sessions */}
               <div className="space-y-3">
                 {eventSessions.map((session) => (
-                  <button
+                  <SessionCard
                     key={session.sessionId}
-                    onClick={() => handleSelectSession(session)}
-                    className="w-full p-4 rounded-xl border-2 border-zinc-200 hover:border-blue-400 hover:bg-emerald-50 text-left transition-all group"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-semibold text-zinc-800 group-hover:text-emerald-700">
-                          {session.sessionName}
-                        </p>
-                        <div className="flex items-center gap-3 mt-1 text-xs text-zinc-400">
-                          {session.room && <span>Room: {session.room}</span>}
-                          {session.sessionType && (
-                            <span className="capitalize">
-                              {session.sessionType.replace('_', ' ')}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <IconDoor
-                        size={24}
-                        className="text-gray-300 group-hover:text-emerald-600"
-                      />
-                    </div>
-                  </button>
+                    session={session}
+                    isMain={isMainSession(mainSessionIds, session)}
+                    onSelect={handleSelectSession}
+                  />
                 ))}
               </div>
             </div>
           )}
 
-          {/* Non-admin without assigned sessions → Free mode */}
-          {!isAdmin && !hasAssignedSessions && (
-            <button
-              onClick={handleEnterFreeMode}
-              className="w-full p-4 rounded-xl border-2 border-dashed border-zinc-200 hover:border-blue-400 hover:bg-emerald-50 text-center transition-all"
-            >
+          {/* Non-admin: loading whole-event sessions, or nothing assigned */}
+          {!isAdmin && !hasAssignedSessions && loadingEventLevel && (
+            <div className="flex items-center justify-center py-8 text-zinc-400">
+              <IconLoader2 size={24} className="animate-spin mr-2" /> Loading
+              sessions...
+            </div>
+          )}
+          {!isAdmin && !hasAssignedSessions && !loadingEventLevel && (
+            <div className="w-full p-4 rounded-xl border-2 border-dashed border-zinc-200 text-center">
               <p className="font-medium text-zinc-500">
-                Free Mode (All Sessions)
+                ยังไม่ได้รับมอบหมาย session
               </p>
               <p className="text-xs text-zinc-400 mt-1">
-                Scan and choose sessions manually
+                กรุณาติดต่อ admin เพื่อมอบหมาย session สำหรับ check-in
               </p>
-            </button>
+            </div>
           )}
         </div>
       </AdminLayout>
@@ -1242,11 +1237,6 @@ export default function CheckinPage() {
                         <p className="text-xs text-zinc-400 font-mono">
                           {pendingRegistration.regCode}
                         </p>
-                        <MealCouponNote
-                          eligible={
-                            pendingRegistration.booth?.mealCouponEligible
-                          }
-                        />
                       </div>
                     </div>
                   </div>
@@ -1305,21 +1295,12 @@ export default function CheckinPage() {
                       ถัดไป
                     </button>
                   ) : (
-                    <div className="flex gap-2">
-                      <button
-                        onClick={checkInAllSessions}
-                        disabled={isLoading}
-                        className="flex-1 bg-emerald-700 hover:bg-teal-800 disabled:bg-gray-300 text-white py-3 rounded-xl font-medium transition-colors"
-                      >
-                        Check-in All Sessions
-                      </button>
-                      <button
-                        onClick={clearResult}
-                        className="px-4 py-3 bg-zinc-100 rounded-lg hover:bg-zinc-200 text-zinc-500 transition-colors"
-                      >
-                        Cancel
-                      </button>
-                    </div>
+                    <button
+                      onClick={clearResult}
+                      className="w-full px-4 py-3 bg-zinc-100 rounded-lg hover:bg-zinc-200 text-zinc-500 transition-colors"
+                    >
+                      Cancel
+                    </button>
                   )}
                 </div>
               </div>
@@ -1383,7 +1364,6 @@ export default function CheckinPage() {
                   >
                     {scanResult.message}
                   </p>
-                  <MealCouponNote eligible={scanResult.mealCouponEligible} />
 
                   {scanResult.name && (
                     <div className="bg-white rounded-lg p-4 mb-4 text-left shadow-sm">
