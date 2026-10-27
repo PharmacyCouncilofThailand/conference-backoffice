@@ -94,6 +94,8 @@ interface BackofficeCheckinRegistration {
     type: string;
     mealCouponEligible: boolean | null;
   } | null;
+  /** Meal coupon: Booth quota or VIP (PRIS). */
+  mealCouponEligible?: boolean | null;
   id: number;
   regCode: string;
   firstName: string;
@@ -171,6 +173,7 @@ interface BackofficeCheckinRow {
     type: string;
     mealCouponEligible: boolean | null;
   } | null;
+  mealCouponEligible?: boolean | null;
   kind?: 'daily' | 'single';
   id: number | string;
   attendanceId?: string | null;

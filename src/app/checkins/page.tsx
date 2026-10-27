@@ -31,6 +31,7 @@ import {
 
 interface CheckinRow {
   booth?: { mealCouponEligible: boolean | null } | null;
+  mealCouponEligible?: boolean | null;
   kind?: 'daily' | 'single';
   id: number | string;
   attendanceId?: string | null;
@@ -689,7 +690,7 @@ export default function CheckinsListPage() {
                             )}
                           </td>
                           <td className="py-4 pr-4">
-                            {row.booth?.mealCouponEligible === true ? (
+                            {(row.mealCouponEligible ?? row.booth?.mealCouponEligible) === true ? (
                               <span className="inline-block whitespace-nowrap rounded-full border border-emerald-200 bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700">
                                 {MEAL_COUPON_LABEL}
                               </span>
