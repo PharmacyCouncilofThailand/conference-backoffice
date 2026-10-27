@@ -1693,6 +1693,253 @@ function detailFixture(title = 'Synthetic detail'): PresentationDetailDto {
   } as unknown as PresentationDetailDto;
 }
 
+test('Admin management data stays scoped across session and Event changes', async () => {
+  for (const change of ['session', 'event']) {
+    const auth = {
+      user: { id: 1, role: 'admin', assignedEvents: [] },
+      token: 'first-admin-session',
+      isAdmin: true,
+      isLoading: false,
+    };
+    let resolveOldBatch: (value: unknown) => void = () => {};
+    let batchReads = 0;
+    let deferHistory = false;
+    let resolveOldHistory: (value: unknown) => void = () => {};
+    const harness = presentationHarness(
+      'src/app/presentations/page.tsx',
+      'default',
+      {
+        '@/components/layout/AdminLayout': { AdminLayout: 'main' },
+        '@/components/common': { Pagination: 'pagination' },
+        '@/lib/api': {
+          api: {
+            events: {
+              list: async () => ({
+                events: [42, 43].map((id) => ({
+                  id,
+                  eventCode: 'PRIS-2026',
+                  eventName: `Event ${id}`,
+                })),
+              }),
+            },
+            presentations: {
+              list: async () => ({
+                data: {
+                  items: [{ ...detailFixture().row, canNotify: true }],
+                  total: 1,
+                  pageSize: 25,
+                  counts: {},
+                  settings: {},
+                  capabilities: { manage: true },
+                },
+              }),
+              getSettings: async (eventId: number, token: string) => {
+                if (deferHistory) {
+                  deferHistory = false;
+                  return new Promise((resolve) => {
+                    resolveOldHistory = resolve;
+                  });
+                }
+                return {
+                  data: {
+                    settings: {
+                      closesAt: '2026-10-20T17:00:00.000Z',
+                      version: 1,
+                    },
+                    history: [
+                      {
+                        id: 'history',
+                        actorId: 1,
+                        reason: `${token}-${eventId}-private-history`,
+                        createdAt: '2026-10-07T00:00:00.000Z',
+                      },
+                    ],
+                    capabilities: { manage: true },
+                  },
+                };
+              },
+              batchResult: async () => {
+                if (++batchReads === 2)
+                  return new Promise((resolve) => {
+                    resolveOldBatch = resolve;
+                  });
+                return {
+                  data: {
+                    jobs: [
+                      {
+                        id: 'job',
+                        abstractId: 501,
+                        recipient: 'old-admin-recipient@example.invalid',
+                        state: 'sent',
+                      },
+                    ],
+                  },
+                };
+              },
+            },
+          },
+        },
+        '@/lib/presentationUi': { selectablePresentationIds },
+        '@/components/presentations/PresentationTable': {
+          PresentationTable: 'presentation-table',
+          progressLabels: {},
+          matchLabels: {},
+          mailLabels: {},
+          thaiTime: (value: string) => value,
+        },
+        '@/components/presentations/PresentationEmailDialog': {
+          PresentationEmailDialog: 'email-dialog',
+        },
+        '@/components/presentations/PresentationManagementDialog': {
+          PresentationManagementDialog: 'management-dialog',
+        },
+        '@/components/presentations/PresentationHistoryViews': {
+          PresentationDeadlineHistory: 'deadline-history',
+        },
+      },
+      auth,
+    );
+    let rendered: ReturnType<typeof nodes> = [];
+    const settle = async () => {
+      for (let turn = 0; turn < 4; turn++) {
+        rendered = harness.render({});
+        while (harness.effects.length) harness.effects.shift()!();
+        await new Promise((resolve) => setImmediate(resolve));
+      }
+      rendered = harness.render({});
+    };
+    const click = (label: string) => {
+      const button = rendered.find(
+        (node) =>
+          node.type === 'button' &&
+          (Array.isArray(node.props.children)
+            ? node.props.children
+                .filter((child) => typeof child === 'string')
+                .join('')
+                .trim()
+            : node.props.children) === label,
+      );
+      assert.ok(button, label);
+      return (button.props.onClick as () => void | Promise<void>)();
+    };
+    const queue = () => {
+      click('ตัวอย่างแจ้งส่ง');
+      rendered = harness.render({});
+      const dialog = rendered.find((node) => node.type === 'email-dialog')!;
+      const onQueued = dialog.props.onQueued as (
+        id: string,
+        count: number,
+      ) => void;
+      onQueued('same-batch-id', 1);
+      return onQueued;
+    };
+    await settle();
+    click('ติดตามและอีเมล');
+    await settle();
+    const oldOnQueued = queue();
+    await settle();
+    await click('โหลดผลส่งล่าสุด');
+    rendered = harness.render({});
+    assert.ok(
+      JSON.stringify(rendered).includes('old-admin-recipient@example.invalid'),
+    );
+    assert.ok(
+      JSON.stringify(rendered).includes(
+        'first-admin-session-42-private-history',
+      ),
+    );
+    click('ผลงานนักศึกษา');
+    rendered = harness.render({});
+    assert.ok(
+      JSON.stringify(rendered).includes('old-admin-recipient@example.invalid'),
+    );
+    await settle();
+    const oldRequest = click('โหลดผลส่งล่าสุด');
+    click('เปลี่ยนกำหนดส่ง');
+    rendered = harness.render({});
+    assert.ok(rendered.some((node) => node.type === 'management-dialog'));
+    if (change === 'session') {
+      auth.user.id = 2;
+      auth.token = 'second-admin-session';
+    } else {
+      const event = rendered.find(
+        (node) => node.props['aria-label'] === 'Event',
+      )!;
+      (event.props.onChange as (event: unknown) => void)({
+        target: { value: '43' },
+      });
+    }
+    rendered = harness.render({});
+    for (const hidden of [
+      'old-admin-recipient@example.invalid',
+      'first-admin-session-42-private-history',
+      'same-batch-id',
+    ]) {
+      assert.equal(
+        JSON.stringify(rendered).includes(hidden),
+        false,
+        `${change}: ${hidden}`,
+      );
+    }
+    assert.equal(
+      rendered.some((node) =>
+        ['management-dialog', 'email-dialog'].includes(String(node.type)),
+      ),
+      false,
+    );
+    await settle();
+    queue();
+    await settle();
+    resolveOldBatch({
+      data: {
+        jobs: [
+          {
+            id: 'late',
+            abstractId: 501,
+            recipient: 'late-old-recipient@example.invalid',
+            state: 'sent',
+          },
+        ],
+      },
+    });
+    await oldRequest;
+    rendered = harness.render({});
+    assert.equal(
+      JSON.stringify(rendered).includes('late-old-recipient@example.invalid'),
+      false,
+    );
+    assert.ok(JSON.stringify(rendered).includes('same-batch-id'));
+    oldOnQueued('late-old-batch', 1);
+    rendered = harness.render({});
+    assert.ok(JSON.stringify(rendered).includes('same-batch-id'));
+    assert.equal(JSON.stringify(rendered).includes('late-old-batch'), false);
+    deferHistory = true;
+    click('โหลดข้อมูลใหม่');
+    await settle();
+    auth.token = 'third-admin-session';
+    harness.render({});
+    await settle();
+    resolveOldHistory({
+      data: {
+        settings: { closesAt: '2026-10-20T17:00:00.000Z', version: 1 },
+        history: [
+          {
+            id: 'late-history',
+            actorId: 1,
+            reason: 'late-old-history',
+            createdAt: '2026-10-07T00:00:00.000Z',
+          },
+        ],
+        capabilities: { manage: true },
+      },
+    });
+    await new Promise((resolve) => setImmediate(resolve));
+    rendered = harness.render({});
+    assert.equal(JSON.stringify(rendered).includes('late-old-history'), false);
+    assert.ok(JSON.stringify(rendered).includes('third-admin-session'));
+  }
+});
+
 test('real detail page restricts viewer controls, invalid IDs and unassigned event reads', async () => {
   for (const role of ['admin', 'organizer', 'reviewer']) {
     let reads = 0;

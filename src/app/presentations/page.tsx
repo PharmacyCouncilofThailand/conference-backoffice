@@ -41,9 +41,10 @@ export default function PresentationsPage() {
     scope: string;
     data: PresentationListDto;
   } | null>(null);
-  const [history, setHistory] = useState<PresentationSettingsHistoryDto | null>(
-    null,
-  );
+  const [loadedHistory, setHistory] = useState<{
+    scope: string;
+    data: PresentationSettingsHistoryDto;
+  } | null>(null);
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [page, setPage] = useState(1);
   const [adminTab, setTab] = useState<'verify' | 'notifications' | 'received'>(
@@ -63,7 +64,8 @@ export default function PresentationsPage() {
   const [emailKind, setEmailKind] = useState<'initial' | 'reminder' | null>(
     null,
   );
-  const [batch, setBatch] = useState<{
+  const [loadedBatch, setBatch] = useState<{
+    scope: string;
     eventId: number;
     id: string;
     queued: number;
@@ -120,6 +122,11 @@ export default function PresentationsPage() {
     events.find((event) => event.id === eventChoice)?.id ??
     events.find((event) => event.id === currentEvent?.id)?.id ??
     events[0]?.id;
+  const managementScope = `${accessScope}:${eventId}`;
+  const activeManagementScope = useRef(managementScope);
+  const history =
+    loadedHistory?.scope === managementScope ? loadedHistory.data : null;
+  const batch = loadedBatch?.scope === managementScope ? loadedBatch : null;
   const tab = isAdmin ? adminTab : 'received';
   const scope = `${accessScope}:${isAdmin}:${eventId}:${page}:${tab}:${search}:${round}:${participantGroup}:${presentationType}:${status}:${matchState}`;
   const selectionScope = useRef(scope);
@@ -141,11 +148,13 @@ export default function PresentationsPage() {
     setSettingsOpen(false);
   }, [scope]);
   useEffect(() => {
+    activeManagementScope.current = managementScope;
     setBatch(null);
+    setBatchBusy(false);
     setNotice(null);
     setPage(1);
     recheckKey.current = null;
-  }, [eventId, accessScope]);
+  }, [managementScope]);
   useEffect(() => {
     let current = true;
     setLoaded(null);
@@ -181,7 +190,8 @@ export default function PresentationsPage() {
       api.presentations
         .getSettings(eventId, token)
         .then((result) => {
-          if (current) setHistory(result.data);
+          if (current && activeManagementScope.current === managementScope)
+            setHistory({ scope: managementScope, data: result.data });
         })
         .catch((error) => {
           if (current)
@@ -207,6 +217,7 @@ export default function PresentationsPage() {
     matchState,
     refresh,
     scope,
+    managementScope,
   ]);
   const manage = isAdmin && data?.capabilities.manage === true;
   const reload = () => {
@@ -254,14 +265,19 @@ export default function PresentationsPage() {
         token,
       );
       setBatch((current) =>
-        current?.id === requested.id && current.eventId === requested.eventId
+        activeManagementScope.current === requested.scope &&
+        current?.scope === requested.scope &&
+        current.id === requested.id &&
+        current.eventId === requested.eventId
           ? { ...current, result: result.data }
           : current,
       );
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'โหลดผลส่งไม่สำเร็จ');
+      if (activeManagementScope.current === requested.scope)
+        setError(error instanceof Error ? error.message : 'โหลดผลส่งไม่สำเร็จ');
     } finally {
-      setBatchBusy(false);
+      if (activeManagementScope.current === requested.scope)
+        setBatchBusy(false);
     }
   };
   const filter = (setter: (value: string) => void, value: string) => {
@@ -337,7 +353,9 @@ export default function PresentationsPage() {
                             <p className="text-2xl font-bold text-zinc-800">
                               {stat.value ?? '—'}
                             </p>
-                            <p className="text-sm text-zinc-400">{stat.label}</p>
+                            <p className="text-sm text-zinc-400">
+                              {stat.label}
+                            </p>
                           </div>
                         </div>
                       </div>
@@ -479,11 +497,13 @@ export default function PresentationsPage() {
                         }
                       >
                         <option value="">ทุกสถานะ</option>
-                        {Object.entries(progressLabels).map(([value, label]) => (
-                          <option key={value} value={value}>
-                            {label}
-                          </option>
-                        ))}
+                        {Object.entries(progressLabels).map(
+                          ([value, label]) => (
+                            <option key={value} value={value}>
+                              {label}
+                            </option>
+                          ),
+                        )}
                       </select>
                     )}
                     {isAdmin && (
@@ -701,7 +721,9 @@ export default function PresentationsPage() {
                     abstractIds={abstractIds}
                     onClose={() => setEmailKind(null)}
                     onQueued={(id, queued) => {
-                      setBatch({ eventId, id, queued });
+                      if (activeManagementScope.current !== managementScope)
+                        return;
+                      setBatch({ scope: managementScope, eventId, id, queued });
                       reload();
                     }}
                   />
