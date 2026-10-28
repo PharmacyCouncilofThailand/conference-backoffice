@@ -1,5 +1,6 @@
 // One stable color per PRIS holder type, shared by the check-in desk popup and
-// dashboard so a type always reads the same everywhere. Gold is reserved for VIP.
+// dashboard so a type always reads the same everywhere. Diamond is reserved for
+// VVIP and gold for VIP.
 
 export interface HolderTypeTone {
   badge: string; // pill: border + background + text
@@ -8,6 +9,7 @@ export interface HolderTypeTone {
 }
 
 const TONES: Record<string, HolderTypeTone> = {
+  vvip: { badge: 'border-sky-300 bg-gradient-to-br from-sky-50 via-white to-cyan-200 text-sky-950 shadow-[0_0_0_1px_rgba(125,211,252,0.35)]', bar: 'bg-cyan-400', dot: 'bg-cyan-400' },
   vip: { badge: 'border-amber-300 bg-gradient-to-br from-amber-100 via-yellow-50 to-amber-200 text-amber-950', bar: 'bg-amber-400', dot: 'bg-amber-400' },
   council_committee: { badge: 'border-indigo-300 bg-indigo-50 text-indigo-800', bar: 'bg-indigo-500', dot: 'bg-indigo-500' },
   college_committee: { badge: 'border-fuchsia-300 bg-fuchsia-50 text-fuchsia-800', bar: 'bg-fuchsia-500', dot: 'bg-fuchsia-500' },

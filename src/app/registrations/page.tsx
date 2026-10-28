@@ -37,6 +37,7 @@ import {
   IconUserPlus,
   IconLoader2,
   IconSparkles,
+  IconDiamond,
 } from '@tabler/icons-react';
 
 interface Registration {
@@ -113,6 +114,8 @@ const getHolderBadgeTone = (
   if (kind === 'type') {
     // Keep each category's color stable across sorting, pages and refreshes.
     switch (registration.holderType) {
+      case 'vvip':
+        return 'diamond';
       case 'vip':
         return 'gold';
       case 'speaker':
@@ -143,6 +146,7 @@ const getHolderBadgeTone = (
 };
 
 const holderBadgeClasses = {
+  diamond: 'border-sky-300 bg-gradient-to-br from-sky-50 via-white to-cyan-200 text-sky-950 shadow-[0_0_0_1px_rgba(125,211,252,0.35)]',
   gold: 'border-amber-300 bg-gradient-to-br from-amber-100 via-yellow-50 to-amber-200 text-amber-950 shadow-sm',
   sky: 'border-sky-400 bg-sky-50 text-sky-800',
   slate: 'border-slate-400 bg-slate-50 text-slate-700',
@@ -173,6 +177,9 @@ function HolderTypeBadge({
     <span
       className={`inline-flex max-w-64 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium leading-relaxed ${kind === 'gift' ? 'whitespace-nowrap' : 'whitespace-normal'} ${holderBadgeClasses[tone]}`}
     >
+      {tone === 'diamond' && (
+        <IconDiamond size={14} className="shrink-0" aria-hidden="true" />
+      )}
       {tone === 'gold' && (
         <IconSparkles size={14} className="shrink-0" aria-hidden="true" />
       )}

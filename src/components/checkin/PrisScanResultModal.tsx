@@ -5,6 +5,7 @@ import { IconAlertTriangle, IconCheck, IconSparkles, IconX } from '@tabler/icons
 import { holderTypeTone } from '@/lib/holder-type-colors';
 import { mealCouponStatusOf, type MealCouponStatus } from '@/lib/meal-coupon';
 import { MealCouponBadge } from '@/components/checkin/MealCouponBadge';
+import { HolderTypeIcon } from '@/components/checkin/HolderTypeIcon';
 
 export interface DeskRegistration {
   firstName: string;
@@ -90,7 +91,6 @@ export function PrisScanResultModal({
     }
   };
 
-  const isVip = reg?.holderType === 'vip';
   const tone = holderTypeTone(reg?.holderType);
 
   return (
@@ -145,7 +145,7 @@ export function PrisScanResultModal({
               <Field label="Ticket type">
                 {reg.holderTypeLabel ? (
                   <span className={`${pill} ${tone.badge}`}>
-                    {isVip && <IconSparkles size={16} />}
+                    <HolderTypeIcon holderType={reg.holderType} size={16} />
                     {reg.holderTypeLabel}
                   </span>
                 ) : (
