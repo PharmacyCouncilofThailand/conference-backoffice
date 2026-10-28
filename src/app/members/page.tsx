@@ -36,7 +36,8 @@ interface Member {
     | 'general'
     | 'healthhack'
     | 'booth'
-    | 'speaker';
+    | 'speaker'
+    | 'media';
   status: 'pending_approval' | 'active' | 'rejected';
   phone: string | null;
   country: string | null;
@@ -58,6 +59,7 @@ const roleLabels: Record<string, { label: string; className: string }> = {
   healthhack: { label: 'HealthHack', className: 'bg-sky-100 text-sky-800' },
   booth: { label: 'Booth', className: 'bg-amber-100 text-amber-800' },
   speaker: { label: 'Speaker', className: 'bg-violet-100 text-violet-800' },
+  media: { label: 'Media', className: 'bg-cyan-100 text-cyan-800' },
   pharmacist: { label: 'Pharmacist', className: 'bg-green-100 text-green-800' },
   medical_professional: {
     label: 'Medical Professional',
@@ -375,6 +377,7 @@ export default function MembersPage() {
             <option value="healthhack">HealthHack</option>
             <option value="booth">Booth</option>
             <option value="speaker">Speaker</option>
+            <option value="media">Media</option>
           </select>
 
           <select
