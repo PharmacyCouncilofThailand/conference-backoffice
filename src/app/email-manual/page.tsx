@@ -172,7 +172,7 @@ function PreviewModal({
               Email Preview
             </div>
             <p className="text-xs text-slate-500 mt-1 truncate">
-              {recipient.label} / {recipient.email}
+              {recipient.label} / {data?.to ?? recipient.email}
             </p>
             {data && (
               <p className="text-xs text-slate-600 mt-2">
@@ -225,6 +225,8 @@ export default function EmailManualPage() {
   const [recipients, setRecipients] = useState<RecipientRow[]>([]);
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [search, setSearch] = useState('');
+  const [registrationSource, setRegistrationSource] = useState<'all' | 'manual'>('all');
+  const [recipientsRefreshKey, setRecipientsRefreshKey] = useState(0);
   const [comment, setComment] = useState('');
   const [loadingEvents, setLoadingEvents] = useState(true);
   const [loadingTemplates, setLoadingTemplates] = useState(true);
@@ -313,28 +315,35 @@ export default function EmailManualPage() {
   }, []);
 
   useEffect(() => {
+    setRecipients([]);
+    setSelected(new Set());
+    setResults(null);
+    setPreviewTarget(null);
     if (!eventId || !selectedTemplateId) {
-      setRecipients([]);
-      setSelected(new Set());
+      setLoadingRecipients(false);
       return;
     }
 
     const token = getBackofficeToken();
     const controller = new AbortController();
+    setLoadingRecipients(true);
     const timer = window.setTimeout(() => {
       const params = new URLSearchParams({
         eventId: String(eventId),
         template: selectedTemplateId,
       });
       if (search.trim()) params.set('q', search.trim());
+      if (selectedTemplateId === 'manual-registration' && registrationSource === 'manual') {
+        params.set('source', 'manual');
+      }
 
-      setLoadingRecipients(true);
       fetch(`${API_BASE}/api/backoffice/email-manual/recipients?${params}`, {
         headers: { Authorization: `Bearer ${token}` },
         signal: controller.signal,
       })
         .then(async (res) => {
           const json = await res.json();
+          if (controller.signal.aborted) return;
           if (!res.ok || !json.success)
             throw new Error(json.error || 'Failed to load recipients');
           setRecipients(json.recipients || []);
@@ -342,19 +351,21 @@ export default function EmailManualPage() {
           setResults(null);
         })
         .catch((err) => {
-          if (err instanceof DOMException && err.name === 'AbortError') return;
+          if (controller.signal.aborted) return;
           toast.error(
             err instanceof Error ? err.message : 'Failed to load recipients',
           );
         })
-        .finally(() => setLoadingRecipients(false));
+        .finally(() => {
+          if (!controller.signal.aborted) setLoadingRecipients(false);
+        });
     }, 250);
 
     return () => {
       window.clearTimeout(timer);
       controller.abort();
     };
-  }, [eventId, selectedTemplateId, search]);
+  }, [eventId, selectedTemplateId, search, registrationSource, recipientsRefreshKey]);
 
   function toggleAllVisible() {
     setSelected((prev) => {
@@ -388,7 +399,7 @@ export default function EmailManualPage() {
   }
 
   async function submitManualEmail(dryRun: boolean) {
-    if (!eventId || !selectedTemplate || selectedCount === 0) return;
+    if (loadingRecipients || sending || !eventId || !selectedTemplate || selectedCount === 0) return;
     const chosen = recipients.filter((recipient) => selected.has(recipient.id));
     if (!dryRun) {
       const minutes = Math.max(
@@ -506,10 +517,12 @@ export default function EmailManualPage() {
           <button
             onClick={() => {
               setSearch('');
+              setRegistrationSource('all');
               setSelected(new Set());
               setResults(null);
             }}
-            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 text-sm text-slate-600 hover:bg-slate-50"
+            disabled={sending}
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-50"
           >
             <IconRefresh size={16} />
             Reset
@@ -527,6 +540,7 @@ export default function EmailManualPage() {
                 onChange={(e) => {
                   setEventId(e.target.value ? Number(e.target.value) : '');
                   setSelectedTemplateId('');
+                  setRegistrationSource('all');
                   setRecipients([]);
                   setSelected(new Set());
                   setResults(null);
@@ -567,6 +581,7 @@ export default function EmailManualPage() {
                           key={template.id}
                           onClick={() => {
                             setSelectedTemplateId(template.id);
+                            setRegistrationSource('all');
                             setComment('');
                             setResults(null);
                           }}
@@ -626,10 +641,41 @@ export default function EmailManualPage() {
                 <input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
+                  disabled={sending}
                   className="w-full border border-slate-300 rounded-lg pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
                   placeholder="Search by name, email, order, code, or title..."
                 />
               </div>
+
+              {selectedTemplateId === 'manual-registration' && (
+                <div>
+                  <label
+                    htmlFor="registration-source"
+                    className="block text-xs font-semibold text-slate-600 mb-1"
+                  >
+                    ที่มาของการลงทะเบียน
+                  </label>
+                  <select
+                    id="registration-source"
+                    value={registrationSource}
+                    onChange={(e) => setRegistrationSource(e.target.value as 'all' | 'manual')}
+                    disabled={sending}
+                    className="border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 disabled:opacity-50"
+                  >
+                    <option value="all">ทั้งหมด</option>
+                    <option value="manual">เพิ่มแบบ Manual</option>
+                  </select>
+                </div>
+              )}
+              <button
+                type="button"
+                onClick={() => setRecipientsRefreshKey((key) => key + 1)}
+                disabled={sending || loadingRecipients}
+                className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+              >
+                <IconRefresh size={16} className={loadingRecipients ? 'animate-spin' : ''} />
+                โหลดรายชื่อใหม่
+              </button>
 
               {selectedTemplate.requiresComment && (
                 <input
@@ -648,14 +694,14 @@ export default function EmailManualPage() {
                 )}
                 <button
                   onClick={selectUnsent}
-                  disabled={sending || recipients.length === 0}
+                  disabled={sending || loadingRecipients || recipients.length === 0}
                   className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-50"
                 >
                   เลือกเฉพาะที่ยังไม่เคยส่ง
                 </button>
                 <button
                   onClick={() => submitManualEmail(true)}
-                  disabled={sending || selectedCount === 0}
+                  disabled={sending || loadingRecipients || selectedCount === 0}
                   className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-50"
                 >
                   <IconCheck size={16} />
@@ -663,7 +709,7 @@ export default function EmailManualPage() {
                 </button>
                 <button
                   onClick={() => submitManualEmail(false)}
-                  disabled={sending || selectedCount === 0}
+                  disabled={sending || loadingRecipients || selectedCount === 0}
                   className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-sky-600 text-white text-sm font-semibold hover:bg-sky-700 disabled:opacity-50"
                 >
                   {sending ? (
