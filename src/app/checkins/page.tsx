@@ -16,6 +16,7 @@ import {
 import { exportToExcel } from '@/lib/exportExcel';
 import { mealCouponStatusOf } from '@/lib/meal-coupon';
 import { MealCouponBadge } from '@/components/checkin/MealCouponBadge';
+import { HolderTypeIcon } from '@/components/checkin/HolderTypeIcon';
 import { useDebounce } from '@/hooks/useDebounce';
 import { Pagination } from '@/components/common';
 import toast from 'react-hot-toast';
@@ -727,8 +728,9 @@ export default function CheckinsListPage() {
                             </td>
                             <td className="px-4 py-4">
                               <span
-                                className={`badge whitespace-nowrap border ${holderTypeTone(row.holderType).badge}`}
+                                className={`badge inline-flex items-center gap-1 whitespace-nowrap border ${holderTypeTone(row.holderType).badge}`}
                               >
+                                <HolderTypeIcon holderType={row.holderType} />
                                 {row.holderType && row.holderTypeLabel
                                   ? row.holderTypeLabel
                                   : 'ยังไม่ระบุ'}
