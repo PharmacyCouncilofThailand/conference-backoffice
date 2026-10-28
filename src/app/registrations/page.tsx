@@ -22,6 +22,12 @@ import type {
 } from '@/types/session-grants';
 import { useAuth } from '@/contexts/AuthContext';
 import { holderReviewReason, type HolderTypeOption } from '@/lib/holder-types';
+import {
+  mealCouponExportText,
+  mealCouponStatusOf,
+  type MealCouponStatus,
+} from '@/lib/meal-coupon';
+import { MealCouponBadge } from '@/components/checkin/MealCouponBadge';
 import toast from 'react-hot-toast';
 import {
   IconUsers,
@@ -48,6 +54,8 @@ interface Registration {
   holderTypeLabel?: string | null;
   holderGift?: string | null;
   holderGiftCode?: 'gift' | 'none' | null;
+  mealCouponStatus?: MealCouponStatus;
+  mealCouponEligible?: boolean | null;
   eventName: string;
   eventCode: string;
   source?: string;
@@ -474,6 +482,7 @@ export default function RegistrationsPage() {
           ? {
               'TICKET TYPE': getHolderDisplay(r).label,
               GIFT: r.holderGift ?? '',
+              คูปองอาหาร: mealCouponExportText(r),
               'TICKET TYPE NOTE': holderReviewReason(r.holderTypeSource) ?? '',
             }
           : {}),
@@ -854,6 +863,7 @@ export default function RegistrationsPage() {
                 <option value="review">รอตรวจ</option>
                 <option value="unassigned">ยังไม่ระบุทั้งหมด</option>
                 <option value="gift">ได้ Gift</option>
+                <option value="meal_coupon">ได้คูปองอาหาร</option>
                 {holderTypeOptions.map((option) => (
                   <option key={option.key} value={option.key}>
                     {option.label}
@@ -1056,6 +1066,9 @@ export default function RegistrationsPage() {
                         <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">
                           Gift
                         </th>
+                        <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider whitespace-nowrap">
+                          คูปองอาหาร
+                        </th>
                       </>
                     )}
                     <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-500 uppercase tracking-wider">
@@ -1140,6 +1153,9 @@ export default function RegistrationsPage() {
                           </td>
                           <td className="px-4 py-4 text-center">
                             <HolderTypeBadge registration={reg} kind="gift" />
+                          </td>
+                          <td className="px-4 py-4 text-center">
+                            <MealCouponBadge status={mealCouponStatusOf(reg)} />
                           </td>
                         </>
                       )}

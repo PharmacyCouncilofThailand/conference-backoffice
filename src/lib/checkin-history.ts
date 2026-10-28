@@ -1,7 +1,8 @@
 // Formatting + export helpers for the PRIS daily check-in history view.
 
 export const PRIS_EVENT_CODE = 'PRIS-2026';
-export const MEAL_COUPON_LABEL = 'ได้รับ 1 ใบ';
+export { MEAL_COUPON_ELIGIBLE_LABEL as MEAL_COUPON_LABEL } from './meal-coupon';
+import { mealCouponExportText, type MealCouponStatus } from './meal-coupon';
 
 const TZ = 'Asia/Bangkok';
 
@@ -77,6 +78,7 @@ interface PrisExportSource {
   holderGift?: string | null;
   booth?: { mealCouponEligible: boolean | null } | null;
   mealCouponEligible?: boolean | null;
+  mealCouponStatus?: MealCouponStatus;
   attendanceDate?: string | null;
   scannedAt: string;
   scannedBy: { firstName: string | null; lastName: string | null } | null;
@@ -93,10 +95,7 @@ export function toPrisExportRow(row: PrisExportSource) {
     Ticket: row.ticketName ?? '',
     'Ticket Type': row.holderTypeLabel || 'ยังไม่ระบุ',
     Gift: row.holderGift === 'ให้' ? 'ให้' : '',
-    คูปองอาหาร:
-      (row.mealCouponEligible ?? row.booth?.mealCouponEligible) === true
-        ? MEAL_COUPON_LABEL
-        : '',
+    คูปองอาหาร: mealCouponExportText(row),
     วันที่เข้างาน: row.attendanceDate ?? '',
     'เวลาสแกน': formatBangkokStamp(row.scannedAt),
     ผู้สแกน: row.scannedBy

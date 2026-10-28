@@ -6,7 +6,6 @@ import { api } from '@/lib/api';
 import type { HolderTypeOption } from '@/lib/holder-types';
 import { holderTypeTone } from '@/lib/holder-type-colors';
 import {
-  MEAL_COUPON_LABEL,
   PRIS_EVENT_CODE,
   formatBangkokTime,
   formatThaiDayMonth,
@@ -15,6 +14,8 @@ import {
   toPrisExportRow,
 } from '@/lib/checkin-history';
 import { exportToExcel } from '@/lib/exportExcel';
+import { mealCouponStatusOf } from '@/lib/meal-coupon';
+import { MealCouponBadge } from '@/components/checkin/MealCouponBadge';
 import { useDebounce } from '@/hooks/useDebounce';
 import { Pagination } from '@/components/common';
 import toast from 'react-hot-toast';
@@ -31,6 +32,7 @@ import {
 interface CheckinRow {
   booth?: { mealCouponEligible: boolean | null } | null;
   mealCouponEligible?: boolean | null;
+  mealCouponStatus?: 'eligible' | 'over_quota' | null;
   kind?: 'daily' | 'single';
   id: number | string;
   attendanceId?: string | null;
@@ -740,14 +742,9 @@ export default function CheckinsListPage() {
                               )}
                             </td>
                             <td className="px-4 py-4">
-                              {(row.mealCouponEligible ??
-                                row.booth?.mealCouponEligible) === true ? (
-                                <span className="badge badge-success whitespace-nowrap">
-                                  {MEAL_COUPON_LABEL}
-                                </span>
-                              ) : (
-                                <span className="text-zinc-400">-</span>
-                              )}
+                              <MealCouponBadge
+                                status={mealCouponStatusOf(row)}
+                              />
                             </td>
                           </>
                         ) : (
