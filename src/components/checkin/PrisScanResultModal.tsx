@@ -3,6 +3,8 @@
 import { useEffect, useRef } from 'react';
 import { IconAlertTriangle, IconCheck, IconSparkles, IconX } from '@tabler/icons-react';
 import { holderTypeTone } from '@/lib/holder-type-colors';
+import { mealCouponStatusOf, type MealCouponStatus } from '@/lib/meal-coupon';
+import { MealCouponBadge } from '@/components/checkin/MealCouponBadge';
 
 export interface DeskRegistration {
   firstName: string;
@@ -12,6 +14,7 @@ export interface DeskRegistration {
   booth?: { mealCouponEligible: boolean | null } | null;
   /** Booth quota or VIP (from the API). */
   mealCouponEligible?: boolean | null;
+  mealCouponStatus?: MealCouponStatus;
   holderType?: string | null;
   holderTypeLabel?: string | null;
   holderGift?: string | null;
@@ -164,13 +167,7 @@ export function PrisScanResultModal({
                 )}
               </Field>
               <Field label="คูปองอาหาร">
-                {(reg.mealCouponEligible ?? reg.booth?.mealCouponEligible) === true ? (
-                  <span className={`${pill} border-emerald-300 bg-emerald-50 text-emerald-800`}>
-                    ได้รับ 1 ใบ
-                  </span>
-                ) : (
-                  <span className="text-base text-zinc-400">-</span>
-                )}
+                <MealCouponBadge status={mealCouponStatusOf(reg)} size="lg" />
               </Field>
             </div>
           </div>
