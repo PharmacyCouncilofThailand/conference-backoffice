@@ -30,7 +30,7 @@ const formatBangkok = (value: string | null) =>
     : '-';
 
 export function RewardCollection({ eventId, token, canCorrect }: Props) {
-  const [mode, setMode] = useState<'manual' | 'camera'>('manual');
+  const [mode, setMode] = useState<'manual' | 'camera'>('camera');
   const [credential, setCredential] = useState('');
   const [lookup, setLookup] = useState<RewardLookup | null>(null);
   const [loading, setLoading] = useState(false);
@@ -166,74 +166,84 @@ export function RewardCollection({ eventId, token, canCorrect }: Props) {
 
       {!lookup && (
         <>
-          <div
-            className="grid grid-cols-2 gap-2 rounded-xl bg-zinc-100 p-1 sm:inline-grid"
-            aria-label="วิธีค้นหารางวัล"
-          >
-            <button
-              type="button"
-              aria-pressed={mode === 'manual'}
-              className={`${mode === 'manual' ? 'btn-primary' : 'btn-secondary'} min-h-11 gap-2`}
-              onClick={() => setMode('manual')}
-            >
-              <IconSearch size={17} /> รหัส
-            </button>
-            <button
-              type="button"
-              aria-pressed={mode === 'camera'}
-              className={`${mode === 'camera' ? 'btn-primary' : 'btn-secondary'} min-h-11 gap-2`}
-              onClick={() => setMode('camera')}
-            >
-              <IconCamera size={17} /> กล้อง
-            </button>
-          </div>
-
-          {mode === 'camera' && (
-            <div className="mx-auto max-w-sm overflow-hidden rounded-xl border border-zinc-200 bg-black">
-              <Scanner
-                paused={loading}
-                onScan={(codes) => {
-                  const raw = codes[0]?.rawValue?.trim();
-                  if (loading || !raw || raw === lastScannedRef.current) return;
-                  lastScannedRef.current = raw;
-                  setCredential(raw);
-                  void runLookup(raw);
+          {mode === 'camera' ? (
+            <div className="space-y-3">
+              <div className="mx-auto max-w-md overflow-hidden rounded-2xl border border-zinc-200 bg-black">
+                <Scanner
+                  paused={loading}
+                  onScan={(codes) => {
+                    const raw = codes[0]?.rawValue?.trim();
+                    if (loading || !raw || raw === lastScannedRef.current)
+                      return;
+                    lastScannedRef.current = raw;
+                    setCredential(raw);
+                    void runLookup(raw);
+                  }}
+                  onError={() => {
+                    toast.error('ไม่สามารถเปิดกล้องได้ กรุณากรอกรหัสด้วยตนเอง');
+                    setMode('manual');
+                  }}
+                />
+              </div>
+              <p className="text-center text-sm text-zinc-600">
+                {loading
+                  ? 'กำลังค้นหารายการ…'
+                  : 'จ่อกล้องที่ QR ของผู้มารับรางวัล'}
+              </p>
+              <div className="text-center">
+                <button
+                  type="button"
+                  className="min-h-11 text-sm font-medium text-zinc-600 underline underline-offset-4 hover:text-zinc-900"
+                  onClick={() => setMode('manual')}
+                >
+                  สแกนไม่ได้? กรอกรหัสด้วยตนเอง
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+                <label className="min-w-0 flex-1 text-sm font-medium text-zinc-700">
+                  กรอกรหัสรับรางวัล
+                  <input
+                    className="input-field mt-1"
+                    value={credential}
+                    onChange={(event) => {
+                      setCredential(event.target.value);
+                      lastScannedRef.current = '';
+                    }}
+                    placeholder="PRIS-REWARD:... หรือรหัสตัวอักษร"
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter') void runLookup();
+                    }}
+                  />
+                </label>
+                <button
+                  type="button"
+                  className="btn-primary min-h-11 gap-2"
+                  disabled={loading || !credential.trim()}
+                  onClick={() => void runLookup()}
+                >
+                  {loading ? (
+                    <IconLoader2 size={17} className="animate-spin" />
+                  ) : (
+                    <IconSearch size={17} />
+                  )}
+                  ค้นหา
+                </button>
+              </div>
+              <button
+                type="button"
+                className="btn-secondary min-h-11 gap-2"
+                onClick={() => {
+                  lastScannedRef.current = '';
+                  setMode('camera');
                 }}
-                onError={() => toast.error('ไม่สามารถเปิดกล้องได้')}
-              />
+              >
+                <IconCamera size={17} /> กลับไปสแกนด้วยกล้อง
+              </button>
             </div>
           )}
-
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
-            <label className="min-w-0 flex-1 text-sm font-medium text-zinc-700">
-              QR หรือรหัสรับรางวัล
-              <input
-                className="input-field mt-1"
-                value={credential}
-                onChange={(event) => {
-                  setCredential(event.target.value);
-                  lastScannedRef.current = '';
-                }}
-                placeholder="PRIS-REWARD:... หรือรหัสตัวอักษร"
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter') void runLookup();
-                }}
-              />
-            </label>
-            <button
-              type="button"
-              className="btn-primary min-h-11 gap-2"
-              disabled={loading || !credential.trim()}
-              onClick={() => void runLookup()}
-            >
-              {loading ? (
-                <IconLoader2 size={17} className="animate-spin" />
-              ) : (
-                <IconSearch size={17} />
-              )}
-              ค้นหา
-            </button>
-          </div>
         </>
       )}
 
