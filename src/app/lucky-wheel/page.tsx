@@ -26,6 +26,7 @@ import type {
 } from '@/types/lucky-wheel';
 import { WheelConfiguration } from '@/components/lucky-wheel/WheelConfiguration';
 import { StockAdjustmentDialog } from '@/components/lucky-wheel/StockAdjustmentDialog';
+import { WinRateSettings } from '@/components/lucky-wheel/WinRateSettings';
 import { QrRights } from '@/components/lucky-wheel/QrRights';
 import { AttendanceSetup } from '@/components/lucky-wheel/AttendanceSetup';
 
@@ -81,6 +82,25 @@ function snapshotNumber(value: unknown, key: string): number | null {
   if (!value || typeof value !== 'object') return null;
   const current = (value as Record<string, unknown>)[key];
   return typeof current === 'number' ? current : null;
+}
+
+function winPercentSegments(
+  value: unknown,
+): Array<{ segmentId: string; winPercent: number | null }> {
+  if (!value || typeof value !== 'object') return [];
+  const segments = (value as Record<string, unknown>).segments;
+  return Array.isArray(segments) ? segments : [];
+}
+
+function winPercentChanges(before: unknown, after: unknown) {
+  const previous = new Map(
+    winPercentSegments(before).map((item) => [item.segmentId, item.winPercent]),
+  );
+  return winPercentSegments(after).map((item) => ({
+    segmentId: item.segmentId,
+    before: previous.get(item.segmentId) ?? null,
+    after: item.winPercent,
+  }));
 }
 
 function initialStockCredits(
@@ -808,6 +828,13 @@ export default function LuckyWheelAdminPage() {
                   )}
                 </div>
 
+                <WinRateSettings
+                  token={token ?? ''}
+                  eventId={eventId}
+                  segments={state.segments}
+                  onDone={loadState}
+                />
+
                 <div className="card">
                   <h2 className="text-lg font-semibold text-zinc-900">
                     Audit ล่าสุด
@@ -845,6 +872,24 @@ export default function LuckyWheelAdminPage() {
                                   '-'}
                               </p>
                             )}
+                            {entry.operation === 'win_percent_set' &&
+                              winPercentChanges(entry.before, entry.after).map(
+                                (change) => (
+                                  <p
+                                    key={change.segmentId}
+                                    className="mt-1 text-xs text-zinc-500"
+                                  >
+                                    {state.segments.find(
+                                      (segment) =>
+                                        segment.id === change.segmentId,
+                                    )?.name.th ?? change.segmentId}
+                                    : {change.before ?? 'อัตโนมัติ'}
+                                    {change.before == null ? '' : '%'} →{' '}
+                                    {change.after ?? 'อัตโนมัติ'}
+                                    {change.after == null ? '' : '%'}
+                                  </p>
+                                ),
+                              )}
                             {entry.operation === 'publish' &&
                               initialStockCredits(entry.after).map((credit) => (
                                 <p

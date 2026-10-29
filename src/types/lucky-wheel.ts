@@ -105,6 +105,7 @@ export type WheelSegmentState = {
   enabled: boolean;
   position: number;
   remaining: number | null;
+  winPercent: number | null;
   allocated: number;
   collected: number;
 };
@@ -266,6 +267,12 @@ export type RewardLookup = {
 export type StockAdjustmentInput = {
   segmentId: string;
   delta: number;
+  reason: string;
+  idempotencyKey: string;
+};
+
+export type WinPercentsInput = {
+  segments: Array<{ segmentId: string; winPercent: number | null }>;
   reason: string;
   idempotencyKey: string;
 };

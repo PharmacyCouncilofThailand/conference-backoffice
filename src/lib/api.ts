@@ -42,6 +42,7 @@ import type {
   RedemptionInput,
   RewardLookup,
   StockAdjustmentInput,
+  WinPercentsInput,
   WheelConfiguration,
   WheelImageUpload,
   WheelDayWindow,
@@ -1648,6 +1649,17 @@ export const api = {
         requestId: string;
       }>(`/api/backoffice/lucky-wheel/events/${eventId}/stock`, {
         method: 'POST',
+        body: JSON.stringify(data),
+        token,
+      }),
+    setWinPercents: (token: string, eventId: number, data: WinPercentsInput) =>
+      fetchAPI<{
+        eventId: number;
+        segments: WinPercentsInput['segments'];
+        replayed: boolean;
+        requestId: string;
+      }>(`/api/backoffice/lucky-wheel/events/${eventId}/win-percents`, {
+        method: 'PUT',
         body: JSON.stringify(data),
         token,
       }),
