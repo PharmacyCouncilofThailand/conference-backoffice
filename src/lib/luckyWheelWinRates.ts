@@ -5,9 +5,9 @@ type RateSegment = Pick<
   'id' | 'kind' | 'enabled' | 'remaining'
 > & { winPercent: number | null };
 
-// Mirrors the API draw (conference-api lucky-wheel/policy.ts): a segment with
-// winPercent keeps that share; the rest of 100% is split evenly across live
-// segments without one. Returns the actual chance (0–100) per segment ID.
+// Mirrors the API draw (conference-api lucky-wheel/policy.ts): a prize with
+// winPercent gets exactly that chance; the rest of 100% is split evenly across
+// the other live segments. Returns the actual chance (0–100) per segment ID.
 export function effectiveWinRates(
   segments: RateSegment[],
 ): Map<string, number> {
@@ -20,7 +20,9 @@ export function effectiveWinRates(
   if (!live.some((segment) => segment.kind === 'prize')) return rates;
 
   const hundredths = live.map((segment) =>
-    segment.winPercent == null ? null : Math.round(segment.winPercent * 100),
+    segment.kind !== 'prize' || segment.winPercent == null
+      ? null
+      : Math.round(segment.winPercent * 100),
   );
   const hasFixed = hundredths.some((value) => value !== null);
   const fixedTotal = hundredths.reduce<number>(

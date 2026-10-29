@@ -40,7 +40,11 @@ export function WinRateSettings({ token, eventId, segments, onDone }: Props) {
     () =>
       segments.map((segment) => ({
         segment,
-        result: parseWinPercent(drafts[segment.id] ?? savedText(segment)),
+        // No-prize slots always take the remainder, so they never keep a %.
+        result:
+          segment.kind === 'prize'
+            ? parseWinPercent(drafts[segment.id] ?? savedText(segment))
+            : ({ ok: true, value: null } as const),
       })),
     [segments, drafts],
   );
@@ -61,25 +65,24 @@ export function WinRateSettings({ token, eventId, segments, onDone }: Props) {
       ),
     [parsed],
   );
-  const live = segments.filter(
-    (segment) =>
-      segment.enabled &&
-      (segment.kind === 'no_prize' || (segment.remaining ?? 0) > 0),
-  );
-  const fixedTotal = parsed
-    .filter(({ segment }) => live.includes(segment))
-    .reduce(
-      (sum, { result }) => sum + (result.ok && result.value ? result.value : 0),
-      0,
-    );
-  const blankLive = parsed.filter(
-    ({ segment, result }) =>
-      live.includes(segment) && result.ok && result.value === null,
-  ).length;
+  const prizeTotal =
+    parsed
+      .filter(({ segment }) => segment.kind === 'prize')
+      .reduce(
+        (sum, { result }) =>
+          sum +
+          Math.round((result.ok && result.value ? result.value : 0) * 100),
+        0,
+      ) / 100;
+  const overLimit = prizeTotal > 100;
 
   const save = async () => {
     if (invalidIds.size > 0) {
       toast.error('กรอก % ระหว่าง 0.01–100 หรือเว้นว่าง');
+      return;
+    }
+    if (overLimit) {
+      toast.error('% ของรางวัลรวมกันต้องไม่เกิน 100%');
       return;
     }
     if (changed.length === 0) return;
@@ -122,21 +125,22 @@ export function WinRateSettings({ token, eventId, segments, onDone }: Props) {
           โอกาสออกรางวัล
         </h2>
         <p className="max-w-3xl text-sm leading-6 text-zinc-600">
-          กรอก % ให้ช่องที่ต้องการกำหนดเอง ช่องที่เว้นว่างจะแบ่ง % ที่เหลือเท่าๆ กัน
-          ถ้ารวมกันเกิน 100% ระบบจะคิดเป็นสัดส่วน และช่องที่เว้นว่างจะไม่ออกเลย
-          ช่องที่ปิดหรือของหมดจะไม่ถูกสุ่ม
+          รางวัลที่กรอก % จะออกตาม % นั้นพอดี ส่วนที่เหลือแบ่งเท่าๆ
+          กันให้ช่องไม่ได้รางวัล และรางวัลที่เว้นว่าง
+          ถ้ารางวัลไหนหมดหรือปิดใช้งาน % ของรางวัลนั้นจะไปอยู่กับส่วนที่เหลือ %
+          ของรางวัลรวมกันต้องไม่เกิน 100%
         </p>
       </div>
 
-      {fixedTotal >= 100 && blankLive > 0 && (
-        <p
-          role="status"
-          className="mb-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-900"
-        >
-          % ที่กำหนดรวม {formatRate(fixedTotal)} แล้ว ช่องที่เว้นว่าง {blankLive}{' '}
-          ช่องจะไม่มีโอกาสออก
-        </p>
-      )}
+      <p
+        role={overLimit ? 'alert' : 'status'}
+        className={`mb-4 rounded-lg p-3 text-sm ${overLimit ? 'bg-rose-50 text-rose-700' : 'bg-zinc-50 text-zinc-700'}`}
+      >
+        กำหนด % ของรางวัลรวม <strong>{formatRate(prizeTotal)}</strong>
+        {overLimit
+          ? ' เกิน 100% ลดตัวเลขก่อนบันทึก'
+          : ` · ส่วนที่เหลือ ${formatRate(100 - prizeTotal)} แบ่งให้ช่องอื่น`}
+      </p>
 
       <div className="divide-y divide-zinc-100">
         <div className="hidden grid-cols-[1fr_110px_150px_120px] gap-4 pb-3 text-sm text-zinc-500 md:grid">
@@ -166,29 +170,35 @@ export function WinRateSettings({ token, eventId, segments, onDone }: Props) {
               <span className="justify-self-end text-xs text-zinc-600 md:justify-self-start md:text-sm">
                 {statusLabel(segment)}
               </span>
-              <div className="relative">
-                <input
-                  id={inputId}
-                  className={`input-field pr-8 tabular-nums [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none ${invalid ? 'border-rose-400' : ''}`}
-                  type="number"
-                  inputMode="decimal"
-                  min={0.01}
-                  max={100}
-                  step={0.01}
-                  placeholder="อัตโนมัติ"
-                  aria-invalid={invalid}
-                  value={drafts[segment.id] ?? ''}
-                  onChange={(event) =>
-                    setDrafts((current) => ({
-                      ...current,
-                      [segment.id]: event.target.value,
-                    }))
-                  }
-                />
-                <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-zinc-500">
-                  %
+              {segment.kind !== 'prize' ? (
+                <span className="flex min-h-11 items-center rounded-xl bg-zinc-50 px-3 text-sm text-zinc-500">
+                  ส่วนที่เหลือ
                 </span>
-              </div>
+              ) : (
+                <div className="relative">
+                  <input
+                    id={inputId}
+                    className={`input-field pr-8 tabular-nums [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none ${invalid ? 'border-rose-400' : ''}`}
+                    type="number"
+                    inputMode="decimal"
+                    min={0.01}
+                    max={100}
+                    step={0.01}
+                    placeholder="อัตโนมัติ"
+                    aria-invalid={invalid}
+                    value={drafts[segment.id] ?? ''}
+                    onChange={(event) =>
+                      setDrafts((current) => ({
+                        ...current,
+                        [segment.id]: event.target.value,
+                      }))
+                    }
+                  />
+                  <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-zinc-500">
+                    %
+                  </span>
+                </div>
+              )}
               <span className="justify-self-end text-lg font-semibold tabular-nums text-zinc-950">
                 {formatRate(preview.get(segment.id) ?? 0)}
               </span>
@@ -212,7 +222,7 @@ export function WinRateSettings({ token, eventId, segments, onDone }: Props) {
           type="button"
           className="btn-primary min-h-11"
           onClick={() => void save()}
-          disabled={submitting || changed.length === 0}
+          disabled={submitting || changed.length === 0 || overLimit}
         >
           {submitting && <IconLoader2 size={17} className="animate-spin" />}
           บันทึกโอกาสออก{changed.length > 0 ? ` (${changed.length})` : ''}
