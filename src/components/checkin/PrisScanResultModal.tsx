@@ -6,6 +6,7 @@ import { holderTypeTone } from '@/lib/holder-type-colors';
 import { mealCouponStatusOf, type MealCouponStatus } from '@/lib/meal-coupon';
 import { MealCouponBadge } from '@/components/checkin/MealCouponBadge';
 import { HolderTypeIcon } from '@/components/checkin/HolderTypeIcon';
+import { healthHackOf } from '@/lib/healthhack-checkin';
 
 export interface DeskRegistration {
   firstName: string;
@@ -20,6 +21,7 @@ export interface DeskRegistration {
   holderTypeLabel?: string | null;
   holderGift?: string | null;
   holderGiftCode?: 'gift' | 'none' | null;
+  healthHack?: { teamName: string; nickname: string | null } | null;
 }
 
 export interface DeskResult {
@@ -92,6 +94,7 @@ export function PrisScanResultModal({
   };
 
   const tone = holderTypeTone(reg?.holderType);
+  const healthHack = healthHackOf(reg);
 
   return (
     <div
@@ -136,6 +139,20 @@ export function PrisScanResultModal({
                 {reg.regCode}
               </p>
             </div>
+            {healthHack && (
+              <div className="grid grid-cols-2 gap-x-4 gap-y-4 rounded-xl border border-sky-200 bg-sky-50 p-4">
+                <Field label="ทีม">
+                  <p className="break-words text-lg font-bold text-sky-900">
+                    {healthHack.teamName}
+                  </p>
+                </Field>
+                <Field label="ชื่อเล่น">
+                  <p className="break-words text-lg font-bold text-sky-900">
+                    {healthHack.nickname || '-'}
+                  </p>
+                </Field>
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-x-4 gap-y-4">
               <Field label="Ticket">
                 <span className={`${pill} border-zinc-200 bg-zinc-50 text-zinc-700`}>

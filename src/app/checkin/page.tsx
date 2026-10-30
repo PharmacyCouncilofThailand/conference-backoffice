@@ -8,6 +8,11 @@ import { api, ApiError } from '@/lib/api';
 import toast from 'react-hot-toast';
 import { couponRegistrationFromError } from '@/lib/boothCheckin';
 import {
+  healthHackFromError,
+  healthHackOf,
+  type HealthHackTeam,
+} from '@/lib/healthhack-checkin';
+import {
   playSuccessSound,
   playErrorSound,
   playDuplicateSound,
@@ -43,6 +48,7 @@ import {
   IconVolume,
   IconVolumeOff,
   IconArrowsExchange,
+  IconUsersGroup,
 } from '@tabler/icons-react';
 
 // ─── Types ───
@@ -51,6 +57,7 @@ type ScanResult = null | {
   code: string;
   name?: string;
   ticketType?: string | null;
+  healthHack?: HealthHackTeam | null;
   message: string;
   eventName?: string;
   registrationSessionId?: number;
@@ -87,6 +94,7 @@ interface SessionInfo {
 
 interface PendingRegistration {
   booth?: { mealCouponEligible: boolean | null } | null;
+  healthHack?: HealthHackTeam | null;
   id: number;
   regCode: string;
   firstName: string;
@@ -641,6 +649,7 @@ export default function CheckinPage() {
             code,
             name: `${res.registration.firstName} ${res.registration.lastName}`,
             ticketType: res.registration.ticketName,
+            healthHack: healthHackOf(res.registration),
             eventName: res.registration.eventName,
             message: `Checked in: ${res.checkedInSession?.sessionName}`,
             registrationSessionId: undefined,
@@ -672,6 +681,7 @@ export default function CheckinPage() {
             code,
             name: `${res.registration.firstName} ${res.registration.lastName}`,
             ticketType: res.registration.ticketName,
+            healthHack: healthHackOf(res.registration),
             eventName: res.registration.eventName,
             message: res.checkedInCount
               ? `Checked in ${res.checkedInCount} sessions!`
@@ -692,6 +702,7 @@ export default function CheckinPage() {
           code,
           message,
           ...(coupon ? { name: coupon.name } : {}),
+          healthHack: healthHackFromError(error),
         });
       } else if (
         msg.includes('ไม่มีสิทธิ์') ||
@@ -1237,6 +1248,13 @@ export default function CheckinPage() {
                         <p className="text-xs text-zinc-400 font-mono">
                           {pendingRegistration.regCode}
                         </p>
+                        {pendingRegistration.healthHack && (
+                          <p className="text-sm text-sky-700">
+                            ทีม {pendingRegistration.healthHack.teamName}
+                            {pendingRegistration.healthHack.nickname &&
+                              ` · ${pendingRegistration.healthHack.nickname}`}
+                          </p>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -1373,6 +1391,23 @@ export default function CheckinPage() {
                           {scanResult.name}
                         </span>
                       </div>
+                      {scanResult.healthHack && (
+                        <div className="flex items-center gap-3 mb-2">
+                          <IconUsersGroup size={18} className="text-sky-500" />
+                          <span className="text-zinc-700">
+                            ทีม{' '}
+                            <span className="font-medium">
+                              {scanResult.healthHack.teamName}
+                            </span>
+                            {scanResult.healthHack.nickname && (
+                              <span className="text-zinc-500">
+                                {' '}
+                                · ชื่อเล่น {scanResult.healthHack.nickname}
+                              </span>
+                            )}
+                          </span>
+                        </div>
+                      )}
                       {scanResult.ticketType && (
                         <div className="flex items-center gap-3 mb-2">
                           <IconTicket size={18} className="text-zinc-400" />
